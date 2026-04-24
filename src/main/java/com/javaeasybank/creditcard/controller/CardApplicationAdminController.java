@@ -18,9 +18,9 @@ import com.javaeasybank.creditcard.service.CardAppService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/v1/card-applications")
+@RequestMapping("/api/card-applications")
 @RequiredArgsConstructor
-public class CardApplicationController {
+public class CardApplicationAdminController {
 
 	
 	private final CardAppService cardAppService;
@@ -33,7 +33,7 @@ public class CardApplicationController {
 
     @GetMapping
     public ResponseEntity<?> getAll() {
-        return ResponseEntity.ok(cardAppService.findAll());
+        return ResponseEntity.ok(cardAppService.findAllDto());
     }
 
     @PutMapping("/{id}/status")

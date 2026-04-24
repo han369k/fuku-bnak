@@ -3,6 +3,7 @@ package com.javaeasybank.creditcard.entity;
 import java.time.LocalDateTime;
 
 import com.javaeasybank.creditcard.enums.CardApplicationStatus;
+import com.javaeasybank.customer.entity.Customer;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -11,6 +12,8 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -31,8 +34,8 @@ public class CardApplication {
     @Column(name = "application_id")
     private Integer applicationId;
 
-    @Column(name = "customer_id")
-    private Integer customerId;
+//    @Column(name = "customer_id")
+//    private Integer customerId;
 
     @Column(name = "apply_date")
     private LocalDateTime applyDate;
@@ -43,6 +46,11 @@ public class CardApplication {
 
     @Column(name = "remark", length = 200)
     private String remark;
+    
+    @ManyToOne
+    @JoinColumn(name = "customer_id", nullable = false)
+    private Customer customer;
+    
     
     @PrePersist
     public void prePersist() {
