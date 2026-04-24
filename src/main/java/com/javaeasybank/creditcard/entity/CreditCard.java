@@ -32,10 +32,10 @@ public class CreditCard {
 	@Column(name = "card_id")
     private Integer cardId;
     private Integer customerId;
-    private Integer cardTypeId;
+//    private Integer cardTypeId;//FK關聯 不留
     
     @ManyToOne//對應很多cardType
-    @JoinColumn(name = "card_type_id", insertable = false, updatable = false)
+    @JoinColumn(name = "card_type_id")
     private CardType cardType;
     
     private String cardNumber;
@@ -47,6 +47,11 @@ public class CreditCard {
     private LocalDateTime createDate;
     @Enumerated(EnumType.STRING)
     private CardStatus status;
-    private Integer applicationItemId;
+    
+//    private Integer applicationItemId;//FK關聯不留
+    
+    @ManyToOne
+    @JoinColumn(name = "application_item_id")
+    private CardApplicationItem applicationItem;
 
 }

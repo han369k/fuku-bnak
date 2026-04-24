@@ -2,6 +2,7 @@ package com.javaeasybank.creditcard.service;
 
 import org.springframework.stereotype.Service;
 
+import com.javaeasybank.common.exception.BusinessException;
 import com.javaeasybank.creditcard.entity.CardApplicationItem;
 import com.javaeasybank.creditcard.repository.CardAppItemRepository;
 
@@ -19,8 +20,8 @@ public class CardAppItemService {
 	public void deleteById(Integer id) {
 		cardAppItemRepository.deleteById(id);
 	}
-	public void findById(Integer id) {
-		cardAppItemRepository.findById(id);
+	public CardApplicationItem findById(Integer id) {
+		return cardAppItemRepository.findById(id).orElseThrow(()->new BusinessException("Application item not found"));
 	}
 
 }

@@ -35,18 +35,18 @@ public class CardApplicationItem {
     @Column(name = "item_id")
     private Integer itemId;
 
-    @Column(name = "application_id")
-    private Integer applicationId;
-
-    @Column(name = "card_type_id")
-    private Integer cardTypeId;
+//    @Column(name = "application_id")
+//    private Integer applicationId;//拿掉
+//
+//    @Column(name = "card_type_id")
+//    private Integer cardTypeId;//拿掉
 
     @ManyToOne//多對一：申請明細屬於某一申請單(支援一筆申請多卡)
-    @JoinColumn(name = "application_id", insertable = false, updatable = false)
+    @JoinColumn(name = "application_id")
     private CardApplication application;
 
     @ManyToOne //多對一：申請明細對應卡片類型(多筆申請可共用同一卡種)
-    @JoinColumn(name = "card_type_id", insertable = false, updatable = false)
+    @JoinColumn(name = "card_type_id")
     private CardType cardType;
 
     @Enumerated(EnumType.STRING)

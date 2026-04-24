@@ -2,8 +2,10 @@ package com.javaeasybank.creditcard.service;
 
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
+import com.javaeasybank.common.exception.BusinessException;
 import com.javaeasybank.creditcard.entity.CreditCard;
 import com.javaeasybank.creditcard.repository.CreditCardRepository;
 
@@ -24,11 +26,15 @@ public class CreditCardService {
 		cardRepository.save(card);
 	}
 	public CreditCard findById(Integer id) {
-		return cardRepository.findById(id).orElse(null);
+		return cardRepository.findById(id).
+orElseThrow(()->new BusinessException("Can not found the creditcard ID:"+id));
 	}
 	public void deleteById(Integer id) {
 		cardRepository.deleteById(id);
 	}
+//	public List<CreditCard> findByCustomerId(Integer customerId) {
+//		return creditCardRepository.findByCustomer_CustomerId(customerId);
+//	}
 	
 	
 }

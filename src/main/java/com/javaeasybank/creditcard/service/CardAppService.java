@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.javaeasybank.common.exception.BusinessException;
 import com.javaeasybank.creditcard.entity.CardApplication;
 import com.javaeasybank.creditcard.repository.CardAppRepository;
 
@@ -18,8 +19,9 @@ public class CardAppService {
 	public List<CardApplication> findAll() {
 		return cardAppRepository.findAll();
 	}
-	public void findById(Integer id) {
-		cardAppRepository.findById(id);
+	public CardApplication findById(Integer id) {
+	    return cardAppRepository.findById(id)
+	        .orElseThrow(() -> new BusinessException("Credit card application not found."));
 	}
 	public void save(CardApplication cardApplication) {
 		cardAppRepository.save(cardApplication);
