@@ -26,4 +26,14 @@ public interface AccountRepository extends JpaRepository<Account, String> {
      * 依 account_type + currency 篩選
      */
     Page<Account> findByAccountTypeAndCurrency(AccountType accountType, Currency currency, Pageable pageable);
+
+    /**
+     * 檢查同客戶 + 同型別 + 同幣別是否已存在帳戶
+     */
+    boolean existsByCustomerIdAndAccountTypeAndCurrency(Long customerId, AccountType accountType, Currency currency);
+
+    /**
+     * 檢查同客戶是否有特定型別 + 幣別 + 狀態的帳戶
+     */
+    boolean existsByCustomerIdAndAccountTypeAndCurrencyAndStatus(Long customerId, AccountType accountType, Currency currency, AccountStatus status);
 }
