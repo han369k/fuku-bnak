@@ -28,7 +28,13 @@ public class TransferService {
     private final TransLogRepository transLogRepository;
 
     /**
-     * 行內同幣別轉帳 (MVP)
+     * 執行行內同幣別轉帳。
+     * 包含基本驗證（金額、帳號非空、自我轉帳、帳戶狀態、幣別一致性、餘額充足性），
+     * 執行扣款與入帳，並寫入交易紀錄。
+     *
+     * @param request 轉帳請求。
+     * @return 轉帳響應，包含參考 ID、轉出轉入帳戶餘額及轉帳時間。
+     * @throws TransferException 如果轉帳驗證失敗（例如帳戶不存在、餘額不足、幣別不符等）。
      */
     @Transactional
     public TransferResponse transfer(TransferRequest request) {

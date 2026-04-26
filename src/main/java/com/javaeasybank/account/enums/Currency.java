@@ -1,5 +1,8 @@
 package com.javaeasybank.account.enums;
 
+/**
+ * 定義了系統支援的貨幣類型及其相關屬性，如小數位數和計息天數基準。
+ */
 public enum Currency {
     TWD(2, 365),    // 新台幣
     USD(2, 360),    // 美元

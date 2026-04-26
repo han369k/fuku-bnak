@@ -1,5 +1,8 @@
 package com.javaeasybank.account.enums;
 
+/**
+ * 定義了帳戶的類型。
+ */
 public enum AccountType {
     CHECKING,       // 活存
     TIME_DEPOSIT,   // 定存

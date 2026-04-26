@@ -30,7 +30,12 @@ public class AccountService {
     private final AccountRepository accountRepository;
 
     /**
-     * 建立帳戶
+     * 建立新帳戶。
+     * 執行 KYC 驗證、帳戶類型規則驗證，並根據帳戶類型設定初始餘額和利率。
+     *
+     * @param request 帳戶創建請求。
+     * @return 創建成功的帳戶響應。
+     * @throws AccountException 如果 KYC 驗證失敗或帳戶類型規則不符。
      */
     @Transactional
     public AccountResponse createAccount(AccountCreateRequest request) {
@@ -69,7 +74,11 @@ public class AccountService {
     }
 
     /**
-     * 查詢單一帳戶
+     * 根據帳號查詢單一帳戶。
+     *
+     * @param accountNumber 要查詢的帳號。
+     * @return 查詢到的帳戶響應。
+     * @throws AccountException 如果找不到指定帳號的帳戶。
      */
     @Transactional(readOnly = true)
     public AccountResponse getAccount(String accountNumber) {
@@ -79,7 +88,11 @@ public class AccountService {
     }
 
     /**
-     * 依 customer_id 查所有帳戶 (分頁)
+     * 根據客戶 ID 查詢所有帳戶並進行分頁。
+     *
+     * @param customerId 客戶 ID。
+     * @param pageable   分頁資訊。
+     * @return 包含帳戶響應的分頁列表。
      */
     @Transactional(readOnly = true)
     public Page<AccountResponse> getAccountsByCustomerId(Long customerId, Pageable pageable) {
@@ -88,7 +101,11 @@ public class AccountService {
     }
 
     /**
-     * 依 status 篩選 (分頁)
+     * 根據帳戶狀態篩選帳戶並進行分頁。
+     *
+     * @param status   要篩選的帳戶狀態。
+     * @param pageable 分頁資訊。
+     * @return 包含帳戶響應的分頁列表。
      */
     @Transactional(readOnly = true)
     public Page<AccountResponse> getAccountsByStatus(AccountStatus status, Pageable pageable) {
@@ -97,7 +114,12 @@ public class AccountService {
     }
 
     /**
-     * 依 account_type + currency 篩選 (分頁)
+     * 根據帳戶類型和貨幣篩選帳戶並進行分頁。
+     *
+     * @param type     要篩選的帳戶類型。
+     * @param currency 要篩選的貨幣。
+     * @param pageable 分頁資訊。
+     * @return 包含帳戶響應的分頁列表。
      */
     @Transactional(readOnly = true)
     public Page<AccountResponse> getAccountsByTypeAndCurrency(AccountType type, Currency currency, Pageable pageable) {
@@ -109,11 +131,24 @@ public class AccountService {
     // Private Helper Methods
     // ==========================================
 
+    /**
+     * 執行客戶的 KYC 驗證。
+     * 目前為模擬通過。
+     *
+     * @param customerId 客戶 ID。
+     */
     private void validateKyc(Long customerId) {
         // TODO: 呼叫 Customer Service 驗證 KYC，目前 Mock 通過
         log.debug("KYC validation passed for customer: {}", customerId);
     }
 
+    /**
+     * 驗證帳戶創建請求的帳戶類型規則。
+     * 包括活存帳戶的唯一性、子帳戶的貨幣限制、父帳戶要求及所有權驗證。
+     *
+     * @param request 帳戶創建請求。
+     * @throws AccountException 如果帳戶類型規則不符。
+     */
     private void validateAccountTypeRules(AccountCreateRequest request) {
         Long customerId = request.getCustomerId();
         AccountType type = request.getAccountType();

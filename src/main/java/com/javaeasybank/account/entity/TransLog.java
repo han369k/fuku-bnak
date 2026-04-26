@@ -13,6 +13,10 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+/**
+ * 交易日誌實體類，對應資料庫中的 `trans_log` 表。
+ * 記錄了所有帳戶交易的詳細資訊。
+ */
 @Entity
 @Table(
     name = "trans_log", 
@@ -26,47 +30,86 @@ import java.util.UUID;
 @NoArgsConstructor
 public class TransLog {
 
+    /**
+     * 交易 ID，主鍵，長度為 36 (UUID)，不可為空。
+     */
     @Id
     @Column(name = "transaction_id", length = 36, nullable = false)
     private String transactionId;
 
+    /**
+     * 業務參考 ID，長度為 30，不可為空。
+     */
     @Column(name = "reference_id", length = 30, nullable = false)
     private String referenceId;
 
+    /**
+     * 交易相關的帳號，長度為 12，不可為空。
+     */
     @Column(name = "account_number", length = 12, nullable = false)
     private String accountNumber;
 
+    /**
+     * 對方帳號，長度為 12。
+     */
     @Column(name = "counterpart_account", length = 12)
     private String counterpartAccount;
 
+    /**
+     * 記帳類型（借方/貸方），使用枚舉儲存，不可為空。
+     */
     @Enumerated(EnumType.STRING)
     @Column(name = "entry_type", nullable = false, length = 10)
     private EntryType entryType;
 
+    /**
+     * 交易類型，使用枚舉儲存，不可為空。
+     */
     @Enumerated(EnumType.STRING)
     @Column(name = "transaction_type", nullable = false, length = 25)
     private TransactionType transactionType;
 
+    /**
+     * 交易金額，不可為空，精度為 19，小數點後 4 位。
+     */
     @Column(nullable = false, precision = 19, scale = 4)
     private BigDecimal amount;
 
+    /**
+     * 交易前的帳戶餘額，不可為空，精度為 19，小數點後 4 位。
+     */
     @Column(name = "balance_before", nullable = false, precision = 19, scale = 4)
     private BigDecimal balanceBefore;
 
+    /**
+     * 交易後的帳戶餘額，不可為空，精度為 19，小數點後 4 位。
+     */
     @Column(name = "balance_after", nullable = false, precision = 19, scale = 4)
     private BigDecimal balanceAfter;
 
+    /**
+     * 交易貨幣，使用枚舉儲存，不可為空。
+     */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 3)
     private Currency currency;
 
+    /**
+     * 交易備註，長度為 200。
+     */
     @Column(columnDefinition = "NVARCHAR(200)")
     private String note;
 
+    /**
+     * 交易創建時間，自動生成，不可為空，不可更新。
+     */
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     
+    /**
+     * 在持久化之前自動生成 transactionId (UUID)。
+     */
     @PrePersist
     public void prePersist() {
         if (this.transactionId == null) {
@@ -74,6 +117,12 @@ public class TransLog {
         }
     }
 
+    /**
+     * 重寫 equals 方法，僅比較交易 ID (transactionId) 作為業務主鍵。
+     *
+     * @param o 待比較的物件。
+     * @return 如果交易 ID 相同則返回 true，否則返回 false。
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -82,6 +131,11 @@ public class TransLog {
                 this.getTransactionId().equals(that.getTransactionId());
     }
 
+    /**
+     * 重寫 hashCode 方法，與 equals 方法保持一致性。
+     *
+     * @return 該物件的雜湊碼。
+     */
     @Override
     public int hashCode() {
         return getClass().hashCode();

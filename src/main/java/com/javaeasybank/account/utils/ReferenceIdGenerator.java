@@ -1,5 +1,8 @@
 package com.javaeasybank.account.utils;
 
+/**
+ * 參考 ID 生成器，用於生成唯一的業務交易參考 ID。
+ */
 public class ReferenceIdGenerator {
     private static final java.security.SecureRandom random = new java.security.SecureRandom();
     private static final java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");

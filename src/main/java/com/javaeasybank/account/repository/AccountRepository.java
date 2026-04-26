@@ -9,31 +9,59 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+/**
+ * 帳戶資料庫操作接口。
+ * 繼承 JpaRepository，提供基本的 CRUD 操作以及自定義查詢方法。
+ */
 @Repository
 public interface AccountRepository extends JpaRepository<Account, String> {
 
     /**
-     * 依 customer_id 查客戶名下所有帳戶
+     * 根據客戶 ID 查詢該客戶名下所有帳戶並進行分頁。
+     *
+     * @param customerId 客戶 ID。
+     * @param pageable   分頁資訊。
+     * @return 包含帳戶實體的分頁列表。
      */
     Page<Account> findByCustomerId(Long customerId, Pageable pageable);
 
     /**
-     * 依 status 篩選 (例如撈出所有凍結帳戶)
+     * 根據帳戶狀態篩選帳戶並進行分頁。
+     *
+     * @param status   要篩選的帳戶狀態。
+     * @param pageable 分頁資訊。
+     * @return 包含帳戶實體的分頁列表。
      */
     Page<Account> findByStatus(AccountStatus status, Pageable pageable);
 
     /**
-     * 依 account_type + currency 篩選
+     * 根據帳戶類型和貨幣篩選帳戶並進行分頁。
+     *
+     * @param accountType 要篩選的帳戶類型。
+     * @param currency    要篩選的貨幣。
+     * @param pageable    分頁資訊。
+     * @return 包含帳戶實體的分頁列表。
      */
     Page<Account> findByAccountTypeAndCurrency(AccountType accountType, Currency currency, Pageable pageable);
 
     /**
-     * 檢查同客戶 + 同型別 + 同幣別是否已存在帳戶
+     * 檢查指定客戶是否已擁有特定帳戶類型和貨幣的帳戶。
+     *
+     * @param customerId  客戶 ID。
+     * @param accountType 帳戶類型。
+     * @param currency    貨幣。
+     * @return 如果存在則返回 true，否則返回 false。
      */
     boolean existsByCustomerIdAndAccountTypeAndCurrency(Long customerId, AccountType accountType, Currency currency);
 
     /**
-     * 檢查同客戶是否有特定型別 + 幣別 + 狀態的帳戶
+     * 檢查指定客戶是否擁有特定帳戶類型、貨幣和狀態的帳戶。
+     *
+     * @param customerId  客戶 ID。
+     * @param accountType 帳戶類型。
+     * @param currency    貨幣。
+     * @param status      帳戶狀態。
+     * @return 如果存在則返回 true，否則返回 false。
      */
     boolean existsByCustomerIdAndAccountTypeAndCurrencyAndStatus(Long customerId, AccountType accountType, Currency currency, AccountStatus status);
 }

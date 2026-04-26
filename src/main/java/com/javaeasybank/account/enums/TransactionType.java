@@ -1,5 +1,8 @@
 package com.javaeasybank.account.enums;
 
+/**
+ * 定義了交易的類型。
+ */
 public enum TransactionType {
     TRANSFER,           // 轉帳
     DEPOSIT,            // 存款

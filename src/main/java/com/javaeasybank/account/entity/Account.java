@@ -13,6 +13,10 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ * 帳戶實體類，對應資料庫中的 `account` 表。
+ * 儲存了帳戶的詳細資訊，包括帳號、客戶 ID、帳戶類型、餘額、狀態等。
+ */
 @Entity
 @Table(name = "account")
 @Getter
@@ -20,57 +24,97 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class Account {
 
+    /**
+     * 帳號，主鍵，長度為 12，不可為空。
+     */
     @Id
     @Column(name = "account_number", length = 12, nullable = false)
     private String accountNumber;
 
+    /**
+     * 客戶 ID，不可為空。
+     */
     @Column(name = "customer_id", nullable = false)
     private Long customerId;
 
+    /**
+     * 帳戶類型，使用枚舉儲存，不可為空。
+     */
     @Enumerated(EnumType.STRING)
     @Column(name = "account_type", nullable = false, length = 20)
     private AccountType accountType;
 
+    /**
+     * 帳戶貨幣，使用枚舉儲存，不可為空。
+     */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 3)
     private Currency currency;
 
+    /**
+     * 帳戶餘額，預設為 0，精度為 19，小數點後 4 位。
+     */
     @Column(precision = 19, scale = 4)
     private BigDecimal balance = BigDecimal.ZERO;
 
+    /**
+     * 帳戶負債，預設為 0，精度為 19，小數點後 4 位。
+     */
     @Column(precision = 19, scale = 4)
     private BigDecimal liability = BigDecimal.ZERO;
 
+    /**
+     * 帳戶利率，精度為 7，小數點後 5 位。
+     */
     @Column(name = "interest_rate", precision = 7, scale = 5)
     private BigDecimal interestRate;
 
+    /**
+     * 帳戶狀態，使用枚舉儲存，預設為 PENDING，不可為空。
+     */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private AccountStatus status = AccountStatus.PENDING;
 
+    /**
+     * 父帳號，用於子帳戶，長度為 12。
+     */
     @Column(name = "parent_account_number", length = 12)
     private String parentAccountNumber;
 
+    /**
+     * 帳戶創建時間，自動生成，不可為空，不可更新。
+     */
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    /**
+     * 帳戶創建者，長度為 20。
+     */
     @Column(name = "created_by", length = 20)
     private String createdBy;
 
+    /**
+     * 帳戶最後更新時間，自動更新，不可為空。
+     */
     @UpdateTimestamp
     @Column(name = "changed_at", nullable = false)
     private LocalDateTime changedAt;
 
+    /**
+     * 帳戶最後更新者，長度為 20。
+     */
     @Column(name = "changed_by", length = 20)
     private String changedBy;
 
     /**
-     * 這裡的主要用意是，如果用原生的equals，他只會比記憶體位址。
-     * 如果兩個裝著同樣客戶資料的物件，但他們的記憶體位址不一樣，就會直接false，
-     * 所以為了符合業務邏輯，改寫equals，只比較"業務主鍵"的值 ( accountNumber )，
-     * 例如：轉帳等等的業務，省去手寫一堆getAccountNumber...。
-     * */
+     * 重寫 equals 方法，僅比較帳號 (accountNumber) 作為業務主鍵。
+     * 這樣可以確保即使是不同記憶體地址的 Account 物件，只要帳號相同，就被視為相等。
+     *
+     * @param o 待比較的物件。
+     * @return 如果帳號相同則返回 true，否則返回 false。
+     */
     @Override
     public boolean equals(Object o) {
         // memory address check
@@ -90,7 +134,13 @@ public class Account {
                 this.getAccountNumber().equals(that.getAccountNumber());
     }
 
-    // 改了equals hashCode就要覆寫 同捆包
+    /**
+     * 重寫 hashCode 方法，與 equals 方法保持一致性。
+     * 為了確保實體在不同生命週期（如剛 new 出來與存入 DB 後）的雜湊值穩定，
+     * 在 JPA 實體中，最安全的做法是回傳固定值或基於 getClass() 計算。
+     *
+     * @return 該物件的雜湊碼。
+     */
     @Override
     public int hashCode() {
         // 為了確保實體在不同生命週期（如剛 new 出來與存入 DB 後）的雜湊值穩定，
