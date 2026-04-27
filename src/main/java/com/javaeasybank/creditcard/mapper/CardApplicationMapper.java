@@ -6,7 +6,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 import com.javaeasybank.creditcard.dto.CardApplicationResponseDto;
-import com.javaeasybank.creditcard.dto.CreateCardApplicationRequest;
+import com.javaeasybank.creditcard.dto.CardApplicationRequest;
 import com.javaeasybank.creditcard.entity.CardApplication;
 
 @Mapper(componentModel = "spring")
@@ -16,8 +16,8 @@ public interface CardApplicationMapper {
     @Mapping(source = "customer.name", target = "customerName")
     CardApplicationResponseDto toDto(CardApplication app);
 	
-	@Mapping(source = "customerId", target = "customer.customerId")
-	CardApplication toEntity(CreateCardApplicationRequest requestDto);
+	
+	CardApplication toEntity(CardApplicationRequest requestDto);
 
 	List<CardApplicationResponseDto> toDtoList(List<CardApplication> all);
 }

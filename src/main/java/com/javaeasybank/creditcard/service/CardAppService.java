@@ -7,7 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.javaeasybank.common.exception.BusinessException;
 import com.javaeasybank.creditcard.dto.CardApplicationResponseDto;
-import com.javaeasybank.creditcard.dto.CreateCardApplicationRequest;
+import com.javaeasybank.creditcard.dto.CardApplicationRequest;
 import com.javaeasybank.creditcard.entity.CardApplication;
 import com.javaeasybank.creditcard.enums.CardApplicationStatus;
 import com.javaeasybank.creditcard.mapper.CardApplicationMapper;
@@ -41,7 +41,7 @@ public class CardAppService {
 	    cardAppRepository.deleteById(id);
 	}
 	//新增申請
-	public CardApplicationResponseDto create(CreateCardApplicationRequest requestDto) {
+	public CardApplicationResponseDto create(CardApplicationRequest requestDto) {
 	    CardApplication entity = cardApplicationMapper.toEntity(requestDto);
 	    //預設值
 	    entity.setStatus(CardApplicationStatus.PENDING);

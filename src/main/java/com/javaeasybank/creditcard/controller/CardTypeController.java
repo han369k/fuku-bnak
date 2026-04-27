@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.javaeasybank.creditcard.dto.CardTypeCreateRequest;
+import com.javaeasybank.creditcard.dto.CardTypeRequestDto;
 import com.javaeasybank.creditcard.entity.CardType;
 import com.javaeasybank.creditcard.service.CardTypeService;
 
@@ -44,7 +44,7 @@ public class CardTypeController {
     // 🔹 3. 新增卡別（含圖片）
     @PostMapping
     public ResponseEntity<?> create(
-            @ModelAttribute CardTypeCreateRequest req,
+            @ModelAttribute CardTypeRequestDto req,
             @RequestParam("mf") MultipartFile mf
     ) throws IOException {
 
@@ -60,7 +60,7 @@ public class CardTypeController {
     @PutMapping("/{id}")
     public ResponseEntity<?> update(
             @PathVariable Integer id,
-            @ModelAttribute CardTypeCreateRequest req,
+            @ModelAttribute CardTypeRequestDto req,
             @RequestParam(value = "mf", required = false) MultipartFile mf
     ) throws IOException {
 
