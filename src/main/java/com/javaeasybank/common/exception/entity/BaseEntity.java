@@ -1,4 +1,4 @@
-package com.javaeasybank.common.entity;
+package com.javaeasybank.common.exception.entity;
 
 
 import jakarta.persistence.*;
