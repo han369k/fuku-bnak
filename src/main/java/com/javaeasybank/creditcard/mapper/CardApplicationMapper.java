@@ -3,13 +3,13 @@ package com.javaeasybank.creditcard.mapper;
 import java.util.List;
 
 import org.mapstruct.Mapper;
-
+import org.mapstruct.ReportingPolicy;
 
 import com.javaeasybank.creditcard.dto.CardApplicationResponseDto;
 import com.javaeasybank.creditcard.dto.CardApplicationRequestDto;
 import com.javaeasybank.creditcard.entity.CardApplication;
 
-@Mapper(componentModel = "spring",config = CentralMapperConfig.class)
+@Mapper(componentModel = "spring",config = CentralMapperConfig.class,unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface CardApplicationMapper {
 
 	// 查詢用

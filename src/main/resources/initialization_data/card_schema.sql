@@ -1,15 +1,23 @@
+/* =========================
+   1️⃣ 重建資料庫（最乾淨）
+   ========================= */
+USE master;
+IF DB_ID('java_easy_bank') IS NOT NULL
+BEGIN
+    ALTER DATABASE java_easy_bank SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+    DROP DATABASE java_easy_bank;
+END
+GO
 
-EXEC sp_msforeachtable "ALTER TABLE ? NOCHECK CONSTRAINT ALL"
+CREATE DATABASE java_easy_bank;
+GO
 
-DROP TABLE IF EXISTS credit_card_transaction;
-DROP TABLE IF EXISTS credit_card_bill;
-DROP TABLE IF EXISTS credit_card;
+USE java_easy_bank;
+GO
 
-DROP TABLE IF EXISTS card_application_item;
-DROP TABLE IF EXISTS card_application;
-
-DROP TABLE IF EXISTS card_type;
-DROP TABLE IF EXISTS customer;
+/* =========================
+   2️⃣ 建立資料表
+   ========================= */
 
 -- 客戶資料表
 CREATE TABLE [CUSTOMER] (
