@@ -10,7 +10,7 @@
 
 | 項目 | 版本 |
 |---|---|
-| Java | 17 |
+| Java | 21 |
 | Spring Boot | 4.0.5 |
 | Spring Data JPA / Hibernate | 隨 Spring Boot |
 | Spring Security | 隨 Spring Boot |
@@ -44,7 +44,7 @@
 
 ### 1. 環境準備
 
-- JDK 17
+- JDK 21
 - Maven 3.8+
 - MS SQL Server
 - Node.js 18+（前端）
