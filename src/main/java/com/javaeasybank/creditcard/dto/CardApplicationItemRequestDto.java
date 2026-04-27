@@ -2,9 +2,10 @@ package com.javaeasybank.creditcard.dto;
 
 import java.math.BigDecimal;
 
-public record CardApplicaitonItemResponseDto(
+public record CardApplicationItemRequestDto(
     Integer itemId,
-    String cardName,
+    Integer applicationId,
+    Integer cardTypeId,
     String result,
     BigDecimal approvedLimit,
     BigDecimal annualFee,

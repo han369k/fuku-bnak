@@ -12,8 +12,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.javaeasybank.common.exception.BusinessException;
 import com.javaeasybank.creditcard.dto.CardTypeRequestDto;
+import com.javaeasybank.creditcard.dto.CardTypeResponseDto;
 import com.javaeasybank.creditcard.repository.CreditCardRepository;
 import com.javaeasybank.creditcard.entity.CardType;
+import com.javaeasybank.creditcard.mapper.CardTypeMapper;
 import com.javaeasybank.creditcard.repository.CardTypeRepository;
 
 import org.springframework.transaction.annotation.Transactional;
@@ -26,79 +28,41 @@ public class CardTypeService {
 
 	private final CardTypeRepository cardTypeRepository;
 	private final CreditCardRepository cardRepository;
+	private final CardTypeMapper cardTypeMapper;
 
-	public CardType insert(CardType cardType) {
-		return cardTypeRepository.save(cardType);
-	}
-
-	public CardType update(CardType cardType) {
-		return cardTypeRepository.save(cardType);
-	}
-
-	public void deleteById(Integer id) {
-
-		// 1. 確認卡片存在
-		CardType cardType = cardTypeRepository.findById(id)
-				.orElseThrow(() -> new BusinessException("Card type not found"));
-
-		// 2. 檢查是否被使用（FK）
-		boolean isUsed = cardRepository.existsByCardType_CardTypeId(id);
-
-		if (isUsed) {
-			throw new BusinessException("Card type is already in use and cannot be deleted");
-		}
-
-		// 3. 刪除
-		cardTypeRepository.delete(cardType);
-	}
-
-	public CardType findById(Integer id) {
-		return cardTypeRepository.findById(id)
-				.orElseThrow(() -> new BusinessException("Card type not found, id: " + id));
-	}
-
-	public List<CardType> findAll() {
-		return cardTypeRepository.findAll();
-	}
-
-	public CardType createCardType(CardTypeRequestDto request, MultipartFile mf) throws IOException {
+	// 新增卡片型態
+	public CardTypeResponseDto createCardType(CardTypeRequestDto request, MultipartFile mf) throws IOException {
 		if (mf == null || mf.isEmpty()) {
 			throw new BusinessException("Image file is required");
 		}
-
-		CardType card = new CardType();
-		card.setCardTypeName(request.getCardTypeName());
-		card.setBrand(request.getBrand());
-		card.setAnnualFee(request.getAnnualFee());
-		card.setCashbackRate(request.getCashbackRate());
+		// 建立卡片型態
+		CardType cardType = cardTypeMapper.toEntity(request);
 
 		// 存圖片
-		card.setCardImageUrl(saveImage(mf));
-		return cardTypeRepository.save(card);
-
+		cardType.setCardImageUrl(saveImage(mf));
+		CardType saved = cardTypeRepository.save(cardType);
+		return cardTypeMapper.toDto(saved);
 	}
-
-	public CardType updateCardType(Integer id, CardTypeRequestDto request, MultipartFile mf) throws IOException {
-		CardType card = cardTypeRepository.findById(id)
+	// 更新卡片型態
+	public CardTypeResponseDto updateCardType(Integer id, CardTypeRequestDto request, MultipartFile mf) throws IOException {
+		CardType cardType = cardTypeRepository.findById(id)
 				.orElseThrow(() -> new BusinessException("Card type not found, id: " + id));
 
 		// 更新基本欄位
-		card.setCardTypeName(request.getCardTypeName());
-		card.setBrand(request.getBrand());
-		card.setAnnualFee(request.getAnnualFee());
-		card.setCashbackRate(request.getCashbackRate());
+		cardTypeMapper.updateEntityFromDto(request, cardType);
+
 
 		// 刪舊圖片
-		String oldImageUrl = card.getCardImageUrl();
+		String oldImageUrl = cardType.getCardImageUrl();
 		if (oldImageUrl != null && oldImageUrl.startsWith("/uploads/")) {
 			String oldFileName = oldImageUrl.replace("/uploads/", "");
 			Path oldPath = Paths.get("uploads/", oldFileName);
 			Files.deleteIfExists(oldPath);
 		}
-		card.setCardImageUrl(saveImage(mf));
-		return cardTypeRepository.save(card);
+		cardType.setCardImageUrl(saveImage(mf));
+		return cardTypeMapper.toDto(cardTypeRepository.save(cardType));
 	}
-
+	// 存圖片
 	private String saveImage(MultipartFile mf) throws IOException {
 		String originalName = mf.getOriginalFilename();
 
@@ -120,5 +84,33 @@ public class CardTypeService {
 		Files.write(path, mf.getBytes());
 
 		return "/uploads/" + fileName;
+	}
+	// 刪除卡片型態
+	public void deleteById(Integer id) {
+
+		// 1. 確認卡片存在
+		CardType cardType = cardTypeRepository.findById(id)
+				.orElseThrow(() -> new BusinessException("Card type not found"));
+
+		// 2. 檢查是否被使用（FK）
+		boolean isUsed = cardRepository.existsByCardType_CardTypeId(id);
+
+		if (isUsed) {
+			throw new BusinessException("Card type is already in use and cannot be deleted");
+		}
+
+		// 3. 刪除
+		cardTypeRepository.delete(cardType);
+	}
+	// 查詢卡片型態
+	public CardTypeResponseDto findById(Integer id) {
+		CardType cardType = cardTypeRepository.findById(id)
+			.orElseThrow(() -> new BusinessException("Card type not found, id: " + id));
+			return cardTypeMapper.toDto(cardType);
+	}
+	// 查詢所有卡片型態
+	public List<CardTypeResponseDto> findAll() {
+		return cardTypeMapper.toDtoList(cardTypeRepository.findAll());
+
 	}
 }

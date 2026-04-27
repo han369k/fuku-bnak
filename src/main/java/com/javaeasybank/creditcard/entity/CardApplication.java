@@ -51,7 +51,7 @@ public class CardApplication {
     @JoinColumn(name = "customer_id", nullable = false)
     private Customer customer;
     
-    
+    //預設申請是pending
     @PrePersist
     public void prePersist() {
 		if (applyDate == null) {
