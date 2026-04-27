@@ -109,4 +109,21 @@ public class AccountController {
         PageResponse<AccountResponse> pageResponse = PageResponse.of(result.getContent(), page, size, result.getTotalElements());
         return ResponseEntity.ok(ApiResponse.success(pageResponse));
     }
+
+    /**
+     * 檢索最新建立的帳戶分頁列表。
+     *
+     * @param page 頁碼（默認為0）。
+     * @param size 每頁帳戶數量（默認為10）。
+     * @return 包含最新帳戶分頁列表響應的 ResponseEntity。
+     */
+    @GetMapping("/latest")
+    public ResponseEntity<ApiResponse<PageResponse<AccountResponse>>> getLatestAccounts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        log.info("Received request to get latest accounts");
+        Page<AccountResponse> result = accountService.getLatest(PageRequest.of(page, size));
+        PageResponse<AccountResponse> pageResponse = PageResponse.of(result.getContent(), page, size, result.getTotalElements());
+        return ResponseEntity.ok(ApiResponse.success(pageResponse));
+    }
 }

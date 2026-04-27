@@ -127,6 +127,18 @@ public class AccountService {
                 .map(AccountResponse::fromEntity);
     }
 
+    /**
+     * 查詢所有帳戶並按建立時間倒序排序，並進行分頁。
+     *
+     * @param pageable 分頁資訊。
+     * @return 包含帳戶響應的分頁列表。
+     */
+    @Transactional(readOnly = true)
+    public Page<AccountResponse> getLatest(Pageable pageable) {
+        return accountRepository.findAllByOrderByCreatedAtDesc(pageable)
+                .map(AccountResponse::fromEntity);
+    }
+
     // ==========================================
     // Private Helper Methods
     // ==========================================

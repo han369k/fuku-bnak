@@ -110,4 +110,12 @@ public interface TransLogRepository extends JpaRepository<TransLog, String>, Jpa
             @Param("entryType") EntryType entryType,
             @Param("transactionTypes") List<TransactionType> transactionTypes,
             @Param("sinceTime") LocalDateTime sinceTime);
+
+    /**
+     * 查詢所有交易紀錄並按建立時間倒序排序，並進行分頁。
+     *
+     * @param pageable 分頁資訊。
+     * @return 包含交易日誌實體的分頁列表。
+     */
+    Page<TransLog> findAllByOrderByCreatedAtDesc(Pageable pageable);
 }

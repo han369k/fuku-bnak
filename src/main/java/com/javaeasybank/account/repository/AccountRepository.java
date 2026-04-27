@@ -64,4 +64,12 @@ public interface AccountRepository extends JpaRepository<Account, String> {
      * @return 如果存在則返回 true，否則返回 false。
      */
     boolean existsByCustomerIdAndAccountTypeAndCurrencyAndStatus(Long customerId, AccountType accountType, Currency currency, AccountStatus status);
+
+    /**
+     * 查詢所有帳戶並按建立時間倒序排序（最新建立的排在前面），並進行分頁。
+     *
+     * @param pageable 分頁資訊。
+     * @return 包含帳戶實體的分頁列表。
+     */
+    Page<Account> findAllByOrderByCreatedAtDesc(Pageable pageable);
 }
