@@ -2,8 +2,11 @@ package com.javaeasybank.common.exception;
 
 import com.javaeasybank.common.dto.response.ApiResponse;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.stream.Collectors;
 
 /**
  * 全域例外處理器。
@@ -29,6 +32,21 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .badRequest()
                 .body(ApiResponse.fail(e.getMessage()));
+    }
+
+    /**
+     * 攔截參數驗證錯誤 (@Valid 失敗)
+     * 回傳 HTTP 400
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiResponse<Void>> handleValidationException(MethodArgumentNotValidException e) {
+        String errorMessage = e.getBindingResult().getFieldErrors().stream()
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .collect(Collectors.joining("; "));
+
+        return ResponseEntity
+                .badRequest()
+                .body(ApiResponse.fail(errorMessage));
     }
 
     /**
