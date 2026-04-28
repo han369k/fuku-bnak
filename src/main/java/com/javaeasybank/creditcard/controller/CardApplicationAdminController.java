@@ -1,8 +1,9 @@
 package com.javaeasybank.creditcard.controller;
 
-import java.util.List;
 import java.util.Map;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,8 +27,8 @@ public class CardApplicationAdminController {
     private final CardAppService cardAppService;
     // 查全部
     @GetMapping
-    public ResponseEntity<List<CardApplicationResponseDto>> getAll() {
-        return ResponseEntity.ok(cardAppService.findAll());
+    public Page<CardApplicationResponseDto> getAll(Pageable pageable) {
+        return cardAppService.findAll(pageable);
     }
     // 查單筆（DTO）
     @GetMapping("/{id}")

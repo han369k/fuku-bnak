@@ -42,6 +42,20 @@ const router = createRouter({
           name: 'admin-trans-logs',
           component: () => import('../views/admin/TransLogView.vue'),
         },
+        {
+          path: 'card-types',
+          name: 'admin-card-types',
+          //http://localhost:5173/admin/card-types
+          component: () => import('../views/admin/CardTypeListView.vue'),
+
+        },
+        {
+          path:'card-applications',
+          name:'admin-card-applications',
+          //http://localhost:5173/admin/card-applications
+          component: () => import('../views/admin/CardApplicationList.vue'),
+        },
+
       ],
     },
 
@@ -49,8 +63,28 @@ const router = createRouter({
     // {
     //   path: '/user',
     //   component: () => import('../layouts/UserLayout.vue'),
-    //   children: [ ... ],
+    //   children: [ 
+    // 
+    
+
+
+    // === 客戶端信用卡頁面===
+    // {
+    //   path: '/user/cards',
+    //   name: 'user-cards',
+    //   component: () => import('../views/user/CardListView.vue'),
+    // }
+
+  
+    //    ],
     // },
+
+
+
+
+
+
+
   ],
 })
 

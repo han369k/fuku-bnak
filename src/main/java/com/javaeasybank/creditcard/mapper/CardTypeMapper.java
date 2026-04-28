@@ -4,12 +4,13 @@ import java.util.List;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingTarget;
+import org.mapstruct.ReportingPolicy;
 
 import com.javaeasybank.creditcard.dto.CardTypeRequestDto;
 import com.javaeasybank.creditcard.dto.CardTypeResponseDto;
 import com.javaeasybank.creditcard.entity.CardType;
 
-@Mapper(componentModel = "spring",config = CentralMapperConfig.class)
+@Mapper(componentModel = "spring", config = CentralMapperConfig.class, unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface CardTypeMapper {
     
     CardTypeResponseDto toDto(CardType entity);
