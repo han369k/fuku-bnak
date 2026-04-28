@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -139,9 +140,80 @@ public class AccountService {
                 .map(AccountResponse::fromEntity);
     }
 
+    /**
+     * 變更帳戶狀態。
+     * 依據合法的狀態流轉規則進行驗證，不合法的轉換將被拒絕。
+     *
+     * 合法轉換:
+     *   PENDING → ACTIVE
+     *   ACTIVE → FROZEN, DORMANT, CLOSED
+     *   FROZEN → ACTIVE, CLOSED
+     *   DORMANT → ACTIVE, CLOSED
+     *
+     * @param accountNumber 帳號
+     * @param newStatus 目標狀態
+     * @return 更新後的帳戶響應
+     */
+    @Transactional
+    public AccountResponse updateAccountStatus(String accountNumber, AccountStatus newStatus) {
+        Account account = accountRepository.findById(accountNumber)
+                .orElseThrow(() -> new AccountException("ACCOUNT_NOT_FOUND", "Account not found: " + accountNumber));
+
+        AccountStatus currentStatus = account.getStatus();
+
+        if (currentStatus == newStatus) {
+            throw new AccountException("STATUS_UNCHANGED", "Account is already in " + newStatus + " status");
+        }
+
+        if (!isValidStatusTransition(currentStatus, newStatus)) {
+            throw new AccountException("INVALID_STATUS_TRANSITION",
+                    "Cannot change status from " + currentStatus + " to " + newStatus);
+        }
+
+        // 凍結連動：如果目標狀態是 FROZEN，自動凍結同客戶下所有 ACTIVE 帳戶
+        if (newStatus == AccountStatus.FROZEN) {
+            List<Account> customerAccounts = accountRepository.findAllByCustomerId(account.getCustomerId());
+            for (Account acc : customerAccounts) {
+                if (!acc.getAccountNumber().equals(accountNumber) && acc.getStatus() == AccountStatus.ACTIVE) {
+                    acc.setStatus(AccountStatus.FROZEN);
+                    accountRepository.save(acc);
+                    log.info("Account {} frozen (linked freeze from {})", acc.getAccountNumber(), accountNumber);
+                }
+            }
+        }
+
+        account.setStatus(newStatus);
+        Account updated = accountRepository.save(account);
+        log.info("Account {} status changed: {} → {}", accountNumber, currentStatus, newStatus);
+        return AccountResponse.fromEntity(updated);
+    }
+
     // ==========================================
     // Private Helper Methods
     // ==========================================
+
+    /**
+     * 驗證帳戶狀態轉換是否合法。
+     * 依據開發文件定義的狀態機:
+     *   PENDING → ACTIVE
+     *   ACTIVE → FROZEN, DORMANT, CLOSED
+     *   FROZEN → ACTIVE, CLOSED
+     *   DORMANT → ACTIVE, CLOSED
+     *   CLOSED → (不可轉換)
+     *
+     * @param from 目前狀態
+     * @param to 目標狀態
+     * @return 合法回傳 true，否則 false
+     */
+    private boolean isValidStatusTransition(AccountStatus from, AccountStatus to) {
+        return switch (from) {
+            case PENDING -> to == AccountStatus.ACTIVE;
+            case ACTIVE -> to == AccountStatus.FROZEN || to == AccountStatus.DORMANT || to == AccountStatus.CLOSED;
+            case FROZEN -> to == AccountStatus.ACTIVE || to == AccountStatus.CLOSED;
+            case DORMANT -> to == AccountStatus.ACTIVE || to == AccountStatus.CLOSED;
+            case CLOSED -> false;
+        };
+    }
 
     /**
      * 執行客戶的 KYC 驗證。
@@ -200,4 +272,6 @@ public class AccountService {
         }
         // TIME_DEPOSIT(定存) 和 LOAN(貸款): 不檢查重複，可無限開
     }
+
+
 }

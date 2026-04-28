@@ -77,3 +77,10 @@ export function getTransLogsByCustomerIdAndDateRange(customerId, startDate, endD
     params: { startDate, endDate, page, size },
   })
 }
+
+// 變更帳戶狀態
+export function updateAccountStatus(accountNumber, newStatus) {
+  return api.patch(`/api/accounts/${accountNumber}/status`, null, {
+    params: { newStatus },
+  })
+}
