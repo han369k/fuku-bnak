@@ -18,7 +18,8 @@ target/
 *.iws
 *.iml
 *.ipr
-*.swp
+out/
+rebel.xml
 
 ### Eclipse
 .settings/
@@ -51,8 +52,15 @@ build/
 ### VS Code ###
 .vscode/
 
-# === Build ===
-target/
-build/
-*.jar
-*.war
+# Node.js
+node_modules/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.eslintcache
+.vite/
+
+# Log files
+*.log
+logs/
