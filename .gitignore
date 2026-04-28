@@ -14,10 +14,11 @@ target/
 .sts4-cache
 
 ### IntelliJ IDEA ###
-.idea
+.idea/
 *.iws
 *.iml
 *.ipr
+*.swp
 
 ### Eclipse
 .settings/
@@ -49,3 +50,9 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# === Build ===
+target/
+build/
+*.jar
+*.war
