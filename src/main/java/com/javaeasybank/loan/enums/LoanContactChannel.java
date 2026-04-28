@@ -1,4 +1,4 @@
-package com.javaeasybank.loan.status;
+package com.javaeasybank.loan.enums;
 
 public enum LoanContactChannel {
     PHONE,
