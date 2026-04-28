@@ -1,4 +1,4 @@
-package com.javaeasybank.loan.enums;
+package com.javaeasybank.loan.status;
 
 public enum LoanReviewStatus {
     DRAFT,      // 草稿

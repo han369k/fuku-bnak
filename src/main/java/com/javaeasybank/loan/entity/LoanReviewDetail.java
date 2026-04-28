@@ -1,6 +1,6 @@
 package com.javaeasybank.loan.entity;
 
-import com.javaeasybank.loan.enums.LoanReviewStatus;
+import com.javaeasybank.loan.status.LoanReviewStatus;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
