@@ -1,7 +1,7 @@
 package com.javaeasybank.loan.entity;
 
-import com.javaeasybank.loan.status.LoanContactChannel;
-import com.javaeasybank.loan.status.LoanContactStatus;
+import com.javaeasybank.loan.enums.LoanContactChannel;
+import com.javaeasybank.loan.enums.LoanContactStatus;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
