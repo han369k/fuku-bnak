@@ -8,9 +8,6 @@ import java.util.List;
 
 public interface LoanApplicationRepository extends JpaRepository<LoanApplication, String> {
 
-    // 查全部，按建立時間降序
-    List<LoanApplication> findAllByOrderByCreateTimeDesc();
-
     // 依狀態篩選，按建立時間降序
-    List<LoanApplication> findByApplicationStatusInOrderByCreateTimeDesc(List<LoanApplicationStatus> statusList);
+    List<LoanApplication> findByApplicationStatusOrderByCreateTimeDesc(LoanApplicationStatus status);
 }
