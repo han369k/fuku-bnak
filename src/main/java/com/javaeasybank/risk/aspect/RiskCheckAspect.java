@@ -1,42 +1,61 @@
 package com.javaeasybank.risk.aspect;
 
-import com.javaeasybank.common.exception.BusinessException;
 import com.javaeasybank.risk.annotation.RiskCheck;
-import org.aspectj.lang.JoinPoint;
+import com.javaeasybank.risk.core.RiskTarget;
+import com.javaeasybank.risk.repository.RiskEventLogRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Before;
 import org.springframework.stereotype.Component;
+
+import java.math.BigDecimal;
 
 @Aspect // 宣告這是一個切面 (攔截器)
 @Component
+@Slf4j
+@RequiredArgsConstructor
 public class RiskCheckAspect {
 
     // @Before 代表在目標方法執行「之前」觸發
     // "@annotation(riskCheck)" 代表攔截所有標有 @RiskCheck 的方法，並把標註物件傳進來
-    @Before("@annotation(riskCheck)")
-    public void doRiskCheck(JoinPoint join, RiskCheck riskCheck) {
+    private final RiskEventLogRepository relRepos;
 
-        System.out.println("=====================================");
-        System.out.println("🚨 風控攔截到請求了！");
-        System.out.println("👉 觸發場景: " + riskCheck.scene());
+    @Around("@annotation(riskCheck)")
+    public Object monitorRisk(ProceedingJoinPoint joinPoint, RiskCheck riskCheck) throws Throwable {
 
-        // --- 👇 開始模擬阻擋邏輯 👇 ---
+        // 1. 取得你定義的場景 (例如 "TRANSFER")
+        String scene = riskCheck.scene();
 
-        // 假設我們從某處取得了當前申請人的 ID (這裡先寫死模擬)
-        String currentUserId = "user_999";
+        // 2. 取得該方法傳入的所有參數
+        Object[] args = joinPoint.getArgs();
 
-        // 模擬規則：如果帳號是 user_999，就是黑名單
-        if ("user_999".equals(currentUserId)) {
-            System.out.println("❌ 警告：觸發黑名單規則，準備中斷請求！");
-            System.out.println("=====================================");
+        // 3. 尋找是否有實作 RiskTarget 介面的 Request DTO
+        for (Object arg : args) {
+            if (arg instanceof RiskTarget) {
+                RiskTarget target = (RiskTarget) arg;
 
-            // 🚀 關鍵這行！拋出例外，後面的程式碼全部不執行
-            throw new BusinessException("風控拒絕：您是高風險黑名單用戶！");
+                String identifier = target.getTargetIdentifier();
+                BigDecimal amount = target.getAmount();
+
+                log.info("【風控引擎啟動】場景: {}, 目標: {}, 金額: {}", scene, identifier, amount);
+
+                // --- 4. 你的風控規則 (Day 1 測試版：單筆不可大於 50 萬) ---
+                if (amount != null && amount.compareTo(new BigDecimal("500000")) > 0) {
+
+                    log.warn("【風控攔截】觸發大額交易限制！");
+
+                    // 寫入資料庫
+                    //saveRiskLog(scene, identifier, "HIGH", "BLOCKED", "單筆交易金額超過 50 萬", amount);
+
+                    // 直接拋出 Exception 擋下交易，組員的轉帳代碼絕對不會被執行！
+                    throw new RuntimeException("風控拒絕：單筆金額超過上限！");
+                }
+            }
         }
 
-        // --- 👆 結束模擬阻擋邏輯 👆 ---
-
-        System.out.println("✅ 風控檢查通過，放行！");
-        System.out.println("=====================================");
+        // 5. 如果檢查都沒問題，放行讓程式繼續執行
+        return joinPoint.proceed();
     }
 }
