@@ -9,6 +9,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 /**
  * 帳戶資料庫操作接口。
  * 繼承 JpaRepository，提供基本的 CRUD 操作以及自定義查詢方法。
@@ -72,4 +74,12 @@ public interface AccountRepository extends JpaRepository<Account, String> {
      * @return 包含帳戶實體的分頁列表。
      */
     Page<Account> findAllByOrderByCreatedAtDesc(Pageable pageable);
+
+    /**
+     * 根據客戶 ID 查詢該客戶名下所有帳戶（不分頁）。
+     *
+     * @param customerId 客戶 ID。
+     * @return 帳戶列表。
+     */
+    List<Account> findAllByCustomerId(Long customerId);
 }

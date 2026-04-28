@@ -126,4 +126,20 @@ public class AccountController {
         PageResponse<AccountResponse> pageResponse = PageResponse.of(result.getContent(), page, size, result.getTotalElements());
         return ResponseEntity.ok(ApiResponse.success(pageResponse));
     }
+
+    /**
+     * 變更帳戶狀態。
+     *
+     * @param accountNumber 帳號。
+     * @param newStatus 目標狀態。
+     * @return 包含更新後帳戶響應的 ResponseEntity。
+     */
+    @PatchMapping("/{accountNumber}/status")
+    public ResponseEntity<ApiResponse<AccountResponse>> updateAccountStatus(
+            @PathVariable String accountNumber,
+            @RequestParam AccountStatus newStatus) {
+        log.info("Received request to update account {} status to {}", accountNumber, newStatus);
+        AccountResponse response = accountService.updateAccountStatus(accountNumber, newStatus);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
 }
