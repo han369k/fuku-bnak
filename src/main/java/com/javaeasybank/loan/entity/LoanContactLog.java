@@ -3,11 +3,17 @@ package com.javaeasybank.loan.entity;
 import com.javaeasybank.loan.enums.LoanContactChannel;
 import com.javaeasybank.loan.enums.LoanContactStatus;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "LOAN_CONTACT_LOG")
+@Getter
+@Setter
+@NoArgsConstructor
 public class LoanContactLog {
 
     @Id
