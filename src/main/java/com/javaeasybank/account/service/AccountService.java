@@ -1,7 +1,7 @@
 package com.javaeasybank.account.service;
 
-import com.javaeasybank.account.dto.AccountCreateRequest;
-import com.javaeasybank.account.dto.AccountResponse;
+import com.javaeasybank.account.dto.request.AccountCreateRequest;
+import com.javaeasybank.account.dto.request.AccountResponse;
 import com.javaeasybank.account.entity.Account;
 import com.javaeasybank.account.enums.AccountStatus;
 import com.javaeasybank.account.enums.AccountType;

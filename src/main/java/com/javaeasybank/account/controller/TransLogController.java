@@ -1,6 +1,6 @@
 package com.javaeasybank.account.controller;
 
-import com.javaeasybank.account.dto.TransLogResponse;
+import com.javaeasybank.account.dto.response.TransLogResponse;
 import com.javaeasybank.account.service.TransLogService;
 import com.javaeasybank.common.dto.response.ApiResponse;
 import com.javaeasybank.common.dto.response.PageResponse;

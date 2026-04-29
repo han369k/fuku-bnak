@@ -1,4 +1,4 @@
-package com.javaeasybank.account.dto;
+package com.javaeasybank.account.dto.request;
 
 import com.javaeasybank.account.entity.Account;
 import com.javaeasybank.account.enums.AccountStatus;
