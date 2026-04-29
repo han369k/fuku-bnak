@@ -10,7 +10,7 @@ public interface RiskEventLogRepository extends JpaRepository<RiskEventLog,Long>
 
     List<RiskEventLog> findByEventType(String eventType);
 
-    List<RiskEventLog> findByActionTaken(String ActionTaken);
+    List<RiskEventLog> findByActionTaken(String actionTaken);
 
     List<RiskEventLog> findByCreatedAt(LocalDateTime createdAt);
 }

@@ -4,6 +4,8 @@ import com.javaeasybank.risk.dto.RiskEventResponse;
 import com.javaeasybank.risk.entity.RiskEventLog;
 import com.javaeasybank.risk.repository.RiskEventLogRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -14,9 +16,22 @@ public class RiskEventService {
 
     private final RiskEventLogRepository riskEventLogRepository;
 
-    public List<RiskEventResponse> findAll() {
-        List<RiskEventLog> riskEventLogs = riskEventLogRepository.findAll();
-        return riskEventLogs
+    public Page<RiskEventResponse> findAll(Pageable pageable) {
+        return riskEventLogRepository.findAll(pageable)
+                .map(this::toDto);
+    }
+
+    // 根據事件類型查詢
+    public List<RiskEventResponse> findByEventType(String eventType) {
+        return riskEventLogRepository.findByEventType(eventType)
+                .stream()
+                .map(this::toDto)
+                .toList();
+    }
+
+    // 根據採取的行動查詢 (補上你的 Repository 方法)
+    public List<RiskEventResponse> findByActionTaken(String actionTaken) {
+        return riskEventLogRepository.findByActionTaken(actionTaken)
                 .stream()
                 .map(this::toDto)
                 .toList();
