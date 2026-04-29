@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 
 import lombok.Data;
 @Data
-public class CardTypeCreateRequest {
+public class CardTypeRequestDto {
 
 	private String cardTypeName;
     private String brand;
