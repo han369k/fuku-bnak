@@ -1,4 +1,4 @@
-package com.javaeasybank.account.dto;
+package com.javaeasybank.account.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

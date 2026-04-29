@@ -1,7 +1,7 @@
 package com.javaeasybank.account.controller;
 
-import com.javaeasybank.account.dto.TransferRequest;
-import com.javaeasybank.account.dto.TransferResponse;
+import com.javaeasybank.account.dto.request.TransferRequest;
+import com.javaeasybank.account.dto.response.TransferResponse;
 import com.javaeasybank.account.service.TransferService;
 import com.javaeasybank.common.dto.response.ApiResponse;
 import jakarta.validation.Valid;

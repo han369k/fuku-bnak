@@ -1,4 +1,4 @@
-package com.javaeasybank.account.dto;
+package com.javaeasybank.account.dto.request;
 
 import com.javaeasybank.account.enums.AccountType;
 import com.javaeasybank.account.enums.Currency;

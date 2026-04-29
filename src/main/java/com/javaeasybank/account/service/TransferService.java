@@ -1,7 +1,7 @@
 package com.javaeasybank.account.service;
 
-import com.javaeasybank.account.dto.TransferRequest;
-import com.javaeasybank.account.dto.TransferResponse;
+import com.javaeasybank.account.dto.request.TransferRequest;
+import com.javaeasybank.account.dto.response.TransferResponse;
 import com.javaeasybank.account.entity.Account;
 import com.javaeasybank.account.entity.TransLog;
 import com.javaeasybank.account.enums.AccountStatus;
