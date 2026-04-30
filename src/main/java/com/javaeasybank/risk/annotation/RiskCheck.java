@@ -1,6 +1,6 @@
 package com.javaeasybank.risk.annotation;
 
-import com.javaeasybank.risk.core.RiskScene;
+import com.javaeasybank.risk.core.enums.RiskScene;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

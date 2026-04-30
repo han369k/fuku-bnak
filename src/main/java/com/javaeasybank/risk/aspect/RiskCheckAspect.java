@@ -2,7 +2,7 @@ package com.javaeasybank.risk.aspect;
 
 import com.javaeasybank.risk.annotation.RiskCheck;
 import com.javaeasybank.risk.core.RiskHandler;
-import com.javaeasybank.risk.core.RiskScene;
+import com.javaeasybank.risk.core.enums.RiskScene;
 import com.javaeasybank.risk.core.RiskTarget;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;

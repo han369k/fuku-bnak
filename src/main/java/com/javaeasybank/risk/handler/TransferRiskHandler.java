@@ -1,7 +1,7 @@
 package com.javaeasybank.risk.handler;
 
 import com.javaeasybank.risk.core.RiskHandler;
-import com.javaeasybank.risk.core.RiskScene;
+import com.javaeasybank.risk.core.enums.RiskScene;
 
 import java.math.BigDecimal;
 

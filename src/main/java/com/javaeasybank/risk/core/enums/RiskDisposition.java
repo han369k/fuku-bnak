@@ -1,4 +1,4 @@
-package com.javaeasybank.risk.core;
+package com.javaeasybank.risk.core.enums;
 
 public enum RiskDisposition {
     PASS,           // 正常放行

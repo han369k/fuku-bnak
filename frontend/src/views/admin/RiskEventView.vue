@@ -1,37 +1,41 @@
 <template>
   <div style="padding: 20px">
-    <a-select
-      v-model:value="filterParams.eventType"
-      placeholder="事件類型"
-      style="width: 150px"
-      allow-clear
-    >
-      <a-select-option value="LOAN">貸款</a-select-option>
-      <a-select-option value="TRANSFER">轉帳</a-select-option>
-      <a-select-option value="USER_LOGIN">登入</a-select-option>
-      <a-select-option value="CREDIT_CARD">信用卡</a-select-option>
-    </a-select>
-    <a-select
-      v-model:value="filterParams.riskLevel"
-      placeholder="風險等級"
-      style="width: 150px"
-      allow-clear
-    >
-      <a-select-option value="LOW">低風險</a-select-option>
-      <a-select-option value="MEDIUM">中風險</a-select-option>
-      <a-select-option value="HIGH">高風險</a-select-option>
-    </a-select>
-    <a-select
-      v-model:value="filterParams.actionTaken"
-      placeholder="採取行動"
-      style="width: 150px"
-      allow-clear
-    >
-      <a-select-option value="PASSED">通過</a-select-option>
-      <a-select-option value="REJECTED">拒絕</a-select-option>
-      <a-select-option value="MANUAL_REVIEW">人工審核</a-select-option>
-    </a-select>
-    <a-button type="primary" @click="loadData">查詢</a-button>
+    <h2>風控事件查詢</h2>
+    <div style="margin-bottom: 16px; display: flex; gap: 8px; align-items: center">
+      <a-select
+        v-model:value="filterParams.eventType"
+        placeholder="事件類型"
+        style="width: 150px"
+        allow-clear
+      >
+        <a-select-option value="LOAN">貸款</a-select-option>
+        <a-select-option value="TRANSFER">轉帳</a-select-option>
+        <a-select-option value="USER_LOGIN">登入</a-select-option>
+        <a-select-option value="CREDIT_CARD">信用卡</a-select-option>
+      </a-select>
+      <a-select
+        v-model:value="filterParams.riskLevel"
+        placeholder="風險等級"
+        style="width: 150px"
+        allow-clear
+      >
+        <a-select-option value="LOW">低風險</a-select-option>
+        <a-select-option value="MEDIUM">中風險</a-select-option>
+        <a-select-option value="HIGH">高風險</a-select-option>
+        <a-select-option value="SUSPENDED">拒絕往來/凍結</a-select-option>
+      </a-select>
+      <a-select
+        v-model:value="filterParams.actionTaken"
+        placeholder="採取行動"
+        style="width: 150px"
+        allow-clear
+      >
+        <a-select-option value="PASSED">通過</a-select-option>
+        <a-select-option value="REJECTED">拒絕</a-select-option>
+        <a-select-option value="MANUAL_REVIEW">人工審核</a-select-option>
+      </a-select>
+      <a-button type="primary" @click="loadData">查詢</a-button>
+    </div>
     <a-table
       :columns="columns"
       :data-source="dataSource"
@@ -57,7 +61,7 @@ const filterParams = reactive({
 })
 
 const columns = [
-  { title: 'ID', dataIndex: 'id' },
+  { title: 'ID', dataIndex: 'logId' },
   { title: '事件類型', dataIndex: 'eventType' },
   { title: '目標識別碼', dataIndex: 'targetIdentifier' },
   { title: '風險等級', dataIndex: 'riskLevel' },
