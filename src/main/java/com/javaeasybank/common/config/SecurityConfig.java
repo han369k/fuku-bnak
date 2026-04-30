@@ -1,5 +1,7 @@
 package com.javaeasybank.common.config;
 
+import java.util.List;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -10,11 +12,13 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 /**
  * Spring Security 設定（階段二：取代 SessionUtil）
- * 
- * 重點：
+ * * 重點：
  * 1. @EnableMethodSecurity → 啟用 @PreAuthorize 註解
  * 2. /api/auth/login 和 /api/auth/logout → 不用登入就能打
  * 3. 其餘所有 /api/** → 必須登入才能打
@@ -28,8 +32,16 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+            // 關閉 CSRF 保護
+            // 原因：CSRF 是針對瀏覽器 Cookie 的攻擊，
+            // 我們用 Session + JSON API，前端用 axios 發請求，
+            // 不是傳統的 HTML form submit，不需要這個保護
             .csrf(csrf -> csrf.disable())
-            .cors(cors -> cors.configure(http))
+            
+            // 開啟 CORS，Spring Security 會自動去找底下名為 corsConfigurationSource 的 Bean
+            .cors(cors -> {})
+            
+            // 路由權限設定
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/login").permitAll()   // 登入不需驗證
                 .requestMatchers("/api/auth/logout").permitAll()  // 登出不需驗證
@@ -58,5 +70,23 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(
             AuthenticationConfiguration authConfig) throws Exception {
         return authConfig.getAuthenticationManager();
+    }
+
+    /**
+     * 真正的 CORS 設定在這
+     */
+    @Bean
+    CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+
+        config.setAllowedOrigins(List.of("http://localhost:5173"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+
+        return source;
     }
 }
