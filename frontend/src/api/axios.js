@@ -1,9 +1,10 @@
 import axios from 'axios'
 
+export const BASE_URL = 'http://localhost:8080'
+
 // 建立一個 axios 實例，統一設定後端 API 的基礎 URL
 const api = axios.create({
-  baseURL: 'http://localhost:8080',
-  withCredentials: true, // 跨域請求攜帶 Cookie，Session 才能正常運作
+  baseURL: BASE_URL,
 })
 
 export default api
