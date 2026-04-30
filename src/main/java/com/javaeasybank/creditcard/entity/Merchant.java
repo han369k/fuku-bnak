@@ -1,5 +1,7 @@
 package com.javaeasybank.creditcard.entity;
 
+import com.javaeasybank.creditcard.enums.MerchantCategory;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -24,7 +26,7 @@ public class Merchant {
 
     private String merchantName;
     @Enumerated(EnumType.STRING)
-    private String merchantCategory;
+    private MerchantCategory merchantCategory;
 //    channel_id NVARCHAR(50),先拿掉
 //    channel_secret NVARCHAR(100),
 
