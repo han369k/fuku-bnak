@@ -7,6 +7,7 @@ import com.javaeasybank.auth.repository.AuthEmpRepository;
 import com.javaeasybank.auth.repository.AuthRoleRepository;
 import com.javaeasybank.common.exception.BusinessException;
 import org.springframework.beans.BeanUtils;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -18,28 +19,24 @@ public class AuthEmpServiceImpl implements AuthEmpService {
 
     private final AuthEmpRepository authEmpRepository;
     private final AuthRoleRepository authRoleRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public AuthEmpServiceImpl(AuthEmpRepository authEmpRepository,
-                              AuthRoleRepository authRoleRepository) {
+                              AuthRoleRepository authRoleRepository,
+                              PasswordEncoder passwordEncoder) {
         this.authEmpRepository = authEmpRepository;
         this.authRoleRepository = authRoleRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     // ===========================
-    // 登入（所有 ACTIVE 員工都能登入）
+    // 登入（密碼驗證已由 AuthenticationManager 在 Controller 完成）
+    // 這裡只做：更新最後登入時間 + 回傳員工資訊
     // ===========================
     @Override
     public AuthDto.AuthEmpResponse login(AuthDto.LoginRequest request) {
         AuthEmp emp = authEmpRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new BusinessException("帳號或密碼錯誤"));
-
-        if (!"ACTIVE".equals(emp.getStatus())) {
-            throw new BusinessException("此帳號已被停用或鎖定");
-        }
-
-        if (!"123456".equals(request.getPassword()) && !emp.getPasswordHash().contains("dummyhash")) {
-            throw new BusinessException("帳號或密碼錯誤");
-        }
 
         emp.setLastLoginDate(LocalDateTime.now());
         authEmpRepository.save(emp);
@@ -75,7 +72,9 @@ public class AuthEmpServiceImpl implements AuthEmpService {
 
         AuthEmp emp = new AuthEmp();
         BeanUtils.copyProperties(request, emp);
-        emp.setPasswordHash("$2a$10$dummyhash...");
+        // 用 BCrypt 加密密碼（預設密碼 123456）
+        String rawPassword = request.getPassword() != null ? request.getPassword() : "123456";
+        emp.setPasswordHash(passwordEncoder.encode(rawPassword));
         emp.setStatus("ACTIVE");
         if (emp.getPermissionExpire() == null) {
             emp.setPermissionExpire(LocalDateTime.now().plusYears(1));
@@ -142,7 +141,7 @@ public class AuthEmpServiceImpl implements AuthEmpService {
             emp.setDeptId(d[2]);
             emp.setRoleId(d[3]);
             emp.setEmail(d[4]);
-            emp.setPasswordHash("$2a$10$dummyhash...");
+            emp.setPasswordHash(passwordEncoder.encode("123456"));
             emp.setStatus("ACTIVE");
             emp.setPermissionExpire(LocalDateTime.now().plusYears(1));
             authEmpRepository.save(emp);
