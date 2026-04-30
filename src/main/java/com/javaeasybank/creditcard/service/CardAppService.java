@@ -1,7 +1,7 @@
 package com.javaeasybank.creditcard.service;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,8 +27,10 @@ public class CardAppService {
 
 
 	// 查全部
-    public List<CardApplicationResponseDto> findAll() {
-        return cardApplicationMapper.toDtoList(cardAppRepository.findAll());
+    public Page<CardApplicationResponseDto> findAll(Pageable pageable) {
+        return cardAppRepository.findAll(pageable)
+            .map(cardApplicationMapper::toDto);
+
     }
 
     // 查單筆（DTO）
