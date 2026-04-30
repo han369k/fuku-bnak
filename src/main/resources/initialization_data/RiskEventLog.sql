@@ -7,7 +7,7 @@ CREATE TABLE RiskEventLog (
     
     -- 2. 風控判定結果 (What happened)
     RiskLevel VARCHAR(20) NOT NULL,               -- 風險等級：'LOW' (低), 'MEDIUM' (中), 'HIGH' (高)
-    ActionTaken VARCHAR(50) NOT NULL,             -- 系統處置：'PASSED' (放行), 'BLOCKED' (攔截), 'MANUAL_REVIEW' (人工審核)
+    ActionTaken VARCHAR(50) NOT NULL,             -- 系統處置：'PASSED' (放行), 'REJECTED' (拒絕), 'MANUAL_REVIEW' (人工審核)
     TriggerReason NVARCHAR(500),                  -- 觸發原因 (使用 NVARCHAR 支援中文，例如："單筆金額超過50萬")
     
     -- 3. 交易細節 (Details - 允許 NULL，因為有些風控不涉及金額，例如異常登入)
@@ -17,6 +17,6 @@ CREATE TABLE RiskEventLog (
     CreatedAt DATETIME DEFAULT GETDATE() NOT NULL -- 發生時間
 );
 
--- 建立索引 (Index) 讓你的「風控儀表板」查詢更快 (加分項)
+-- 建立索引 (Index)
 CREATE INDEX IX_RiskEvent_EventType ON RiskEventLog(EventType);
 CREATE INDEX IX_RiskEvent_CreatedAt ON RiskEventLog(CreatedAt DESC);

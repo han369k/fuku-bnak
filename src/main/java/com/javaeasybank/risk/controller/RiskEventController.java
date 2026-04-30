@@ -32,9 +32,10 @@ public class RiskEventController {
     public ResponseEntity<Page<RiskEventResponse>> search(
             @RequestParam(required = false) String eventType,
             @RequestParam(required = false) String actionTaken,
-            @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.DESC) Pageable pageable) {
+            @RequestParam(required = false) String riskLevel,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
         // 呼叫 Service 進行查詢
-        return ResponseEntity.ok(riskEventService.search(eventType, actionTaken, pageable));
+        return ResponseEntity.ok(riskEventService.search(eventType, actionTaken, riskLevel, pageable));
     }
 }
