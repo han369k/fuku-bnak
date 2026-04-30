@@ -35,7 +35,10 @@
           <FileTextOutlined />
           <span>信用卡申請管理</span>
         </a-menu-item>
-        
+        <a-menu-item key="admin-cards" @click="$router.push('/admin/cards')">
+          <FileTextOutlined />
+          <span>卡片管理</span>
+        </a-menu-item>
           
 
       </a-menu>

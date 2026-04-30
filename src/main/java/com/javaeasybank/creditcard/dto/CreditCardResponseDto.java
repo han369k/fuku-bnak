@@ -16,7 +16,7 @@ public class CreditCardResponseDto {
 
 	private Integer cardId;
     private String cardNumber;
-    private String cardTypeName;
+    private CardTypeResponseDto cardType;
     private BigDecimal creditLimit;
     private BigDecimal currentBalance;
     private CardStatus status;

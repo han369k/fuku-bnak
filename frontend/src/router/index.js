@@ -60,6 +60,11 @@ const router = createRouter({
           path:'/admin/card-applications/:id',
           component: () => import('../views/admin/CardApplicationDetailView.vue'),
 
+        },
+        {
+          path: 'cards',
+          name: 'admin-cards',
+          component: () => import('../views/admin/CardView.vue'),
         }
 
       ],
