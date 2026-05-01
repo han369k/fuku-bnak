@@ -42,7 +42,10 @@ public class CardTransaction {
     @Column(length = 200)
     private String description;
     
-    private Integer refTxnId;
+    //退款沖銷用
+    @ManyToOne
+    @JoinColumn(name = "ref_txn_id")
+    private CardTransaction refTxn;
 
     @ManyToOne
     @JoinColumn(name = "card_id")
@@ -52,20 +55,17 @@ public class CardTransaction {
     @JoinColumn(name = "merchant_id")
     private Merchant merchant;
     
-    @ManyToOne
-    @JoinColumn(name = "bill_id")
-    private CardBill bill;
+    // @ManyToOne
+    // @JoinColumn(name = "bill_id")
+    // private CardBill bill;
     
     //預設交易時間
     @PrePersist
     public void prePersist() {
+        if (this.txnDate == null) {
         this.txnDate = LocalDateTime.now();
     }
+
     
-    
-    
-    
-    
-    
-    
+}
 }

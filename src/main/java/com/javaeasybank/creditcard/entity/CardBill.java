@@ -48,12 +48,9 @@ public class CardBill {
     @ManyToOne
     @JoinColumn(name = "card_id")
     private CreditCard card;
-    //退款沖銷用
-    @ManyToOne
-    @JoinColumn(name = "ref_txn_id")
-    private CardTransaction refTxn;
     
-    @OneToMany(mappedBy = "bill")
-    private List<CardTransaction> transactions;
+    
+    // @OneToMany(mappedBy = "bill")
+    // private List<CardTransaction> transactions;
     
 }

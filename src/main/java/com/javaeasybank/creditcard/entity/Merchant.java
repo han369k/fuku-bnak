@@ -21,7 +21,6 @@ import lombok.Setter;
 public class Merchant {
 
 	@Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer merchantId;
 
     private String merchantName;

@@ -21,8 +21,8 @@ GO
 
 -- 客戶資料表
 CREATE TABLE [CUSTOMER] (
-    customer_id INT PRIMARY KEY,           -- 客戶ID（主鍵）
-   name NVARCHAR(50) NOT NULL             -- 客戶姓名
+   customer_id INT PRIMARY KEY,           -- 客戶ID（主鍵）
+    name NVARCHAR(50) NOT NULL             -- 客戶姓名
 );
 
 -- 卡別資料表
@@ -33,13 +33,14 @@ CREATE TABLE [CARD_TYPE] (
     annual_fee DECIMAL(10,2),                   -- 年費
     cashback_rate DECIMAL(5,2),                 -- 回饋比例（%）
     card_image_url VARCHAR(255)                 -- 卡片圖片URL
+    
 );
 
 -- 商家資料表
 CREATE TABLE [MERCHANT] (
-    merchant_id INT IDENTITY(1,1) PRIMARY KEY,  -- 商家ID（主鍵）
-    merchant_name NVARCHAR(100) NOT NULL,       -- 商家名稱
-    merchant_category NVARCHAR(50)              -- 商家分類（餐飲 / 交通 / 購物 / 娛樂）
+    merchant_id INT PRIMARY KEY,  -- 商家ID（主鍵）
+    merchant_name NVARCHAR(100) not null,       -- 商家名稱
+    merchant_category NVARCHAR(50) not null              -- 商家分類（餐飲 / 交通 / 購物 / 娛樂）
 );
 
 -- 信用卡申請主表
@@ -50,6 +51,7 @@ CREATE TABLE [CARD_APPLICATION] (
     status NVARCHAR(20) DEFAULT 'PENDING',        -- 申請狀態（PENDING / APPROVED / REJECTED / PARTIAL）
     remark NVARCHAR(200),                         -- 備註（補件說明 / 人工審核內容）
     FOREIGN KEY (customer_id) REFERENCES [CUSTOMER](customer_id)
+    
 );
 
 -- 信用卡申請明細（可一次申請多張卡）
@@ -78,26 +80,12 @@ CREATE TABLE [CREDIT_CARD] (
     current_balance DECIMAL(15,2) DEFAULT 0,    -- 已使用金額
     create_date DATETIME DEFAULT GETDATE(),     -- 開卡日期
     status NVARCHAR(20) CHECK (status IN ('ACTIVE','BLOCKED')), -- 卡片狀態
-    FOREIGN KEY (card_type_id) REFERENCES [CARD_TYPE](card_type_id)
-    -- 可加：application_item_id FK
-);
-
--- 信用卡交易紀錄
-CREATE TABLE [CREDIT_CARD_TRANSACTION] (
-    txn_id INT IDENTITY(1,1) PRIMARY KEY,       -- 交易ID（主鍵）
-    card_id INT NOT NULL,                       -- 信用卡ID
-    merchant_id INT NOT NULL,                   -- 商家ID
-    ref_txn_id INT NULL,                        -- 關聯交易（例如退款對應原交易）
-    txn_amount DECIMAL(15,2) NOT NULL,          -- 交易金額
-    txn_type NVARCHAR(20),                      -- 交易類型（PURCHASE / REFUND / PAYMENT）
-    txn_date DATETIME DEFAULT GETDATE(),        -- 交易時間
-    description NVARCHAR(200),                  -- 備註（交易說明）
-    FOREIGN KEY (card_id) REFERENCES [CREDIT_CARD](card_id),
-    FOREIGN KEY (merchant_id) REFERENCES [MERCHANT](merchant_id)
+    FOREIGN KEY (card_type_id) REFERENCES [CARD_TYPE](card_type_id),
+    FOREIGN KEY (application_item_id) REFERENCES CARD_APPLICATION_ITEM(item_id)
 );
 
 -- 信用卡帳單
-CREATE TABLE [CREDIT_CARD_BILL] (
+CREATE TABLE [CARD_BILL] (
     bill_id INT IDENTITY(1,1) PRIMARY KEY,      -- 帳單ID（主鍵）
     card_id INT NOT NULL,                       -- 信用卡ID
     billing_month VARCHAR(7),                   -- 帳單月份（YYYY-MM）
@@ -108,4 +96,19 @@ CREATE TABLE [CREDIT_CARD_BILL] (
     paid_amount DECIMAL(15,2),                  -- 已繳金額
     bill_status NVARCHAR(20),                   -- 帳單狀態（UNPAID / PARTIAL / PAID）
     FOREIGN KEY (card_id) REFERENCES [CREDIT_CARD](card_id)
+);
+-- 信用卡交易紀錄
+CREATE TABLE [CARD_TRANSACTION] (
+    txn_id INT IDENTITY(1,1) PRIMARY KEY,       -- 交易ID（主鍵）
+    card_id INT NOT NULL,                       -- 信用卡ID
+    merchant_id INT  NULL,                      -- 商家ID(可為null，退款用)
+    ref_txn_id INT NULL,                        -- 關聯交易（例如退款對應原交易）
+    txn_amount DECIMAL(15,2) NOT NULL,          -- 交易金額
+    txn_type NVARCHAR(20),                      -- 交易類型（PURCHASE / REFUND / PAYMENT）
+    txn_date DATETIME ,                         -- 交易時間
+    description NVARCHAR(200),                  -- 備註（交易說明）
+    FOREIGN KEY (card_id) REFERENCES [CREDIT_CARD](card_id),
+    FOREIGN KEY (merchant_id) REFERENCES [MERCHANT](merchant_id),
+    -- 自關聯 FK（退款）
+    FOREIGN KEY (ref_txn_id) REFERENCES CARD_TRANSACTION(txn_id)
 );
