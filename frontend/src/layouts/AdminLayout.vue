@@ -27,6 +27,10 @@
           <FileTextOutlined />
           <span>交易紀錄</span>
         </a-menu-item>
+        <a-menu-item key="admin-loan-applications" @click="$router.push('/admin/loan-applications')">
+          <FileTextOutlined />
+          <span>貸款申請管理</span>
+        </a-menu-item>
       </a-menu>
     </a-layout-sider>
 

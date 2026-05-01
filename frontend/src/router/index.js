@@ -55,7 +55,15 @@ const router = createRouter({
           //http://localhost:5173/admin/card-applications
           component: () => import('../views/admin/CardApplicationList.vue'),
         },
+        
+        // 貸款功能相關
+      {
+          path: 'loan-applications',
+          name: 'loan-applications',
+          //http://localhost:5173/admin/loan-applications
+          component: () => import('../views/admin/LoanApplicationView.vue'),
 
+        },
       ],
     },
 
