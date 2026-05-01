@@ -61,7 +61,7 @@ const router = createRouter({
           path: 'loan-apply',
           name: 'loan-apply',
           //http://localhost:5173/admin/loan-applications
-          component: () => import('../views/admin/LoanApplyView.vue'),
+          component: () => import('../views/user/LoanApplyView.vue'),
         },
         {
           path: 'loan-applications',

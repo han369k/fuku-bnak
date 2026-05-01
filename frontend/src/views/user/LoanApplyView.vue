@@ -1,9 +1,6 @@
 <template>
+  <!-- 貸款申請首頁 -->
   <div class="apply-page">
-    <!-- ══════════════════════════════════════════
-         STEP 0：入口卡片（由父層傳入 trigger，
-         或直接顯示在頁面上）
-    ══════════════════════════════════════════ -->
     <div v-if="step === 'entry'" class="entry-wrap">
       <div class="entry-card">
         <div class="entry-deco">🏦</div>
@@ -25,9 +22,7 @@
       </div>
     </div>
 
-    <!-- ══════════════════════════════════════════
-         STEP 1：選擇身份
-    ══════════════════════════════════════════ -->
+    <!-- 選擇身份 -->
     <div v-else-if="step === 'select'" class="step-wrap">
       <div class="step-header">
         <button class="back-btn" @click="step = 'entry'">← 返回</button>
@@ -258,26 +253,6 @@
                 <span class="rh-val">{{ estimatedMonthly }}</span>
               </div>
               <div class="rh-note">等額本息計算</div>
-            </div>
-
-            <!-- 計算公式說明 -->
-            <div class="rate-formula" v-if="computedRate !== null">
-              <div class="formula-title">📐 利率計算說明</div>
-              <div class="formula-row">
-                <span class="formula-label">年利率公式</span>
-                <span class="formula-val">基礎利率 + 期數加碼</span>
-              </div>
-              <div class="formula-row" v-if="rateRules.types[form.applyType]?.fixedRate">
-                <span class="formula-label">備注</span>
-                <span class="formula-val fixed-note">此類型為固定利率，期數不影響加碼</span>
-              </div>
-              <div class="formula-row">
-                <span class="formula-label">月還款公式</span>
-                <span class="formula-val formula-math">P × r(1+r)ⁿ / ((1+r)ⁿ−1)</span>
-              </div>
-              <div class="formula-vars">
-                <span>P = 本金　r = 月利率(年利率÷12)　n = 期數(月)</span>
-              </div>
             </div>
 
             <div class="rate-tips">
