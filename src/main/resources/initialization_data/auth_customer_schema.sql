@@ -71,7 +71,7 @@ Java Easy Bank 客戶模組 (Customer Module)
 CREATE TABLE customer_application (
     case_id VARCHAR(20) PRIMARY KEY,
     customer_id VARCHAR(20) NOT NULL,
-    cif CHAR(20) NULL,
+    cif VARCHAR(20) NULL,
     name NVARCHAR(50) NOT NULL,
     birthday DATE NOT NULL,
     gender CHAR(1) NOT NULL,
@@ -93,7 +93,7 @@ CREATE TABLE customer_application (
 -- [2] 正式客戶視圖
 CREATE TABLE customer_profile (
     customer_id VARCHAR(20) NOT NULL PRIMARY KEY, -- 預設建立叢集索引 (Clustered Index)
-    cif CHAR(20) NOT NULL UNIQUE,
+    cif VARCHAR(20) NOT NULL UNIQUE,
     id_number VARCHAR(20) NOT NULL UNIQUE,
     name NVARCHAR(50) NOT NULL,
     birthday DATE NOT NULL,
