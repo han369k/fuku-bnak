@@ -154,6 +154,7 @@ const transactionTypeMap = {
   INTEREST: '利息',
   LOAN_DISBURSEMENT: '貸款撥款',
   LOAN_REPAYMENT: '貸款還款',
+  REVERSAL: '沖正',
 }
 
 const statusMap = {
