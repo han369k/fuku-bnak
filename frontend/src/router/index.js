@@ -59,7 +59,6 @@ const router = createRouter({
           name:'admin-card-application-detail',
           path:'/admin/card-applications/:id',
           component: () => import('../views/admin/CardApplicationDetailView.vue'),
-
         },
         {
           path: 'cards',

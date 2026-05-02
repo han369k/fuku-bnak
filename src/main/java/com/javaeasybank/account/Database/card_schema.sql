@@ -1,29 +1,10 @@
-/* =========================
-   1️⃣ 重建資料庫（最乾淨）
-   ========================= */
-USE master;
-IF DB_ID('java_easy_bank') IS NOT NULL
-BEGIN
-    ALTER DATABASE java_easy_bank SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
-    DROP DATABASE java_easy_bank;
-END
-GO
 
-CREATE DATABASE java_easy_bank;
-GO
-
-USE java_easy_bank;
-GO
-
-/* =========================
-   2️⃣ 建立資料表
-   ========================= */
 
 -- 客戶資料表
-CREATE TABLE [CUSTOMER] (
-   customer_id INT PRIMARY KEY,           -- 客戶ID（主鍵）
-    name NVARCHAR(50) NOT NULL             -- 客戶姓名
-);
+-- CREATE TABLE [CUSTOMER] (
+--    customer_id INT PRIMARY KEY,           -- 客戶ID（主鍵）
+--     name NVARCHAR(50) NOT NULL             -- 客戶姓名
+-- );
 
 -- 卡別資料表
 CREATE TABLE [CARD_TYPE] (

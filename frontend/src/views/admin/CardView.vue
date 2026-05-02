@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { message, Modal } from 'ant-design-vue'
 import { getCards, createCard, updateCard, deleteCard } from '@/api/card'
+import api from '@/api/axios'
 
 const cards = ref([])
 const loading = ref(false)
@@ -81,7 +82,7 @@ onMounted(() => {
 
       <!-- 卡片圖片 -->
       <template v-else-if="column.key === 'image'">
-        <img :src="record.cardType?.cardImageUrl" style="width: 80px" />
+        <img :src="`${api.defaults.baseURL}/${record.cardType?.cardImageUrl}`" style="width: 80px" />
       </template>
 
       <!-- 操作按鈕處理 -->
