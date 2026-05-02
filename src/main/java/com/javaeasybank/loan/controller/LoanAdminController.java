@@ -18,7 +18,7 @@ import java.util.List;
 
 // 行員端：管理入口
 @RestController
-@RequestMapping("/api/admin")
+@RequestMapping("/api/admin/loan-applications")
 public class LoanAdminController {
 
     @Autowired
@@ -27,11 +27,7 @@ public class LoanAdminController {
     // 依狀態查詢申請列表（預設 PENDING_CONTACT）
     @GetMapping
     public ResponseEntity<ApiResponse<List<LoanApplicationResponseDTO>>> getByStatus(
-            @RequestParam(defaultValue = "PENDING_CONTACT") LoanApplicationStatus status,
-            HttpSession session) {
-        if (!SessionUtil.isAdminLoggedIn(session)) {
-            return ResponseEntity.status(401).body(ApiResponse.fail("請先登入"));
-        }
+            @RequestParam(defaultValue = "PENDING_CONTACT") LoanApplicationStatus status) {
         return ResponseEntity.ok(ApiResponse.success(loanApplicationService.getByStatus(status)));
     }
 
@@ -39,11 +35,7 @@ public class LoanAdminController {
     @PostMapping("/{id}/contact-logs")
     public ResponseEntity<ApiResponse<Void>> addContactLog(
             @PathVariable String id,
-            @RequestBody LoanContactLogRequestDTO dto,
-            HttpSession session) {
-        if (!SessionUtil.isAdminLoggedIn(session)) {
-            return ResponseEntity.status(401).body(ApiResponse.fail("請先登入"));
-        }
+            @RequestBody LoanContactLogRequestDTO dto) {
         loanApplicationService.addContactLog(id, dto);
         return ResponseEntity.status(201).body(ApiResponse.success(null));
     }
@@ -51,11 +43,7 @@ public class LoanAdminController {
     // 查詢聯繫紀錄
     @GetMapping("/{id}/contact-logs")
     public ResponseEntity<ApiResponse<List<LoanContactLogResponseDTO>>> getContactLogs(
-            @PathVariable String id,
-            HttpSession session) {
-        if (!SessionUtil.isAdminLoggedIn(session)) {
-            return ResponseEntity.status(401).body(ApiResponse.fail("請先登入"));
-        }
+            @PathVariable String id) {
         return ResponseEntity.ok(ApiResponse.success(loanApplicationService.getContactLogs(id)));
     }
 
@@ -63,11 +51,7 @@ public class LoanAdminController {
     @PostMapping("/{id}/review")
     public ResponseEntity<ApiResponse<Void>> saveReview(
             @PathVariable String id,
-            @RequestBody LoanReviewDetailRequestDTO dto,
-            HttpSession session) {
-        if (!SessionUtil.isAdminLoggedIn(session)) {
-            return ResponseEntity.status(401).body(ApiResponse.fail("請先登入"));
-        }
+            @RequestBody LoanReviewDetailRequestDTO dto) {
         loanApplicationService.saveReviewDetail(id, dto);
         return ResponseEntity.ok(ApiResponse.success(null));
     }
@@ -75,11 +59,7 @@ public class LoanAdminController {
     // 送審
     @PatchMapping("/{id}/review/submit")
     public ResponseEntity<ApiResponse<Void>> submitReview(
-            @PathVariable String id,
-            HttpSession session) {
-        if (!SessionUtil.isAdminLoggedIn(session)) {
-            return ResponseEntity.status(401).body(ApiResponse.fail("請先登入"));
-        }
+            @PathVariable String id) {
         loanApplicationService.submitReview(id);
         return ResponseEntity.ok(ApiResponse.success(null));
     }
@@ -87,11 +67,7 @@ public class LoanAdminController {
     // 查詢填單內容
     @GetMapping("/{id}/review")
     public ResponseEntity<ApiResponse<LoanReviewDetailResponseDTO>> getReview(
-            @PathVariable String id,
-            HttpSession session) {
-        if (!SessionUtil.isAdminLoggedIn(session)) {
-            return ResponseEntity.status(401).body(ApiResponse.fail("請先登入"));
-        }
+            @PathVariable String id) {
         return ResponseEntity.ok(ApiResponse.success(loanApplicationService.getReviewDetail(id)));
     }
 }

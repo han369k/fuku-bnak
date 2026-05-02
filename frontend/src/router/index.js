@@ -85,6 +85,20 @@ const router = createRouter({
           component: () => import('../views/admin/CardView.vue'),
         }
 
+        // 貸款功能相關
+        {
+          // 客戶端申請功能測試
+          path: 'loan-apply',
+          name: 'loan-apply',
+          //http://localhost:5173/admin/loan-applications
+          component: () => import('../views/user/LoanApplyView.vue'),
+        },
+        {
+          path: 'loan-applications',
+          name: 'loan-applications',
+          //http://localhost:5173/admin/loan-applications
+          component: () => import('../views/admin/LoanApplicationView.vue'),
+        },
       ],
     },
 
