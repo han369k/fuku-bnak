@@ -94,6 +94,8 @@
           >
             {{ applyType === 'member' ? '👤 用戶申請' : '🌐 非用戶申請' }}
           </div>
+          <button class="btn-demo" type="button" @click="fillDemo" title="假資料">一鍵帶入
+          </button>
 
           <!-- 錯誤提示 -->
           <transition name="fade">
@@ -527,6 +529,28 @@ async function submitForm() {
   } finally {
     submitting.value = false
   }
+}
+
+function fillDemo() {
+  if (applyType.value === 'member') {
+    Object.assign(form, {
+      customerId: 'C10001',
+      applyType: 'PERSONAL',
+      applyAmount: 500000,
+      applyPeriod: 36,
+    })
+  } else {
+    Object.assign(form, {
+      applicantName: '林美玲',
+      applicantPhone: '0912345678',
+      applicantEmail: 'meilinlin@gmail.com',
+      applyType: 'CAR',
+      applyAmount: 800000,
+      applyPeriod: 60,
+    })
+  }
+  Object.keys(errors).forEach((k) => (errors[k] = ''))
+  submitError.value = ''
 }
 
 function resetForm() {
