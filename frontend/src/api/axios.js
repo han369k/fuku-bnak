@@ -14,6 +14,8 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
+      // Session 過期 → 清掉前端登入狀態
+      localStorage.removeItem('auth_user')
       // 避免在登入頁面重複跳轉
       if (router.currentRoute.value.name !== 'admin-login') {
         router.push({ name: 'admin-login' })

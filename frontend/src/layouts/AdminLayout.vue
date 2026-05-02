@@ -21,7 +21,7 @@
         </a-menu-item>
         <a-menu-item key="admin-transfers" @click="$router.push('/admin/transfers')">
           <SwapOutlined />
-          <span>轉帳</span>
+          <span>交易操作</span>
         </a-menu-item>
         <a-menu-item key="admin-trans-logs" @click="$router.push('/admin/trans-logs')">
           <FileTextOutlined />
@@ -45,6 +45,10 @@
         <a-menu-item key="admin-customers" @click="$router.push('/admin/customers')">
           <UserOutlined />
           <span>客戶管理</span>
+        </a-menu-item>
+        <a-menu-item key="admin-risk-events" @click="$router.push('/admin/risk-events')">
+          <FileTextOutlined />
+          <span>風險事件</span>
         </a-menu-item>
         <a-menu-item key="admin-card-types" @click="$router.push('/admin/card-types')">
           <FileTextOutlined />
@@ -85,7 +89,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import {
   HomeOutlined,
@@ -100,6 +104,7 @@ import { logout } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
 
 const collapsed = ref(false)
+const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 

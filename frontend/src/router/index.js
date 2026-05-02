@@ -83,14 +83,13 @@ const router = createRouter({
           path: 'cards',
           name: 'admin-cards',
           component: () => import('../views/admin/CardView.vue'),
-        }
-
+        },
         // 貸款功能相關
         {
           // 客戶端申請功能測試
           path: 'loan-apply',
           name: 'loan-apply',
-          //http://localhost:5173/admin/loan-applications
+          //http://localhost:5173/admin/loan-apply
           component: () => import('../views/user/LoanApplyView.vue'),
         },
         {
@@ -129,16 +128,26 @@ const router = createRouter({
 })
 
 // === 路由守衛：未登入的人不能進管理端 ===
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   // 檢查目標路由（或其父路由）是否需要登入
   if (to.matched.some((record) => record.meta.requiresAuth)) {
     const authUser = localStorage.getItem('auth_user')
     if (!authUser) {
-      // 未登入 → 跳到登入頁
+      // localStorage 沒資料 → 一定沒登入
+      return { name: 'admin-login' }
+    }
+
+    // localStorage 有資料 → 再跟後端確認 Session 是否還活著
+    try {
+      const { checkAuth } = await import('@/api/auth')
+      await checkAuth()
+      // Session 有效 → 放行
+    } catch {
+      // Session 過期或無效 → 清掉 localStorage，導回登入頁
+      localStorage.removeItem('auth_user')
       return { name: 'admin-login' }
     }
   }
-  // 不需要登入或已登入 → 放行
   return true
 })
 

@@ -49,6 +49,14 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
+    // ===== 確認登入狀態（給前端路由守衛用）=====
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<Void>> me() {
+        // 如果 Session 有效 → Spring Security 放行 → 回 200
+        // 如果 Session 過期 → Spring Security 攔截 → 回 401（不會進到這裡）
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
     // ===== 登出 =====
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(HttpSession session) {

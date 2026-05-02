@@ -7,6 +7,11 @@ export function login(data) {
   return api.post('/api/auth/login', data)
 }
 
+// 確認登入狀態（給路由守衛用）
+export function checkAuth() {
+  return api.get('/api/auth/me')
+}
+
 // 登出
 export function logout() {
   return api.post('/api/auth/logout')
