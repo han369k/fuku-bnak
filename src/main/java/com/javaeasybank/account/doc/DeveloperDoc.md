@@ -1887,7 +1887,59 @@ public static String generateReferenceId() {
 
 # 四、Front-End
 
-> 待補充
+## 1. 管理端（已完成）
+
+已實作頁面：
+
+| 頁面 | 路由 | 說明 |
+| --- | --- | --- |
+| `AdminLayout.vue` | `/admin` | 左側固定 Sidebar，含首頁/帳戶管理/轉帳/交易紀錄四個入口 |
+| `AccountListView.vue` | `/admin/accounts` | 帳戶查詢（依帳號/客戶ID/狀態/型別+幣別/最新）、建立帳戶、狀態變更（含銷戶二次確認）、子帳戶建立流程（查父帳戶 → 確認 → 建立） |
+| `TransferView.vue` | `/admin/transfers` | 行內轉帳、一鍵複製交易序號、一鍵清除 |
+| `TransLogView.vue` | `/admin/trans-logs` | 交易紀錄查詢（依交易編號/帳號/客戶ID/客戶ID+日期）、點擊帳號彈窗顯示帳戶詳情、匯出 Excel/JSON/XML、條件為空顯示最新紀錄 |
+
+---
+
+## 2. 客戶端規劃（待實作）
+
+> 以下為客戶端畫面的雛形規劃，尚未實作。待風格定案、auth 模組完成後再開始開發。
+
+### 2.1 預計建立的檔案
+
+| 檔案 | 說明 |
+| --- | --- |
+| `frontend/src/layouts/UserLayout.vue` | 客戶端 Layout（頂部導航列，風格與管理端區分） |
+| `frontend/src/views/user/UserLoginView.vue` | 客戶端登入頁（目前為空殼，未來串接 auth 模組） |
+| `frontend/src/views/user/UserHomeView.vue` | 帳戶總覽：登入後顯示該客戶名下所有帳戶摘要（帳號、型別、餘額、狀態） |
+| `frontend/src/views/user/UserTransferView.vue` | 客戶端轉帳：只能從自己的帳戶轉出 |
+| `frontend/src/views/user/UserTransLogView.vue` | 客戶端交易紀錄：只能查自己的交易紀錄 |
+
+### 2.2 路由規劃
+
+```
+/                  → UserLoginView（客戶端登入）
+/user              → UserLayout
+  /user            → UserHomeView（帳戶總覽）
+  /user/transfer   → UserTransferView（轉帳）
+  /user/trans-logs → UserTransLogView（交易紀錄）
+```
+
+### 2.3 與管理端的差異
+
+| 項目 | 管理端 | 客戶端 |
+| --- | --- | --- |
+| Layout | 左側固定 Sidebar | 頂部導航列（風格待定） |
+| 帳戶查詢 | 可查所有客戶的帳戶 | 只能看自己名下的帳戶 |
+| 轉帳 | 可指定任意來源帳戶 | 只能從自己的帳戶轉出 |
+| 交易紀錄 | 可查所有紀錄 | 只能查自己的紀錄 |
+| 帳戶狀態變更 | 有 | 無 |
+| 建立帳戶 | 有 | 無（由管理端操作） |
+
+### 2.4 前置條件
+
+- [ ] auth 模組完成（登入、JWT、角色權限）
+- [ ] 客戶端風格定案（與組員討論）
+- [ ] 確認 API 是否需要新增客戶端專用的端點，或複用管理端 API 加上權限過濾
 
 ---
 

@@ -1,6 +1,6 @@
 package com.javaeasybank.account.service;
 
-import com.javaeasybank.account.dto.TransLogResponse;
+import com.javaeasybank.account.dto.response.TransLogResponse;
 import com.javaeasybank.account.repository.TransLogRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -1,4 +1,4 @@
-package com.javaeasybank.account.dto;
+package com.javaeasybank.account.dto.response;
 
 import com.javaeasybank.account.entity.TransLog;
 import lombok.Data;

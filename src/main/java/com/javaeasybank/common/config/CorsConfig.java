@@ -23,7 +23,7 @@ public class CorsConfig implements WebMvcConfigurer {
                 // 允許來自 Vue 開發伺服器的請求
                 .allowedOrigins("http://localhost:5173")
                 // 允許的 HTTP 方法
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                 // 允許所有 headers
                 .allowedHeaders("*")
                 // 允許攜帶 Cookie（Session 需要這個）

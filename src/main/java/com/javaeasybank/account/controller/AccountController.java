@@ -1,7 +1,7 @@
 package com.javaeasybank.account.controller;
 
-import com.javaeasybank.account.dto.AccountCreateRequest;
-import com.javaeasybank.account.dto.AccountResponse;
+import com.javaeasybank.account.dto.request.AccountCreateRequest;
+import com.javaeasybank.account.dto.request.AccountResponse;
 import com.javaeasybank.account.enums.AccountStatus;
 import com.javaeasybank.account.enums.AccountType;
 import com.javaeasybank.account.enums.Currency;
@@ -125,5 +125,21 @@ public class AccountController {
         Page<AccountResponse> result = accountService.getLatest(PageRequest.of(page, size));
         PageResponse<AccountResponse> pageResponse = PageResponse.of(result.getContent(), page, size, result.getTotalElements());
         return ResponseEntity.ok(ApiResponse.success(pageResponse));
+    }
+
+    /**
+     * 變更帳戶狀態。
+     *
+     * @param accountNumber 帳號。
+     * @param newStatus 目標狀態。
+     * @return 包含更新後帳戶響應的 ResponseEntity。
+     */
+    @PatchMapping("/{accountNumber}/status")
+    public ResponseEntity<ApiResponse<AccountResponse>> updateAccountStatus(
+            @PathVariable String accountNumber,
+            @RequestParam AccountStatus newStatus) {
+        log.info("Received request to update account {} status to {}", accountNumber, newStatus);
+        AccountResponse response = accountService.updateAccountStatus(accountNumber, newStatus);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 }
