@@ -37,15 +37,15 @@ public class SecurityConfig {
             // 我們用 Session + JSON API，前端用 axios 發請求，
             // 不是傳統的 HTML form submit，不需要這個保護
             .csrf(csrf -> csrf.disable())
-            
+
             // 開啟 CORS，Spring Security 會自動去找底下名為 corsConfigurationSource 的 Bean
             .cors(cors -> {})
-            
+
             // 路由權限設定
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/login").permitAll()   // 登入不需驗證
                 .requestMatchers("/api/auth/logout").permitAll()  // 登出不需驗證
-                
+
                 .requestMatchers("/api/auth/employees/seed").permitAll() // seed功能不需登入也能執行
                 .requestMatchers("/api/auth/debug/**").permitAll()   // [暫時] 除錯用，用完請刪
                 .anyRequest().authenticated()                     // 其餘都要登入

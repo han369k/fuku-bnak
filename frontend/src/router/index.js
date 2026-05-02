@@ -69,6 +69,12 @@ const router = createRouter({
           component: () => import('../views/admin/CardApplicationList.vue'),
         },
         {
+          path: 'risk-events',
+          name: 'admin-risk-events',
+          //http://localhost:5173/admin/risk-events
+          component: () => import('../views/admin/RiskEventView.vue'),
+        },
+        {
           name:'admin-card-application-detail',
           path:'/admin/card-applications/:id',
           component: () => import('../views/admin/CardApplicationDetailView.vue'),
@@ -86,9 +92,9 @@ const router = createRouter({
     // {
     //   path: '/user',
     //   component: () => import('../layouts/UserLayout.vue'),
-    //   children: [ 
-    // 
-    
+    //   children: [
+    //
+
 
 
     // === 客戶端信用卡頁面===
@@ -98,7 +104,7 @@ const router = createRouter({
     //   component: () => import('../views/user/CardTypeListView.vue'),
     // }
 
-  
+
     //    ],
     // },
 
