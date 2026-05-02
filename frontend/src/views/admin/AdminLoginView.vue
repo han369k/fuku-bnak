@@ -64,11 +64,25 @@
         </a-form-item>
       </a-form>
 
-      <!-- 提示區 -->
-      <div class="login-hint">
-        <a-divider style="margin: 8px 0 16px" />
-        <p style="color: #999; font-size: 12px; text-align: center">
-          測試帳號：chiahao.lin@javabank.com ／ 密碼：123456
+      <!-- 快速登入 -->
+      <div class="quick-login">
+        <a-divider style="margin: 8px 0 16px">
+          <span style="color: #999; font-size: 12px">快速填入測試帳號</span>
+        </a-divider>
+        <div class="quick-btn-grid">
+          <a-button
+            v-for="acc in testAccounts"
+            :key="acc.email"
+            size="small"
+            @click="fillAccount(acc)"
+            class="quick-btn"
+          >
+            <span class="quick-role">{{ acc.role }}</span>
+            <span class="quick-name">{{ acc.name }}</span>
+          </a-button>
+        </div>
+        <p style="color: #bbb; font-size: 11px; text-align: center; margin-top: 10px">
+          密碼皆為 123456
         </p>
       </div>
     </div>
@@ -91,6 +105,23 @@ const form = reactive({
   email: '',
   password: '',
 })
+
+// 測試帳號（對應 auth_role 表）
+const testAccounts = [
+  { name: '鄭文華', role: 'CISO',  email: 'wenhua.cheng@javabank.com' },
+  { name: '郭建國', role: 'ISSA',  email: 'chienkuo.kuo@javabank.com' },
+  { name: '林家豪', role: 'CFSO',  email: 'chiahao.lin@javabank.com' },
+  { name: '蔡欣妤', role: 'CFDM',  email: 'xinyu.tsai@javabank.com' },
+  { name: '陳建志', role: 'CSVO',  email: 'chienchi.chen@javabank.com' },
+  { name: '吳承翰', role: 'JCRO',  email: 'chenghan.wu@javabank.com' },
+  { name: '王俊傑', role: 'CRO',   email: 'chunchie.wang@javabank.com' },
+  { name: '許志豪', role: 'COO',   email: 'chihhao.hsu@javabank.com' },
+]
+
+function fillAccount(acc) {
+  form.email = acc.email
+  form.password = '123456'
+}
 
 async function handleLogin() {
   if (!form.email || !form.password) return
@@ -163,7 +194,34 @@ async function handleLogin() {
   color: #8c8c8c;
 }
 
-.login-hint {
+.quick-login {
   margin-top: 8px;
+}
+
+.quick-btn-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.quick-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-align: left;
+  padding: 4px 10px;
+  height: auto;
+}
+
+.quick-role {
+  font-size: 11px;
+  color: #1677ff;
+  font-weight: 600;
+  min-width: 36px;
+}
+
+.quick-name {
+  font-size: 12px;
+  color: #555;
 }
 </style>

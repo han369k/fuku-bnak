@@ -91,6 +91,15 @@
       :confirm-loading="createLoading"
     >
       <a-form layout="vertical">
+        <!-- 一鍵帶入 -->
+        <div class="demo-fill-section">
+          <span style="font-size: 12px; color: #999; margin-right: 8px">快速帶入：</span>
+          <a-button size="small" @click="fillDemoAccount('CHECKING', 'TWD')">活存 TWD</a-button>
+          <a-button size="small" @click="fillDemoAccount('CHECKING', 'USD')">活存 USD</a-button>
+          <a-button size="small" @click="fillDemoAccount('TIME_DEPOSIT', 'TWD')">定存 TWD</a-button>
+          <a-button size="small" @click="fillDemoAccount('LOAN', 'TWD')">貸款 TWD</a-button>
+        </div>
+
         <a-form-item label="帳戶型別">
           <a-select v-model:value="createForm.accountType" placeholder="請選擇">
             <a-select-option value="CHECKING">活存</a-select-option>
@@ -439,6 +448,19 @@ async function doCreateAccount(data) {
   }
 }
 
+// === 一鍵帶入 Demo 資料 ===
+function randomCustomerId() {
+  // 產生 1~9999 的隨機整數
+  return Math.floor(Math.random() * 9999) + 1
+}
+
+function fillDemoAccount(type, currency) {
+  createForm.accountType = type
+  createForm.currency = currency
+  createForm.customerId = String(randomCustomerId())
+  createForm.parentAccountNumber = ''
+}
+
   function handleClear() {
     accountNumberSearch.value = ''
     customerId.value = ''
@@ -504,3 +526,16 @@ async function handleStatusChange() {
   }
 }
 </script>
+
+<style scoped>
+.demo-fill-section {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  background: #fafafa;
+  border-radius: 6px;
+  border: 1px dashed #d9d9d9;
+}
+</style>
