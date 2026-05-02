@@ -311,10 +311,10 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from 'vue'
-import axios from 'axios'
+import api from '@/api/axios'
+import { BASE_URL } from '@/api/axios'
 
 // ── Constants ──
-const BASE_URL = 'http://localhost:8080'
 
 const LOAN_TYPE_LIST = [
   { key: 'PERSONAL', name: '個人信貸', icon: '💳' },
@@ -399,7 +399,7 @@ watch(
 // ── Methods ──
 async function loadRateRules() {
   try {
-    const r = await axios.get(`${BASE_URL}/api/loan-applications/rate-rules`)
+    const r = await api.get(`${BASE_URL}/api/loan-applications/rate-rules`)
     if (r.data.success) rateRules.value = r.data.data
   } catch {
     // fallback 內建規則
@@ -503,12 +503,12 @@ async function submitForm() {
 
     let res
     if (applyType.value === 'member') {
-      res = await axios.post(`${BASE_URL}/api/loan-applications/member`, {
+      res = await api.post(`${BASE_URL}/api/loan-applications/member`, {
         ...payload,
         customerId: form.customerId, // String，直接送出
       })
     } else {
-      res = await axios.post(`${BASE_URL}/api/loan-applications/non-member`, {
+      res = await api.post(`${BASE_URL}/api/loan-applications/non-member`, {
         ...payload,
         applicantName: form.applicantName,
         applicantPhone: form.applicantPhone,

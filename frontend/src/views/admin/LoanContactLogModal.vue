@@ -176,7 +176,8 @@
 
 <script setup>
 import { ref, watch, reactive } from 'vue'
-import axios from 'axios'
+import api from '@/api/axios'
+import { BASE_URL } from '@/api/axios'
 
 // ── Props / Emits ──
 const props = defineProps({
@@ -186,7 +187,6 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'log-added'])
 
 // ── Constants ──
-const BASE_URL = 'http://localhost:8080'
 
 const STATUS_LABEL = {
   NOT_CONTACTED: '未聯繫',
@@ -245,7 +245,7 @@ watch(
 async function fetchLogs() {
   logsLoading.value = true
   try {
-    const res = await axios.get(
+    const res = await api.get(
       `${BASE_URL}/api/admin/loan-applications/${props.app.applicationId}/contact-logs`,
     )
     logs.value = res.data.success ? res.data.data : []
@@ -265,7 +265,7 @@ async function submitLog() {
   submitLoading.value = true
   formAlert.show = false
   try {
-    await axios.post(
+    await api.post(
       `${BASE_URL}/api/admin/loan-applications/${props.app.applicationId}/contact-logs`,
       {
         empId: form.empId,
