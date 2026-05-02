@@ -4,7 +4,7 @@ import com.javaeasybank.common.dto.response.ApiResponse;
 import com.javaeasybank.loan.dto.requests.LoanMemberRequestDTO;
 import com.javaeasybank.loan.dto.requests.LoanNonMemberRequestDTO;
 import com.javaeasybank.loan.service.LoanApplicationService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,10 +13,10 @@ import java.util.Map;
 // 客戶端：申請入口
 @RestController
 @RequestMapping("/api/loan-applications")
+@RequiredArgsConstructor
 public class LoanApplicationController {
 
-    @Autowired
-    private LoanApplicationService loanApplicationService;
+    private final LoanApplicationService loanApplicationService;
 
     // 會員申請
     @PostMapping("/member")

@@ -1,7 +1,6 @@
 package com.javaeasybank.loan.controller;
 
 import com.javaeasybank.common.dto.response.ApiResponse;
-import com.javaeasybank.common.util.SessionUtil;
 import com.javaeasybank.loan.dto.requests.LoanContactLogRequestDTO;
 import com.javaeasybank.loan.dto.requests.LoanReviewDetailRequestDTO;
 import com.javaeasybank.loan.dto.response.LoanApplicationResponseDTO;
@@ -9,8 +8,7 @@ import com.javaeasybank.loan.dto.response.LoanContactLogResponseDTO;
 import com.javaeasybank.loan.dto.response.LoanReviewDetailResponseDTO;
 import com.javaeasybank.loan.enums.LoanApplicationStatus;
 import com.javaeasybank.loan.service.LoanApplicationService;
-import jakarta.servlet.http.HttpSession;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,10 +17,10 @@ import java.util.List;
 // 行員端：管理入口
 @RestController
 @RequestMapping("/api/admin/loan-applications")
+@RequiredArgsConstructor
 public class LoanAdminController {
 
-    @Autowired
-    private LoanApplicationService loanApplicationService;
+    private final LoanApplicationService loanApplicationService;
 
     // 依狀態查詢申請列表（預設 PENDING_CONTACT）
     @GetMapping
