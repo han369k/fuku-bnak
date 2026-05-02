@@ -21,6 +21,7 @@ const router = createRouter({
     {
       path: '/admin',
       component: () => import('../layouts/AdminLayout.vue'),
+      meta: { requiresAuth: true },
       children: [
         {
           path: '',
@@ -41,6 +42,18 @@ const router = createRouter({
           path: 'trans-logs',
           name: 'admin-trans-logs',
           component: () => import('../views/admin/TransLogView.vue'),
+        },
+        {
+          path: 'employees',
+          name: 'admin-employees',
+          //http://localhost:5173/admin/employees
+          component: () => import('../views/admin/EmployeeListView.vue'),
+        },
+        {
+          path: 'customers',
+          name: 'admin-customers',
+          //http://localhost:5173/admin/customers
+          component: () => import('../views/admin/CustomerListView.vue'),
         },
         {
           path: 'card-types',
@@ -92,10 +105,21 @@ const router = createRouter({
 
 
 
-
-
-
   ],
+})
+
+// === 路由守衛：未登入的人不能進管理端 ===
+router.beforeEach((to) => {
+  // 檢查目標路由（或其父路由）是否需要登入
+  if (to.matched.some((record) => record.meta.requiresAuth)) {
+    const authUser = localStorage.getItem('auth_user')
+    if (!authUser) {
+      // 未登入 → 跳到登入頁
+      return { name: 'admin-login' }
+    }
+  }
+  // 不需要登入或已登入 → 放行
+  return true
 })
 
 export default router
