@@ -16,6 +16,17 @@ CREATE TABLE LOAN_APPLICATION (
 );
 
 -- ===測試資料（全部 PENDING_CONTACT）===
-INSERT INTO LOAN_APPLICATION VALUES 
-('LA202605011200000001', 1001, NULL, NULL, NULL, 'STUDENT', 500000, 60, 0.015, 'PENDING_CONTACT', GETDATE(), NULL, NULL),
-('LA202605011200000002', NULL, '王小明', '0912345678', 'test@example.com', 'CAR', 300000, 48, 0.033, 'PENDING_CONTACT', GETDATE(), NULL, NULL);
+INSERT INTO LOAN_APPLICATION (
+    application_id, customer_id,
+    applicant_name, applicant_phone, applicant_email,
+    apply_type, apply_amount, apply_period, rate,
+    application_status, create_time,
+    latest_contact_status, latest_contact_time
+) VALUES
+
+-- 1. 會員 | 個人信貸 36期 | rate = 0.04 + 0.005 = 0.045
+('LA202504201031000001', 'C10001',
+ NULL, NULL, NULL,
+ 'PERSONAL', 500000, 36, 0.04500,
+ 'PENDING_CONTACT', '2025-04-20 10:31:00',
+ NULL, NULL),
