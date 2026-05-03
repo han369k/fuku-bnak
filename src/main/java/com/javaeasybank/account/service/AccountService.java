@@ -20,6 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -73,7 +75,7 @@ public class AccountService {
         // 儲存並回傳
         Account savedAccount = accountRepository.save(account);
         log.info("Successfully created account: {}", savedAccount.getAccountNumber());
-        return AccountResponse.fromEntity(savedAccount);
+        return toResponse(savedAccount);
     }
 
     /**
@@ -87,7 +89,7 @@ public class AccountService {
     public AccountResponse getAccount(String accountNumber) {
         Account account = accountRepository.findById(accountNumber)
                 .orElseThrow(() -> new AccountException("ACCOUNT_NOT_FOUND", "Account not found: " + accountNumber));
-        return AccountResponse.fromEntity(account);
+        return toResponse(account);
     }
 
     /**
@@ -100,7 +102,7 @@ public class AccountService {
     @Transactional(readOnly = true)
     public Page<AccountResponse> getAccountsByCustomerId(String customerId, Pageable pageable) {
         return accountRepository.findByCustomerId(customerId, pageable)
-                .map(AccountResponse::fromEntity);
+                .map(this::toResponse);
     }
 
     /**
@@ -113,7 +115,7 @@ public class AccountService {
     @Transactional(readOnly = true)
     public Page<AccountResponse> getAccountsByStatus(AccountStatus status, Pageable pageable) {
         return accountRepository.findByStatus(status, pageable)
-                .map(AccountResponse::fromEntity);
+                .map(this::toResponse);
     }
 
     /**
@@ -127,7 +129,7 @@ public class AccountService {
     @Transactional(readOnly = true)
     public Page<AccountResponse> getAccountsByTypeAndCurrency(AccountType type, Currency currency, Pageable pageable) {
         return accountRepository.findByAccountTypeAndCurrency(type, currency, pageable)
-                .map(AccountResponse::fromEntity);
+                .map(this::toResponse);
     }
 
     /**
@@ -139,7 +141,7 @@ public class AccountService {
     @Transactional(readOnly = true)
     public Page<AccountResponse> getLatest(Pageable pageable) {
         return accountRepository.findAllByOrderByCreatedAtDesc(pageable)
-                .map(AccountResponse::fromEntity);
+                .map(this::toResponse);
     }
 
     /**
@@ -187,7 +189,7 @@ public class AccountService {
         account.setStatus(newStatus);
         Account updated = accountRepository.save(account);
         log.info("Account {} status changed: {} → {}", accountNumber, currentStatus, newStatus);
-        return AccountResponse.fromEntity(updated);
+        return toResponse(updated);
     }
 
     // ==========================================
@@ -215,6 +217,16 @@ public class AccountService {
             case DORMANT -> to == AccountStatus.ACTIVE || to == AccountStatus.CLOSED;
             case CLOSED -> false;
         };
+    }
+
+    /**
+     * 將 Account Entity 轉為 AccountResponse，並查詢客戶姓名。
+     */
+    private AccountResponse toResponse(Account account) {
+        String customerName = customerProfileRepository.findById(account.getCustomerId())
+                .map(cp -> cp.getName())
+                .orElse(null);
+        return AccountResponse.fromEntity(account, customerName);
     }
 
     /**
@@ -254,22 +266,22 @@ public class AccountService {
             if (currency != Currency.TWD) {
                 throw new AccountException("SUB_ACCOUNT_CURRENCY_MUST_BE_TWD", "Sub-accounts must be in TWD");
             }
-            
+
             boolean hasActiveTwdChecking = accountRepository.existsByCustomerIdAndAccountTypeAndCurrencyAndStatus(
                     customerId, AccountType.CHECKING, Currency.TWD, AccountStatus.ACTIVE);
-                    
+
             if (!hasActiveTwdChecking) {
                  throw new AccountException("NO_ACTIVE_TWD_CHECKING", "Customer must have an ACTIVE TWD checking account to create a sub-account");
             }
-            
+
             if (request.getParentAccountNumber() == null || request.getParentAccountNumber().isBlank()) {
                 throw new AccountException("PARENT_ACCOUNT_REQUIRED", "Sub-accounts must provide a parent account number");
             }
-            
+
             // 子帳戶建立時，新增驗證: parentAccountNumber 對應的帳戶必須存在，且該帳戶的 customerId 必須與 request 的 customerId 一致。
             Account parentAccount = accountRepository.findById(request.getParentAccountNumber())
                     .orElseThrow(() -> new AccountException("PARENT_ACCOUNT_NOT_FOUND", "Parent account not found: " + request.getParentAccountNumber()));
-            
+
             if (!parentAccount.getCustomerId().equals(customerId)) {
                 throw new AccountException("PARENT_ACCOUNT_OWNER_MISMATCH", "Parent account does not belong to the same customer");
             }

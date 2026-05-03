@@ -90,6 +90,7 @@
       >
         <a-descriptions-item label="帳號">{{ accountDetail.accountNumber }}</a-descriptions-item>
         <a-descriptions-item label="客戶 ID">{{ accountDetail.customerId }}</a-descriptions-item>
+        <a-descriptions-item label="客戶姓名">{{ accountDetail.customerName || '-' }}</a-descriptions-item>
         <a-descriptions-item label="帳戶型別">{{ typeMap[accountDetail.accountType] || accountDetail.accountType }}</a-descriptions-item>
         <a-descriptions-item label="幣別">{{ accountDetail.currency }}</a-descriptions-item>
         <a-descriptions-item label="餘額">{{ formatAmount(accountDetail.balance) }}</a-descriptions-item>

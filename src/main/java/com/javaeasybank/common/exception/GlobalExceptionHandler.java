@@ -1,5 +1,6 @@
 package com.javaeasybank.common.exception;
 
+import com.javaeasybank.account.exception.AccountException;
 import com.javaeasybank.common.dto.response.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,10 +26,20 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler {
 
     /**
-     * 攔截業務邏輯錯誤（帳戶不存在、餘額不足等）
+     * 攔截帳戶相關業務邏輯錯誤（帶 errorCode）
      * 回傳 HTTP 400
      */
-    // 這個Annotation 代表全域例外處理器 以前JavaEE沒有 要針對每個Exception做處理
+    @ExceptionHandler(AccountException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAccountException(AccountException e) {
+        return ResponseEntity
+                .badRequest()
+                .body(ApiResponse.fail(e.getErrorCode(), e.getMessage()));
+    }
+
+    /**
+     * 攔截其他業務邏輯錯誤（帳戶不存在、餘額不足等）
+     * 回傳 HTTP 400
+     */
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiResponse<Void>> handleBusinessException(BusinessException e) {
         return ResponseEntity
