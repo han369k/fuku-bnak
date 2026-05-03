@@ -305,7 +305,8 @@
 
 <script setup>
 import { ref, reactive, computed, watch } from 'vue'
-import axios from 'axios'
+import api from '@/api/axios'
+import { BASE_URL } from '@/api/axios'
 
 // ── Props / Emits ──
 const props = defineProps({
@@ -315,7 +316,6 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'review-updated'])
 
 // ── Constants ──
-const BASE_URL = 'http://localhost:8080'
 
 const LOAN_TYPE_NAME = {
   PERSONAL: '個人信貸',
@@ -407,7 +407,7 @@ async function fetchReview() {
   reviewLoading.value = true
   review.value = null
   try {
-    const res = await axios.get(
+    const res = await api.get(
       `${BASE_URL}/api/admin/loan-applications/${props.app.applicationId}/review`,
     )
     if (res.data.success && res.data.data) {
@@ -453,7 +453,7 @@ async function saveDraft() {
   saveLoading.value = true
   alert.show = false
   try {
-    await axios.post(`${BASE_URL}/api/admin/loan-applications/${props.app.applicationId}/review`, {
+    await api.post(`${BASE_URL}/api/admin/loan-applications/${props.app.applicationId}/review`, {
       confirmedAmount: form.confirmedAmount,
       confirmedPeriod: form.confirmedPeriod,
       confirmedRate: form.confirmedRate,
@@ -476,7 +476,7 @@ async function submitReview() {
   submitLoading.value = true
   alert.show = false
   try {
-    await axios.patch(
+    await api.patch(
       `${BASE_URL}/api/admin/loan-applications/${props.app.applicationId}/review/submit`,
     )
     showAlert('success', '已成功送審！')

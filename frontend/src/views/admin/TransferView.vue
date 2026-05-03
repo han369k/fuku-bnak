@@ -13,6 +13,15 @@
     </div>
 
     <a-card style="width: 100%; max-width: 600px">
+      <!-- Demo 快速帶入 -->
+      <div v-if="txType !== 'reversal'" class="demo-fill-section">
+        <span style="font-size: 12px; color: #999; margin-right: 8px">Demo 帶入：</span>
+        <a-button size="small" :loading="demoLoading" @click="fillDemoData">
+          自動帶入帳號 + 金額
+        </a-button>
+        <span v-if="demoHint" style="font-size: 12px; color: #52c41a; margin-left: 8px">{{ demoHint }}</span>
+      </div>
+
       <a-form layout="vertical">
         <!-- 轉帳：來源 + 目的帳號 -->
         <template v-if="txType === 'transfer'">
@@ -106,7 +115,7 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { message } from 'ant-design-vue'
-import { transfer, deposit, withdraw, reversal } from '@/api/account'
+import { transfer, deposit, withdraw, reversal, getLatestAccounts } from '@/api/account'
 
 const txType = ref('transfer')
 const loading = ref(false)
@@ -129,6 +138,48 @@ function formatAmount(value) {
 function formatTime(value) {
   if (!value) return '-'
   return value.replace('T', ' ').substring(0, 19)
+}
+
+// === Demo 快速帶入 ===
+const demoLoading = ref(false)
+const demoHint = ref('')
+
+async function fillDemoData() {
+  demoLoading.value = true
+  demoHint.value = ''
+  try {
+    const res = await getLatestAccounts(0, 10)
+    const list = res.data?.data?.content || []
+    // 篩選 ACTIVE 且有餘額的帳戶
+    const active = list.filter(a => a.status === 'ACTIVE' && Number(a.balance) > 0)
+
+    if (txType.value === 'transfer') {
+      if (active.length >= 2) {
+        form.fromAccountNumber = active[0].accountNumber
+        form.toAccountNumber = active[1].accountNumber
+        form.amount = 1000
+        form.note = 'Demo 轉帳'
+        demoHint.value = `已帶入 ${active[0].accountNumber} → ${active[1].accountNumber}`
+      } else {
+        message.warning('需要至少 2 個 ACTIVE 帳戶才能 Demo 轉帳')
+      }
+    } else {
+      // 存款 / 提款
+      const target = active[0] || list[0]
+      if (target) {
+        form.accountNumber = target.accountNumber
+        form.amount = txType.value === 'deposit' ? 5000 : 1000
+        form.note = txType.value === 'deposit' ? 'Demo 存款' : 'Demo 提款'
+        demoHint.value = `已帶入 ${target.accountNumber}`
+      } else {
+        message.warning('查無可用帳戶')
+      }
+    }
+  } catch {
+    message.error('載入帳戶資料失敗')
+  } finally {
+    demoLoading.value = false
+  }
 }
 
 function handleClear() {
@@ -218,3 +269,16 @@ async function handleSubmit() {
   }
 }
 </script>
+
+<style scoped>
+.demo-fill-section {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  background: #fafafa;
+  border-radius: 6px;
+  border: 1px dashed #d9d9d9;
+}
+</style>

@@ -49,7 +49,7 @@
 
 <script setup>
 import { ref, reactive, onMounted, h } from 'vue'
-import axios from 'axios'
+import api from '@/api/axios'
 
 const dataSource = ref([])
 const loading = ref(false)
@@ -93,7 +93,7 @@ const pagination = reactive({
 const loadData = async () => {
   loading.value = true
   try {
-    const res = await axios.get('/api/riskevent/search', {
+    const res = await api.get('/api/riskevent/search', {
       params: {
         page: pagination.current - 1, // 後端從 0 開始
         size: pagination.pageSize,

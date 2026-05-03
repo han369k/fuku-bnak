@@ -354,7 +354,8 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import axios from 'axios'
+import api from '@/api/axios'
+import { BASE_URL } from '@/api/axios'
 import LoanContactLogModal from './LoanContactLogModal.vue'
 import LoanReviewModal from './LoanReviewModal.vue'
 
@@ -362,7 +363,6 @@ import LoanReviewModal from './LoanReviewModal.vue'
 defineEmits([])
 
 // ── Constants ──
-const BASE_URL = 'http://localhost:8080'
 const API_URL = `${BASE_URL}/api/admin/loan-applications`
 
 // ② 每頁筆數選項
@@ -529,7 +529,7 @@ async function fetchApplications() {
   loading.value = true
   error.value = ''
   try {
-    const res = await axios.get(API_URL, {
+    const res = await api.get(API_URL, {
       params: { status: currentStatus.value },
       headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
     })
