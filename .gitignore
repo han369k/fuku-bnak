@@ -14,10 +14,12 @@ target/
 .sts4-cache
 
 ### IntelliJ IDEA ###
-.idea
+.idea/
 *.iws
 *.iml
 *.ipr
+out/
+rebel.xml
 
 ### Eclipse
 .settings/
@@ -35,7 +37,7 @@ Thumbs.db
 desktop.ini
 
 # 資料庫密碼
-src/main/resources/application.properties
+src/main/resources/application-local.properties
 
 ### NetBeans ###
 /nbproject/private/
@@ -49,3 +51,19 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Node.js
+node_modules/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.eslintcache
+.vite/
+
+# 忽略 Vite 的快取資料夾
+frontend/.vite/
+
+# Log files
+*.log
+logs/

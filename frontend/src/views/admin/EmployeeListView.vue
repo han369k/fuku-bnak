@@ -1,0 +1,319 @@
+<template>
+  <div style="padding: 24px">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px">
+      <h2>員工管理</h2>
+      <div style="display: flex; gap: 8px">
+        <a-button type="primary" @click="handleSeed" :loading="seedLoading">帶入測試資料</a-button>
+      </div>
+    </div>
+
+    <!-- 查詢區 -->
+    <div style="margin-bottom: 16px; display: flex; gap: 8px; align-items: center">
+      <a-input
+        v-model:value="keyword"
+        placeholder="搜尋員工姓名"
+        style="width: 200px"
+        allow-clear
+        @press-enter="handleSearch"
+      />
+      <a-button type="primary" @click="handleSearch">查詢</a-button>
+      <a-button @click="handleClear">清除</a-button>
+      <a-button type="dashed" @click="openCreateModal">新增員工</a-button>
+    </div>
+
+    <!-- 表格 -->
+    <a-table
+      :columns="columns"
+      :data-source="employees"
+      :loading="loading"
+      :scroll="{ x: 1200 }"
+      row-key="empId"
+      bordered
+    >
+      <template #bodyCell="{ column, record }">
+        <!-- 狀態顯示 -->
+        <template v-if="column.key === 'status'">
+          <a-tag :color="record.status === 'ACTIVE' ? 'green' : record.status === 'SUSPENDED' ? 'red' : 'default'">
+            {{ statusMap[record.status] || record.status }}
+          </a-tag>
+        </template>
+
+        <!-- 操作按鈕 -->
+        <template v-else-if="column.key === 'action'">
+          <a-space>
+            <a-button size="small" @click="openEditModal(record)">編輯</a-button>
+            <a-button
+              size="small"
+              danger
+              @click="handleSuspend(record.empId)"
+              :disabled="record.status === 'SUSPENDED'"
+            >停用</a-button>
+          </a-space>
+        </template>
+      </template>
+    </a-table>
+
+    <!-- 新增/編輯 Modal -->
+    <a-modal
+      v-model:open="showModal"
+      :title="isEdit ? '編輯員工' : '新增員工'"
+      @ok="handleSubmit"
+      :confirm-loading="submitLoading"
+      @cancel="resetForm"
+    >
+      <a-form layout="vertical">
+        <a-form-item label="員工編號">
+          <a-input v-model:value="form.empId" placeholder="請輸入員工編號" :disabled="isEdit" />
+        </a-form-item>
+        <a-form-item label="姓名">
+          <a-input v-model:value="form.empName" placeholder="請輸入姓名" />
+        </a-form-item>
+        <a-form-item label="部門代碼">
+          <a-select v-model:value="form.deptId" placeholder="請選擇部門">
+            <a-select-option value="D001">D001 總管理處</a-select-option>
+            <a-select-option value="D002">D002 消費金融處</a-select-option>
+            <a-select-option value="D003">D003 審查處</a-select-option>
+            <a-select-option value="D004">D004 保險代理處</a-select-option>
+            <a-select-option value="D005">D005 客服處</a-select-option>
+            <a-select-option value="D006">D006 資安處</a-select-option>
+          </a-select>
+        </a-form-item>
+        <a-form-item label="角色代碼">
+          <a-select v-model:value="form.roleId" placeholder="請選擇角色">
+            <a-select-option value="R001">R001 CISO 資安長</a-select-option>
+            <a-select-option value="R002">R002 ISSA 資安專員</a-select-option>
+            <a-select-option value="R003">R003 GEMO 總經理</a-select-option>
+            <a-select-option value="R004">R004 CFSO 消金主管</a-select-option>
+            <a-select-option value="R005">R005 CFSA 消金專員</a-select-option>
+            <a-select-option value="R006">R006 CRVO 審查主管</a-select-option>
+            <a-select-option value="R007">R007 CRVA 審查專員</a-select-option>
+            <a-select-option value="R008">R008 INSO 保代主管</a-select-option>
+            <a-select-option value="R009">R009 INSA 保代專員</a-select-option>
+            <a-select-option value="R010">R010 CSDM 客服經理</a-select-option>
+            <a-select-option value="R011">R011 CSVO 客服專員</a-select-option>
+          </a-select>
+        </a-form-item>
+        <a-form-item label="Email">
+          <a-input v-model:value="form.email" placeholder="請輸入 Email" />
+        </a-form-item>
+        <a-form-item v-if="!isEdit" label="密碼">
+          <a-input-password v-model:value="form.password" placeholder="請輸入密碼" />
+        </a-form-item>
+        <a-form-item label="狀態">
+          <a-select v-model:value="form.status" placeholder="請選擇狀態">
+            <a-select-option value="ACTIVE">啟用</a-select-option>
+            <a-select-option value="SUSPENDED">停用</a-select-option>
+          </a-select>
+        </a-form-item>
+        <a-form-item label="合約到期日">
+          <a-date-picker
+            v-model:value="form.contractEndDate"
+            style="width: 100%"
+            value-format="YYYY-MM-DDTHH:mm:ss"
+            show-time
+          />
+        </a-form-item>
+        <a-form-item label="權限到期日">
+          <a-date-picker
+            v-model:value="form.permissionExpire"
+            style="width: 100%"
+            value-format="YYYY-MM-DDTHH:mm:ss"
+            show-time
+          />
+        </a-form-item>
+      </a-form>
+    </a-modal>
+  </div>
+</template>
+
+<script setup>
+import { ref, reactive } from 'vue'
+import { message, Modal } from 'ant-design-vue'
+import {
+  getEmployees,
+  createEmployee,
+  updateEmployee,
+  suspendEmployee,
+  seedEmployees,
+} from '@/api/auth'
+
+// === 狀態中文對照 ===
+const statusMap = {
+  ACTIVE: '啟用',
+  SUSPENDED: '停用',
+  LOCKED: '鎖定',
+}
+
+// === 格式化工具 ===
+function formatTime(value) {
+  if (!value) return '-'
+  return value.replace('T', ' ').substring(0, 19)
+}
+
+// === 查詢相關 ===
+const keyword = ref('')
+const employees = ref([])
+const loading = ref(false)
+
+const columns = [
+  { title: '員工編號', dataIndex: 'empId', key: 'empId', width: 110 },
+  { title: '姓名', dataIndex: 'empName', key: 'empName', width: 100 },
+  { title: '部門', dataIndex: 'deptId', key: 'deptId', width: 90 },
+  { title: '角色', dataIndex: 'roleId', key: 'roleId', width: 90 },
+  { title: '角色代碼', dataIndex: 'roleCode', key: 'roleCode', width: 100 },
+  { title: '權限範圍', dataIndex: 'permScope', key: 'permScope', width: 100 },
+  { title: 'Email', dataIndex: 'email', key: 'email', width: 180 },
+  {
+    title: '狀態',
+    dataIndex: 'status',
+    key: 'status',
+    width: 80,
+  },
+  {
+    title: '合約到期',
+    dataIndex: 'contractEndDate',
+    key: 'contractEndDate',
+    width: 170,
+    customRender: ({ text }) => formatTime(text),
+  },
+  { title: '操作', key: 'action', width: 150, align: 'center', fixed: 'right' },
+]
+
+async function fetchData() {
+  loading.value = true
+  try {
+    const res = await getEmployees(keyword.value || undefined)
+    employees.value = res.data.data
+  } catch (err) {
+    message.error(err.response?.data?.message || '查詢失敗')
+  } finally {
+    loading.value = false
+  }
+}
+
+function handleSearch() {
+  fetchData()
+}
+
+function handleClear() {
+  keyword.value = ''
+  employees.value = []
+}
+
+// === 新增/編輯相關 ===
+const showModal = ref(false)
+const isEdit = ref(false)
+const submitLoading = ref(false)
+
+const form = reactive({
+  empId: '',
+  empName: '',
+  deptId: undefined,
+  roleId: undefined,
+  email: '',
+  password: '',
+  status: undefined,
+  contractEndDate: null,
+  permissionExpire: null,
+})
+
+function resetForm() {
+  form.empId = ''
+  form.empName = ''
+  form.deptId = undefined
+  form.roleId = undefined
+  form.email = ''
+  form.password = ''
+  form.status = undefined
+  form.contractEndDate = null
+  form.permissionExpire = null
+  isEdit.value = false
+}
+
+function openCreateModal() {
+  resetForm()
+  showModal.value = true
+}
+
+function openEditModal(record) {
+  isEdit.value = true
+  form.empId = record.empId
+  form.empName = record.empName
+  form.deptId = record.deptId
+  form.roleId = record.roleId
+  form.email = record.email
+  form.status = record.status
+  form.contractEndDate = record.contractEndDate || null
+  form.permissionExpire = record.permissionExpire || null
+  showModal.value = true
+}
+
+async function handleSubmit() {
+  submitLoading.value = true
+  try {
+    const payload = {
+      empId: form.empId,
+      empName: form.empName,
+      deptId: form.deptId,
+      roleId: form.roleId,
+      email: form.email,
+      status: form.status,
+      contractEndDate: form.contractEndDate,
+      permissionExpire: form.permissionExpire,
+    }
+
+    if (isEdit.value) {
+      await updateEmployee(form.empId, payload)
+      message.success('員工修改成功')
+    } else {
+      payload.password = form.password
+      await createEmployee(payload)
+      message.success('員工新增成功')
+    }
+
+    showModal.value = false
+    resetForm()
+    await fetchData()
+  } catch (err) {
+    message.error(err.response?.data?.message || (isEdit.value ? '修改失敗' : '新增失敗'))
+  } finally {
+    submitLoading.value = false
+  }
+}
+
+// === 停用員工 ===
+function handleSuspend(empId) {
+  Modal.confirm({
+    title: '確定要停用此員工嗎？',
+    content: `員工編號: ${empId}，停用後該員工將無法登入系統。`,
+    okText: '確定停用',
+    okType: 'danger',
+    cancelText: '取消',
+    async onOk() {
+      try {
+        await suspendEmployee(empId)
+        message.success('員工已停用')
+        await fetchData()
+      } catch (err) {
+        message.error(err.response?.data?.message || '停用失敗')
+      }
+    },
+  })
+}
+
+// === 帶入測試資料 ===
+const seedLoading = ref(false)
+
+async function handleSeed() {
+  seedLoading.value = true
+  try {
+    const res = await seedEmployees()
+    message.success(res.data.data || '測試資料已帶入')
+    await fetchData()
+  } catch (err) {
+    message.error(err.response?.data?.message || '帶入測試資料失敗')
+  } finally {
+    seedLoading.value = false
+  }
+}
+</script>
