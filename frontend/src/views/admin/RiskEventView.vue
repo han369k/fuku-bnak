@@ -42,7 +42,7 @@
       :pagination="pagination"
       :loading="loading"
       @change="handleTableChange"
-      row-key="id"
+      row-key="logId"
     />
   </div>
 </template>
@@ -102,9 +102,9 @@ const loadData = async () => {
         riskLevel: filterParams.riskLevel || null,
       },
     })
-    // 對接 Spring Page 物件
-    dataSource.value = res.data.content
-    pagination.total = res.data.totalElements
+    // 對接 ApiResponse 包裝的 Spring Page 物件
+    dataSource.value = res.data.data.content
+    pagination.total = res.data.data.totalElements
   } catch (error) {
     console.error('載入失敗', error)
   } finally {
