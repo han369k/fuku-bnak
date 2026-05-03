@@ -88,7 +88,7 @@ spring.jackson.time-zone=Asia/Taipei
 spring.jackson.serialization.write-dates-as-timestamps=false
 ```
 
-> ⚠️ `application.properties` 已加入 `.gitignore`，不會推上 GitHub，請勿將密碼推上遠端。
+> ⚠️ `application-local.properties` 已加入 `.gitignore`，不會推上 GitHub，請勿將密碼推上遠端。
 
 ### 5. 初始化資料
 
