@@ -7,7 +7,7 @@ import lombok.Data;
 @Data
 public class CardTypeResponseDto {
 
-    private Integer cardTypeId;
+    private String cardTypeId;
     private String cardTypeName;
     private String brand;
     private BigDecimal annualFee;

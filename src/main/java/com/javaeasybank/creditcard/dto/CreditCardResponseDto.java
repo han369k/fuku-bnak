@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CreditCardResponseDto {
 
-	private Integer cardId;
+	private String cardId;
     private String cardNumber;
     private CardTypeResponseDto cardType;
     private BigDecimal creditLimit;
