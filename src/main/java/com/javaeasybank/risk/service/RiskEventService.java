@@ -17,15 +17,15 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RiskEventService {
 
-    private final RiskEventLogRepository riskEventLogRepository;
+    private final RiskEventLogRepository relRepos;
 
     public Page<RiskEventResponse> findAll(Pageable pageable) {
-        return riskEventLogRepository.findAll(pageable)
+        return relRepos.findAll(pageable)
                 .map(this::toDto);
     }
 
     public Page<RiskEventResponse> search(String eventType, String actionTaken, String riskLevel, Pageable pageable) {
-        return riskEventLogRepository.findAll((root, query, cb) -> {
+        return relRepos.findAll((root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
             if (StringUtils.hasText(eventType)) {
