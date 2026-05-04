@@ -151,13 +151,14 @@
         <a-descriptions bordered :column="1" size="small">
           <a-descriptions-item label="父帳戶帳號">{{ parentAccountDetail.accountNumber }}</a-descriptions-item>
           <a-descriptions-item label="客戶 ID">{{ parentAccountDetail.customerId }}</a-descriptions-item>
+          <a-descriptions-item label="客戶姓名">{{ parentAccountDetail.customerName || '-' }}</a-descriptions-item>
           <a-descriptions-item label="帳戶型別">{{ typeMap[parentAccountDetail.accountType] || parentAccountDetail.accountType }}</a-descriptions-item>
           <a-descriptions-item label="幣別">{{ parentAccountDetail.currency }}</a-descriptions-item>
           <a-descriptions-item label="餘額">{{ formatAmount(parentAccountDetail.balance) }}</a-descriptions-item>
           <a-descriptions-item label="狀態">{{ statusMap[parentAccountDetail.status] || parentAccountDetail.status }}</a-descriptions-item>
         </a-descriptions>
         <div style="margin-top: 16px; color: #666">
-          將為客戶 <strong>{{ parentAccountDetail.customerId }}</strong> 建立 TWD 子帳戶，父帳戶為 <strong>{{ parentAccountDetail.accountNumber }}</strong>。
+          將為客戶 <strong>{{ parentAccountDetail.customerName || parentAccountDetail.customerId }}</strong> 建立 TWD 子帳戶，父帳戶為 <strong>{{ parentAccountDetail.accountNumber }}</strong>。
         </div>
       </div>
     </a-modal>
@@ -201,6 +202,7 @@
 <script setup>
 import { ref, reactive, h } from 'vue'
 import { message } from 'ant-design-vue'
+import { getErrorMessage } from '@/utils/errorMessages'
 import {
   getAccountsByCustomerId,
   getAccountsByStatus,
@@ -256,6 +258,7 @@ const lastSearchType = ref('')
 const columns = ref([
   { title: '帳號', dataIndex: 'accountNumber', key: 'accountNumber', width: 150, resizable: true },
   { title: '客戶 ID', dataIndex: 'customerId', key: 'customerId', width: 100, resizable: true },
+  { title: '客戶姓名', dataIndex: 'customerName', key: 'customerName', width: 100, resizable: true },
   {
     title: '型別',
     dataIndex: 'accountType',
@@ -333,7 +336,7 @@ async function fetchData() {
       } catch (err) {
         accounts.value = []
         total.value = 0
-        message.error(err.response?.data?.message || '查無此帳號')
+        message.error(getErrorMessage(err, '查無此帳號'))
       }
       loading.value = false
       return
@@ -358,7 +361,7 @@ async function fetchData() {
     accounts.value = res.data.data.content
     total.value = res.data.data.totalElements
   } catch (err) {
-    message.error(err.response?.data?.message || '查詢失敗')
+    message.error(getErrorMessage(err, '查詢失敗'))
   } finally {
     loading.value = false
   }
@@ -396,7 +399,7 @@ async function handleCreate() {
       showCreateModal.value = false
       showConfirmModal.value = true
     } catch (err) {
-      message.error('查詢父帳戶失敗: ' + (err.response?.data?.message || err.message))
+      message.error(getErrorMessage(err, '查詢父帳戶失敗'))
     } finally {
       createLoading.value = false
     }
@@ -442,7 +445,7 @@ async function doCreateAccount(data) {
       await fetchData()
     }
   } catch (err) {
-    message.error(err.response?.data?.message || '建立失敗')
+    message.error(getErrorMessage(err, '建立失敗'))
   } finally {
     createLoading.value = false
   }
@@ -521,7 +524,7 @@ async function handleStatusChange() {
     closeConfirmText.value = ''
     await fetchData()
   } catch (err) {
-    message.error(err.response?.data?.message || '狀態變更失敗')
+    message.error(getErrorMessage(err, '狀態變更失敗'))
   } finally {
     statusModalLoading.value = false
   }

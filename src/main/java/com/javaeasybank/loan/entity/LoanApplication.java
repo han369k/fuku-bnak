@@ -24,14 +24,15 @@ public class LoanApplication {
     @Id
     private String applicationId;          // application_id (PK)
 
-    private String customerId;            // customer_id（會員 NULL）
+    private String customerId;            // customer_id（非會員 NULL）
 
     // 非會員另填
     private String applicantName;          // applicant_name
     private String applicantPhone;         // applicant_phone
     private String applicantEmail;         // applicant_email
 
-    private String applyType;              // apply_type（貸款類型）
+    // 兩種申請身份共同部分
+    private String applyType;              // apply_type
     private Long applyAmount;              // apply_amount
     private Integer applyPeriod;           // apply_period
     private BigDecimal rate;               // 系統計算利率

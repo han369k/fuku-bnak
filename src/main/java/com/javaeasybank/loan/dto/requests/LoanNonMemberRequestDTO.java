@@ -12,6 +12,7 @@ public class LoanNonMemberRequestDTO {
     private String applicantName;
     private String applicantPhone;
     private String applicantEmail;
+
     private String applyType;
     private Long applyAmount;
     private Integer applyPeriod;
