@@ -10,7 +10,10 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -19,13 +22,18 @@ public class BlackListService {
 
     private final BlackListRepository blRepos;
 
-    public Page<BlackListResponse> findAll(Pageable pageable) {
-        return blRepos.findAll(pageable)
+    public Page<BlackListResponse> getBlackLists(Boolean activated, Pageable pageable) {
+        return blRepos.findByFilter(activated, pageable)
                 .map(this::toResponse);
     }
-
+    //行員手動建檔
     public BlackListRequest create(BlackListRequest request) {
         Blacklist entity = toEntity(request);
+        // 如果你有整合 Spring Security，可以動態取得登入者 ID
+        String operator = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName();
+        entity.setSource("行員手動建檔 - 操作員: " + operator);
         Blacklist saved = blRepos.save(entity);
         return toRequest(saved);
     }
@@ -46,9 +54,10 @@ public class BlackListService {
 
         // 更新內容 (例如修改原因或過期時間)
         entity.setReason(request.getReason());
+        // 設定解封時間
+        // 如果 request.getExpireAt() 為 null，代表該黑名單恢復為「永久有效」
         entity.setExpireAt(request.getExpireAt());
         entity.setSource(request.getSource());
-
         return toResponse(blRepos.save(entity));
     }
 

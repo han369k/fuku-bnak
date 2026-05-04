@@ -1,5 +1,6 @@
 package com.javaeasybank.risk.entity;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.javaeasybank.risk.core.enums.BlacklistType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -7,6 +8,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
@@ -14,6 +17,7 @@ import java.time.LocalDateTime;
 @Table(name = "black_list", indexes = {
         @Index(name = "idx_bl_lookup", columnList = "list_type, list_value")
 })
+@EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -41,12 +45,15 @@ public class Blacklist {
     private Boolean status = Boolean.TRUE;
     //解封時間 設null表示永久
     @Column(name = "expires_at")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime expireAt;
 
     @CreatedDate
     @Column(name = "created_at")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime createdAt;
-
+    @LastModifiedDate
     @Column(name = "updated_at")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime updatedAt;
 }

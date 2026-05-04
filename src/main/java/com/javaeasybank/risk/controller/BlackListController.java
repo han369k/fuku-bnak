@@ -24,12 +24,12 @@ public class BlackListController {
     //查全部
     @GetMapping
     public ResponseEntity<ApiResponse<Page<BlackListResponse>>> getBlackLists(
+            @RequestParam(required = false) Boolean activated,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        Page<BlackListResponse> response = blackListService.findAll(pageable);
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(ApiResponse.success(blackListService.getBlackLists(activated, pageable)));
     }
 
-    //新增
+    //手動新增
     @PostMapping("/create")
     public ResponseEntity<ApiResponse<BlackListRequest>> createBlackList(@RequestBody BlackListRequest request) {
         BlackListRequest create = blackListService.create(request);
@@ -54,8 +54,8 @@ public class BlackListController {
     public ResponseEntity<ApiResponse<Void>> updateStatus(
             @PathVariable BlacklistType type,
             @PathVariable String value,
-            @RequestParam Boolean enabled) {
-        blackListService.updateStatusByBusinessKey(type, value, enabled);
+            @RequestParam Boolean status) {
+        blackListService.updateStatusByBusinessKey(type, value, status);
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 
