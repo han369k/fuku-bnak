@@ -40,7 +40,7 @@
     >
       <a-form :model="formData" layout="vertical">
         <a-form-item label="類型">
-          <a-select v-model:value="formData.type" :disabled="modalType === 'edit'">
+          <a-select v-model:value="formData.listType" :disabled="modalType === 'edit'">
             <a-select-option value="ID_CARD">身份證字號</a-select-option>
             <a-select-option value="ACCOUNT_NO">帳戶</a-select-option>
             <a-select-option value="EMAIL">電子郵件</a-select-option>
