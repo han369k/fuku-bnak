@@ -15,6 +15,7 @@ public class ApiResponse<T> {
 
     private boolean success;
     private String message;
+    private String errorCode;
     private T data;
 
     // 外部不能直接 new ApiResponse()，只能用下面的靜態方法建立
@@ -42,7 +43,20 @@ public class ApiResponse<T> {
         return res;
     }
 
+    /**
+     * 失敗回傳，附帶錯誤碼與錯誤訊息
+     */
+    public static <T> ApiResponse<T> fail(String errorCode, String message) {
+        ApiResponse<T> res = new ApiResponse<>();
+        res.success = false;
+        res.errorCode = errorCode;
+        res.message = message;
+        res.data = null;
+        return res;
+    }
+
     public boolean isSuccess() { return success; }
     public String getMessage() { return message; }
+    public String getErrorCode() { return errorCode; }
     public T getData() { return data; }
 }
