@@ -23,6 +23,10 @@ public class AccountResponse {
      */
     private String customerId;
     /**
+     * 客戶姓名。
+     */
+    private String customerName;
+    /**
      * 帳戶類型。
      */
     private AccountType accountType;
@@ -64,9 +68,14 @@ public class AccountResponse {
 
 
     public static AccountResponse fromEntity(Account account) {
+        return fromEntity(account, null);
+    }
+
+    public static AccountResponse fromEntity(Account account, String customerName) {
         AccountResponse response = new AccountResponse();
         response.setAccountNumber(account.getAccountNumber());
         response.setCustomerId(account.getCustomerId());
+        response.setCustomerName(customerName);
         response.setAccountType(account.getAccountType());
         response.setCurrency(account.getCurrency());
         response.setBalance(account.getBalance());
