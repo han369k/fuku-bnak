@@ -1,6 +1,7 @@
 package com.javaeasybank.customer.service;
 
 import com.javaeasybank.customer.dto.CustomerDto;
+
 import java.util.List;
 
 public interface CustomerService {

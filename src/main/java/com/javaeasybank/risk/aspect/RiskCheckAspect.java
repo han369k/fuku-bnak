@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -18,6 +19,7 @@ import java.util.stream.Collectors;
 @Aspect // 宣告這是一個切面 (攔截器)
 @Component
 @Slf4j
+@Order(1)
 public class RiskCheckAspect {
 
     // Key 是 Enum，Value 是對應的處理實作
@@ -31,6 +33,9 @@ public class RiskCheckAspect {
 
     @Around("@annotation(riskCheck)")
     public Object monitorRisk(ProceedingJoinPoint joinPoint, RiskCheck riskCheck) throws Throwable {
+
+        // 測試 A：如果沒印出這行，代表 AOP 切點表達式設定錯誤，或者 Service 是內部呼叫
+        System.out.println(">>> AOP TRIGGERED: Scene=" + riskCheck.scene());
 
         RiskScene scene = riskCheck.scene();
         Object[] args = joinPoint.getArgs();

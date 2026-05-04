@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @Table(name = "customer_profile")
 @Getter
 @Setter
-public class CustomerProfile implements RiskTarget {
+public class CustomerProfile {
 
     @Id
     @Column(name = "customer_id", length = 20, nullable = false)
@@ -71,13 +71,5 @@ public class CustomerProfile implements RiskTarget {
         this.updatedAt = LocalDateTime.now();
     }
 
-    @Override
-    public String getTargetIdentifier() {
-        return this.idNumber;
-    }
 
-    @Override
-    public BigDecimal getAmount() {
-        return BigDecimal.ZERO; // 客戶管理場景無交易金額
-    }
 }

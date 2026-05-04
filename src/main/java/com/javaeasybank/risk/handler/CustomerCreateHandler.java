@@ -6,7 +6,9 @@ import com.javaeasybank.risk.core.RiskTarget;
 import com.javaeasybank.risk.core.enums.BlacklistType;
 import com.javaeasybank.risk.core.enums.RiskScene;
 import com.javaeasybank.risk.service.BlackListService;
+import org.springframework.stereotype.Component;
 
+@Component
 public class CustomerCreateHandler implements RiskHandler {
 
     private final BlackListService blService;
