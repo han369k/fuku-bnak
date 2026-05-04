@@ -1,6 +1,7 @@
 package com.javaeasybank.risk.handler;
 
 import com.javaeasybank.risk.core.RiskHandler;
+import com.javaeasybank.risk.core.RiskTarget;
 import com.javaeasybank.risk.core.enums.RiskScene;
 
 import java.math.BigDecimal;
@@ -13,7 +14,9 @@ public class TransferRiskHandler implements RiskHandler {
     }
 
     @Override
-    public void check(String identifier, BigDecimal amount) {
+    public void handle(RiskTarget target) {
 
     }
+
+
 }

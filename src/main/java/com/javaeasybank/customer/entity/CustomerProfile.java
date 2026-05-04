@@ -1,10 +1,12 @@
 package com.javaeasybank.customer.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.javaeasybank.risk.core.RiskTarget;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -12,7 +14,7 @@ import java.time.LocalDateTime;
 @Table(name = "customer_profile")
 @Getter
 @Setter
-public class CustomerProfile {
+public class CustomerProfile implements RiskTarget {
 
     @Id
     @Column(name = "customer_id", length = 20, nullable = false)
@@ -67,5 +69,15 @@ public class CustomerProfile {
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
+    }
+
+    @Override
+    public String getTargetIdentifier() {
+        return this.idNumber;
+    }
+
+    @Override
+    public BigDecimal getAmount() {
+        return BigDecimal.ZERO; // 客戶管理場景無交易金額
     }
 }

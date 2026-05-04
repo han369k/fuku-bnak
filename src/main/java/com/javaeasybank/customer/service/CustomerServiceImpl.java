@@ -4,7 +4,9 @@ import com.javaeasybank.common.exception.BusinessException;
 import com.javaeasybank.customer.dto.CustomerDto;
 import com.javaeasybank.customer.entity.CustomerProfile;
 import com.javaeasybank.customer.repository.CustomerProfileRepository;
+import com.javaeasybank.risk.annotation.RiskCheck;
 import com.javaeasybank.risk.core.enums.BlacklistType;
+import com.javaeasybank.risk.core.enums.RiskScene;
 import com.javaeasybank.risk.service.BlackListService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -22,7 +24,6 @@ public class CustomerServiceImpl implements CustomerService {
 
     private final CustomerProfileRepository customerProfileRepository;
 
-    private final BlackListService blackListService;
     // 加入 JdbcTemplate 依賴，用於執行原生 SQL
     private final JdbcTemplate jdbcTemplate;
 
@@ -31,10 +32,9 @@ public class CustomerServiceImpl implements CustomerService {
     private static final String ALPHANUMERIC_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
     private final SecureRandom secureRandom = new SecureRandom();
 
-    public CustomerServiceImpl(CustomerProfileRepository customerProfileRepository, JdbcTemplate jdbcTemplate, BlackListService blackListService) {
+    public CustomerServiceImpl(CustomerProfileRepository customerProfileRepository, JdbcTemplate jdbcTemplate) {
         this.customerProfileRepository = customerProfileRepository;
         this.jdbcTemplate = jdbcTemplate;
-        this.blackListService = blackListService;
     }
 
     // ===========================
@@ -54,6 +54,7 @@ public class CustomerServiceImpl implements CustomerService {
                 .collect(Collectors.toList());
     }
 
+    @RiskCheck(scene = RiskScene.CREATE_CUSTOMER)
     @Override
     public CustomerDto.CustomerResponse createCustomer(CustomerDto.CustomerRequest request) {
         if (customerProfileRepository.findByIdNumber(request.getIdNumber()).isPresent()) {
@@ -71,10 +72,6 @@ public class CustomerServiceImpl implements CustomerService {
         // 2. cif: YYMM-8碼大寫英數 (例如：2605-A3R5W8J1)
         String yymm = LocalDate.now().format(DateTimeFormatter.ofPattern("yyMM"));
         profile.setCif(yymm + "-" + generateAlphanumeric(8));
-
-        if(blackListService.isBlacklisted(BlacklistType.PHONE,request.getPhone())){
-            throw new BusinessException("電話");
-        }
 
         profile.setStatus("ACTIVE");
 
