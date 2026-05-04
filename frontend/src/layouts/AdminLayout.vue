@@ -50,6 +50,13 @@
           <FileTextOutlined />
           <span>風險事件</span>
         </a-menu-item>
+<<<<<<< HEAD
+=======
+        <a-menu-item key="admin-blacklist" @click="$router.push('/admin/blacklist')">
+          <FileTextOutlined />
+          <span>黑名單</span>
+        </a-menu-item>
+>>>>>>> main
         <a-menu-item key="admin-card-types" @click="$router.push('/admin/card-types')">
           <FileTextOutlined />
           <span>卡別管理</span>

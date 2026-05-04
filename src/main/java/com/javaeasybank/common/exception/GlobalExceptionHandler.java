@@ -4,6 +4,10 @@ import com.javaeasybank.account.exception.AccountException;
 import com.javaeasybank.common.dto.response.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+<<<<<<< HEAD
+=======
+import org.springframework.security.authorization.AuthorizationDeniedException;
+>>>>>>> main
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -63,6 +67,20 @@ public class GlobalExceptionHandler {
     }
 
     /**
+<<<<<<< HEAD
+=======
+     * 攔截權限不足錯誤（角色無權限存取此 API）
+     * 回傳 HTTP 403
+     */
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAuthorizationDeniedException(AuthorizationDeniedException e) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.fail("FORBIDDEN", "權限不足，您的角色無法執行此操作"));
+    }
+
+    /**
+>>>>>>> main
      * 攔截登入驗證錯誤（帳號密碼錯誤、帳號停用等）
      * 回傳 HTTP 401
      */
