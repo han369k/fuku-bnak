@@ -115,7 +115,6 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
     // 新增聯繫紀錄，同步更新主表最新聯繫狀態
     @Override
     public void addContactLog(String applicationId, LoanContactLogRequestDTO dto) {
-
         LoanApplication loan = laRepo.findById(applicationId)
                 .orElseThrow(() -> new BusinessException("找不到申請編號：" + applicationId));
 
