@@ -6,6 +6,8 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.Map;
 
 public class CustomerDto {
 
@@ -21,8 +23,26 @@ public class CustomerDto {
         private String email;
         private String phone;
         private String address;
-        @Override public String getTargetIdentifier() { return idNumber; }
-        @Override public BigDecimal getAmount() { return BigDecimal.ZERO; }
+
+        @Override
+        public Map<String, Object> getRiskMetadata() {
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("idNumber", idNumber);
+            metadata.put("phone", phone);
+            metadata.put("email", email);
+            metadata.put("address", address);
+            return metadata;
+        }
+
+        @Override
+        public String getTargetIdentifier() {
+            return customerId;
+        }
+
+        @Override
+        public BigDecimal getAmount() {
+            return BigDecimal.ZERO;
+        }
     }
 
     @Getter

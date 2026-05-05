@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -31,40 +32,24 @@ public class RiskCheckAspect {
                 .collect(Collectors.toMap(RiskHandler::getScene, h -> h));
     }
 
-    @Around("@annotation(riskCheck)")
-    public Object monitorRisk(ProceedingJoinPoint joinPoint, RiskCheck riskCheck) throws Throwable {
+    @Pointcut("@annotation(com.javaeasybank.risk.annotation.RiskCheck)")
+    public void riskCheckPointcut() {}
 
-        // 測試 A：如果沒印出這行，代表 AOP 切點表達式設定錯誤，或者 Service 是內部呼叫
-        System.out.println(">>> AOP TRIGGERED: Scene=" + riskCheck.scene());
+    @Around("riskCheckPointcut() && @annotation(riskCheck)")
+    public Object monitorRisk(ProceedingJoinPoint joinPoint,
+                              RiskCheck riskCheck) throws Throwable {
+
+        log.debug("Risk check triggered: scene={}", riskCheck.scene());
 
         RiskScene scene = riskCheck.scene();
-        Object[] args = joinPoint.getArgs();
         RiskHandler handler = handlerMap.get(scene);
 
-        if (handler != null && args.length > 0) {
-            RiskTarget target = null;
-
-            // 情況 A：參數本身就實作了 RiskTarget (例如 createCustomer 的 Request DTO)
-            if (args[0] instanceof RiskTarget rt) {
-                target = rt;
-            }
-            // 情況 B：參數是 String (例如 updateCustomer 的 customerId)，手動封裝
-            else if (args[0] instanceof String id) {
-                target = new RiskTarget() {
-                    @Override
-                    public String getTargetIdentifier() {
-                        return id;
-                    }
-
-                    @Override
-                    public BigDecimal getAmount() {
-                        return BigDecimal.ZERO;
-                    }
-                };
-            }
-
+        if (handler != null) {
+            RiskTarget target = handler.resolve(joinPoint.getArgs());
             if (target != null) {
-                handler.handle(target); // 呼叫修改後的 handler
+                handler.handle(target);
+            } else {
+                log.warn("Risk target resolved to null: scene={}", scene);
             }
         }
 

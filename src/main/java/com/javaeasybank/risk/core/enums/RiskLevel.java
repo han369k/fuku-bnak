@@ -1,6 +1,6 @@
 package com.javaeasybank.risk.core.enums;
 
-public enum AmlRiskLevel {
+public enum RiskLevel {
     LOW,        // 低風險
     MEDIUM,     // 中風險
     HIGH,       // 高風險

@@ -1,6 +1,8 @@
 package com.javaeasybank.risk.core;
 
 import java.math.BigDecimal;
+import java.util.Collections;
+import java.util.Map;
 
 /**
  * 風控目標介面
@@ -13,7 +15,7 @@ public interface RiskTarget {
      * 取得觸發風控的目標識別碼 (對應資料庫的 TargetIdentifier)
      * 例如：轉出帳號、信用卡號、用戶身分證字號等。
      */
-    String getTargetIdentifier();
+   String getTargetIdentifier();
 
     /**
      * 取得本次交易的金額
@@ -21,4 +23,7 @@ public interface RiskTarget {
      */
     BigDecimal getAmount();
 
+    default Map<String,Object> getRiskMetadata() {
+        return Collections.emptyMap();
+    }
 }

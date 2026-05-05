@@ -18,5 +18,10 @@ public class TransferRiskHandler implements RiskHandler {
 
     }
 
+    @Override
+    public RiskTarget resolve(Object[] args) {
+        return null;
+    }
+
 
 }

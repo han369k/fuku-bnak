@@ -1,10 +1,10 @@
 package com.javaeasybank.risk.dto;
 
-import com.javaeasybank.risk.core.enums.AmlRiskLevel;
+import com.javaeasybank.risk.core.enums.RiskLevel;
 // 定義風險變更事件
 public record RiskLevelChangedEvent(
         String customerId,
-        AmlRiskLevel newRiskLevel,
+        RiskLevel newRiskLevel,
         String reason
 ) {
 }
