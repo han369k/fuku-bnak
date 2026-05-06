@@ -68,7 +68,7 @@ public class AuthController {
     // ===== 查詢員工（支援模糊搜尋）=====
     // GET /api/auth/employees          → 全部
     // GET /api/auth/employees?keyword=林 → 姓名含「林」的
-    @PreAuthorize("hasAnyRole('CISO', 'ISSA')")
+    @PreAuthorize("hasAnyRole('CISO', 'ISSA', 'SYS_STAFF', 'SYS_SUPER')")
     @GetMapping("/employees")
     public ResponseEntity<ApiResponse<List<AuthDto.AuthEmpResponse>>> getEmps(
             @RequestParam(required = false) String keyword) {
@@ -82,7 +82,7 @@ public class AuthController {
     }
 
     // ===== 新增員工：僅 CISO =====
-    @PreAuthorize("hasRole('CISO')")
+    @PreAuthorize("hasAnyRole('CISO', 'SYS_STAFF')")
     @PostMapping("/employees")
     public ResponseEntity<ApiResponse<AuthDto.AuthEmpResponse>> createEmp(
             @RequestBody AuthDto.AuthEmpRequest request) {
@@ -90,7 +90,7 @@ public class AuthController {
     }
 
     // ===== 修改員工：僅 CISO =====
-    @PreAuthorize("hasRole('CISO')")
+    @PreAuthorize("hasAnyRole('CISO', 'SYS_SUPER')")
     @PutMapping("/employees/{empId}")
     public ResponseEntity<ApiResponse<AuthDto.AuthEmpResponse>> updateEmp(
             @PathVariable String empId,
@@ -99,7 +99,7 @@ public class AuthController {
     }
 
     // ===== 停用員工（軟刪除）：僅 CISO =====
-    @PreAuthorize("hasRole('CISO')")
+    @PreAuthorize("hasAnyRole('CISO', 'SYS_SUPER')")
     @DeleteMapping("/employees/{empId}/suspend")
     public ResponseEntity<ApiResponse<Void>> suspendEmp(@PathVariable String empId) {
         authEmpService.suspendEmp(empId);

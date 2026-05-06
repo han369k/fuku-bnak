@@ -15,59 +15,70 @@
           <HomeOutlined />
           <span>首頁</span>
         </a-menu-item>
-        <a-menu-item key="admin-accounts" @click="$router.push('/admin/accounts')">
-          <BankOutlined />
-          <span>帳戶管理</span>
-        </a-menu-item>
-        <a-menu-item key="admin-transfers" @click="$router.push('/admin/transfers')">
-          <SwapOutlined />
-          <span>交易操作</span>
-        </a-menu-item>
-        <a-menu-item key="admin-trans-logs" @click="$router.push('/admin/trans-logs')">
-          <FileTextOutlined />
-          <span>交易紀錄</span>
-        </a-menu-item>
-        <a-menu-item key="admin-loan-apply" @click="$router.push('/admin/loan-apply')">
-          <FileTextOutlined />
-          <span>貸款申請(測試用)</span>
-        </a-menu-item>
-        <a-menu-item
-          key="admin-loan-applications"
-          @click="$router.push('/admin/loan-applications')"
-        >
-          <FileTextOutlined />
-          <span>貸款申請管理</span>
-        </a-menu-item>
+        
+        <!-- 業務操作：資安部 (DPT005) 隱藏 -->
+        <template v-if="authStore.user?.deptId !== 'DPT005'">
+          <a-menu-item key="admin-accounts" @click="$router.push('/admin/accounts')">
+            <BankOutlined />
+            <span>帳戶管理</span>
+          </a-menu-item>
+          <a-menu-item key="admin-transfers" @click="$router.push('/admin/transfers')">
+            <SwapOutlined />
+            <span>交易操作</span>
+          </a-menu-item>
+          <a-menu-item key="admin-trans-logs" @click="$router.push('/admin/trans-logs')">
+            <FileTextOutlined />
+            <span>交易紀錄</span>
+          </a-menu-item>
+          <a-menu-item key="admin-loan-apply" @click="$router.push('/admin/loan-apply')">
+            <FileTextOutlined />
+            <span>貸款申請(測試用)</span>
+          </a-menu-item>
+          <a-menu-item key="admin-loan-applications" @click="$router.push('/admin/loan-applications')">
+            <FileTextOutlined />
+            <span>貸款申請管理</span>
+          </a-menu-item>
+        </template>
+
+        <!-- 系統權限與管理：資深資安人員或特定管理員可見 -->
         <a-menu-item key="admin-employees" @click="$router.push('/admin/employees')">
           <TeamOutlined />
           <span>員工管理</span>
         </a-menu-item>
+        
         <a-menu-item key="admin-customers" @click="$router.push('/admin/customers')">
           <UserOutlined />
           <span>客戶管理</span>
         </a-menu-item>
-        <a-menu-item key="admin-risk-events" @click="$router.push('/admin/risk-events')">
-          <FileTextOutlined />
-          <span>風險事件</span>
-        </a-menu-item>
-        <a-menu-item key="admin-blacklist" @click="$router.push('/admin/blacklist')">
-          <FileTextOutlined />
-          <span>黑名單</span>
-        </a-menu-item>
-        <a-menu-item key="admin-card-types" @click="$router.push('/admin/card-types')">
-          <FileTextOutlined />
-          <span>卡別管理</span>
-        </a-menu-item>
-        <a-menu-item key="admin-card-applications" @click="$router.push('/admin/card-applications')">
-          <FileTextOutlined />
-          <span>信用卡申請管理</span>
-        </a-menu-item>
-        <a-menu-item key="admin-cards" @click="$router.push('/admin/cards')">
-          <FileTextOutlined />
-          <span>卡片管理</span>
-        </a-menu-item>
 
+        <template v-if="authStore.user?.deptId !== 'DPT005'">
+          <a-menu-item key="admin-risk-events" @click="$router.push('/admin/risk-events')">
+            <FileTextOutlined />
+            <span>風險事件</span>
+          </a-menu-item>
+          <a-menu-item key="admin-blacklist" @click="$router.push('/admin/blacklist')">
+            <FileTextOutlined />
+            <span>黑名單</span>
+          </a-menu-item>
+          <a-menu-item key="admin-card-types" @click="$router.push('/admin/card-types')">
+            <FileTextOutlined />
+            <span>卡別管理</span>
+          </a-menu-item>
+          <a-menu-item key="admin-card-applications" @click="$router.push('/admin/card-applications')">
+            <FileTextOutlined />
+            <span>信用卡申請管理</span>
+          </a-menu-item>
+          <a-menu-item key="admin-cards" @click="$router.push('/admin/cards')">
+            <FileTextOutlined />
+            <span>卡片管理</span>
+          </a-menu-item>
+        </template>
 
+        <!-- 系統稽核：僅資安部 (DPT005) 可見 -->
+        <a-menu-item v-if="authStore.user?.deptId === 'DPT005'" key="admin-logs" @click="$router.push('/admin/logs')">
+          <AuditOutlined />
+          <span>系統日誌</span>
+        </a-menu-item>
       </a-menu>
     </a-layout-sider>
 
@@ -103,6 +114,7 @@ import {
   TeamOutlined,
   UserOutlined,
   LogoutOutlined,
+  AuditOutlined,
 } from '@ant-design/icons-vue'
 import { logout } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'

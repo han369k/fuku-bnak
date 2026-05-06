@@ -18,7 +18,7 @@
       />
       <a-button type="primary" @click="handleSearch">查詢</a-button>
       <a-button @click="handleClear">清除</a-button>
-      <a-button type="dashed" @click="openCreateModal">新增員工</a-button>
+      <a-button v-if="authStore.user?.permLevel === 0" type="dashed" @click="openCreateModal">新增員工</a-button>
     </div>
 
     <!-- 表格 -->
@@ -41,8 +41,9 @@
         <!-- 操作按鈕 -->
         <template v-else-if="column.key === 'action'">
           <a-space>
-            <a-button size="small" @click="openEditModal(record)">編輯</a-button>
+            <a-button v-if="authStore.user?.permLevel === 1" size="small" @click="openEditModal(record)">編輯</a-button>
             <a-button
+              v-if="authStore.user?.permLevel === 1"
               size="small"
               danger
               @click="handleSuspend(record.empId)"
@@ -137,6 +138,9 @@ import {
   suspendEmployee,
   seedEmployees,
 } from '@/api/auth'
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore()
 
 // === 狀態中文對照 ===
 const statusMap = {
@@ -158,6 +162,8 @@ const allRoles = [
   { id: 'R009', deptId: 'DPT004', code: 'COO', name: '營運長' },
   { id: 'R010', deptId: 'DPT005', code: 'ISSA', name: '資安監控分析師' },
   { id: 'R011', deptId: 'DPT005', code: 'CISO', name: '資安長' },
+  { id: 'R012', deptId: 'DPT005', code: 'SYS_STAFF', name: '職員' },
+  { id: 'R013', deptId: 'DPT005', code: 'SYS_SUPER', name: '超級管理員' },
 ]
 
 // 根據選中的部門篩選角色

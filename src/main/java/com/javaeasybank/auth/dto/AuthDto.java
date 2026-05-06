@@ -38,6 +38,7 @@ public class AuthDto {
         private String permScope;   // 新增：權限範圍 (如 SYS)
         private String email;
         private String status;
+        private Integer permLevel;  // 新增：權限等級 (0-4)
         private LocalDateTime contractEndDate;
         private LocalDateTime permissionExpire;
         private LocalDateTime lastLoginDate;

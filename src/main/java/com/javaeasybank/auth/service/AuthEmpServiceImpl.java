@@ -132,6 +132,8 @@ public class AuthEmpServiceImpl implements AuthEmpService {
             {"E26009", "許志豪", "DPT004", "R009", "chihhao.hsu@javabank.com"},
             {"E26010", "郭建國", "DPT005", "R010", "chienkuo.kuo@javabank.com"},
             {"E26011", "鄭文華", "DPT005", "R011", "wenhua.cheng@javabank.com"},
+            {"E26012", "管理員甲", "DPT005", "R012", "admin.a@javabank.com"},
+            {"E26013", "管理員乙", "DPT005", "R013", "admin.b@javabank.com"},
         };
 
         for (String[] d : data) {
@@ -184,6 +186,7 @@ public class AuthEmpServiceImpl implements AuthEmpService {
         authRoleRepository.findById(emp.getRoleId()).ifPresent(role -> {
             res.setRoleCode(role.getRoleCode());
             res.setPermScope(role.getPermScope());
+            res.setPermLevel(role.getPermLevel());
         });
 
         return res;

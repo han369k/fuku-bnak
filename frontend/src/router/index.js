@@ -104,6 +104,12 @@ const router = createRouter({
           //http://localhost:5173/admin/blacklist
           component: () => import('../views/admin/BlackListView.vue'),
         },
+        {
+          path: 'logs',
+          name: 'admin-logs',
+          //http://localhost:5173/admin/logs
+          component: () => import('../views/admin/SystemLogView.vue'),
+        },
       ],
     },
 
