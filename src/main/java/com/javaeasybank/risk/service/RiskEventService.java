@@ -3,7 +3,6 @@ package com.javaeasybank.risk.service;
 import com.javaeasybank.risk.dto.ManualReviewEvent;
 import com.javaeasybank.risk.dto.RiskEventResponse;
 import com.javaeasybank.risk.entity.RiskEventLog;
-import com.javaeasybank.risk.repository.ReviewTaskRepository;
 import com.javaeasybank.risk.repository.RiskEventLogRepository;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +15,7 @@ import org.springframework.util.StringUtils;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,7 +26,6 @@ import java.util.List;
 public class RiskEventService {
 
     private final RiskEventLogRepository relRepos;
-    private final ReviewTaskRepository rtRepos;
     private final ObjectMapper objectMapper; // 用於將 Map 轉為 JSON 字串
 
     public Page<RiskEventResponse> findAll(Pageable pageable) {
@@ -52,12 +51,17 @@ public class RiskEventService {
         }, pageable).map(this::toDto);
     }
 
-    @Transactional
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     public RiskEventLog recordEvent(ManualReviewEvent event) {
         RiskEventLog eventLog = new RiskEventLog();
         eventLog.setEventType(event.scene().name());
-        eventLog.setBusinessId(event.businessId()); // 業務ID例貸款申請單 ID
-        eventLog.setTargetIdentifier(event.target().getTargetIdentifier()); // 身分證或帳號
+        // 業務ID例貸款申請單 ID，若為 null 使用預設值，避免 DB NOT NULL 拋例外
+        eventLog.setBusinessId(event.businessId() != null ? event.businessId() : "UNKNOWN");
+        // target identifier 若為 null 使用預設值
+        String targetId = (event.target() != null && event.target().getTargetIdentifier() != null)
+                ? event.target().getTargetIdentifier()
+                : "UNKNOWN";
+        eventLog.setTargetIdentifier(targetId); // 身分證或帳號
         eventLog.setRiskLevel(event.level()); // LOW, MEDIUM, HIGH
         eventLog.setActionTaken(event.disposition()); // PASS, REJECT, MANUAL_REVIEW
         eventLog.setTriggerReason(event.reason());
@@ -70,7 +74,17 @@ public class RiskEventService {
             log.error("Metadata 轉換 JSON 失敗", e);
             eventLog.setMetaData("{}");
         }
-        relRepos.save(eventLog);
+        // 若 createdAt 尚未由 JPA Auditing 設定，則在此手動設定，避免 DB 不接受 NULL
+        if (eventLog.getCreatedAt() == null) {
+            eventLog.setCreatedAt(LocalDateTime.now());
+        }
+
+        try {
+            relRepos.save(eventLog);
+        } catch (Exception e) {
+            log.error("寫入 RiskEventLog 失敗：event={}", event, e);
+            throw e;
+        }
         return eventLog;
     }
 

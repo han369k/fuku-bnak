@@ -1,7 +1,7 @@
 package com.javaeasybank.risk.handler;
 
 import com.javaeasybank.common.exception.BusinessException;
-import com.javaeasybank.risk.core.RiskHandler;
+import com.javaeasybank.risk.core.BaseRiskHandler;
 import com.javaeasybank.risk.core.RiskTarget;
 import com.javaeasybank.risk.core.enums.BlacklistType;
 import com.javaeasybank.risk.core.KYC;
@@ -9,6 +9,7 @@ import com.javaeasybank.risk.core.enums.BusinessScene;
 import com.javaeasybank.risk.core.enums.Disposition;
 import com.javaeasybank.risk.core.enums.RiskLevel;
 import com.javaeasybank.risk.service.BlackListService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -19,13 +20,11 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Component
-public class CustomerCreateHandler implements RiskHandler {
+@RequiredArgsConstructor
+public class CustomerCreateHandler extends BaseRiskHandler {
 
     private final BlackListService blService;
 
-    public CustomerCreateHandler(BlackListService blService) {
-        this.blService = blService;
-    }
 
     @Override
     public BusinessScene getScene() {
@@ -39,9 +38,9 @@ public class CustomerCreateHandler implements RiskHandler {
 
         // 1. 組裝校驗矩陣
         Map<BlacklistType, String> checkMap = new EnumMap<>(BlacklistType.class);
-        checkMap.put(BlacklistType.ID_CARD, (String) metadata.get(KYC.ID_CARD));
-        checkMap.put(BlacklistType.PHONE, (String) metadata.get(KYC.PHONE));
-        checkMap.put(BlacklistType.EMAIL, (String) metadata.get(KYC.EMAIL));
+        putIfPresent(checkMap, BlacklistType.ID_CARD, metadata.get(KYC.ID_CARD));
+        putIfPresent(checkMap, BlacklistType.PHONE, metadata.get(KYC.PHONE));
+        putIfPresent(checkMap, BlacklistType.EMAIL, metadata.get(KYC.EMAIL));
 
         List<BlacklistType> hits = blService.checkAll(checkMap);
 
@@ -49,16 +48,36 @@ public class CustomerCreateHandler implements RiskHandler {
             String hitDetails = hits.stream()
                     .map(BlacklistType::getDescription)
                     .collect(Collectors.joining(", "));
-
+            // 確保有 businessID，優先使用 ID_CARD，若無則回退至手機號碼
+            String businessId = checkMap.getOrDefault(BlacklistType.ID_CARD,
+                    checkMap.getOrDefault(BlacklistType.PHONE, "UNKNOWN_CUSTOMER"));
             // 嚴格處置：拋出異常前，必須確保 Event 被送出以供 RiskLogService 記錄
             String reason = "命中黑名單: " + hitDetails;
 
-            // 發送事件 (這部分邏輯應寫在基底類或輔助類中)
-           // publishRiskEvent(target, RiskLevel.HIGH, Disposition.REJECT, reason ,businessID);
+            // 記錄log (注意：在生產環境中 ID 應脫敏)
+            String masked = maskSensitive(businessId);
+            log.warn("[Risk] Blacklist Hit! BusinessId: {}, Hits: {}", masked, hitDetails);
 
-            throw new BusinessException("風險控管攔截：系統偵測到異常資訊，請聯繫分行人員。");
+            // 發送事件
+            publishEvent(target, businessId, RiskLevel.HIGH, Disposition.REJECT, reason);
+            // 阻斷業務流程：回傳統一錯誤碼與訊息，避免外露敏感資訊
+            throw new BusinessException("E_RISK_REJECT: 系統核對資訊異常，請洽客服人員。");
         }
     }
+
+    private static String maskSensitive(String v) {
+        if (v == null) return "****";
+        String s = v.trim();
+        if (s.length() <= 4) return "****";
+        return "****" + s.substring(s.length() - 4);
+    }
+
+    private void putIfPresent(Map<BlacklistType, String> map, BlacklistType type, Object value) {
+        if (value != null) {
+            map.put(type, String.valueOf(value));
+        }
+    }
+
     @Override
     public RiskTarget resolve(Object[] args) {
         if (args == null || args.length == 0) {
