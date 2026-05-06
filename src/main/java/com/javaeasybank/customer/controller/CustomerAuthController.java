@@ -77,17 +77,27 @@ public class CustomerAuthController {
 
         String customerId = extractCustomerId(httpRequest);
 
-        // 儲存到 uploads/avatars/ 目錄
+        // 1. 使用絕對路徑定位到專案目錄下的 uploads/avatars
+        String projectPath = System.getProperty("user.dir");
+        Path uploadDir = Paths.get(projectPath, "uploads", "avatars");
+        
+        // 2. 確保資料夾存在，如果不存在就建立它
+        if (!Files.exists(uploadDir)) {
+            Files.createDirectories(uploadDir);
+        }
+
+        // 3. 產生唯一的檔名
         String fileName = customerId + "_" + UUID.randomUUID().toString().substring(0, 8)
                 + getExtension(file.getOriginalFilename());
-        Path uploadDir = Paths.get("uploads/avatars");
-        Files.createDirectories(uploadDir);
-        Path filePath = uploadDir.resolve(fileName);
-        file.transferTo(filePath.toFile());
 
-        // 回傳可存取的 URL 路徑
+        // 4. 強制使用絕對路徑進行檔案轉移 (解決 FileNotFound 問題)
+        Path filePath = uploadDir.resolve(fileName);
+        file.transferTo(filePath.toAbsolutePath().toFile());
+
+        // 5. 回傳給前端可以存取的虛擬路徑
         String avatarUrl = "/uploads/avatars/" + fileName;
         return ResponseEntity.ok(ApiResponse.success(customerAuthService.uploadAvatar(customerId, avatarUrl)));
+
     }
 
     // ===== 請求密碼重設（發送 Email 連結）=====
