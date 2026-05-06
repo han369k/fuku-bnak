@@ -62,35 +62,36 @@
       @cancel="resetForm"
     >
       <a-form layout="vertical">
+        <!-- 一鍵帶入 -->
+        <div v-if="!isEdit" style="margin-bottom: 12px">
+          <span style="font-size: 12px; color: #999; margin-right: 8px">快速帶入：</span>
+          <a-button size="small" @click="fillDemoEmployee('CF')">消金專員</a-button>
+          <a-button size="small" @click="fillDemoEmployee('CS')">客服專員</a-button>
+          <a-button size="small" @click="fillDemoEmployee('CR')">授信審查</a-button>
+          <a-button size="small" @click="fillDemoEmployee('OPS')">營運企劃</a-button>
+          <a-button size="small" @click="fillDemoEmployee('IS')">資安人員</a-button>
+        </div>
+
         <a-form-item label="員工編號">
           <a-input v-model:value="form.empId" placeholder="請輸入員工編號" :disabled="isEdit" />
         </a-form-item>
         <a-form-item label="姓名">
           <a-input v-model:value="form.empName" placeholder="請輸入姓名" />
         </a-form-item>
-        <a-form-item label="部門代碼">
-          <a-select v-model:value="form.deptId" placeholder="請選擇部門">
-            <a-select-option value="D001">D001 總管理處</a-select-option>
-            <a-select-option value="D002">D002 消費金融處</a-select-option>
-            <a-select-option value="D003">D003 審查處</a-select-option>
-            <a-select-option value="D004">D004 保險代理處</a-select-option>
-            <a-select-option value="D005">D005 客服處</a-select-option>
-            <a-select-option value="D006">D006 資安處</a-select-option>
+        <a-form-item label="部門">
+          <a-select v-model:value="form.deptId" placeholder="請選擇部門" @change="handleDeptChange">
+            <a-select-option value="DPT001">DPT001 消費金融部</a-select-option>
+            <a-select-option value="DPT002">DPT002 客戶服務部</a-select-option>
+            <a-select-option value="DPT003">DPT003 授信審查部</a-select-option>
+            <a-select-option value="DPT004">DPT004 營運企劃部</a-select-option>
+            <a-select-option value="DPT005">DPT005 資訊安全部</a-select-option>
           </a-select>
         </a-form-item>
-        <a-form-item label="角色代碼">
-          <a-select v-model:value="form.roleId" placeholder="請選擇角色">
-            <a-select-option value="R001">R001 CISO 資安長</a-select-option>
-            <a-select-option value="R002">R002 ISSA 資安專員</a-select-option>
-            <a-select-option value="R003">R003 GEMO 總經理</a-select-option>
-            <a-select-option value="R004">R004 CFSO 消金主管</a-select-option>
-            <a-select-option value="R005">R005 CFSA 消金專員</a-select-option>
-            <a-select-option value="R006">R006 CRVO 審查主管</a-select-option>
-            <a-select-option value="R007">R007 CRVA 審查專員</a-select-option>
-            <a-select-option value="R008">R008 INSO 保代主管</a-select-option>
-            <a-select-option value="R009">R009 INSA 保代專員</a-select-option>
-            <a-select-option value="R010">R010 CSDM 客服經理</a-select-option>
-            <a-select-option value="R011">R011 CSVO 客服專員</a-select-option>
+        <a-form-item label="角色">
+          <a-select v-model:value="form.roleId" placeholder="請先選擇部門">
+            <a-select-option v-for="r in filteredRoles" :key="r.id" :value="r.id">
+              {{ r.id }} {{ r.code }} {{ r.name }}
+            </a-select-option>
           </a-select>
         </a-form-item>
         <a-form-item label="Email">
@@ -127,7 +128,7 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { message, Modal } from 'ant-design-vue'
 import {
   getEmployees,
@@ -142,6 +143,57 @@ const statusMap = {
   ACTIVE: '啟用',
   SUSPENDED: '停用',
   LOCKED: '鎖定',
+}
+
+// === 角色資料（對應 auth_role 表）===
+const allRoles = [
+  { id: 'R001', deptId: 'DPT001', code: 'CFSO', name: '消金業務專員' },
+  { id: 'R002', deptId: 'DPT001', code: 'CFDM', name: '消金部經理' },
+  { id: 'R003', deptId: 'DPT002', code: 'CSVO', name: '客服照會專員' },
+  { id: 'R004', deptId: 'DPT002', code: 'CSDM', name: '客服部經理' },
+  { id: 'R005', deptId: 'DPT003', code: 'JCRO', name: '初階授信審查員' },
+  { id: 'R006', deptId: 'DPT003', code: 'CRDM', name: '授信部經理' },
+  { id: 'R007', deptId: 'DPT003', code: 'CRO', name: '風控長' },
+  { id: 'R008', deptId: 'DPT004', code: 'OPS_PA', name: '營運企劃專員' },
+  { id: 'R009', deptId: 'DPT004', code: 'COO', name: '營運長' },
+  { id: 'R010', deptId: 'DPT005', code: 'ISSA', name: '資安監控分析師' },
+  { id: 'R011', deptId: 'DPT005', code: 'CISO', name: '資安長' },
+]
+
+// 根據選中的部門篩選角色
+const filteredRoles = computed(() => {
+  if (!form.deptId) return []
+  return allRoles.filter(r => r.deptId === form.deptId)
+})
+
+// 切換部門時清空角色
+function handleDeptChange() {
+  form.roleId = undefined
+}
+
+// === 一鍵帶入 Demo 資料 ===
+const demoNames = ['周政廷', '許家瑩', '楊宗翰', '賴怡君', '方建宏', '曾婉茹', '廖偉翔', '卓佩樺']
+const deptRoleMap = {
+  CF:  { deptId: 'DPT001', roleId: 'R001' },
+  CS:  { deptId: 'DPT002', roleId: 'R003' },
+  CR:  { deptId: 'DPT003', roleId: 'R005' },
+  OPS: { deptId: 'DPT004', roleId: 'R008' },
+  IS:  { deptId: 'DPT005', roleId: 'R010' },
+}
+
+function fillDemoEmployee(deptCode) {
+  const mapping = deptRoleMap[deptCode]
+  const name = demoNames[Math.floor(Math.random() * demoNames.length)]
+  const num = String(Math.floor(Math.random() * 900) + 100)
+  form.empId = 'E26' + num
+  form.empName = name
+  form.deptId = mapping.deptId
+  form.roleId = mapping.roleId
+  form.email = `demo${num}@javabank.com`
+  form.password = '123456'
+  form.status = 'ACTIVE'
+  form.contractEndDate = null
+  form.permissionExpire = '2026-12-31T00:00:00'
 }
 
 // === 格式化工具 ===

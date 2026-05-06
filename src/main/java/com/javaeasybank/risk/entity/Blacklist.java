@@ -6,11 +6,14 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.annotation.CreatedDate;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "[BlackList]")
+@Table(name = "black_list", indexes = {
+        @Index(name = "idx_bl_lookup", columnList = "list_type, list_value")
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -20,26 +23,30 @@ public class Blacklist {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
+    //黑名單類型（如：EMAIL, PHONE, IP）
     @Enumerated(EnumType.STRING)
-    @Column(name = "[list_type]", nullable = false, length = 20)
+    @Column(name = "list_type", nullable = false, length = 20)
     private BlacklistType listType;
-
-    @Column(name = "[list_value]", nullable = false, length = 100)
+    //具體的黑名單值
+    @Column(name = "list_value", nullable = false, length = 100)
     private String listValue;
-
-    @Column(name = "[source]", length = 50)
+    //資料來源
+    @Column(name = "source", length = 50)
     private String source;
 
-    @Column(name = "[reason]")
+    @Column(name = "reason")
     private String reason;
-
-    @Column(name = "[status]", nullable = false)
+    //是否啟用
+    @Column(name = "status", nullable = false)
     private Boolean status = Boolean.TRUE;
-
-    @Column(name = "[expires_at]")
+    //解封時間 設null表示永久
+    @Column(name = "expires_at")
     private LocalDateTime expireAt;
 
-    @Column(name = "[created_at]")
+    @CreatedDate
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 }

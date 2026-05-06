@@ -67,6 +67,13 @@
       @cancel="resetForm"
     >
       <a-form layout="vertical">
+        <!-- 一鍵帶入 -->
+        <div v-if="!isEdit" style="margin-bottom: 12px">
+          <span style="font-size: 12px; color: #999; margin-right: 8px">快速帶入：</span>
+          <a-button size="small" @click="fillDemoCustomer('M')">男性客戶</a-button>
+          <a-button size="small" @click="fillDemoCustomer('F')">女性客戶</a-button>
+        </div>
+
         <a-form-item label="身分證字號">
           <a-input v-model:value="form.idNumber" placeholder="請輸入身分證字號" :disabled="isEdit" />
         </a-form-item>
@@ -123,6 +130,57 @@ const statusMap = {
 const genderMap = {
   M: '男',
   F: '女',
+}
+
+// === 一鍵帶入 Demo 資料 ===
+const maleNames = ['張志豪', '林建宏', '黃柏翔', '吳宗翰', '陳俊傑', '劉冠廷', '周政廷', '方建宏']
+const femaleNames = ['陳怡君', '林佳蓉', '王雅婷', '黃詩涵', '許家瑩', '曾婉茹', '卓佩樺', '賴怡君']
+const cities = ['台北市', '新北市', '桃園市', '台中市', '高雄市', '台南市']
+const districts = {
+  '台北市': ['中正區', '大安區', '信義區', '松山區', '中山區'],
+  '新北市': ['板橋區', '中和區', '新莊區', '三重區', '永和區'],
+  '桃園市': ['桃園區', '中壢區', '龜山區', '八德區'],
+  '台中市': ['西屯區', '北屯區', '南屯區', '豐原區'],
+  '高雄市': ['前鎮區', '鼓山區', '左營區', '三民區'],
+  '台南市': ['東區', '中西區', '安平區', '北區'],
+}
+const roads = ['中正路', '民生路', '忠孝東路', '復興南路', '和平東路', '仁愛路', '光復路', '建國路']
+
+// 台灣身分證字號產生（符合格式但非真實）
+function generateIdNumber(gender) {
+  const cityCode = 'ABCDEFGHJKLMNPQRSTUVWXYZ'
+  const letter = cityCode[Math.floor(Math.random() * cityCode.length)]
+  const genderDigit = gender === 'M' ? '1' : '2'
+  let digits = genderDigit
+  for (let i = 0; i < 8; i++) {
+    digits += Math.floor(Math.random() * 10)
+  }
+  return letter + digits
+}
+
+function fillDemoCustomer(gender) {
+  const names = gender === 'M' ? maleNames : femaleNames
+  const name = names[Math.floor(Math.random() * names.length)]
+  const city = cities[Math.floor(Math.random() * cities.length)]
+  const district = districts[city][Math.floor(Math.random() * districts[city].length)]
+  const road = roads[Math.floor(Math.random() * roads.length)]
+  const num = Math.floor(Math.random() * 200) + 1
+  const floor = Math.floor(Math.random() * 12) + 1
+
+  const year = Math.floor(Math.random() * 30) + 1970
+  const month = String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')
+  const day = String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')
+
+  const phoneNum = '09' + String(Math.floor(Math.random() * 100000000)).padStart(8, '0')
+  const emailPrefix = `demo${Math.floor(Math.random() * 9000) + 1000}`
+
+  form.idNumber = generateIdNumber(gender)
+  form.name = name
+  form.birthday = `${year}-${month}-${day}`
+  form.gender = gender
+  form.email = `${emailPrefix}@gmail.com`
+  form.phone = phoneNum
+  form.address = `${city}${district}${road}${num}號${floor}樓`
 }
 
 // === 查詢相關 ===
