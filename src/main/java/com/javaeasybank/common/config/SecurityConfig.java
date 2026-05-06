@@ -26,32 +26,33 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
  */
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity  // ← 這行讓 @PreAuthorize 生效
+@EnableMethodSecurity // ← 這行讓 @PreAuthorize 生效
 public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            // 關閉 CSRF 保護
-            // 原因：CSRF 是針對瀏覽器 Cookie 的攻擊，
-            // 我們用 Session + JSON API，前端用 axios 發請求，
-            // 不是傳統的 HTML form submit，不需要這個保護
-            .csrf(csrf -> csrf.disable())
+                // 關閉 CSRF 保護
+                // 原因：CSRF 是針對瀏覽器 Cookie 的攻擊，
+                // 我們用 Session + JSON API，前端用 axios 發請求，
+                // 不是傳統的 HTML form submit，不需要這個保護
+                .csrf(csrf -> csrf.disable())
 
-            // 開啟 CORS，Spring Security 會自動去找底下名為 corsConfigurationSource 的 Bean
-            .cors(cors -> {})
+                // 開啟 CORS，Spring Security 會自動去找底下名為 corsConfigurationSource 的 Bean
+                .cors(cors -> {
+                })
 
-            // 路由權限設定
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/login").permitAll()   // 登入不需驗證
-                .requestMatchers("/api/auth/logout").permitAll()  // 登出不需驗證
+                // 路由權限設定
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/auth/login").permitAll() // 登入不需驗證
+                        .requestMatchers("/api/auth/logout").permitAll() // 登出不需驗證
 
-                .requestMatchers("/api/auth/employees/seed").permitAll() // seed：第一次灌資料時尚未登入
-                .requestMatchers("/api/customers/seed").permitAll()  // seed：客戶測試資料
-                .anyRequest().authenticated()                     // 其餘都要登入
-            )
-            .formLogin(form -> form.disable())       // 不用 Spring 預設登入頁
-            .httpBasic(basic -> basic.disable());     // 不用 HTTP Basic 認證
+                        .requestMatchers("/api/auth/employees/seed").permitAll() // seed：第一次灌資料時尚未登入
+                        .requestMatchers("/api/customers/seed").permitAll() // seed：客戶測試資料
+                        .anyRequest().authenticated() // 其餘都要登入
+                )
+                .formLogin(form -> form.disable()) // 不用 Spring 預設登入頁
+                .httpBasic(basic -> basic.disable()); // 不用 HTTP Basic 認證
 
         return http.build();
     }
