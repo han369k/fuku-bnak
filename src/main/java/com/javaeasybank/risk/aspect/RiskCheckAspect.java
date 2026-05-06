@@ -2,7 +2,7 @@ package com.javaeasybank.risk.aspect;
 
 import com.javaeasybank.risk.annotation.RiskCheck;
 import com.javaeasybank.risk.core.RiskHandler;
-import com.javaeasybank.risk.core.enums.RiskScene;
+import com.javaeasybank.risk.core.enums.BusinessScene;
 import com.javaeasybank.risk.core.RiskTarget;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -12,7 +12,6 @@ import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -24,7 +23,7 @@ import java.util.stream.Collectors;
 public class RiskCheckAspect {
 
     // Key 是 Enum，Value 是對應的處理實作
-    private final Map<RiskScene, RiskHandler> handlerMap;
+    private final Map<BusinessScene, RiskHandler> handlerMap;
 
     // 利用建構子注入，並直接轉換為 Map
     public RiskCheckAspect(List<RiskHandler> handlers) {
@@ -41,7 +40,7 @@ public class RiskCheckAspect {
 
         log.debug("Risk check triggered: scene={}", riskCheck.scene());
 
-        RiskScene scene = riskCheck.scene();
+        BusinessScene scene = riskCheck.scene();
         RiskHandler handler = handlerMap.get(scene);
 
         if (handler != null) {

@@ -2,15 +2,13 @@ package com.javaeasybank.risk.handler;
 
 import com.javaeasybank.risk.core.RiskHandler;
 import com.javaeasybank.risk.core.RiskTarget;
-import com.javaeasybank.risk.core.enums.RiskScene;
+import com.javaeasybank.risk.core.enums.BusinessScene;
 
-import java.math.BigDecimal;
-
-public class TransferRiskHandler implements RiskHandler {
+public class LoanApplyHandler implements RiskHandler {
 
     @Override
-    public RiskScene getScene() {
-        return RiskScene.TRANSFER;
+    public BusinessScene getScene() {
+        return BusinessScene.TRANSFER;
     }
 
     @Override

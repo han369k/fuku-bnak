@@ -1,6 +1,6 @@
 package com.javaeasybank.risk.core.enums;
 
-public enum  RiskScene {
+public enum BusinessScene {
     GENERAL,
     TRANSFER,
     LOAN,

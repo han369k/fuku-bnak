@@ -1,6 +1,6 @@
 package com.javaeasybank.risk.annotation;
 
-import com.javaeasybank.risk.core.enums.RiskScene;
+import com.javaeasybank.risk.core.enums.BusinessScene;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -14,5 +14,5 @@ import java.lang.annotation.Target;
 public @interface RiskCheck {
 
     // 定義業務場景，預設值為 GENERAL
-    RiskScene scene() default RiskScene.GENERAL;
+    BusinessScene scene() default BusinessScene.GENERAL;
 }

@@ -1,6 +1,8 @@
 package com.javaeasybank.risk.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.javaeasybank.risk.core.enums.Disposition;
+import com.javaeasybank.risk.core.enums.RiskLevel;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -16,9 +18,9 @@ public class RiskEventResponse {
 
     private String targetIdentifier;
 
-    private String riskLevel;
+    private RiskLevel riskLevel;
 
-    private String actionTaken;
+    private Disposition actionTaken;
 
     private String triggerReason;
 

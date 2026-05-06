@@ -1,9 +1,9 @@
 package com.javaeasybank.risk.dto;
 
 import com.javaeasybank.risk.core.RiskTarget;
-import com.javaeasybank.risk.core.enums.RiskDisposition;
+import com.javaeasybank.risk.core.enums.Disposition;
 import com.javaeasybank.risk.core.enums.RiskLevel;
-import com.javaeasybank.risk.core.enums.RiskScene;
+import com.javaeasybank.risk.core.enums.BusinessScene;
 
 /**
  * 風控人工審核事件
@@ -13,12 +13,13 @@ import com.javaeasybank.risk.core.enums.RiskScene;
  * @param target     包含 Metadata 的標的物件
  * @param reason     觸發人工審核的原因 (例如：信用評分灰區)
  */
-public record RiskManualReviewEvent(
-        RiskScene scene,
+public record ManualReviewEvent(
+        BusinessScene scene,
         String businessId,
         RiskTarget target,
         RiskLevel level,
-        RiskDisposition disposition,
+        Disposition disposition,
         String reason
+
 ) {
 }

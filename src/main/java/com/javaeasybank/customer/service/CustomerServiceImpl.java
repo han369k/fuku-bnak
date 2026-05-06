@@ -5,7 +5,7 @@ import com.javaeasybank.customer.dto.CustomerDto;
 import com.javaeasybank.customer.entity.CustomerProfile;
 import com.javaeasybank.customer.repository.CustomerProfileRepository;
 import com.javaeasybank.risk.annotation.RiskCheck;
-import com.javaeasybank.risk.core.enums.RiskScene;
+import com.javaeasybank.risk.core.enums.BusinessScene;
 import org.springframework.beans.BeanUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -52,7 +52,7 @@ public class CustomerServiceImpl implements CustomerService {
                 .collect(Collectors.toList());
     }
 
-    @RiskCheck(scene = RiskScene.CREATE_CUSTOMER)
+    @RiskCheck(scene = BusinessScene.CREATE_CUSTOMER)
     @Override
     public CustomerDto.CustomerResponse createCustomer(CustomerDto.CustomerRequest request) {
         if (customerProfileRepository.findByIdNumber(request.getIdNumber()).isPresent()) {

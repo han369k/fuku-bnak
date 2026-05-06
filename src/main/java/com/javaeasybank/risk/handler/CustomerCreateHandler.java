@@ -4,8 +4,8 @@ import com.javaeasybank.common.exception.BusinessException;
 import com.javaeasybank.risk.core.RiskHandler;
 import com.javaeasybank.risk.core.RiskTarget;
 import com.javaeasybank.risk.core.enums.BlacklistType;
-import com.javaeasybank.risk.core.enums.KYC;
-import com.javaeasybank.risk.core.enums.RiskScene;
+import com.javaeasybank.risk.core.KYC;
+import com.javaeasybank.risk.core.enums.BusinessScene;
 import com.javaeasybank.risk.service.BlackListService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -25,8 +25,8 @@ public class CustomerCreateHandler implements RiskHandler {
     }
 
     @Override
-    public RiskScene getScene() {
-        return RiskScene.CREATE_CUSTOMER;
+    public BusinessScene getScene() {
+        return BusinessScene.CREATE_CUSTOMER;
     }
 
     @Override

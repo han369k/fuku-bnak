@@ -6,16 +6,16 @@ import com.javaeasybank.risk.dto.BlackListResponse;
 import com.javaeasybank.risk.entity.Blacklist;
 import com.javaeasybank.risk.repository.BlackListRepository;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional(readOnly = true)
 public class BlackListService {
 
     private final BlackListRepository blRepos;
@@ -25,6 +25,7 @@ public class BlackListService {
                 .map(this::toResponse);
     }
     //行員手動建檔
+    @Transactional
     public BlackListRequest create(BlackListRequest request) {
         Blacklist entity = toEntity(request);
         // 如果你有整合 Spring Security，可以動態取得登入者 ID
@@ -46,6 +47,7 @@ public class BlackListService {
     /**
      * 更新：同樣透過業務主鍵定位
      */
+    @Transactional
     public BlackListResponse updateByBusinessKey(BlacklistType type, String value, BlackListRequest request) {
         Blacklist entity = blRepos.findByBusinessKey(type, value)
                 .orElseThrow(() -> new EntityNotFoundException("找不到欲更新的有效紀錄"));
@@ -62,6 +64,7 @@ public class BlackListService {
     /**
      * 停用：透過業務主鍵將狀態設為 false
      */
+    @Transactional
     public void updateStatusByBusinessKey(BlacklistType type, String value, Boolean status) {
         Blacklist entity = blRepos.findByBusinessKey(type, value)
                 .orElseThrow(() -> new EntityNotFoundException("找不到對應的黑名單紀錄"));

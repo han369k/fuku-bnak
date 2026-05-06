@@ -1,7 +1,7 @@
 package com.javaeasybank.risk.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.javaeasybank.risk.core.enums.RiskDisposition;
+import com.javaeasybank.risk.core.enums.Disposition;
 import com.javaeasybank.risk.core.enums.RiskLevel;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -42,15 +42,15 @@ public class RiskEventLog {
     @Enumerated(EnumType.STRING)
     @Column(name = "action_taken", nullable = false, length = 50)
     // 儲存 "PASS", "REJECT" 或 "MANUAL_REVIEW"
-    private RiskDisposition actionTaken;
+    private Disposition actionTaken;
 
     //描述原因
     @Column(name = "trigger_reason", length = 500)
     private String triggerReason;
 
     //元參考數據(信用分數 收入
-    @Column(name = "metadata")
-    private String metadata;
+    @Column(name = "meta_data")
+    private String metaData;
 
     @CreatedDate
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

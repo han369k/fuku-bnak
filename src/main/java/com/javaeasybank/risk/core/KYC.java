@@ -1,4 +1,4 @@
-package com.javaeasybank.risk.core.enums;
+package com.javaeasybank.risk.core;
 
 public interface KYC {
     String ID_CARD = "idNumber";
