@@ -64,6 +64,7 @@ public class GlobalExceptionHandler {
     }
 
     /**
+
      * 攔截權限不足錯誤（角色無權限存取此 API）
      * 回傳 HTTP 403
      */
@@ -75,6 +76,7 @@ public class GlobalExceptionHandler {
     }
 
     /**
+
      * 攔截登入驗證錯誤（帳號密碼錯誤、帳號停用等）
      * 回傳 HTTP 401
      */
