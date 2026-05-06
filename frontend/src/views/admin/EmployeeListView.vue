@@ -63,22 +63,6 @@
       @cancel="resetForm"
     >
       <a-form layout="vertical">
-        <!-- 一鍵帶入 -->
-        <div v-if="!isEdit" style="margin-bottom: 12px">
-          <span style="font-size: 12px; color: #999; margin-right: 8px">快速帶入：</span>
-          <a-button size="small" @click="fillDemoEmployee('CF')">消金專員</a-button>
-          <a-button size="small" @click="fillDemoEmployee('CS')">客服專員</a-button>
-          <a-button size="small" @click="fillDemoEmployee('CR')">授信審查</a-button>
-          <a-button size="small" @click="fillDemoEmployee('OPS')">營運企劃</a-button>
-          <a-button size="small" @click="fillDemoEmployee('IS')">資安人員</a-button>
-        </div>
-
-        <a-form-item label="員工編號">
-          <a-input v-model:value="form.empId" placeholder="請輸入員工編號" :disabled="isEdit" />
-        </a-form-item>
-        <a-form-item label="姓名">
-          <a-input v-model:value="form.empName" placeholder="請輸入姓名" />
-        </a-form-item>
         <a-form-item label="部門">
           <a-select v-model:value="form.deptId" placeholder="請選擇部門" @change="handleDeptChange">
             <a-select-option value="DPT001">DPT001 消費金融部</a-select-option>
