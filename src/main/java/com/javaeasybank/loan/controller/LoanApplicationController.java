@@ -2,7 +2,6 @@ package com.javaeasybank.loan.controller;
 
 import com.javaeasybank.common.dto.response.ApiResponse;
 import com.javaeasybank.loan.dto.requests.LoanMemberRequestDTO;
-import com.javaeasybank.loan.dto.requests.LoanNonMemberRequestDTO;
 import com.javaeasybank.loan.service.LoanApplicationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -23,14 +22,6 @@ public class LoanApplicationController {
     public ResponseEntity<ApiResponse<String>> applyMember(
             @RequestBody LoanMemberRequestDTO dto) {
         String applicationId = loanApplicationService.insertMember(dto);
-        return ResponseEntity.status(201).body(ApiResponse.success(applicationId));
-    }
-
-    // 非會員申請
-    @PostMapping("/non-member")
-    public ResponseEntity<ApiResponse<String>> applyNonMember(
-            @RequestBody LoanNonMemberRequestDTO dto) {
-        String applicationId = loanApplicationService.insertNonMember(dto);
         return ResponseEntity.status(201).body(ApiResponse.success(applicationId));
     }
 

@@ -5,7 +5,6 @@ import com.javaeasybank.loan.dto.requests.LoanMemberRequestDTO;
 import com.javaeasybank.loan.dto.response.LoanApplicationResponseDTO;
 import com.javaeasybank.loan.dto.requests.LoanContactLogRequestDTO;
 import com.javaeasybank.loan.dto.response.LoanContactLogResponseDTO;
-import com.javaeasybank.loan.dto.requests.LoanNonMemberRequestDTO;
 import com.javaeasybank.loan.dto.requests.LoanReviewDetailRequestDTO;
 import com.javaeasybank.loan.dto.response.LoanReviewDetailResponseDTO;
 import com.javaeasybank.loan.entity.LoanApplication;
@@ -70,24 +69,17 @@ public class LoanApplicationService {
         return loan.getApplicationId();
     }
 
-    // 非會員申請
-    public String insertNonMember(LoanNonMemberRequestDTO dto) {
-        LoanApplication loan = buildBaseLoan();
-        loan.setApplicantName(dto.getApplicantName());
-        loan.setApplicantPhone(dto.getApplicantPhone());
-        loan.setApplicantEmail(dto.getApplicantEmail());
-        fillLoanContent(loan, dto.getApplyType(), dto.getApplyAmount(),
-                dto.getApplyPeriod(), dto.getRate());
-        laRepo.save(loan);
-        return loan.getApplicationId();
-    }
-
-    // 共用：產生 ID + 預設狀態
-    private LoanApplication buildBaseLoan() {
-        LoanApplication loan = new LoanApplication();
+    // 共用：產生格式化 ID（前綴 + yyyyMMddHHmmss + 4 位亂數）
+    private String generateId(String prefix) {
         String timeStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
         String randomSuffix = String.format("%04d", (int) (Math.random() * 10000));
-        loan.setApplicationId("LA" + timeStr + randomSuffix);
+        return prefix + timeStr + randomSuffix;
+    }
+
+    // 產生貸款申請物件 + 預設狀態
+    private LoanApplication buildBaseLoan() {
+        LoanApplication loan = new LoanApplication();
+        loan.setApplicationId(generateId("LA"));
         loan.setApplicationStatus(LoanApplicationStatus.PENDING_CONTACT);
         loan.setCreateTime(LocalDateTime.now());
         return loan;
@@ -95,7 +87,7 @@ public class LoanApplicationService {
 
     // 共用：填申請內容
     private void fillLoanContent(LoanApplication loan, String applyType,
-                                 Long applyAmount, Integer applyPeriod,
+                                 BigDecimal applyAmount, Integer applyPeriod,
                                  BigDecimal rate) {
         loan.setApplyType(applyType);
         loan.setApplyAmount(applyAmount);
@@ -112,9 +104,7 @@ public class LoanApplicationService {
 
         // 寫入聯繫紀錄
         LoanContactLog log = new LoanContactLog();
-        String timeStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
-        String randomSuffix = String.format("%04d", (int) (Math.random() * 10000));
-        log.setLogId("CL" + timeStr + randomSuffix);
+        log.setLogId(generateId("CL"));
         log.setApplicationId(applicationId);
         log.setEmpId(dto.getEmpId());
         log.setContactStatus(dto.getContactStatus());
@@ -169,9 +159,7 @@ public class LoanApplicationService {
 
         // 若是全新的，產生 PK 並綁定 applicationId
         if (detail.getReviewId() == null) {
-            String timeStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
-            String randomSuffix = String.format("%04d", (int) (Math.random() * 10000));
-            detail.setReviewId("RD" + timeStr + randomSuffix);
+            detail.setReviewId(generateId("RD"));
             detail.setApplicationId(applicationId);
         }
 
@@ -292,9 +280,6 @@ public class LoanApplicationService {
         LoanApplicationResponseDTO dto = new LoanApplicationResponseDTO();
         dto.setApplicationId(loan.getApplicationId());
         dto.setCustomerId(loan.getCustomerId());
-        dto.setApplicantName(loan.getApplicantName());
-        dto.setApplicantPhone(loan.getApplicantPhone());
-        dto.setApplicantEmail(loan.getApplicantEmail());
         dto.setApplyType(loan.getApplyType());
         dto.setApplyAmount(loan.getApplyAmount());
         dto.setApplyPeriod(loan.getApplyPeriod());

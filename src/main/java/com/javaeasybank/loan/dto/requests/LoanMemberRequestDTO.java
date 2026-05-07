@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 public class LoanMemberRequestDTO {
     private String customerId;
     private String applyType;
-    private Long applyAmount;
+    private BigDecimal applyAmount;
     private Integer applyPeriod;
     private BigDecimal rate;
 }

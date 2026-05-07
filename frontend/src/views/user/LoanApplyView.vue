@@ -223,26 +223,6 @@
               <div class="rh-note">等額本息計算</div>
             </div>
 
-            <!-- 計算公式說明 -->
-            <div class="rate-formula" v-if="computedRate !== null">
-              <div class="formula-title">📐 利率計算說明</div>
-              <div class="formula-row">
-                <span class="formula-label">年利率公式</span>
-                <span class="formula-val">基礎利率 + 期數加碼</span>
-              </div>
-              <div class="formula-row" v-if="rateRules.types[form.applyType]?.fixedRate">
-                <span class="formula-label">備注</span>
-                <span class="formula-val fixed-note">此類型為固定利率，期數不影響加碼</span>
-              </div>
-              <div class="formula-row">
-                <span class="formula-label">月還款公式</span>
-                <span class="formula-val formula-math">P × r(1+r)ⁿ / ((1+r)ⁿ−1)</span>
-              </div>
-              <div class="formula-vars">
-                <span>P = 本金　r = 月利率(年利率÷12)　n = 期數(月)</span>
-              </div>
-            </div>
-
             <div class="rate-tips">
               <div class="tip-title">申請說明</div>
               <ul>
@@ -659,7 +639,8 @@ onUnmounted(() => clearInterval(showcaseTimer))
   grid-template-columns: 1fr 280px;
   gap: 24px;
   align-items: start;
-  width: 100%;        /* 強制撐滿父容器，不讓 member 短內容縮排版 */
+  width: 100%;
+  min-width: 660px;   /* form-main(340) + gap(24) + sidebar(280) + 餘裕 */
   max-width: 860px;
   margin: 0 auto;
 }
@@ -669,7 +650,7 @@ onUnmounted(() => clearInterval(showcaseTimer))
   border-radius: 14px;
   padding: 28px;
   display: flex; flex-direction: column; gap: 0;
-  min-width: 0;       /* 防止 grid 子元素溢出 */
+  min-width: 340px;   /* 欄位最小可讀寬度 */
 }
 
 .applicant-tag {
