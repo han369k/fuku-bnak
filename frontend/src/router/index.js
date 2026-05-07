@@ -119,6 +119,13 @@ const router = createRouter({
           component: () => import('../views/admin/CardApplicationList.vue'),
         },
         {
+          path:'card-txns',
+          name:'admin-card-txns',
+          //http://localhost:5173/admin/card-txns
+          component: () => import('../views/admin/CardTxnView.vue'),
+        }
+        ,
+        {
           path: 'risk-events',
           name: 'admin-risk-events',
           //http://localhost:5173/admin/risk-events

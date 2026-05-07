@@ -15,7 +15,7 @@ public class CardTxnResponseDto {
     private TxnType txnType;
     private LocalDateTime txnDate;
     private String description;
-
+    private String customerName;
     private String merchantName;
     private String cardNumber;
 }

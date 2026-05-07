@@ -66,6 +66,10 @@
           <FileTextOutlined />
           <span>卡片管理</span>
         </a-menu-item>
+        <a-menu-item key="admin-card-txn" @click="$router.push('/admin/card-txns')">
+          <FileTextOutlined />
+          <span>信用卡交易管理</span>
+        </a-menu-item>
 
 
       </a-menu>
