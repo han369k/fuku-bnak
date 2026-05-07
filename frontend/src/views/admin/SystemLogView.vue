@@ -1,10 +1,21 @@
 <template>
-  <div style="padding: 24px">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px">
-      <h2>系統日誌</h2>
-      <div style="display: flex; gap: 8px">
-        <a-button type="primary" @click="handleExportCsv">匯出 CSV</a-button>
-        <a-button type="primary" @click="handleExportPdf">匯出 PDF</a-button>
+  <div class="page-container">
+    <div class="page-header">
+      <h2 class="page-title">系統日誌</h2>
+    </div>
+
+    <!-- 頂部 F 橫劃：主操作 -->
+    <div class="action-bar" style="justify-content: flex-end;">
+      <!-- 右側全域操作區 -->
+      <div class="global-actions">
+        <a-button class="rounded-btn btn-ghost" @click="handleExportCsv">
+          <template #icon><DownloadOutlined /></template>
+          匯出 CSV
+        </a-button>
+        <a-button type="primary" class="rounded-btn" @click="handleExportPdf">
+          <template #icon><DownloadOutlined /></template>
+          匯出 PDF
+        </a-button>
       </div>
     </div>
 
@@ -13,11 +24,23 @@
       :data-source="logs"
       :loading="loading"
       row-key="id"
-      bordered
+      class="custom-table"
     >
-      <template #bodyCell="{ column, text }">
-        <template v-if="column.key === 'actionTime'">
-          {{ formatTime(text) }}
+      <template #bodyCell="{ column, record }">
+        <template v-if="column.key === 'emp'">
+          <div class="emp-name-cell">
+            <div class="emp-avatar">{{ record.empName ? record.empName.charAt(0) : '?' }}</div>
+            <div class="emp-info">
+              <span class="emp-name-text">{{ record.empName }}</span>
+              <span class="emp-id-text">{{ record.empId }}</span>
+            </div>
+          </div>
+        </template>
+        <template v-else-if="column.key === 'action'">
+          <a-tag color="blue">{{ record.action }}</a-tag>
+        </template>
+        <template v-else-if="column.key === 'actionTime'">
+          {{ formatTime(record.actionTime) }}
         </template>
       </template>
     </a-table>
@@ -27,15 +50,15 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
+import { DownloadOutlined } from '@ant-design/icons-vue'
 import { getActionLogs, exportLogsCsv, exportLogsPdf } from '@/api/auth'
 
 const logs = ref([])
 const loading = ref(false)
 
 const columns = [
-  { title: 'ID', dataIndex: 'id', key: 'id', width: 60 },
-  { title: '員工編號', dataIndex: 'empId', key: 'empId', width: 100 },
-  { title: '姓名', dataIndex: 'empName', key: 'empName', width: 100 },
+  { title: '日誌 ID', dataIndex: 'id', key: 'id', width: 80 },
+  { title: '操作人員', dataIndex: 'empName', key: 'emp', width: 160 },
   { title: '動作', dataIndex: 'action', key: 'action', width: 120 },
   { title: '目標', dataIndex: 'target', key: 'target', width: 100 },
   { title: '詳情', dataIndex: 'details', key: 'details' },
@@ -92,3 +115,42 @@ onMounted(() => {
   fetchData()
 })
 </script>
+
+<style scoped>
+/* F-Pattern 專用組件 */
+.emp-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.emp-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: rgba(92, 107, 95, 0.1);
+  color: #5C6B5F;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.emp-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.emp-name-text {
+  font-weight: 600;
+  color: #1a1a2e;
+  font-size: 14px;
+}
+
+.emp-id-text {
+  font-size: 11px;
+  color: #8c8c8c;
+  margin-top: 2px;
+}
+</style>

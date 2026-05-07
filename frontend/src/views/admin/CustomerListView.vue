@@ -1,24 +1,34 @@
 <template>
-  <div style="padding: 24px">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px">
-      <h2>客戶管理</h2>
-      <div style="display: flex; gap: 8px">
-        <a-button type="primary" @click="handleSeed" :loading="seedLoading">帶入測試資料</a-button>
-      </div>
+  <div class="page-container">
+    <div class="page-header">
+      <h2 class="page-title">客戶管理</h2>
     </div>
 
-    <!-- 查詢區 -->
-    <div style="margin-bottom: 16px; display: flex; gap: 8px; align-items: center">
-      <a-input
-        v-model:value="keyword"
-        placeholder="搜尋客戶姓名"
-        style="width: 200px"
-        allow-clear
-        @press-enter="handleSearch"
-      />
-      <a-button type="primary" @click="handleSearch">查詢</a-button>
-      <a-button @click="handleClear">清除</a-button>
-      <a-button type="dashed" @click="openCreateModal">新增客戶</a-button>
+    <!-- 頂部 F 的第一橫劃：搜尋與主操作 -->
+    <div class="action-bar">
+      <!-- 左側搜尋區 -->
+      <div class="search-group">
+        <a-input
+          v-model:value="keyword"
+          placeholder="搜尋客戶姓名或身分證..."
+          class="rounded-input search-input"
+          allow-clear
+          @press-enter="handleSearch"
+        >
+          <template #prefix><SearchOutlined style="color: #bfbfbf" /></template>
+        </a-input>
+        <a-button type="primary" class="rounded-btn" @click="handleSearch">查詢</a-button>
+        <a-button class="rounded-btn btn-ghost" @click="handleClear">清除</a-button>
+      </div>
+
+      <!-- 右側全域操作區 -->
+      <div class="global-actions">
+        <a-button class="rounded-btn btn-ghost" @click="handleSeed" :loading="seedLoading">帶入測試資料</a-button>
+        <a-button type="primary" class="rounded-btn" @click="openCreateModal">
+          <template #icon><PlusOutlined /></template>
+          新增客戶
+        </a-button>
+      </div>
     </div>
 
     <!-- 表格 -->
@@ -26,35 +36,53 @@
       :columns="columns"
       :data-source="customers"
       :loading="loading"
-      :scroll="{ x: 1200 }"
+      :scroll="{ x: 1000 }"
       row-key="customerId"
-      bordered
+      class="custom-table"
+      :pagination="{ pageSize: 10, showSizeChanger: false }"
     >
       <template #bodyCell="{ column, record }">
+        <!-- F 主幹：最強烈的視覺辨識 (姓名 + ID) -->
+        <template v-if="column.key === 'name'">
+          <div class="emp-name-cell">
+            <div class="emp-avatar">{{ record.name.charAt(0) }}</div>
+            <div class="emp-info">
+              <span class="emp-name-text">{{ record.name }}</span>
+              <span class="emp-id-text">{{ record.customerId }}</span>
+            </div>
+          </div>
+        </template>
+
         <!-- 性別顯示 -->
-        <template v-if="column.key === 'gender'">
+        <template v-else-if="column.key === 'gender'">
           {{ genderMap[record.gender] || record.gender }}
         </template>
 
         <!-- 狀態顯示 -->
         <template v-else-if="column.key === 'status'">
-          <a-tag :color="record.status === 'ACTIVE' ? 'green' : record.status === 'DEACTIVATED' ? 'red' : 'default'">
+          <div :class="['status-tag', `status-${record.status.toLowerCase()}`]">
+            <span class="status-dot"></span>
             {{ statusMap[record.status] || record.status }}
-          </a-tag>
+          </div>
         </template>
 
-        <!-- 操作按鈕 -->
+        <!-- F 終點：右側行動按鈕 -->
         <template v-else-if="column.key === 'action'">
-          <a-space>
-            <a-button size="small" @click="openEditModal(record)">編輯</a-button>
+          <div class="action-cell">
+            <a-button type="link" class="action-btn edit-btn" @click="openEditModal(record)">
+              編輯
+            </a-button>
+            <a-divider v-if="isSuperAdmin" type="vertical" />
             <a-button
               v-if="isSuperAdmin"
-              size="small"
-              danger
+              type="link"
+              class="action-btn suspend-btn"
               @click="handleDeactivate(record.customerId)"
               :disabled="record.status === 'DEACTIVATED' || record.status === 'INACTIVE'"
-            >停用</a-button>
-          </a-space>
+            >
+              停用
+            </a-button>
+          </div>
         </template>
       </template>
     </a-table>
@@ -112,6 +140,7 @@
 <script setup>
 import { ref, reactive, computed } from 'vue'
 import { message, Modal } from 'ant-design-vue'
+import { SearchOutlined, PlusOutlined } from '@ant-design/icons-vue'
 import {
   getCustomers,
   createCustomer,
@@ -199,21 +228,15 @@ const customers = ref([])
 const loading = ref(false)
 
 const columns = [
-  { title: '客戶 ID', dataIndex: 'customerId', key: 'customerId', width: 110 },
+  { title: '客戶資訊', dataIndex: 'name', key: 'name', width: 200, fixed: 'left' },
   { title: 'CIF', dataIndex: 'cif', key: 'cif', width: 120 },
   { title: '身分證字號', dataIndex: 'idNumber', key: 'idNumber', width: 130 },
-  { title: '姓名', dataIndex: 'name', key: 'name', width: 100 },
-  { title: '生日', dataIndex: 'birthday', key: 'birthday', width: 120 },
   { title: '性別', dataIndex: 'gender', key: 'gender', width: 70 },
+  { title: '生日', dataIndex: 'birthday', key: 'birthday', width: 120 },
   { title: 'Email', dataIndex: 'email', key: 'email', width: 180 },
   { title: '電話', dataIndex: 'phone', key: 'phone', width: 130 },
-  {
-    title: '狀態',
-    dataIndex: 'status',
-    key: 'status',
-    width: 90,
-  },
-  { title: '操作', key: 'action', width: 150, align: 'center', fixed: 'right' },
+  { title: '狀態', dataIndex: 'status', key: 'status', width: 100 },
+  { title: '操作', key: 'action', width: 140, align: 'right', fixed: 'right' },
 ]
 
 async function fetchData() {
@@ -350,3 +373,87 @@ async function handleSeed() {
   }
 }
 </script>
+
+<style scoped>
+/* 左側 F 主幹：姓名與頭像 */
+.emp-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.emp-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: rgba(92, 107, 95, 0.1);
+  color: #5C6B5F;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.emp-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.emp-name-text {
+  font-weight: 600;
+  color: #1a1a2e;
+  font-size: 15px;
+}
+
+.emp-id-text {
+  font-size: 12px;
+  color: #8c8c8c;
+  margin-top: 2px;
+}
+
+/* 狀態標籤 */
+.status-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.status-active {
+  background-color: rgba(82, 196, 26, 0.1);
+  color: #389e0d;
+}
+.status-active .status-dot { background-color: #52c41a; }
+
+.status-deactivated, .status-frozen {
+  background-color: rgba(255, 77, 79, 0.1);
+  color: #d9363e;
+}
+.status-deactivated .status-dot, .status-frozen .status-dot { background-color: #ff4d4f; }
+
+.status-pending {
+  background-color: rgba(250, 140, 22, 0.1);
+  color: #fa8c16;
+}
+.status-pending .status-dot { background-color: #fa8c16; }
+
+/* 停用按鈕專屬樣式 */
+.suspend-btn {
+  color: #ff4d4f;
+}
+
+.suspend-btn:hover {
+  color: #d9363e;
+  background-color: rgba(255, 77, 79, 0.05);
+}
+</style>

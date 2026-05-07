@@ -382,68 +382,6 @@ async function handleSeed() {
 </script>
 
 <style scoped>
-.page-container {
-  padding: 32px 40px;
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
-.page-header {
-  margin-bottom: 24px;
-}
-
-.page-title {
-  font-size: 24px;
-  font-weight: 700;
-  color: #1a1a2e;
-  margin: 0;
-  letter-spacing: 0.5px;
-}
-
-/* 頂部 F 橫劃：搜尋與操作列 */
-.action-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
-  gap: 16px;
-}
-
-.search-group {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
-.search-input :deep(input) {
-  border-radius: 12px;
-}
-
-.search-input {
-  width: 280px;
-}
-
-.global-actions {
-  display: flex;
-  gap: 12px;
-}
-
-.rounded-btn {
-  border-radius: 12px !important;
-  font-weight: 600;
-}
-
-.btn-ghost {
-  border-color: #d9d9d9;
-  color: #5C6B5F;
-}
-
-.btn-ghost:hover {
-  border-color: #5C6B5F;
-  color: #5C6B5F;
-}
-
 /* 左側 F 主幹：姓名與頭像 */
 .emp-name-cell {
   display: flex;
@@ -510,27 +448,7 @@ async function handleSeed() {
 }
 .status-suspended .status-dot { background-color: #ff4d4f; }
 
-/* 右側 F 終點：行動按鈕 */
-.action-cell {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-}
-
-.action-btn {
-  font-weight: 600;
-  padding: 0 8px;
-}
-
-.edit-btn {
-  color: #5C6B5F;
-}
-
-.edit-btn:hover {
-  color: #4A574D;
-  background-color: rgba(92, 107, 95, 0.05);
-}
-
+/* 停用按鈕專屬樣式 */
 .suspend-btn {
   color: #ff4d4f;
 }
