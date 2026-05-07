@@ -1,16 +1,18 @@
 <template>
-  <a-layout style="min-height: 100vh">
+  <a-layout class="admin-layout">
     <a-layout-sider
       v-model:collapsed="collapsed"
       collapsible
-      :width="200"
-      :collapsed-width="80"
+      :width="260"
+      theme="light"
       style="position: fixed; left: 0; top: 0; bottom: 0; z-index: 100"
     >
-      <div style="height: 32px; margin: 16px; color: white; text-align: center; font-size: 18px">
-        {{ collapsed ? '爪哇' : '爪哇銀行' }}
+      <div class="logo-container">
+        <BankFilled class="logo-icon" />
+        <span v-if="!collapsed" class="logo-text">爪哇銀行</span>
       </div>
-      <a-menu theme="dark" mode="inline" :selected-keys="selectedKeys">
+
+      <a-menu theme="light" mode="inline" :selected-keys="selectedKeys">
         <a-menu-item key="admin-home" @click="$router.push('/admin')">
           <HomeOutlined />
           <span>首頁</span>
@@ -27,12 +29,12 @@
             <span>交易操作</span>
           </a-menu-item>
           <a-menu-item key="admin-trans-logs" @click="$router.push('/admin/trans-logs')">
-            <FileTextOutlined />
+            <SwapOutlined />
             <span>交易紀錄</span>
           </a-menu-item>
           <a-menu-item key="admin-loan-apply" @click="$router.push('/admin/loan-apply')">
             <FileTextOutlined />
-            <span>貸款申請(測試用)</span>
+            <span>貸款申請(測試)</span>
           </a-menu-item>
           <a-menu-item key="admin-loan-applications" @click="$router.push('/admin/loan-applications')">
             <FileTextOutlined />
@@ -53,7 +55,7 @@
 
         <template v-if="authStore.user?.deptId !== 'DPT005'">
           <a-menu-item key="admin-risk-events" @click="$router.push('/admin/risk-events')">
-            <FileTextOutlined />
+            <LineChartOutlined />
             <span>風險事件</span>
           </a-menu-item>
           <a-menu-item key="admin-blacklist" @click="$router.push('/admin/blacklist')">
@@ -66,7 +68,7 @@
           </a-menu-item>
           <a-menu-item key="admin-card-applications" @click="$router.push('/admin/card-applications')">
             <FileTextOutlined />
-            <span>信用卡申請管理</span>
+            <span>信用卡審核</span>
           </a-menu-item>
           <a-menu-item key="admin-cards" @click="$router.push('/admin/cards')">
             <FileTextOutlined />
@@ -76,26 +78,27 @@
 
         <!-- 系統稽核：僅資安部 (DPT005) 可見 -->
         <a-menu-item v-if="authStore.user?.deptId === 'DPT005'" key="admin-logs" @click="$router.push('/admin/logs')">
-          <AuditOutlined />
-          <span>系統日誌</span>
+          <SettingOutlined />
+          <span>系統設定</span>
         </a-menu-item>
       </a-menu>
     </a-layout-sider>
 
-    <a-layout :style="{ marginLeft: collapsed ? '80px' : '200px', transition: 'margin-left 0.2s' }">
-      <a-layout-header style="background: #fff; padding: 0 24px; display: flex; align-items: center; justify-content: space-between">
-        <span style="font-size: 16px">管理端</span>
+    <a-layout :style="{ marginLeft: collapsed ? '80px' : '260px', transition: 'margin-left 0.2s' }">
+      <a-layout-header class="custom-header">
+        <div class="header-search"></div>
         <!-- 使用者資訊 & 登出 -->
-        <div v-if="authStore.isLoggedIn" style="display: flex; align-items: center; gap: 12px">
-          <a-tag color="blue">{{ authStore.user?.roleCode }}</a-tag>
-          <span style="font-size: 14px; color: #333">{{ authStore.user?.empName }}</span>
-          <a-button size="small" @click="handleLogout">
-            <LogoutOutlined />
-            登出
+        <div v-if="authStore.isLoggedIn" class="header-right">
+          <a-tag class="custom-role-tag">
+            {{ authStore.user?.roleCode || 'ROLE' }}
+          </a-tag>
+          <span class="user-name">{{ authStore.user?.empName || '員工姓名' }}</span>
+          <a-button shape="round" class="logout-btn" @click="handleLogout">
+            <LogoutOutlined /> 登出
           </a-button>
         </div>
       </a-layout-header>
-      <a-layout-content style="margin: 16px">
+      <a-layout-content class="admin-content">
         <router-view />
       </a-layout-content>
     </a-layout>
@@ -115,6 +118,9 @@ import {
   UserOutlined,
   LogoutOutlined,
   AuditOutlined,
+  LineChartOutlined,
+  SettingOutlined,
+  BankFilled
 } from '@ant-design/icons-vue'
 import { logout } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
@@ -137,3 +143,142 @@ async function handleLogout() {
   router.push({ name: 'admin-login' })
 }
 </script>
+
+<style scoped>
+/* 側邊欄整體容器 */
+:deep(.ant-layout-sider) {
+  background-color: #e9ecef !important; /* 淺灰色背景 */
+  padding: 20px 15px;
+}
+
+/* 隱藏選單預設的右邊框 */
+:deep(.ant-menu) {
+  background: transparent !important;
+  border-inline-end: none !important;
+}
+
+/* 每一項選單的基礎樣式 */
+:deep(.ant-menu-item) {
+  height: 48px !important;
+  line-height: 48px !important;
+  margin-bottom: 8px !important;
+  color: #4a4a4a !important; /* 未選中時的文字顏色 */
+  font-weight: 500;
+  border-radius: 24px !important; /* hover 效果圓角 */
+  transition: all 0.3s ease;
+}
+
+/* 選中狀態：墨綠色膠囊樣式 */
+:deep(.ant-menu-item-selected) {
+  background-color: #5C6B5F !important; /* 墨綠色背景 */
+  color: #ffffff !important;           /* 白色文字 */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 確保選中時圖示也是白色的 */
+:deep(.ant-menu-item-selected .anticon) {
+  color: #ffffff !important;
+}
+
+/* 圖示與文字的間距調整 */
+:deep(.ant-menu-title-content) {
+  margin-inline-start: 12px !important;
+  font-size: 15px;
+}
+
+/* LOGO 區塊美化 */
+.logo-container {
+  padding: 0 16px 32px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-icon {
+  font-size: 24px;
+  color: #5C6B5F; /* 改成我們的墨綠色 */
+}
+
+.logo-text {
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 0.5px;
+  color: #4A574D; /* 用稍微深一點的墨綠色作為標題字，比純黑更好看 */
+}
+
+/* =========================================
+   頂部導覽列加大設計
+========================================= */
+.admin-layout {
+  min-height: 100vh;
+}
+
+.custom-header {
+  height: 80px !important; 
+  line-height: 80px !important;
+  padding: 0 32px !important;
+  background: transparent !important;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* 徹底移除藍色 Hover，統一改為墨綠色 */
+.custom-header a:hover,
+.custom-header .anticon:hover {
+  color: #5C6B5F !important;
+}
+
+.custom-header *:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px; /* 元素之間的距離拉開 */
+  /* 強制將邊框改為實線，消除虛線 */
+  border-style: solid !important;
+  border-color: transparent !important;
+}
+
+/* 墨綠色質感標籤 */
+.custom-role-tag {
+  background-color: rgba(92, 107, 95, 0.1) !important;
+  color: #5C6B5F !important;
+  border: 1px solid rgba(92, 107, 95, 0.3) !important;
+  font-size: 14px !important;
+  font-weight: 600;
+  padding: 4px 12px !important;
+  border-radius: 6px !important;
+  margin: 0;
+}
+
+/* 員工姓名變大 */
+.user-name {
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+}
+
+/* 登出按鈕微調變大 */
+.logout-btn {
+  height: 38px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-color: #d9d9d9;
+  color: #333;
+}
+.logout-btn:hover {
+  border-color: #5C6B5F;
+  color: #5C6B5F;
+}
+
+.admin-content {
+  padding: 0 32px 32px;
+  overflow-y: auto;
+}
+</style>

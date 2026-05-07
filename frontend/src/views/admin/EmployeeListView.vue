@@ -1,55 +1,83 @@
 <template>
-  <div style="padding: 24px">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px">
-      <h2>員工管理</h2>
-      <div style="display: flex; gap: 8px">
-        <a-button type="primary" @click="handleSeed" :loading="seedLoading">帶入測試資料</a-button>
+  <div class="page-container">
+    <div class="page-header">
+      <h2 class="page-title">員工管理</h2>
+    </div>
+
+    <!-- 頂部 F 的第一橫劃：搜尋與主操作 -->
+    <div class="action-bar">
+      <!-- 左側搜尋區 -->
+      <div class="search-group">
+        <a-input
+          v-model:value="keyword"
+          placeholder="搜尋員工姓名或編號..."
+          class="rounded-input search-input"
+          allow-clear
+          @press-enter="handleSearch"
+        >
+          <template #prefix><SearchOutlined style="color: #bfbfbf" /></template>
+        </a-input>
+        <a-button type="primary" class="rounded-btn" @click="handleSearch">查詢</a-button>
+        <a-button class="rounded-btn btn-ghost" @click="handleClear">清除</a-button>
+      </div>
+
+      <!-- 右側全域操作區 -->
+      <div class="global-actions">
+        <a-button class="rounded-btn btn-ghost" @click="handleSeed" :loading="seedLoading">帶入測試資料</a-button>
+        <a-button v-if="authStore.user?.permLevel === 0" type="primary" class="rounded-btn" @click="openCreateModal">
+          <template #icon><PlusOutlined /></template>
+          新增
+        </a-button>
       </div>
     </div>
 
-    <!-- 查詢區 -->
-    <div style="margin-bottom: 16px; display: flex; gap: 8px; align-items: center">
-      <a-input
-        v-model:value="keyword"
-        placeholder="搜尋員工姓名"
-        style="width: 200px"
-        allow-clear
-        @press-enter="handleSearch"
-      />
-      <a-button type="primary" @click="handleSearch">查詢</a-button>
-      <a-button @click="handleClear">清除</a-button>
-      <a-button v-if="authStore.user?.permLevel === 0" type="dashed" @click="openCreateModal">新增員工</a-button>
-    </div>
-
-    <!-- 表格 -->
+    <!-- 列表主體：左側辨識，右側行動 -->
     <a-table
       :columns="columns"
       :data-source="employees"
       :loading="loading"
-      :scroll="{ x: 1200 }"
+      :scroll="{ x: 1000 }"
       row-key="empId"
-      bordered
+      class="custom-table"
+      :pagination="{ pageSize: 10, showSizeChanger: false }"
     >
       <template #bodyCell="{ column, record }">
-        <!-- 狀態顯示 -->
-        <template v-if="column.key === 'status'">
-          <a-tag :color="record.status === 'ACTIVE' ? 'green' : record.status === 'SUSPENDED' ? 'red' : 'default'">
-            {{ statusMap[record.status] || record.status }}
-          </a-tag>
+        <!-- F 主幹：最強烈的視覺辨識 (姓名 + ID) -->
+        <template v-if="column.key === 'empName'">
+          <div class="emp-name-cell">
+            <div class="emp-avatar">{{ record.empName.charAt(0) }}</div>
+            <div class="emp-info">
+              <span class="emp-name-text">{{ record.empName }}</span>
+              <span class="emp-id-text">{{ record.empId }}</span>
+            </div>
+          </div>
         </template>
 
-        <!-- 操作按鈕 -->
+        <!-- 狀態標籤 -->
+        <template v-else-if="column.key === 'status'">
+          <div :class="['status-tag', `status-${record.status.toLowerCase()}`]">
+            <span class="status-dot"></span>
+            {{ statusMap[record.status] || record.status }}
+          </div>
+        </template>
+
+        <!-- F 終點：右側行動按鈕 -->
         <template v-else-if="column.key === 'action'">
-          <a-space>
-            <a-button v-if="authStore.user?.permLevel === 1" size="small" @click="openEditModal(record)">編輯</a-button>
+          <div class="action-cell">
+            <a-button v-if="authStore.user?.permLevel === 1" type="link" class="action-btn edit-btn" @click="openEditModal(record)">
+              編輯
+            </a-button>
+            <a-divider v-if="authStore.user?.permLevel === 1" type="vertical" />
             <a-button
               v-if="authStore.user?.permLevel === 1"
-              size="small"
-              danger
+              type="link"
+              class="action-btn suspend-btn"
               @click="handleSuspend(record.empId)"
               :disabled="record.status === 'SUSPENDED'"
-            >停用</a-button>
-          </a-space>
+            >
+              停用
+            </a-button>
+          </div>
         </template>
       </template>
     </a-table>
@@ -115,6 +143,7 @@
 <script setup>
 import { ref, reactive, computed } from 'vue'
 import { message, Modal } from 'ant-design-vue'
+import { SearchOutlined, PlusOutlined } from '@ant-design/icons-vue'
 import {
   getEmployees,
   createEmployee,
@@ -198,19 +227,11 @@ const employees = ref([])
 const loading = ref(false)
 
 const columns = [
-  { title: '員工編號', dataIndex: 'empId', key: 'empId', width: 110 },
-  { title: '姓名', dataIndex: 'empName', key: 'empName', width: 100 },
-  { title: '部門', dataIndex: 'deptId', key: 'deptId', width: 90 },
-  { title: '角色', dataIndex: 'roleId', key: 'roleId', width: 90 },
-  { title: '角色代碼', dataIndex: 'roleCode', key: 'roleCode', width: 100 },
-  { title: '權限範圍', dataIndex: 'permScope', key: 'permScope', width: 100 },
-  { title: 'Email', dataIndex: 'email', key: 'email', width: 180 },
-  {
-    title: '狀態',
-    dataIndex: 'status',
-    key: 'status',
-    width: 80,
-  },
+  { title: '員工資訊', dataIndex: 'empName', key: 'empName', width: 200, fixed: 'left' },
+  { title: '狀態', dataIndex: 'status', key: 'status', width: 120 },
+  { title: '部門', dataIndex: 'deptId', key: 'deptId', width: 100 },
+  { title: '角色代碼', dataIndex: 'roleCode', key: 'roleCode', width: 120 },
+  { title: 'Email', dataIndex: 'email', key: 'email', width: 220 },
   {
     title: '合約到期',
     dataIndex: 'contractEndDate',
@@ -218,7 +239,7 @@ const columns = [
     width: 170,
     customRender: ({ text }) => formatTime(text),
   },
-  { title: '操作', key: 'action', width: 150, align: 'center', fixed: 'right' },
+  { title: '操作', key: 'action', width: 140, align: 'right', fixed: 'right' },
 ]
 
 async function fetchData() {
@@ -359,3 +380,163 @@ async function handleSeed() {
   }
 }
 </script>
+
+<style scoped>
+.page-container {
+  padding: 32px 40px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.page-header {
+  margin-bottom: 24px;
+}
+
+.page-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+
+/* 頂部 F 橫劃：搜尋與操作列 */
+.action-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.search-group {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.search-input :deep(input) {
+  border-radius: 12px;
+}
+
+.search-input {
+  width: 280px;
+}
+
+.global-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.rounded-btn {
+  border-radius: 12px !important;
+  font-weight: 600;
+}
+
+.btn-ghost {
+  border-color: #d9d9d9;
+  color: #5C6B5F;
+}
+
+.btn-ghost:hover {
+  border-color: #5C6B5F;
+  color: #5C6B5F;
+}
+
+/* 左側 F 主幹：姓名與頭像 */
+.emp-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.emp-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: rgba(92, 107, 95, 0.1);
+  color: #5C6B5F;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.emp-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.emp-name-text {
+  font-weight: 600;
+  color: #1a1a2e;
+  font-size: 15px;
+}
+
+.emp-id-text {
+  font-size: 12px;
+  color: #8c8c8c;
+  margin-top: 2px;
+}
+
+/* 狀態標籤 */
+.status-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.status-active {
+  background-color: rgba(82, 196, 26, 0.1);
+  color: #389e0d;
+}
+.status-active .status-dot { background-color: #52c41a; }
+
+.status-suspended {
+  background-color: rgba(255, 77, 79, 0.1);
+  color: #d9363e;
+}
+.status-suspended .status-dot { background-color: #ff4d4f; }
+
+/* 右側 F 終點：行動按鈕 */
+.action-cell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.action-btn {
+  font-weight: 600;
+  padding: 0 8px;
+}
+
+.edit-btn {
+  color: #5C6B5F;
+}
+
+.edit-btn:hover {
+  color: #4A574D;
+  background-color: rgba(92, 107, 95, 0.05);
+}
+
+.suspend-btn {
+  color: #ff4d4f;
+}
+
+.suspend-btn:hover {
+  color: #d9363e;
+  background-color: rgba(255, 77, 79, 0.05);
+}
+</style>

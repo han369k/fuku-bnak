@@ -1,0 +1,87 @@
+:root {
+  --admin-primary: #5C6B5F;
+  --admin-primary-hover: #4A574D;
+  --admin-bg: #f4f5f7;
+}
+
+body {
+  background-color: var(--admin-bg) !important;
+}
+
+/* =========================================
+   側邊欄 (Sidebar) 選單圓弧化
+========================================= */
+.ant-menu-item {
+  border-radius: 100px !important; /* 膠囊狀圓弧 */
+  margin: 4px 12px !important;
+  width: calc(100% - 24px) !important;
+}
+
+.ant-menu-item-selected {
+  background-color: var(--admin-primary) !important;
+  color: #ffffff !important;
+}
+
+/* 確保選中時的 icon 也是白色 */
+.ant-menu-item-selected .anticon {
+  color: #ffffff !important;
+}
+
+/* =========================================
+   卡片與表格 (Card & Table) 圓弧化
+========================================= */
+.ant-card {
+  border-radius: 24px !important;
+  border: none !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+}
+
+/* 讓所有頁面的 Table 外框變圓 */
+.ant-table-wrapper {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+}
+
+.ant-table-thead > tr > th {
+  background-color: rgba(92, 107, 95, 0.05) !important; /* 表頭帶有極淡的墨綠色 */
+  font-weight: 600;
+}
+
+/* =========================================
+   全域按鈕 (Button) 變色與圓弧
+========================================= */
+.ant-btn {
+  border-radius: 16px !important;
+}
+
+.ant-btn-primary {
+  background-color: var(--admin-primary) !important;
+  border-color: var(--admin-primary) !important;
+}
+
+.ant-btn-primary:hover {
+  background-color: var(--admin-primary-hover) !important;
+  border-color: var(--admin-primary-hover) !important;
+}
+
+/* =========================================
+   隱藏選單外框與加高 Header
+========================================= */
+.ant-menu-item:focus-visible,
+.ant-menu-item:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.ant-layout-header {
+  height: 80px !important; 
+  line-height: 80px !important;
+  padding: 0 32px !important;
+  background: transparent !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
