@@ -113,6 +113,11 @@ public class AuthEmpServiceImpl implements AuthEmpService {
     // 員工 CRUD
     // ===========================
     @Override
+    public Long getEmpCount() {
+        return authEmpRepository.count();
+    }
+
+    @Override
     public List<AuthDto.AuthEmpResponse> getAllEmps() {
         return authEmpRepository.findAll().stream()
                 .map(this::convertToResponse)

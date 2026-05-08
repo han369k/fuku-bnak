@@ -1,12 +1,22 @@
 -- ============================================================
--- 0. ACCOUNT_APPLICATION 開戶申請
+-- DROP ALL TABLES (依 FK 相依性反向刪除)
 -- ============================================================
-IF OBJECT_ID('account_application', 'U') IS NOT NULL
-    DROP TABLE account_application;
+IF OBJECT_ID('SCHEDULED_TRANSFER', 'U') IS NOT NULL DROP TABLE SCHEDULED_TRANSFER;
+IF OBJECT_ID('FAVORITE_ACCOUNT', 'U') IS NOT NULL DROP TABLE FAVORITE_ACCOUNT;
+IF OBJECT_ID('TRANS_LOG', 'U') IS NOT NULL DROP TABLE TRANS_LOG;
+IF OBJECT_ID('ACCOUNT_DAILY_SNAPSHOTS', 'U') IS NOT NULL DROP TABLE ACCOUNT_DAILY_SNAPSHOTS;
+IF OBJECT_ID('ACCOUNT_STATUS_HISTORY', 'U') IS NOT NULL DROP TABLE ACCOUNT_STATUS_HISTORY;
+IF OBJECT_ID('ACCOUNT', 'U') IS NOT NULL DROP TABLE ACCOUNT;
+IF OBJECT_ID('ACCOUNT_APPLICATION', 'U') IS NOT NULL DROP TABLE ACCOUNT_APPLICATION;
 GO
 
-CREATE TABLE account_application (
-    id                     BIGINT IDENTITY(1,1) PRIMARY KEY,
+-- ============================================================
+-- 0. ACCOUNT_APPLICATION 開戶申請
+-- ============================================================
+
+CREATE TABLE ACCOUNT_APPLICATION (
+    id                     BIGINT IDENTITY(10001,1) PRIMARY KEY,
+    application_no         VARCHAR(30)    NOT NULL UNIQUE,
     customer_id            VARCHAR(20)    NOT NULL,
     account_type           VARCHAR(20)    NOT NULL,
     currency               VARCHAR(3),
@@ -40,8 +50,8 @@ CREATE TABLE account_application (
 GO
 
 -- ACCOUNT_APPLICATION INDEX
-CREATE INDEX idx_aa_customer ON account_application(customer_id);
-CREATE INDEX idx_aa_status ON account_application(status);
+CREATE INDEX idx_aa_customer ON ACCOUNT_APPLICATION(customer_id);
+CREATE INDEX idx_aa_status ON ACCOUNT_APPLICATION(status);
 GO
 
 -- ============================================================
@@ -175,23 +185,69 @@ CREATE TABLE [TRANS_LOG] (
     GO
 
 -- TRANSACTION INDEX
-CREATE INDEX idx_tx_reference ON [TRANSACTION]([reference_id]);
-CREATE INDEX idx_tx_account_time ON [TRANSACTION]([account_number], [created_at]);
-CREATE INDEX idx_tx_counterpart ON [TRANSACTION]([counterpart_account]);
+CREATE INDEX idx_tx_reference ON [TRANS_LOG]([reference_id]);
+CREATE INDEX idx_tx_account_time ON [TRANS_LOG]([account_number], [created_at]);
+CREATE INDEX idx_tx_counterpart ON [TRANS_LOG]([counterpart_account]);
 GO
 
--- TRANSACTION 欄位註解
-EXEC sp_addextendedproperty @name = N'Column_Description', @value = '交易 ID (PK, UUID, Java端生成, 內部關聯用)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANSACTION', @level2type = N'Column', @level2name = 'transaction_id';
-EXEC sp_addextendedproperty @name = N'Column_Description', @value = '業務交易編號 (格式: TXN-yyyyMMdd-HHmmss-8碼hex, 轉帳時兩筆共用同一個)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANSACTION', @level2type = N'Column', @level2name = 'reference_id';
-EXEC sp_addextendedproperty @name = N'Column_Description', @value = '影響帳號 (FK → ACCOUNT, 這筆交易影響的帳戶)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANSACTION', @level2type = N'Column', @level2name = 'account_number';
-EXEC sp_addextendedproperty @name = N'Column_Description', @value = '對手方帳號 (行內12碼/跨行最長16碼, 存提款為NULL)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANSACTION', @level2type = N'Column', @level2name = 'counterpart_account';
-EXEC sp_addextendedproperty @name = N'Column_Description', @value = '對手方銀行代碼 (跨行轉帳用如004台灣銀行, 行內轉帳為NULL)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANSACTION', @level2type = N'Column', @level2name = 'counterpart_bank_code';
-EXEC sp_addextendedproperty @name = N'Column_Description', @value = '記帳方向 (DEBIT=扣款/CREDIT=入帳, 銀行不出現負數)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANSACTION', @level2type = N'Column', @level2name = 'entry_type';
-EXEC sp_addextendedproperty @name = N'Column_Description', @value = '交易類型 (TRANSFER/DEPOSIT/WITHDRAW/INTEREST/LOAN_DISBURSEMENT/LOAN_REPAYMENT)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANSACTION', @level2type = N'Column', @level2name = 'transaction_type';
-EXEC sp_addextendedproperty @name = N'Column_Description', @value = '交易金額 (永遠正數, 正負由entry_type決定)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANSACTION', @level2type = N'Column', @level2name = 'amount';
-EXEC sp_addextendedproperty @name = N'Column_Description', @value = '交易前餘額 (貸款帳戶存liability值, 由transaction_type判斷語意)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANSACTION', @level2type = N'Column', @level2name = 'balance_before';
-EXEC sp_addextendedproperty @name = N'Column_Description', @value = '交易後餘額 (像存摺每行印餘額, 對帳用)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANSACTION', @level2type = N'Column', @level2name = 'balance_after';
-EXEC sp_addextendedproperty @name = N'Column_Description', @value = '幣別 (ISO 4217, 冗餘欄位避免每次JOIN)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANSACTION', @level2type = N'Column', @level2name = 'currency';
-EXEC sp_addextendedproperty @name = N'Column_Description', @value = '註記 (用NVARCHAR支援中文備註, 用戶轉帳可填)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANSACTION', @level2type = N'Column', @level2name = 'note';
-EXEC sp_addextendedproperty @name = N'Column_Description', @value = '操作時間 (DATETIME2(3)毫秒級, Java端生成)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANSACTION', @level2type = N'Column', @level2name = 'created_at';
+-- TRANS_LOG 欄位註解
+EXEC sp_addextendedproperty @name = N'Column_Description', @value = '交易 ID (PK, UUID, Java端生成, 內部關聯用)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANS_LOG', @level2type = N'Column', @level2name = 'transaction_id';
+EXEC sp_addextendedproperty @name = N'Column_Description', @value = '業務交易編號 (格式: TXN-yyyyMMdd-HHmmss-8碼hex, 轉帳時兩筆共用同一個)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANS_LOG', @level2type = N'Column', @level2name = 'reference_id';
+EXEC sp_addextendedproperty @name = N'Column_Description', @value = '影響帳號 (FK → ACCOUNT, 這筆交易影響的帳戶)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANS_LOG', @level2type = N'Column', @level2name = 'account_number';
+EXEC sp_addextendedproperty @name = N'Column_Description', @value = '對手方帳號 (行內12碼/跨行最長16碼, 存提款為NULL)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANS_LOG', @level2type = N'Column', @level2name = 'counterpart_account';
+EXEC sp_addextendedproperty @name = N'Column_Description', @value = '對手方銀行代碼 (跨行轉帳用如004台灣銀行, 行內轉帳為NULL)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANS_LOG', @level2type = N'Column', @level2name = 'counterpart_bank_code';
+EXEC sp_addextendedproperty @name = N'Column_Description', @value = '記帳方向 (DEBIT=扣款/CREDIT=入帳, 銀行不出現負數)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANS_LOG', @level2type = N'Column', @level2name = 'entry_type';
+EXEC sp_addextendedproperty @name = N'Column_Description', @value = '交易類型 (TRANSFER/DEPOSIT/WITHDRAW/INTEREST/LOAN_DISBURSEMENT/LOAN_REPAYMENT)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANS_LOG', @level2type = N'Column', @level2name = 'transaction_type';
+EXEC sp_addextendedproperty @name = N'Column_Description', @value = '交易金額 (永遠正數, 正負由entry_type決定)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANS_LOG', @level2type = N'Column', @level2name = 'amount';
+EXEC sp_addextendedproperty @name = N'Column_Description', @value = '交易前餘額 (貸款帳戶存liability值, 由transaction_type判斷語意)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANS_LOG', @level2type = N'Column', @level2name = 'balance_before';
+EXEC sp_addextendedproperty @name = N'Column_Description', @value = '交易後餘額 (像存摺每行印餘額, 對帳用)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANS_LOG', @level2type = N'Column', @level2name = 'balance_after';
+EXEC sp_addextendedproperty @name = N'Column_Description', @value = '幣別 (ISO 4217, 冗餘欄位避免每次JOIN)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANS_LOG', @level2type = N'Column', @level2name = 'currency';
+EXEC sp_addextendedproperty @name = N'Column_Description', @value = '註記 (用NVARCHAR支援中文備註, 用戶轉帳可填)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANS_LOG', @level2type = N'Column', @level2name = 'note';
+EXEC sp_addextendedproperty @name = N'Column_Description', @value = '操作時間 (DATETIME2(3)毫秒級, Java端生成)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANS_LOG', @level2type = N'Column', @level2name = 'created_at';
+GO
+
+
+-- ============================================================
+-- 5. FAVORITE_ACCOUNT 常用帳號
+-- ============================================================
+CREATE TABLE [FAVORITE_ACCOUNT] (
+    [id]                BIGINT IDENTITY(1,1) PRIMARY KEY,           -- 自增 PK
+    [customer_id]       VARCHAR(20)     NOT NULL,                   -- 客戶 ID
+    [account_number]    VARCHAR(20)     NOT NULL,                   -- 收款帳號
+    [alias]             NVARCHAR(50)    NOT NULL,                   -- 備註名稱
+    [bank_name]         NVARCHAR(50)    NULL,                       -- 銀行名稱
+    [created_at]        DATETIME2       NOT NULL DEFAULT GETDATE(), -- 建立時間
+    [updated_at]        DATETIME2       NOT NULL DEFAULT GETDATE(), -- 更新時間
+
+    CONSTRAINT UQ_FAV_CUST_ACCT UNIQUE ([customer_id], [account_number])
+);
+GO
+
+CREATE INDEX idx_fav_customer ON [FAVORITE_ACCOUNT]([customer_id]);
+GO
+
+
+-- ============================================================
+-- 6. SCHEDULED_TRANSFER 預約轉帳
+-- ============================================================
+CREATE TABLE [SCHEDULED_TRANSFER] (
+    [id]                    BIGINT IDENTITY(1,1) PRIMARY KEY,           -- 自增 PK
+    [customer_id]           VARCHAR(20)     NOT NULL,                   -- 客戶 ID
+    [from_account_number]   VARCHAR(12)     NOT NULL,                   -- 轉出帳號
+    [to_account_number]     VARCHAR(20)     NOT NULL,                   -- 轉入帳號
+    [amount]                DECIMAL(19,4)   NOT NULL,                   -- 金額
+    [scheduled_date]        DATE            NOT NULL,                   -- 預約執行日期
+    [note]                  NVARCHAR(200)   NULL,                       -- 備註
+    [status]                VARCHAR(20)     NOT NULL DEFAULT 'PENDING', -- PENDING/EXECUTED/CANCELLED/FAILED
+    [executed_at]           DATETIME2       NULL,                       -- 實際執行時間
+    [fail_reason]           NVARCHAR(500)   NULL,                       -- 失敗原因
+    [created_at]            DATETIME2       NOT NULL DEFAULT GETDATE(), -- 建立時間
+    [updated_at]            DATETIME2       NOT NULL DEFAULT GETDATE(), -- 更新時間
+
+    FOREIGN KEY ([from_account_number]) REFERENCES [ACCOUNT]([account_number])
+);
+GO
+
+CREATE INDEX idx_st_customer ON [SCHEDULED_TRANSFER]([customer_id]);
+CREATE INDEX idx_st_status_date ON [SCHEDULED_TRANSFER]([status], [scheduled_date]);
 GO

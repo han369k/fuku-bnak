@@ -26,6 +26,11 @@ export function getEmployees(keyword) {
   })
 }
 
+// 查詢員工人數（首頁儀表板用，不需 CISO/ISSA 權限）
+export function getEmployeeCount() {
+  return api.get('/api/auth/employees/count')
+}
+
 // 新增員工
 export function createEmployee(data) {
   return api.post('/api/auth/employees', data)

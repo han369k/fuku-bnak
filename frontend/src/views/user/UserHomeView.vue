@@ -232,6 +232,7 @@ import { useCustomerAuthStore } from '@/stores/customerAuth'
 import { BASE_URL } from '@/api/axios'
 import { Chart, registerables } from 'chart.js'
 import { getMyAccountApplications } from '@/api/accountApplication'
+import { getMyAccounts } from '@/api/customerAccount'
 
 Chart.register(...registerables)
 
@@ -261,8 +262,14 @@ const onboardFeatures = [
 
 async function checkAccountStatus() {
   try {
+    // 優先檢查是否已有帳戶（帳戶可能是直接建立的，不一定透過開戶申請）
+    const accounts = await getMyAccounts()
+    if (accounts && accounts.length > 0) {
+      hasAccount.value = true
+      return
+    }
+    // 沒有帳戶，再檢查是否有已核准的開戶申請
     const apps = await getMyAccountApplications()
-    // 有任一筆 APPROVED 的申請 → 已開戶
     const hasApproved = apps && apps.some(a => a.status === 'APPROVED')
     hasAccount.value = hasApproved
   } catch {

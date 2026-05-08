@@ -117,10 +117,8 @@ const menus = [
     svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 10h20"/></svg>',
     route: null,
     children: [
-      { label: '查看帳戶', desc: '帳戶餘額與明細', route: null },
-      { label: '轉帳', desc: '國內轉帳服務', route: null },
-      { label: '換匯', desc: '外幣兌換服務', route: null },
-      { label: '查看電子存簿', desc: '數位存摺紀錄', route: null },
+      { label: '查看所有帳戶', desc: '帳戶餘額與明細總覽', route: 'user-accounts' },
+      { label: '查看所有交易紀錄', desc: '全帳戶交易歷史', route: 'user-transactions' },
     ],
   },
   {
@@ -128,9 +126,10 @@ const menus = [
     svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17l9.2-9.2M17 17V7H7"/></svg>',
     route: null,
     children: [
-      { label: '國內轉帳', desc: '台幣即時轉帳', route: null },
-      { label: '預約轉帳', desc: '設定未來轉帳', route: null },
-      { label: '常用帳號管理', desc: '管理常用收款帳戶', route: null },
+      { label: '國內轉帳', desc: '台幣即時轉帳', route: 'user-transfer' },
+      { label: '預約轉帳', desc: '設定未來轉帳', route: 'user-scheduled-transfer' },
+      { label: '常用帳號管理', desc: '管理常用收款帳戶', route: 'user-favorite-accounts' },
+      { label: '換匯', desc: '外幣兌換服務', route: null },
     ],
   },
   {

@@ -93,7 +93,7 @@ import {
 import { getLatestAccounts } from '@/api/account'
 import { getLatestTransLogs } from '@/api/account'
 import { getCustomers } from '@/api/customer'
-import { getEmployees } from '@/api/auth'
+import { getEmployeeCount } from '@/api/auth'
 
 const authStore = useAuthStore()
 
@@ -201,7 +201,7 @@ async function loadStats() {
     const [accRes, custRes, empRes] = await Promise.allSettled([
       getLatestAccounts(0, 1),
       getCustomers(),
-      getEmployees(),
+      getEmployeeCount(),
     ])
 
     if (accRes.status === 'fulfilled') {
@@ -211,7 +211,7 @@ async function loadStats() {
       customerCount.value = custRes.value.data?.data?.length ?? 0
     }
     if (empRes.status === 'fulfilled') {
-      employeeCount.value = empRes.value.data?.data?.length ?? 0
+      employeeCount.value = empRes.value.data?.data ?? 0
     }
   } catch {
     // silent
