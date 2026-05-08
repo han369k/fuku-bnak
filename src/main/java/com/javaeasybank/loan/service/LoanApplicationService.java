@@ -58,11 +58,19 @@ public class LoanApplicationService {
                 .collect(Collectors.toList());
     }
 
+    // 查詢當前登入客戶所有申請
+    public List<LoanApplicationResponseDTO> getMyApplications(String customerId) {
+        return laRepo.findByCustomerIdOrderByCreateTimeDesc(customerId)
+                .stream()
+                .map(this::toResponseDTO)
+                .collect(Collectors.toList());
+    }
+
     // ===新增功能===
     /// 會員申請
-    public String insertMember(LoanMemberRequestDTO dto) {
+    public String insertMember(String customerId, LoanMemberRequestDTO dto) {
         LoanApplication loan = buildBaseLoan();
-        loan.setCustomerId(dto.getCustomerId());
+        loan.setCustomerId(customerId);
         fillLoanContent(loan, dto.getApplyType(), dto.getApplyAmount(),
                 dto.getApplyPeriod(), dto.getRate());
         laRepo.save(loan);

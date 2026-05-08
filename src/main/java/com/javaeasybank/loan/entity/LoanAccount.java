@@ -24,7 +24,8 @@ public class LoanAccount {
     private String customerId;              // 用戶ID
 
     // 撥款條件（從二次填單複製過來）
-    private Long principalAmount;           // 核准撥款金額
+    private String applyType;               // 貸款種類
+    private Long principalAmount;           // 核准撥款金額(本金)
     private Integer period;                 // 還款期數
     private BigDecimal rate;                // 年利率
     private BigDecimal monthlyPayment;      // 每期應繳金額
@@ -33,7 +34,7 @@ public class LoanAccount {
     private Integer paidPeriods;            // 已繳期數（初始為 0）
     private BigDecimal remainingPrincipal;  // 剩餘本金（初始等於 principalAmount）
 
-    // ── 日期 ────────────────────────────────────────────────────────
+    // 日期
     private LocalDate startDate;            // 撥款日（還款起算日）
     private LocalDate nextPaymentDate;      // 下次應繳日
 

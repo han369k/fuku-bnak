@@ -27,7 +27,7 @@ public class LoanApplication {
     private String customerId;              // 用戶ID
 
     private String applyType;               // 種類
-    private BigDecimal applyAmount;               // 金額
+    private BigDecimal applyAmount;         // 金額
     private Integer applyPeriod;            // 期數
     private BigDecimal rate;                // 系統計算利率
 

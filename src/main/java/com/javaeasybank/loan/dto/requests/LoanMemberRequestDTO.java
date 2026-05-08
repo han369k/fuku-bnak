@@ -9,7 +9,6 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 public class LoanMemberRequestDTO {
-    private String customerId;
     private String applyType;
     private BigDecimal applyAmount;
     private Integer applyPeriod;
