@@ -9,10 +9,10 @@ DELETE FROM TRANS_LOG                WHERE transaction_id IS NOT NULL;
 DELETE FROM ACCOUNT_DAILY_SNAPSHOTS  WHERE snapshot_id IS NOT NULL;
 DELETE FROM ACCOUNT_STATUS_HISTORY   WHERE history_id IS NOT NULL;
 DELETE FROM ACCOUNT                  WHERE account_number IS NOT NULL;
-DELETE FROM account_application      WHERE id IS NOT NULL;
+DELETE FROM ACCOUNT_APPLICATION      WHERE id IS NOT NULL;
 
 -- ===== 開戶申請（50 筆）=====
-INSERT INTO account_application (
+INSERT INTO ACCOUNT_APPLICATION (
     application_no, customer_id, account_type, currency,
     customer_name, id_number, birthday, nationality, phone,
     registered_address, current_address,
@@ -92,7 +92,7 @@ INSERT INTO account_application (
     'NORMAL', '192.168.149.231', 'SUPPLEMENT_REQUIRED', N'請提供最近三個月薪資單', '2026-03-20 08:29:00', 'E26003',
     NULL, '2026-03-18 08:29:00', '2026-03-18 08:29:00');
 
-INSERT INTO account_application (
+INSERT INTO ACCOUNT_APPLICATION (
     application_no, customer_id, account_type, currency,
     customer_name, id_number, birthday, nationality, phone,
     registered_address, current_address,
@@ -172,7 +172,7 @@ INSERT INTO account_application (
     'NORMAL', '192.168.95.95', 'PENDING', NULL, NULL, NULL,
     NULL, '2026-02-03 14:35:00', '2026-02-03 14:35:00');
 
-INSERT INTO account_application (
+INSERT INTO ACCOUNT_APPLICATION (
     application_no, customer_id, account_type, currency,
     customer_name, id_number, birthday, nationality, phone,
     registered_address, current_address,
@@ -252,7 +252,7 @@ INSERT INTO account_application (
     'NORMAL', '192.168.94.131', 'APPROVED', NULL, '2026-01-30 15:42:00', 'E26001',
     NULL, '2026-01-28 10:42:00', '2026-01-28 10:42:00');
 
-INSERT INTO account_application (
+INSERT INTO ACCOUNT_APPLICATION (
     application_no, customer_id, account_type, currency,
     customer_name, id_number, birthday, nationality, phone,
     registered_address, current_address,
@@ -332,7 +332,7 @@ INSERT INTO account_application (
     'HIGH_RISK', '192.168.92.131', 'APPROVED', NULL, '2026-04-09 17:07:00', 'E26001',
     NULL, '2026-04-05 15:07:00', '2026-04-05 15:07:00');
 
-INSERT INTO account_application (
+INSERT INTO ACCOUNT_APPLICATION (
     application_no, customer_id, account_type, currency,
     customer_name, id_number, birthday, nationality, phone,
     registered_address, current_address,

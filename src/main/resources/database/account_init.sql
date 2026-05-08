@@ -5,14 +5,14 @@ IF OBJECT_ID('TRANS_LOG', 'U') IS NOT NULL DROP TABLE TRANS_LOG;
 IF OBJECT_ID('ACCOUNT_DAILY_SNAPSHOTS', 'U') IS NOT NULL DROP TABLE ACCOUNT_DAILY_SNAPSHOTS;
 IF OBJECT_ID('ACCOUNT_STATUS_HISTORY', 'U') IS NOT NULL DROP TABLE ACCOUNT_STATUS_HISTORY;
 IF OBJECT_ID('ACCOUNT', 'U') IS NOT NULL DROP TABLE ACCOUNT;
-IF OBJECT_ID('account_application', 'U') IS NOT NULL DROP TABLE account_application;
+IF OBJECT_ID('ACCOUNT_APPLICATION', 'U') IS NOT NULL DROP TABLE ACCOUNT_APPLICATION;
 GO
 
 -- ============================================================
 -- 0. ACCOUNT_APPLICATION 開戶申請
 -- ============================================================
 
-CREATE TABLE account_application (
+CREATE TABLE ACCOUNT_APPLICATION (
     id                     BIGINT IDENTITY(10001,1) PRIMARY KEY,
     application_no         VARCHAR(30)    NOT NULL UNIQUE,
     customer_id            VARCHAR(20)    NOT NULL,
@@ -48,8 +48,8 @@ CREATE TABLE account_application (
 GO
 
 -- ACCOUNT_APPLICATION INDEX
-CREATE INDEX idx_aa_customer ON account_application(customer_id);
-CREATE INDEX idx_aa_status ON account_application(status);
+CREATE INDEX idx_aa_customer ON ACCOUNT_APPLICATION(customer_id);
+CREATE INDEX idx_aa_status ON ACCOUNT_APPLICATION(status);
 GO
 
 -- ============================================================
@@ -188,18 +188,18 @@ CREATE INDEX idx_tx_account_time ON [TRANS_LOG]([account_number], [created_at]);
 CREATE INDEX idx_tx_counterpart ON [TRANS_LOG]([counterpart_account]);
 GO
 
--- TRANSACTION 欄位註解
-EXEC sp_addextendedproperty @name = N'Column_Description', @value = '交易 ID (PK, UUID, Java端生成, 內部關聯用)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANSACTION', @level2type = N'Column', @level2name = 'transaction_id';
-EXEC sp_addextendedproperty @name = N'Column_Description', @value = '業務交易編號 (格式: TXN-yyyyMMdd-HHmmss-8碼hex, 轉帳時兩筆共用同一個)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANSACTION', @level2type = N'Column', @level2name = 'reference_id';
-EXEC sp_addextendedproperty @name = N'Column_Description', @value = '影響帳號 (FK → ACCOUNT, 這筆交易影響的帳戶)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANSACTION', @level2type = N'Column', @level2name = 'account_number';
-EXEC sp_addextendedproperty @name = N'Column_Description', @value = '對手方帳號 (行內12碼/跨行最長16碼, 存提款為NULL)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANSACTION', @level2type = N'Column', @level2name = 'counterpart_account';
-EXEC sp_addextendedproperty @name = N'Column_Description', @value = '對手方銀行代碼 (跨行轉帳用如004台灣銀行, 行內轉帳為NULL)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANSACTION', @level2type = N'Column', @level2name = 'counterpart_bank_code';
-EXEC sp_addextendedproperty @name = N'Column_Description', @value = '記帳方向 (DEBIT=扣款/CREDIT=入帳, 銀行不出現負數)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANSACTION', @level2type = N'Column', @level2name = 'entry_type';
-EXEC sp_addextendedproperty @name = N'Column_Description', @value = '交易類型 (TRANSFER/DEPOSIT/WITHDRAW/INTEREST/LOAN_DISBURSEMENT/LOAN_REPAYMENT)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANSACTION', @level2type = N'Column', @level2name = 'transaction_type';
-EXEC sp_addextendedproperty @name = N'Column_Description', @value = '交易金額 (永遠正數, 正負由entry_type決定)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANSACTION', @level2type = N'Column', @level2name = 'amount';
-EXEC sp_addextendedproperty @name = N'Column_Description', @value = '交易前餘額 (貸款帳戶存liability值, 由transaction_type判斷語意)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANSACTION', @level2type = N'Column', @level2name = 'balance_before';
-EXEC sp_addextendedproperty @name = N'Column_Description', @value = '交易後餘額 (像存摺每行印餘額, 對帳用)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANSACTION', @level2type = N'Column', @level2name = 'balance_after';
-EXEC sp_addextendedproperty @name = N'Column_Description', @value = '幣別 (ISO 4217, 冗餘欄位避免每次JOIN)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANSACTION', @level2type = N'Column', @level2name = 'currency';
-EXEC sp_addextendedproperty @name = N'Column_Description', @value = '註記 (用NVARCHAR支援中文備註, 用戶轉帳可填)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANSACTION', @level2type = N'Column', @level2name = 'note';
-EXEC sp_addextendedproperty @name = N'Column_Description', @value = '操作時間 (DATETIME2(3)毫秒級, Java端生成)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANSACTION', @level2type = N'Column', @level2name = 'created_at';
+-- TRANS_LOG 欄位註解
+EXEC sp_addextendedproperty @name = N'Column_Description', @value = '交易 ID (PK, UUID, Java端生成, 內部關聯用)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANS_LOG', @level2type = N'Column', @level2name = 'transaction_id';
+EXEC sp_addextendedproperty @name = N'Column_Description', @value = '業務交易編號 (格式: TXN-yyyyMMdd-HHmmss-8碼hex, 轉帳時兩筆共用同一個)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANS_LOG', @level2type = N'Column', @level2name = 'reference_id';
+EXEC sp_addextendedproperty @name = N'Column_Description', @value = '影響帳號 (FK → ACCOUNT, 這筆交易影響的帳戶)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANS_LOG', @level2type = N'Column', @level2name = 'account_number';
+EXEC sp_addextendedproperty @name = N'Column_Description', @value = '對手方帳號 (行內12碼/跨行最長16碼, 存提款為NULL)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANS_LOG', @level2type = N'Column', @level2name = 'counterpart_account';
+EXEC sp_addextendedproperty @name = N'Column_Description', @value = '對手方銀行代碼 (跨行轉帳用如004台灣銀行, 行內轉帳為NULL)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANS_LOG', @level2type = N'Column', @level2name = 'counterpart_bank_code';
+EXEC sp_addextendedproperty @name = N'Column_Description', @value = '記帳方向 (DEBIT=扣款/CREDIT=入帳, 銀行不出現負數)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANS_LOG', @level2type = N'Column', @level2name = 'entry_type';
+EXEC sp_addextendedproperty @name = N'Column_Description', @value = '交易類型 (TRANSFER/DEPOSIT/WITHDRAW/INTEREST/LOAN_DISBURSEMENT/LOAN_REPAYMENT)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANS_LOG', @level2type = N'Column', @level2name = 'transaction_type';
+EXEC sp_addextendedproperty @name = N'Column_Description', @value = '交易金額 (永遠正數, 正負由entry_type決定)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANS_LOG', @level2type = N'Column', @level2name = 'amount';
+EXEC sp_addextendedproperty @name = N'Column_Description', @value = '交易前餘額 (貸款帳戶存liability值, 由transaction_type判斷語意)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANS_LOG', @level2type = N'Column', @level2name = 'balance_before';
+EXEC sp_addextendedproperty @name = N'Column_Description', @value = '交易後餘額 (像存摺每行印餘額, 對帳用)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANS_LOG', @level2type = N'Column', @level2name = 'balance_after';
+EXEC sp_addextendedproperty @name = N'Column_Description', @value = '幣別 (ISO 4217, 冗餘欄位避免每次JOIN)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANS_LOG', @level2type = N'Column', @level2name = 'currency';
+EXEC sp_addextendedproperty @name = N'Column_Description', @value = '註記 (用NVARCHAR支援中文備註, 用戶轉帳可填)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANS_LOG', @level2type = N'Column', @level2name = 'note';
+EXEC sp_addextendedproperty @name = N'Column_Description', @value = '操作時間 (DATETIME2(3)毫秒級, Java端生成)', @level0type = N'Schema', @level0name = 'dbo', @level1type = N'Table', @level1name = 'TRANS_LOG', @level2type = N'Column', @level2name = 'created_at';
 GO

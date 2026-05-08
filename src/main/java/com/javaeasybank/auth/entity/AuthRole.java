@@ -8,7 +8,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Entity
-@Table(name = "auth_role")
+@Table(name = "AUTH_ROLE")
 @Getter
 @Setter
 public class AuthRole {

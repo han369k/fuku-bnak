@@ -5,7 +5,7 @@ Java Easy Bank 系統權限模組 (Auth Module)
 */
 
 -- 寫入 5 大實體部門
-INSERT INTO auth_dept (dept_id, dept_code, dept_name) VALUES
+INSERT INTO AUTH_DEPT (dept_id, dept_code, dept_name) VALUES
 ('DPT001', 'CF',  N'消費金融部'),
 ('DPT002', 'CS',  N'客戶服務部'),
 ('DPT003', 'CR',  N'授信審查部'),
@@ -14,7 +14,7 @@ INSERT INTO auth_dept (dept_id, dept_code, dept_name) VALUES
 GO
 
 -- 寫入 11 個標準職務角色
-INSERT INTO auth_role (role_id, dept_id, role_code, role_name, perm_level, perm_scope) VALUES
+INSERT INTO AUTH_ROLE (role_id, dept_id, role_code, role_name, perm_level, perm_scope) VALUES
 ('R001', 'DPT001', 'CFSO',   N'消金業務專員',   0, NULL),
 ('R002', 'DPT001', 'CFDM',   N'消金部經理',     2, NULL),
 ('R003', 'DPT002', 'CSVO',   N'客服照會專員',   1, NULL),
@@ -31,7 +31,7 @@ INSERT INTO auth_role (role_id, dept_id, role_code, role_name, perm_level, perm_
 GO
 
 -- 寫入 11 位擬真員工帳號（密碼皆為 123456）
-INSERT INTO auth_emp (emp_id, emp_name, dept_id, role_id, email, password_hash, status, contract_end_date, permission_expire) VALUES
+INSERT INTO AUTH_EMP (emp_id, emp_name, dept_id, role_id, email, password_hash, status, contract_end_date, permission_expire) VALUES
 -- 消費金融部
 ('E26001', N'林家豪', 'DPT001', 'R001', 'chiahao.lin@javabank.com',  '$2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36Fy0dS8qWOdLAyFwPiyMCu', 'ACTIVE', NULL, '2026-12-31'),
 ('E26002', N'王淑芬', 'DPT001', 'R002', 'shufen.wang@javabank.com', '$2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36Fy0dS8qWOdLAyFwPiyMCu', 'ACTIVE', NULL, '2026-12-31'),
@@ -53,7 +53,7 @@ INSERT INTO auth_emp (emp_id, emp_name, dept_id, role_id, email, password_hash, 
 GO
 
 -- 寫入登入日誌模擬資料
-INSERT INTO auth_login_log (attempt_email, emp_id, login_result, fail_reason, ip_address) VALUES
+INSERT INTO AUTH_LOGIN_LOG (attempt_email, emp_id, login_result, fail_reason, ip_address) VALUES
 ('wenhua.cheng@javabank.com', 'E26011', 'SUCCESS', NULL, '192.168.1.100'),
 ('chiahao.lin@javabank.com', 'E26001', 'SUCCESS', NULL, '192.168.1.101'),
 ('chienkuo.wu@javabank.com', 'E26006', 'FAILED', N'ACCOUNT_SUSPENDED', '192.168.1.102'),
@@ -63,7 +63,7 @@ GO
 
 -- 查詢測試：查看全行員工與對應權限
 SELECT e.emp_name, d.dept_name, r.role_name, r.role_code, r.perm_level, e.status
-FROM auth_emp e
+FROM AUTH_EMP e
 JOIN auth_dept d ON e.dept_id = d.dept_id
 JOIN auth_role r ON e.role_id = r.role_id;
 GO
@@ -75,7 +75,7 @@ Java Easy Bank 客戶模組 (Customer Module)
 */
 
 -- 寫入 20 筆 customer_application
-INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
+INSERT INTO CUSTOMER_APPLICATION (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
 ('APP260428001', 'X7K9P2M4', '2605-A3R5W8J1', N'王大明', '1985-05-15', 'M', 'A123456789', 'ming.wang@email.com', '0912000001', N'台北市信義區信義路五段1號', 'mingwang85', 'APPROVED'),
 ('APP260428002', 'V4L6T1Y8', '2605-N9Q2E7C4', N'林小華', '1990-08-22', 'F', 'B223456789', 'hua.lin@email.com', '0912000002', N'台中市西屯區台灣大道三段99號', 'hualin90', 'APPROVED'),
 ('APP260428003', 'D3H8F5G2', '2605-M1V6P4K9', N'陳建國', '1978-11-03', 'M', 'C123456789', 'chien.chen@email.com', '0912000003', N'高雄市三民區建國一路1號', 'chienchen78', 'APPROVED'),
@@ -99,7 +99,7 @@ INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gen
 GO
 
 -- 寫入 20 筆 customer_profile
-INSERT INTO customer_profile (customer_id, cif, id_number, name, birthday, gender, email, phone, address, status) VALUES
+INSERT INTO CUSTOMER_PROFILE (customer_id, cif, id_number, name, birthday, gender, email, phone, address, status) VALUES
 ('X7K9P2M4', '2605-A3R5W8J1', 'A123456789', N'王大明', '1985-05-15', 'M', 'ming.wang@email.com', '0912000001', N'台北市信義區信義路五段1號', 'ACTIVE'),
 ('V4L6T1Y8', '2605-N9Q2E7C4', 'B223456789', N'林小華', '1990-08-22', 'F', 'hua.lin@email.com', '0912000002', N'台中市西屯區台灣大道三段99號', 'ACTIVE'),
 ('D3H8F5G2', '2605-M1V6P4K9', 'C123456789', N'陳建國', '1978-11-03', 'M', 'chien.chen@email.com', '0912000003', N'高雄市三民區建國一路1號', 'ACTIVE'),
@@ -123,7 +123,7 @@ INSERT INTO customer_profile (customer_id, cif, id_number, name, birthday, gende
 GO
 
 -- 寫入 20 筆 customer_kyc
-INSERT INTO customer_kyc (customer_id, id_issue_date, id_issue_location, id_issue_type, marital_status, education_level, occupation_category, company_name, annual_income, source_of_wealth) VALUES
+INSERT INTO CUSTOMER_KYC (customer_id, id_issue_date, id_issue_location, id_issue_type, marital_status, education_level, occupation_category, company_name, annual_income, source_of_wealth) VALUES
 ('X7K9P2M4', '2015-10-01', N'台北市', N'初發', 'M', N'大學', N'資訊科技業', N'台積電', 150, N'薪資收入'),
 ('V4L6T1Y8', '2018-05-12', N'台中市', N'換發', 'S', N'碩士', N'金融保險業', N'國泰金控', 120, N'薪資收入'),
 ('D3H8F5G2', '2010-12-20', N'高雄市', N'換發', 'M', N'高中', N'製造業', N'中鋼', 90, N'薪資與投資'),
@@ -147,7 +147,7 @@ INSERT INTO customer_kyc (customer_id, id_issue_date, id_issue_location, id_issu
 GO
 
 -- 寫入 20 筆 customer_risk_tag
-INSERT INTO customer_risk_tag (customer_id, aml_risk_level, pep_status, is_fraud_suspect, block_reason, kyc_next_review_date) VALUES
+INSERT INTO CUSTOMER_RISK_TAG (customer_id, aml_risk_level, pep_status, is_fraud_suspect, block_reason, kyc_next_review_date) VALUES
 ('X7K9P2M4', 'LOW', 'N', 'N', NULL, '2028-04-28'),
 ('V4L6T1Y8', 'LOW', 'N', 'N', NULL, '2028-04-28'),
 ('D3H8F5G2', 'MEDIUM', 'N', 'N', NULL, '2027-04-28'),
@@ -175,7 +175,7 @@ GO
 -- ============================================================
 
 -- ===== customer_application (980 筆) =====
-INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
+INSERT INTO CUSTOMER_APPLICATION (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
 ('APP2605010021', 'JI0Y6DPB', '2605-HSAHXTHV', N'張柏安', '1976-02-07', 'M', 'A171422713', 'usnzjo.chang634@protonmail.com', '0954733052', N'台東縣台東市仁愛路339號', 'usnzjochang7647', 'APPROVED'),
 ('APP2605010022', 'G0FN9XUY', '2605-41IBLJH7', N'殷騰瑋', '1971-10-14', 'M', 'Y136394225', 'kfzncbcq.yin433@protonmail.com', '0984549245', N'桃園市龜山區新生路三段271號', 'kfzncbcqyin7177', 'APPROVED'),
 ('APP2605010023', '4SHNF877', '2605-VREN93II', N'尤紹宇', '1984-08-29', 'M', 'U190407714', 'wlfosfiz.yu383@protonmail.com', '0931377932', N'宜蘭縣礁溪鄉民生路一段116號', 'wlfosfizyu8457', 'APPROVED'),
@@ -228,7 +228,7 @@ INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gen
 ('APP2605010070', 'P8II7EWB', '2605-XXGAEARM', N'石聖翔', '1961-04-25', 'M', 'S177117287', 'hbsoclj.shih880@outlook.com', '0952946313', N'高雄市前金區中華路二段396號', 'hbsocljshih6173', 'APPROVED');
 GO
 
-INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
+INSERT INTO CUSTOMER_APPLICATION (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
 ('APP2605010071', 'I6L3UEYB', '2605-ISBO551L', N'詹怡萱', '1982-02-17', 'F', 'C250253645', 'tgakgjvw.chan2@hotmail.com', '0935868043', N'南投縣草屯鎮建國路一段272號', 'tgakgjvwchan8298', 'REJECTED'),
 ('APP2605010072', 'WOVCXEK4', '2605-7O3LQI7E', N'程宥霖', '1980-10-13', 'M', 'U111431374', 'cuhs.cheng42@mail.com', '0943993892', N'苗栗縣頭份市和平路一段496號', 'cuhscheng8028', 'APPROVED'),
 ('APP2605010073', 'E3NWXUJ3', '2605-AC6PE63L', N'左泰宇', '1975-11-17', 'M', 'B190947434', 'hwaqgh.tso904@outlook.com', '0937296242', N'屏東縣屏東市和平路二段197號', 'hwaqghtso7571', 'APPROVED'),
@@ -281,7 +281,7 @@ INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gen
 ('APP2605010120', 'WCV6HVE8', '2605-DVN1X2GD', N'李宗翰', '1994-07-14', 'M', 'F124969249', 'tsunghan.lee800@yahoo.com.tw', '0951369836', N'嘉義市東區新生路三段171號', 'tsunghanlee9410', 'REJECTED');
 GO
 
-INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
+INSERT INTO CUSTOMER_APPLICATION (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
 ('APP2605010121', 'JBC01ARX', '2605-ABOFLOAZ', N'顏書豪', '1994-12-24', 'M', 'R144780236', 'nzihbzqj.yen83@hotmail.com', '0971227091', N'新竹縣竹東鎮三民路496號', 'nzihbzqjyen9459', 'APPROVED'),
 ('APP2605010122', 'LT4Q9BC2', '2605-BE3YQY5F', N'溫駿宇', '1989-02-06', 'M', 'U120740962', 'qxvcp.wen66@mail.com', '0926115063', N'台中市北屯區文心路一段33號', 'qxvcpwen8914', 'APPROVED'),
 ('APP2605010123', 'GNFIUE2W', '2605-NF5CA7ZV', N'練育誠', '2002-01-29', 'M', 'K148762654', 'pspc.lien357@hotmail.com', '0932740195', N'台北市北投區大同路一段61號', 'pspclien0254', 'REJECTED'),
@@ -334,7 +334,7 @@ INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gen
 ('APP2605010170', '127EXVDA', '2605-4L3KHYFK', N'莊曉薇', '1991-09-10', 'F', 'Z268753919', 'msjzi.chuang216@protonmail.com', '0983601515', N'新竹市香山區信義路一段439號', 'msjzichuang9194', 'APPROVED');
 GO
 
-INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
+INSERT INTO CUSTOMER_APPLICATION (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
 ('APP2605010171', 'OE1U24ZQ', '2605-FEZKFH00', N'管奕瑋', '1967-07-19', 'M', 'A138178396', 'zebzqp.kuan643@yahoo.com.tw', '0917200713', N'南投縣埔里鎮忠孝路124號', 'zebzqpkuan6793', 'APPROVED'),
 ('APP2605010172', '6IV9RYDV', '2605-N9ZKELZ5', N'湯悅涵', '1986-03-25', 'F', 'T218055845', 'tfrd.tang712@mail.com', '0978848420', N'台北市北投區錦州路二段63號', 'tfrdtang8624', 'APPROVED'),
 ('APP2605010173', '6KTFRL69', '2605-VSYXBBF4', N'吳麗娟', '1977-02-15', 'F', 'G296231602', 'lyrydfq.wu649@hotmail.com', '0993271252', N'基隆市暖暖區敦化路一段215號', 'lyrydfqwu7790', 'APPROVED'),
@@ -387,7 +387,7 @@ INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gen
 ('APP2605010220', 'GKZJRUMX', '2605-QW3B4NTH', N'馬承恩', '1972-01-24', 'M', 'Y146623957', 'gmacr.ma487@yahoo.com.tw', '0921638205', N'嘉義縣民雄鄉敦化路三段338號', 'gmacrma7218', 'APPROVED');
 GO
 
-INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
+INSERT INTO CUSTOMER_APPLICATION (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
 ('APP2605010221', 'QUPO4JNM', '2605-YK8516SP', N'顏泓宇', '1968-11-25', 'M', 'J194059899', 'diyzi.yen821@yahoo.com.tw', '0982888371', N'嘉義縣大林鎮中華路三段1號', 'diyziyen6845', 'APPROVED'),
 ('APP2605010222', 'TOHRNQI7', '2605-NL7OLKY5', N'邱如涵', '1976-07-22', 'F', 'V230475267', 'vptxqdef.chiu96@outlook.com', '0956456359', N'南投縣埔里鎮八德路一段146號', 'vptxqdefchiu7644', 'APPROVED'),
 ('APP2605010223', 'LUNQR8O1', '2605-KJWV2QNR', N'林若萱', '1960-04-23', 'F', 'L289114780', 'gnpwlmbw.lin376@outlook.com', '0953841935', N'澎湖縣白沙鄉敦化路二段218號', 'gnpwlmbwlin607', 'APPROVED'),
@@ -440,7 +440,7 @@ INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gen
 ('APP2605010270', '1HYP5MAS', '2605-NPHFC4YG', N'陳秀美', '1961-02-01', 'F', 'N223422264', 'qbsao.chen391@hotmail.com', '0997690672', N'屏東縣恆春鎮錦州路三段46號', 'qbsaochen613', 'APPROVED');
 GO
 
-INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
+INSERT INTO CUSTOMER_APPLICATION (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
 ('APP2605010271', 'D6DZBC7Q', '2605-K4K6ILSI', N'閻世豪', '1978-12-26', 'M', 'C165788724', 'vfsb.yen276@gmail.com', '0931347721', N'花蓮縣花蓮市南門路二段371號', 'vfsbyen7823', 'APPROVED'),
 ('APP2605010272', '54UKIGDI', '2605-X1CNAQ2Y', N'徐建志', '1997-07-28', 'M', 'N157846575', 'nknmuf.hsu377@mail.com', '0961888142', N'台中市大里區環河路三段193號', 'nknmufhsu9739', 'APPROVED'),
 ('APP2605010273', 'ZNHE8IFX', '2605-DNM655CK', N'韓雅芳', '1960-06-30', 'F', 'S250980335', 'hafnakul.han335@mail.com', '0922253028', N'彰化縣彰化市府前路453號', 'hafnakulhan6037', 'APPROVED'),
@@ -493,7 +493,7 @@ INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gen
 ('APP2605010320', '1TOPI9XD', '2605-ULVNAAXU', N'涂禹安', '2000-07-04', 'M', 'E129209962', 'lkilevy.tu434@hotmail.com', '0981743186', N'屏東縣恆春鎮民權路293號', 'lkilevytu0047', 'APPROVED');
 GO
 
-INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
+INSERT INTO CUSTOMER_APPLICATION (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
 ('APP2605010321', 'MKDWVM7A', '2605-7P4EFG1Q', N'花育誠', '1991-10-23', 'M', 'R164476311', 'xwvguq.hua7@gmail.com', '0922196783', N'花蓮縣花蓮市建國路三段302號', 'xwvguqhua9198', 'APPROVED'),
 ('APP2605010322', '24WPFDFH', '2605-J05MPZ05', N'秦旻翰', '1965-07-14', 'M', 'T105963253', 'nwjty.chin33@gmail.com', '0995684572', N'雲林縣虎尾鎮長安路二段147號', 'nwjtychin6587', 'APPROVED'),
 ('APP2605010323', '6OHXXYFG', '2605-G3TY36MA', N'梁睿恩', '1961-06-27', 'M', 'T108632036', 'iovgx.liang869@hotmail.com', '0959738457', N'新竹縣竹北市忠孝路264號', 'iovgxliang6130', 'APPROVED'),
@@ -546,7 +546,7 @@ INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gen
 ('APP2605010370', 'GT47S151', '2605-M4I3L0Q4', N'萬皓宇', '1993-12-24', 'M', 'D148098997', 'utahfn.wan923@mail.com', '0959979905', N'宜蘭縣礁溪鄉自由路三段227號', 'utahfnwan939', 'APPROVED');
 GO
 
-INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
+INSERT INTO CUSTOMER_APPLICATION (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
 ('APP2605010371', 'SWPATOM2', '2605-87C45IDB', N'丁宗霖', '1997-08-17', 'M', 'W134070066', 'fhzgobqs.ting102@hotmail.com', '0944204548', N'台南市南區文化路三段15號', 'fhzgobqsting9782', 'APPROVED'),
 ('APP2605010372', '3YYGDTWB', '2605-KSDNBATQ', N'林筱筠', '1978-07-29', 'F', 'W219105728', 'jkoaimib.lin250@outlook.com', '0927173482', N'苗栗縣苗栗市中正路三段111號', 'jkoaimiblin7818', 'APPROVED'),
 ('APP2605010373', 'GA3L7102', '2605-9DG38RAJ', N'蘇品妤', '1976-03-04', 'F', 'H249123891', 'aifptdt.su748@protonmail.com', '0928197352', N'台東縣成功鎮長安路三段409號', 'aifptdtsu763', 'APPROVED'),
@@ -599,7 +599,7 @@ INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gen
 ('APP2605010420', 'ZJF5428M', '2605-T9FSV5Q4', N'王語嫣', '2002-11-13', 'F', 'E200764546', 'bxtzrs.wang4@yahoo.com.tw', '0924788186', N'宜蘭縣羅東鎮文心路二段403號', 'bxtzrswang0265', 'APPROVED');
 GO
 
-INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
+INSERT INTO CUSTOMER_APPLICATION (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
 ('APP2605010421', '1FPR7H4P', '2605-ZNGVXXYN', N'秦梓涵', '1996-11-09', 'F', 'S297051788', 'kovyyg.chin743@outlook.com', '0953690480', N'新竹市香山區北門路231號', 'kovyygchin9619', 'APPROVED'),
 ('APP2605010422', '5KQQLJWQ', '2605-RLVC35TY', N'蔡悅涵', '1982-11-15', 'F', 'Q274053653', 'evfgnkn.tsai983@yahoo.com.tw', '0987899125', N'屏東縣恆春鎮和平路一段122號', 'evfgnkntsai823', 'APPROVED'),
 ('APP2605010423', 'D13A3AOZ', '2605-4V5BVH2V', N'連芯瑜', '1987-04-01', 'F', 'E236227686', 'sbmlp.lien802@mail.com', '0968148465', N'新竹市東區民權路二段354號', 'sbmlplien8794', 'APPROVED'),
@@ -652,7 +652,7 @@ INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gen
 ('APP2605010470', 'ZEH3RPRG', '2605-YGO2YPE4', N'杜語嫣', '1970-11-19', 'F', 'C248357068', 'ptjun.tu712@hotmail.com', '0970805225', N'新竹市香山區文心路79號', 'ptjuntu7054', 'APPROVED');
 GO
 
-INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
+INSERT INTO CUSTOMER_APPLICATION (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
 ('APP2605010471', '66DZGG3E', '2605-TIVMDH1J', N'蘇依璇', '1989-09-02', 'F', 'H203760743', 'bpshwpmq.su33@protonmail.com', '0953912824', N'澎湖縣白沙鄉三民路236號', 'bpshwpmqsu8972', 'APPROVED'),
 ('APP2605010472', 'XZ9ZGEGG', '2605-4JYS2Z3C', N'賴柏霖', '1973-11-27', 'M', 'X191239056', 'hzwhr.lai32@protonmail.com', '0947381495', N'嘉義市東區敦化路358號', 'hzwhrlai7321', 'APPROVED'),
 ('APP2605010473', 'MWWCGBLW', '2605-KLDWC6G4', N'石凱文', '1967-11-14', 'M', 'X197013615', 'gjjpy.shih615@outlook.com', '0914764978', N'高雄市鳳山區承德路一段119號', 'gjjpyshih6723', 'APPROVED'),
@@ -705,7 +705,7 @@ INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gen
 ('APP2605010520', 'R3I9HUKP', '2605-6JR07H0U', N'項泓宇', '1984-10-28', 'M', 'M183368148', 'gcyg.hsiang206@mail.com', '0968796025', N'屏東縣恆春鎮錦州路221號', 'gcyghsiang8416', 'APPROVED');
 GO
 
-INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
+INSERT INTO CUSTOMER_APPLICATION (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
 ('APP2605010521', 'JKHVYQDK', '2605-9XMA5VIX', N'姚翰宇', '1965-08-28', 'M', 'R169793793', 'iqez.yao50@gmail.com', '0987974251', N'桃園市中壢區信義路419號', 'iqezyao6586', 'APPROVED'),
 ('APP2605010522', 'G4XNUBY8', '2605-634RH7CJ', N'連晟宏', '2002-02-08', 'M', 'J154899298', 'bdzundd.lien219@outlook.com', '0956432409', N'桃園市龜山區南京路247號', 'bdzunddlien0297', 'APPROVED'),
 ('APP2605010523', 'PAIIUCUI', '2605-GM2T5WOQ', N'傅廷翰', '2001-12-31', 'M', 'D118256638', 'xkghn.fu821@yahoo.com.tw', '0933428226', N'雲林縣西螺鎮西門路447號', 'xkghnfu0196', 'REJECTED'),
@@ -758,7 +758,7 @@ INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gen
 ('APP2605010570', 'Q4X6G4YW', '2605-KOODVMBO', N'薛羽涵', '1986-02-15', 'F', 'K245619635', 'duyctkt.hsueh409@mail.com', '0911241296', N'台北市松山區長安路一段139號', 'duyctkthsueh8656', 'APPROVED');
 GO
 
-INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
+INSERT INTO CUSTOMER_APPLICATION (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
 ('APP2605010571', '63RED7LJ', '2605-8MM03AL4', N'趙宇軒', '1988-01-29', 'M', 'V133013831', 'yuhsuan.chao339@yahoo.com.tw', '0956867715', N'桃園市八德區民生路二段191號', 'yuhsuanchao8826', 'PENDING'),
 ('APP2605010572', '02JZ2KB6', '2605-7RIZ2H4Q', N'樊妍希', '1966-08-09', 'F', 'R255637019', 'mywxn.fan112@mail.com', '0939197233', N'台北市中正區科技路三段78號', 'mywxnfan6684', 'APPROVED'),
 ('APP2605010573', '1KSTH1RW', '2605-LKGXHE68', N'盧宏志', '1968-05-16', 'M', 'X151002327', 'agklx.lu46@protonmail.com', '0975594641', N'台南市新營區長安路二段362號', 'agklxlu6869', 'APPROVED'),
@@ -811,7 +811,7 @@ INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gen
 ('APP2605010620', '98P7PRJH', '2605-HZH139Q0', N'周碧珠', '1961-11-03', 'F', 'E275247183', 'alegxqy.chou535@protonmail.com', '0911244654', N'台東縣關山鎮新生路二段111號', 'alegxqychou6150', 'APPROVED');
 GO
 
-INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
+INSERT INTO CUSTOMER_APPLICATION (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
 ('APP2605010621', 'W4Q46DER', '2605-G870SB9F', N'黃如涵', '1960-10-30', 'F', 'Y249368015', 'meoq.huang893@gmail.com', '0910737005', N'台中市豐原區產業路二段178號', 'meoqhuang6021', 'APPROVED'),
 ('APP2605010622', 'QQWHH3TT', '2605-255KCMG2', N'丁心怡', '1995-01-18', 'F', 'J212046465', 'rizpoc.ting45@hotmail.com', '0972440306', N'澎湖縣湖西鄉三民路一段201號', 'rizpocting9538', 'APPROVED'),
 ('APP2605010623', 'LB8JOD5J', '2605-GK546D27', N'閻映蓁', '1985-04-13', 'F', 'Y273205666', 'nlqyck.yen469@outlook.com', '0975871516', N'台南市永康區南京路259號', 'nlqyckyen8583', 'APPROVED'),
@@ -864,7 +864,7 @@ INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gen
 ('APP2605010670', '02GOAPAD', '2605-JXH3W6Z6', N'樊婉茹', '1999-03-10', 'F', 'E292946529', 'xlber.fan919@yahoo.com.tw', '0938989580', N'宜蘭縣羅東鎮承德路二段381號', 'xlberfan9928', 'APPROVED');
 GO
 
-INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
+INSERT INTO CUSTOMER_APPLICATION (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
 ('APP2605010671', 'QJM7X1RC', '2605-Q1M0CU2T', N'莊翔宇', '1975-12-29', 'M', 'F127107565', 'nwrd.chuang894@outlook.com', '0993289789', N'花蓮縣花蓮市民生路一段214號', 'nwrdchuang7551', 'APPROVED'),
 ('APP2605010672', '0GJOF9US', '2605-KB6884RO', N'侯俊傑', '1961-03-06', 'M', 'J125285351', 'chunchie.hou261@protonmail.com', '0976530846', N'新竹縣湖口鄉環河路一段425號', 'chunchiehou6113', 'APPROVED'),
 ('APP2605010673', 'RDWRKQYU', '2605-YQRJZBZM', N'朱廷翰', '1973-03-06', 'M', 'S165293642', 'kylfjbh.chu270@outlook.com', '0945727966', N'台南市中西區學府路279號', 'kylfjbhchu7314', 'APPROVED'),
@@ -917,7 +917,7 @@ INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gen
 ('APP2605010720', '0SL3E6KR', '2605-918S0HCN', N'萬哲安', '1990-07-20', 'M', 'K118827404', 'fxcozss.wan987@gmail.com', '0973163809', N'苗栗縣竹南鎮博愛路305號', 'fxcozsswan9076', 'APPROVED');
 GO
 
-INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
+INSERT INTO CUSTOMER_APPLICATION (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
 ('APP2605010721', '3U56K7SB', '2605-FDGJ9KKU', N'盧昱丞', '1987-03-07', 'M', 'R123737985', 'jxlqd.lu163@outlook.com', '0913451575', N'新北市樹林區承德路三段281號', 'jxlqdlu8796', 'APPROVED'),
 ('APP2605010722', 'Q9ZTC0J9', '2605-BLB8ND6N', N'龔亭妤', '1982-05-11', 'F', 'Y264725113', 'razbwwcw.kung756@hotmail.com', '0950730632', N'花蓮縣花蓮市新生路三段10號', 'razbwwcwkung8281', 'APPROVED'),
 ('APP2605010723', 'QTH0TPGO', '2605-K6UFKPLP', N'潘梓涵', '2000-01-12', 'F', 'C295667051', 'jrjodop.pan247@hotmail.com', '0923931122', N'苗栗縣苗栗市錦州路398號', 'jrjodoppan0014', 'APPROVED'),
@@ -970,7 +970,7 @@ INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gen
 ('APP2605010770', '1DIYFYFI', '2605-7Y01MUT8', N'尤佳琳', '1998-02-19', 'F', 'U275718878', 'zmxt.yu231@mail.com', '0953304222', N'新竹市香山區府前路二段10號', 'zmxtyu987', 'APPROVED');
 GO
 
-INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
+INSERT INTO CUSTOMER_APPLICATION (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
 ('APP2605010771', '9K6L7J4V', '2605-9ELS2QTK', N'殷宸翰', '1988-01-12', 'M', 'D179384439', 'ekemegf.yin196@gmail.com', '0930690553', N'澎湖縣馬公市科技路168號', 'ekemegfyin8887', 'APPROVED'),
 ('APP2605010772', 'TX0BMZDD', '2605-2FJ5PIJX', N'唐語萱', '1990-03-26', 'F', 'Q220209103', 'utdd.tang759@gmail.com', '0971850515', N'嘉義縣大林鎮中華路228號', 'utddtang9037', 'APPROVED'),
 ('APP2605010773', 'SLGOR0A5', '2605-SVIGETNS', N'左韋翰', '1982-10-19', 'M', 'D149050698', 'trhy.tso190@protonmail.com', '0997750977', N'宜蘭縣羅東鎮八德路240號', 'trhytso8272', 'APPROVED'),
@@ -1023,7 +1023,7 @@ INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gen
 ('APP2605010820', 'HRJAE8QK', '2605-4Z91PLAY', N'錢月桂', '1975-11-24', 'F', 'X272838718', 'xqbnv.chien37@outlook.com', '0992797114', N'台東縣台東市自由路三段254號', 'xqbnvchien7526', 'APPROVED');
 GO
 
-INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
+INSERT INTO CUSTOMER_APPLICATION (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
 ('APP2605010821', 'SGQB3ARD', '2605-AAW2AFI6', N'蘇志明', '1999-10-09', 'M', 'N106044583', 'chihming.su577@gmail.com', '0961517947', N'屏東縣恆春鎮中興路二段137號', 'chihmingsu993', 'APPROVED'),
 ('APP2605010822', '228GN0GX', '2605-4OZV6ZVN', N'紀勁勳', '1972-04-23', 'M', 'S189868864', 'zneookuh.chi230@hotmail.com', '0955299431', N'新竹市香山區錦州路一段194號', 'zneookuhchi7294', 'APPROVED'),
 ('APP2605010823', 'GUAKVXT2', '2605-FHO8CC98', N'連育安', '2002-05-29', 'M', 'D174405600', 'xlrsdjko.lien224@mail.com', '0964432757', N'苗栗縣竹南鎮忠孝路二段370號', 'xlrsdjkolien0272', 'APPROVED'),
@@ -1076,7 +1076,7 @@ INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gen
 ('APP2605010870', '9YQMIJAJ', '2605-NDKJP2RS', N'潘育嘉', '1974-04-07', 'F', 'K271187572', 'fagcyhby.pan230@gmail.com', '0912687474', N'澎湖縣白沙鄉東門路二段134號', 'fagcyhbypan7456', 'APPROVED');
 GO
 
-INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
+INSERT INTO CUSTOMER_APPLICATION (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
 ('APP2605010871', 'H1GRG946', '2605-BKCRHR7B', N'杜煜程', '1970-02-21', 'M', 'P122966544', 'znxe.tu472@protonmail.com', '0957267037', N'彰化縣員林市環河路一段82號', 'znxetu7047', 'PENDING'),
 ('APP2605010872', 'E3ZIEXOG', '2605-XVX9M3HK', N'蕭若涵', '2002-04-27', 'F', 'X240510095', 'duvzva.hsiao628@gmail.com', '0937294242', N'桃園市大園區博愛路193號', 'duvzvahsiao0283', 'APPROVED'),
 ('APP2605010873', 'D6NWTV79', '2605-BKE94XQF', N'賴子萱', '1996-08-10', 'F', 'J226103583', 'cumn.lai110@hotmail.com', '0979320729', N'南投縣草屯鎮信義路451號', 'cumnlai9655', 'APPROVED'),
@@ -1129,7 +1129,7 @@ INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gen
 ('APP2605010920', 'J6GOQLJH', '2605-U5KH7O4E', N'詹依璇', '1996-11-23', 'F', 'A250261696', 'teuylw.chan583@gmail.com', '0961653566', N'花蓮縣花蓮市中華路一段158號', 'teuylwchan9613', 'APPROVED');
 GO
 
-INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
+INSERT INTO CUSTOMER_APPLICATION (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
 ('APP2605010921', 'M63YWCMH', '2605-EBYMHRRT', N'袁沛瑜', '1963-11-16', 'F', 'B236443471', 'riga.yuan948@yahoo.com.tw', '0973245078', N'苗栗縣後龍鎮科技路三段140號', 'rigayuan6324', 'APPROVED'),
 ('APP2605010922', 'XHN5A5W9', '2605-XXLUIMNM', N'江旻翰', '1973-07-10', 'M', 'Y134238737', 'nqfwr.chiang524@hotmail.com', '0951276962', N'苗栗縣頭份市文心路三段391號', 'nqfwrchiang7385', 'APPROVED'),
 ('APP2605010923', '8KF780CK', '2605-FJQH5QMD', N'范美玲', '1965-08-16', 'F', 'G216965286', 'fyyeyse.fan970@outlook.com', '0958734605', N'苗栗縣竹南鎮成功路三段250號', 'fyyeysefan6534', 'APPROVED'),
@@ -1182,7 +1182,7 @@ INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gen
 ('APP2605010970', 'WZHED1T2', '2605-BAS5DZ63', N'葉玟萱', '1984-06-07', 'F', 'L249801831', 'hwcob.yeh273@hotmail.com', '0979299685', N'苗栗縣竹南鎮北門路三段378號', 'hwcobyeh8490', 'APPROVED');
 GO
 
-INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
+INSERT INTO CUSTOMER_APPLICATION (case_id, customer_id, cif, name, birthday, gender, id_number, email, phone, address, username, status) VALUES
 ('APP2605010971', 'E9PN93ZG', '2605-9BEKGI8D', N'申詩涵', '1986-11-19', 'F', 'N239617930', 'qebbdze.shen859@gmail.com', '0989750333', N'台東縣台東市信義路三段416號', 'qebbdzeshen8679', 'APPROVED'),
 ('APP2605010972', 'BLXBV36T', '2605-OMATVHYG', N'沈家瑩', '1968-02-19', 'F', 'Q277251617', 'owaukvsj.shen814@outlook.com', '0949380870', N'苗栗縣竹南鎮自由路二段493號', 'owaukvsjshen6852', 'APPROVED'),
 ('APP2605010973', 'BSYQYEFF', '2605-XJJUKQ22', N'許琮翔', '1991-05-21', 'M', 'T133677733', 'qmqp.hsu136@hotmail.com', '0943285727', N'新北市蘆洲區仁愛路一段104號', 'qmqphsu9149', 'APPROVED'),
@@ -1216,7 +1216,7 @@ INSERT INTO customer_application (case_id, customer_id, cif, name, birthday, gen
 GO
 
 -- ===== customer_profile (892 筆, 僅 APPROVED) =====
-INSERT INTO customer_profile (customer_id, cif, id_number, name, birthday, gender, email, phone, address, status) VALUES
+INSERT INTO CUSTOMER_PROFILE (customer_id, cif, id_number, name, birthday, gender, email, phone, address, status) VALUES
 ('JI0Y6DPB', '2605-HSAHXTHV', 'A171422713', N'張柏安', '1976-02-07', 'M', 'usnzjo.chang634@protonmail.com', '0954733052', N'台東縣台東市仁愛路339號', 'ACTIVE'),
 ('G0FN9XUY', '2605-41IBLJH7', 'Y136394225', N'殷騰瑋', '1971-10-14', 'M', 'kfzncbcq.yin433@protonmail.com', '0984549245', N'桃園市龜山區新生路三段271號', 'ACTIVE'),
 ('4SHNF877', '2605-VREN93II', 'U190407714', N'尤紹宇', '1984-08-29', 'M', 'wlfosfiz.yu383@protonmail.com', '0931377932', N'宜蘭縣礁溪鄉民生路一段116號', 'ACTIVE'),
@@ -1269,7 +1269,7 @@ INSERT INTO customer_profile (customer_id, cif, id_number, name, birthday, gende
 ('4S7AZV2E', '2605-FUU8DD22', 'T288265414', N'田怡萱', '1987-09-25', 'F', 'bxigtxx.tien346@gmail.com', '0987813884', N'新竹縣新埔鎮東門路498號', 'ACTIVE');
 GO
 
-INSERT INTO customer_profile (customer_id, cif, id_number, name, birthday, gender, email, phone, address, status) VALUES
+INSERT INTO CUSTOMER_PROFILE (customer_id, cif, id_number, name, birthday, gender, email, phone, address, status) VALUES
 ('2CZO2SUG', '2605-5HCBBMHN', 'Q256103518', N'蔡素華', '1986-04-29', 'F', 'extrhk.tsai875@yahoo.com.tw', '0980466749', N'基隆市七堵區博愛路一段347號', 'ACTIVE'),
 ('4QHKSWVA', '2605-984UVKYR', 'L296827821', N'莊品萱', '1994-05-03', 'F', 'kidamhxk.chuang37@protonmail.com', '0940159532', N'台東縣台東市民權路一段352號', 'ACTIVE'),
 ('II5P5NVQ', '2605-EBWUWQHE', 'X232081245', N'連詠晴', '2000-09-01', 'F', 'wecizi.lien5@gmail.com', '0968250181', N'嘉義市東區中華路一段251號', 'ACTIVE'),
@@ -1322,7 +1322,7 @@ INSERT INTO customer_profile (customer_id, cif, id_number, name, birthday, gende
 ('GMD478MF', '2605-S0IUDUAH', 'G191707998', N'鄧承恩', '1981-04-17', 'M', 'ercvzlnk.teng127@hotmail.com', '0956832045', N'台中市豐原區復興路三段391號', 'ACTIVE');
 GO
 
-INSERT INTO customer_profile (customer_id, cif, id_number, name, birthday, gender, email, phone, address, status) VALUES
+INSERT INTO CUSTOMER_PROFILE (customer_id, cif, id_number, name, birthday, gender, email, phone, address, status) VALUES
 ('NAYYOSYE', '2605-OZ906GNH', 'G159187275', N'白煜程', '1972-03-30', 'M', 'mpkmht.pai126@gmail.com', '0992519677', N'屏東縣恆春鎮博愛路一段16號', 'ACTIVE'),
 ('KRST3TA1', '2605-95EQ4PBG', 'X283741741', N'孫雅惠', '1990-04-12', 'F', 'romwnkmz.sun693@mail.com', '0972792142', N'新竹縣新埔鎮信義路303號', 'ACTIVE'),
 ('6CKMALQ5', '2605-U6JZV9NO', 'U204624861', N'鄧宜靜', '1973-06-08', 'F', 'mwuvn.teng272@hotmail.com', '0956557169', N'新竹縣湖口鄉永和路一段320號', 'ACTIVE'),
@@ -1375,7 +1375,7 @@ INSERT INTO customer_profile (customer_id, cif, id_number, name, birthday, gende
 ('F5B1SA3Y', '2605-5T37SZPF', 'C159126217', N'彭明哲', '1985-02-01', 'M', 'vmiq.peng169@outlook.com', '0987982600', N'彰化縣和美鎮成功路二段56號', 'ACTIVE');
 GO
 
-INSERT INTO customer_profile (customer_id, cif, id_number, name, birthday, gender, email, phone, address, status) VALUES
+INSERT INTO CUSTOMER_PROFILE (customer_id, cif, id_number, name, birthday, gender, email, phone, address, status) VALUES
 ('DUB9RBDL', '2605-918SLOME', 'X104718153', N'呂勁勳', '1986-04-20', 'M', 'dmxcs.lu827@yahoo.com.tw', '0914404212', N'台南市南區西門路二段230號', 'ACTIVE'),
 ('RQGKCUMC', '2605-ZQ991P77', 'U243246645', N'田詠晴', '1988-01-07', 'F', 'rngw.tien44@protonmail.com', '0950491835', N'新北市林口區大同路80號', 'ACTIVE'),
 ('771HLL9R', '2605-ZRKBFQXL', 'B197087922', N'凌浩然', '1961-01-10', 'M', 'gedhcw.ling893@outlook.com', '0997543464', N'宜蘭縣羅東鎮中興路一段426號', 'ACTIVE'),
@@ -1428,7 +1428,7 @@ INSERT INTO customer_profile (customer_id, cif, id_number, name, birthday, gende
 ('ZKWIJ0KZ', '2605-QVS9J6LN', 'E159093011', N'樊昱丞', '1966-05-31', 'M', 'eiomi.fan891@protonmail.com', '0991135771', N'南投縣竹山鎮自由路三段319號', 'ACTIVE');
 GO
 
-INSERT INTO customer_profile (customer_id, cif, id_number, name, birthday, gender, email, phone, address, status) VALUES
+INSERT INTO CUSTOMER_PROFILE (customer_id, cif, id_number, name, birthday, gender, email, phone, address, status) VALUES
 ('UL7W8COF', '2605-3138I2XO', 'G123291475', N'潘耀祖', '1990-02-27', 'M', 'dhiqnnu.pan483@mail.com', '0929315829', N'嘉義縣民雄鄉民生路三段79號', 'INACTIVE'),
 ('D9VVN5X4', '2605-8PW5K0JJ', 'S236230745', N'詹麗娟', '1969-12-06', 'F', 'cusovj.chan892@mail.com', '0985554837', N'南投縣南投市文心路303號', 'ACTIVE'),
 ('GLSXKUGW', '2605-CDZ6X4FM', 'M239198825', N'陳心怡', '1963-09-08', 'F', 'vgezafs.chen252@yahoo.com.tw', '0951335745', N'嘉義縣朴子市光復路152號', 'ACTIVE'),
@@ -1481,7 +1481,7 @@ INSERT INTO customer_profile (customer_id, cif, id_number, name, birthday, gende
 ('F8NK5G2Z', '2605-NTGG50YQ', 'K242258597', N'尤思穎', '1992-10-12', 'F', 'onezi.yu477@yahoo.com.tw', '0923486265', N'新北市淡水區民權路149號', 'ACTIVE');
 GO
 
-INSERT INTO customer_profile (customer_id, cif, id_number, name, birthday, gender, email, phone, address, status) VALUES
+INSERT INTO CUSTOMER_PROFILE (customer_id, cif, id_number, name, birthday, gender, email, phone, address, status) VALUES
 ('DVSZ2TVH', '2605-VWHHOLI5', 'B179965733', N'曾承翰', '1980-09-16', 'M', 'snaxfavp.tseng798@hotmail.com', '0974526977', N'台中市豐原區復興路126號', 'ACTIVE'),
 ('CV35XUDK', '2605-ITMAF9H3', 'F296504340', N'卓佩樺', '2001-11-20', 'F', 'dnybja.cho244@hotmail.com', '0914829197', N'南投縣竹山鎮八德路266號', 'ACTIVE'),
 ('C7H81JMB', '2605-PTPDWR1X', 'E169829135', N'藍鎮宇', '1995-08-10', 'M', 'igwxt.lan140@mail.com', '0977569164', N'新北市永和區博愛路二段315號', 'ACTIVE'),
@@ -1534,7 +1534,7 @@ INSERT INTO customer_profile (customer_id, cif, id_number, name, birthday, gende
 ('DL7U1P8O', '2605-TXOUSHFR', 'R127914374', N'凌育霖', '1975-03-19', 'M', 'nmojvyyr.ling710@protonmail.com', '0999704793', N'基隆市仁愛區文心路323號', 'ACTIVE');
 GO
 
-INSERT INTO customer_profile (customer_id, cif, id_number, name, birthday, gender, email, phone, address, status) VALUES
+INSERT INTO CUSTOMER_PROFILE (customer_id, cif, id_number, name, birthday, gender, email, phone, address, status) VALUES
 ('JKX2KABF', '2605-8QLT1RKQ', 'Q298083360', N'任品萱', '1998-06-25', 'F', 'kjsm.jen603@gmail.com', '0952134630', N'南投縣草屯鎮科技路三段316號', 'ACTIVE'),
 ('MFFOHK94', '2605-W6WUUMO7', 'P162978922', N'楊鈞皓', '1991-10-21', 'M', 'uhdo.yang604@mail.com', '0942923724', N'澎湖縣馬公市中興路二段297號', 'ACTIVE'),
 ('3X5U7DF8', '2605-91QCG41R', 'K185167345', N'童鼎翰', '1998-07-16', 'M', 'ahowj.tung152@gmail.com', '0926139103', N'澎湖縣馬公市科技路422號', 'ACTIVE'),
@@ -1587,7 +1587,7 @@ INSERT INTO customer_profile (customer_id, cif, id_number, name, birthday, gende
 ('IARPH3Q2', '2605-6TE0P5RU', 'J276746427', N'鄧素華', '1990-05-02', 'F', 'ktof.teng833@protonmail.com', '0986947603', N'宜蘭縣礁溪鄉永和路380號', 'ACTIVE');
 GO
 
-INSERT INTO customer_profile (customer_id, cif, id_number, name, birthday, gender, email, phone, address, status) VALUES
+INSERT INTO CUSTOMER_PROFILE (customer_id, cif, id_number, name, birthday, gender, email, phone, address, status) VALUES
 ('YPOH41OF', '2605-7Y5R7UG4', 'V109894543', N'溫琮翔', '1999-08-20', 'M', 'mlxak.wen626@hotmail.com', '0936910145', N'高雄市苓雅區產業路二段81號', 'ACTIVE'),
 ('GW3PAJVF', '2605-9I60K23Z', 'Y167454593', N'高建豪', '1976-11-27', 'M', 'riqpt.kao106@gmail.com', '0992384247', N'嘉義市東區西門路169號', 'ACTIVE'),
 ('68CFFF8T', '2605-X134L8XA', 'E156991660', N'游騰瑋', '1978-10-17', 'M', 'yrswkcu.yu402@outlook.com', '0979102288', N'台北市北投區忠孝路一段431號', 'ACTIVE'),
@@ -1640,7 +1640,7 @@ INSERT INTO customer_profile (customer_id, cif, id_number, name, birthday, gende
 ('FBF4FKKH', '2605-YB0R3X9D', 'V187996543', N'顏柏宇', '1991-11-02', 'M', 'uklhps.yen537@outlook.com', '0988555608', N'基隆市中正區文化路9號', 'ACTIVE');
 GO
 
-INSERT INTO customer_profile (customer_id, cif, id_number, name, birthday, gender, email, phone, address, status) VALUES
+INSERT INTO CUSTOMER_PROFILE (customer_id, cif, id_number, name, birthday, gender, email, phone, address, status) VALUES
 ('IWAAYRIB', '2605-ERXE6L0D', 'C138105135', N'閻瑞麟', '1969-05-16', 'M', 'xpwxfin.yen212@protonmail.com', '0995374364', N'屏東縣屏東市文心路一段56號', 'ACTIVE'),
 ('3ON2FOL4', '2605-VFZYKBB5', 'X260303773', N'申子萱', '1986-06-06', 'F', 'hvmcyf.shen901@gmail.com', '0913686655', N'基隆市信義區重慶路三段433號', 'ACTIVE'),
 ('03L38GX8', '2605-M8CT71WB', 'Z229764073', N'游心怡', '1983-12-11', 'F', 'uczrlbww.yu311@mail.com', '0992125933', N'嘉義市西區中山路二段467號', 'ACTIVE'),
@@ -1693,7 +1693,7 @@ INSERT INTO customer_profile (customer_id, cif, id_number, name, birthday, gende
 ('2HLS0QLF', '2605-TI211WY6', 'R277038014', N'徐語涵', '2000-12-10', 'F', 'mukasd.hsu17@mail.com', '0930877785', N'新北市林口區信義路三段154號', 'ACTIVE');
 GO
 
-INSERT INTO customer_profile (customer_id, cif, id_number, name, birthday, gender, email, phone, address, status) VALUES
+INSERT INTO CUSTOMER_PROFILE (customer_id, cif, id_number, name, birthday, gender, email, phone, address, status) VALUES
 ('6OE3L3RD', '2605-8L4BV8WZ', 'J218869305', N'吳怡萱', '1967-01-04', 'F', 'wdguam.wu78@mail.com', '0957952505', N'桃園市八德區承德路179號', 'ACTIVE'),
 ('NISOSZ0D', '2605-3MPV9WXN', 'N275145097', N'歐心怡', '1967-01-09', 'F', 'crwlqljh.ou529@outlook.com', '0910859171', N'台北市北投區博愛路394號', 'ACTIVE'),
 ('U7NSPN5M', '2605-RDPMBY23', 'G292759629', N'簡筱筠', '1960-09-23', 'F', 'nyltfu.chien489@protonmail.com', '0914241246', N'新竹市東區成功路194號', 'ACTIVE'),
@@ -1746,7 +1746,7 @@ INSERT INTO customer_profile (customer_id, cif, id_number, name, birthday, gende
 ('SWSO0CIS', '2605-UVYK28F7', 'K172243911', N'殷琮翔', '1975-12-15', 'M', 'nbnbi.yin430@hotmail.com', '0959133757', N'新竹縣關西鎮八德路464號', 'ACTIVE');
 GO
 
-INSERT INTO customer_profile (customer_id, cif, id_number, name, birthday, gender, email, phone, address, status) VALUES
+INSERT INTO CUSTOMER_PROFILE (customer_id, cif, id_number, name, birthday, gender, email, phone, address, status) VALUES
 ('3OLM2ZZZ', '2605-W6B2KLVH', 'M115760853', N'凌政宏', '1960-01-06', 'M', 'iwfncwae.ling831@hotmail.com', '0913275479', N'嘉義縣太保市大學路467號', 'ACTIVE'),
 ('D33I7OPS', '2605-2RRTXVF4', 'Y218957793', N'賴思璇', '1981-12-30', 'F', 'kdpfdthj.lai44@yahoo.com.tw', '0999206339', N'嘉義市東區信義路一段245號', 'ACTIVE'),
 ('ZX79V37P', '2605-RDDTBXT6', 'X278778662', N'項靜宜', '1962-08-29', 'F', 'pttpxb.hsiang227@yahoo.com.tw', '0933440311', N'新竹縣新埔鎮文心路三段285號', 'ACTIVE'),
@@ -1799,7 +1799,7 @@ INSERT INTO customer_profile (customer_id, cif, id_number, name, birthday, gende
 ('W4Q46DER', '2605-G870SB9F', 'Y249368015', N'黃如涵', '1960-10-30', 'F', 'meoq.huang893@gmail.com', '0910737005', N'台中市豐原區產業路二段178號', 'ACTIVE');
 GO
 
-INSERT INTO customer_profile (customer_id, cif, id_number, name, birthday, gender, email, phone, address, status) VALUES
+INSERT INTO CUSTOMER_PROFILE (customer_id, cif, id_number, name, birthday, gender, email, phone, address, status) VALUES
 ('QQWHH3TT', '2605-255KCMG2', 'J212046465', N'丁心怡', '1995-01-18', 'F', 'rizpoc.ting45@hotmail.com', '0972440306', N'澎湖縣湖西鄉三民路一段201號', 'ACTIVE'),
 ('LB8JOD5J', '2605-GK546D27', 'Y273205666', N'閻映蓁', '1985-04-13', 'F', 'nlqyck.yen469@outlook.com', '0975871516', N'台南市永康區南京路259號', 'ACTIVE'),
 ('YSF699PA', '2605-PKRVOCSQ', 'N271465787', N'魏宥涵', '2002-03-09', 'F', 'mfimd.wei913@outlook.com', '0938800690', N'高雄市左營區光復路一段3號', 'ACTIVE'),
@@ -1852,7 +1852,7 @@ INSERT INTO customer_profile (customer_id, cif, id_number, name, birthday, gende
 ('KA0J2NBI', '2605-5E0L1Q9R', 'U147156371', N'馬崇維', '2001-06-11', 'M', 'gpmvpx.ma118@hotmail.com', '0936878715', N'澎湖縣湖西鄉成功路三段209號', 'ACTIVE');
 GO
 
-INSERT INTO customer_profile (customer_id, cif, id_number, name, birthday, gender, email, phone, address, status) VALUES
+INSERT INTO CUSTOMER_PROFILE (customer_id, cif, id_number, name, birthday, gender, email, phone, address, status) VALUES
 ('0L8O9ICS', '2605-9JRMBK39', 'S216640617', N'李品妤', '1991-07-13', 'F', 'kbgsw.lee232@outlook.com', '0954134408', N'台南市南區信義路三段197號', 'ACTIVE'),
 ('TATC9S8Q', '2605-GI1PU7XN', 'M233430076', N'許雅芳', '1982-04-29', 'F', 'qjonx.hsu297@hotmail.com', '0911481860', N'台南市北區民權路三段336號', 'ACTIVE'),
 ('5Q8CVRSV', '2605-H4G2J53M', 'W200941127', N'閻品蓉', '1977-10-17', 'F', 'cdsxugv.yen868@yahoo.com.tw', '0945816432', N'嘉義市西區忠孝路2號', 'ACTIVE'),
@@ -1905,7 +1905,7 @@ INSERT INTO customer_profile (customer_id, cif, id_number, name, birthday, gende
 ('C2T47F06', '2605-AACSM4V7', 'B116892378', N'傅威宇', '1997-03-03', 'M', 'vsau.fu348@hotmail.com', '0970187514', N'桃園市蘆竹區大同路363號', 'ACTIVE');
 GO
 
-INSERT INTO customer_profile (customer_id, cif, id_number, name, birthday, gender, email, phone, address, status) VALUES
+INSERT INTO CUSTOMER_PROFILE (customer_id, cif, id_number, name, birthday, gender, email, phone, address, status) VALUES
 ('4JS6NLM4', '2605-GL51N5XY', 'P277732154', N'盧玉婷', '1982-05-20', 'F', 'houj.lu988@hotmail.com', '0923931871', N'台北市大同區科技路三段344號', 'ACTIVE'),
 ('W710RWTC', '2605-MBLEPSO1', 'F242690107', N'樊子萱', '1989-11-04', 'F', 'dxazrc.fan11@protonmail.com', '0974222052', N'雲林縣斗六市中興路一段219號', 'ACTIVE'),
 ('C3Q1D05A', '2605-QRJS9NPT', 'P294041077', N'嚴雅婷', '1967-12-07', 'F', 'hwgaq.yen114@yahoo.com.tw', '0980896627', N'高雄市前鎮區三民路二段319號', 'ACTIVE'),
@@ -1958,7 +1958,7 @@ INSERT INTO customer_profile (customer_id, cif, id_number, name, birthday, gende
 ('AOJTRRWB', '2605-K232ARWU', 'C296700013', N'謝妍蓁', '2000-10-22', 'F', 'tqqy.hsieh85@outlook.com', '0933740075', N'南投縣竹山鎮環河路二段248號', 'ACTIVE');
 GO
 
-INSERT INTO customer_profile (customer_id, cif, id_number, name, birthday, gender, email, phone, address, status) VALUES
+INSERT INTO CUSTOMER_PROFILE (customer_id, cif, id_number, name, birthday, gender, email, phone, address, status) VALUES
 ('NWSGL97C', '2605-8K3NNZHB', 'N102560428', N'許柏安', '1973-06-27', 'M', 'zmabkl.hsu243@protonmail.com', '0958977423', N'嘉義縣朴子市仁愛路二段63號', 'ACTIVE'),
 ('WY0TN1QA', '2605-I0OQ0W17', 'R299805668', N'馬雅芳', '1969-10-02', 'F', 'owifba.ma860@hotmail.com', '0971654962', N'基隆市中正區自由路136號', 'ACTIVE'),
 ('DPTMD4F9', '2605-HG3SD2GN', 'H268597729', N'范思宇', '1997-10-23', 'F', 'nrsw.fan110@gmail.com', '0991768714', N'彰化縣彰化市長安路二段360號', 'ACTIVE'),
@@ -2011,7 +2011,7 @@ INSERT INTO customer_profile (customer_id, cif, id_number, name, birthday, gende
 ('KQKP90NE', '2605-6YIWDS2S', 'L243287276', N'湯妍希', '1975-05-30', 'F', 'luspsmlb.tang647@hotmail.com', '0994559471', N'彰化縣鹿港鎮自由路11號', 'ACTIVE');
 GO
 
-INSERT INTO customer_profile (customer_id, cif, id_number, name, birthday, gender, email, phone, address, status) VALUES
+INSERT INTO CUSTOMER_PROFILE (customer_id, cif, id_number, name, birthday, gender, email, phone, address, status) VALUES
 ('N26F4DQW', '2605-ML7O610H', 'K217701202', N'黃宥萱', '1985-08-09', 'F', 'eisywch.huang430@outlook.com', '0961144001', N'澎湖縣湖西鄉錦州路一段225號', 'ACTIVE'),
 ('6EZ96SJM', '2605-HJ6C6AB5', 'F205472942', N'萬思穎', '1968-05-13', 'F', 'dzmdjp.wan912@yahoo.com.tw', '0922977141', N'雲林縣斗六市民權路三段182號', 'ACTIVE'),
 ('QW856U0R', '2605-KTOC19YQ', 'S142580180', N'江宸宇', '1975-09-14', 'M', 'dffyefmb.chiang815@hotmail.com', '0932820413', N'台北市信義區大同路一段136號', 'ACTIVE'),
@@ -2064,7 +2064,7 @@ INSERT INTO customer_profile (customer_id, cif, id_number, name, birthday, gende
 ('9IWEUSNS', '2605-7VBHHKV4', 'V170317461', N'簡仲哲', '1963-12-15', 'M', 'ltluwzr.chien719@yahoo.com.tw', '0917571359', N'屏東縣屏東市大學路312號', 'ACTIVE');
 GO
 
-INSERT INTO customer_profile (customer_id, cif, id_number, name, birthday, gender, email, phone, address, status) VALUES
+INSERT INTO CUSTOMER_PROFILE (customer_id, cif, id_number, name, birthday, gender, email, phone, address, status) VALUES
 ('BIF9YROD', '2605-T2DTOOHU', 'A149914853', N'唐哲瑋', '1994-05-03', 'M', 'rnamorh.tang521@yahoo.com.tw', '0928947250', N'彰化縣彰化市中正路三段223號', 'ACTIVE'),
 ('RJ48L94W', '2605-OZRZUWQF', 'E263970992', N'饒羽彤', '1961-07-13', 'F', 'aljbwvu.jao482@mail.com', '0911254937', N'雲林縣斗南鎮大學路460號', 'ACTIVE'),
 ('3SRB3XC3', '2605-9YUV3FJE', 'Q188578359', N'連宇軒', '1970-07-10', 'M', 'yuhsuan.lien192@protonmail.com', '0910918742', N'新竹縣竹北市敦化路一段39號', 'ACTIVE'),
@@ -2117,7 +2117,7 @@ INSERT INTO customer_profile (customer_id, cif, id_number, name, birthday, gende
 ('P003Y2AE', '2605-YXMK1KC3', 'K284692741', N'藍家瑩', '1979-09-24', 'F', 'nipgfjus.lan994@gmail.com', '0930407385', N'嘉義市東區環河路一段324號', 'ACTIVE');
 GO
 
-INSERT INTO customer_profile (customer_id, cif, id_number, name, birthday, gender, email, phone, address, status) VALUES
+INSERT INTO CUSTOMER_PROFILE (customer_id, cif, id_number, name, birthday, gender, email, phone, address, status) VALUES
 ('GNOUROYU', '2605-AWDRW6FI', 'Y131730331', N'連晟翔', '1993-11-02', 'M', 'sszsqus.lien29@protonmail.com', '0979999942', N'嘉義市東區文化路三段341號', 'ACTIVE'),
 ('VAS4K586', '2605-XPI8F68J', 'P119525031', N'高彥廷', '1975-05-11', 'M', 'yomphms.kao435@outlook.com', '0927646807', N'基隆市中正區文化路2號', 'ACTIVE'),
 ('NUVLATZQ', '2605-L3RZ20YA', 'P143714101', N'方逸翔', '1997-05-09', 'M', 'gwom.fang531@hotmail.com', '0967565089', N'台東縣台東市八德路179號', 'ACTIVE'),
@@ -2163,7 +2163,7 @@ INSERT INTO customer_profile (customer_id, cif, id_number, name, birthday, gende
 GO
 
 -- ===== customer_kyc (892 筆) =====
-INSERT INTO customer_kyc (customer_id, id_issue_date, id_issue_location, id_issue_type, marital_status, education_level, occupation_category, company_name, annual_income, source_of_wealth) VALUES
+INSERT INTO CUSTOMER_KYC (customer_id, id_issue_date, id_issue_location, id_issue_type, marital_status, education_level, occupation_category, company_name, annual_income, source_of_wealth) VALUES
 ('JI0Y6DPB', '2011-04-28', N'台中市', N'補發', 'M', N'碩士', N'電信業', N'蘋果台灣', 150, N'執行業務所得'),
 ('G0FN9XUY', '2010-11-24', N'台中市', N'換發', 'D', N'大學', N'自由接案', N'統一超商', 130, N'營利所得'),
 ('4SHNF877', '2018-04-19', N'新竹市', N'初發', 'S', N'高中', N'醫療保健業', N'富邦金控', 40, N'薪資與股票'),
@@ -2216,7 +2216,7 @@ INSERT INTO customer_kyc (customer_id, id_issue_date, id_issue_location, id_issu
 ('4S7AZV2E', '2021-08-25', N'苗栗縣', N'補發', 'D', N'碩士', N'半導體產業', N'統一超商', 50, N'薪資與投資');
 GO
 
-INSERT INTO customer_kyc (customer_id, id_issue_date, id_issue_location, id_issue_type, marital_status, education_level, occupation_category, company_name, annual_income, source_of_wealth) VALUES
+INSERT INTO CUSTOMER_KYC (customer_id, id_issue_date, id_issue_location, id_issue_type, marital_status, education_level, occupation_category, company_name, annual_income, source_of_wealth) VALUES
 ('2CZO2SUG', '2018-01-28', N'台北市', N'補發', 'S', N'專科', N'半導體產業', N'微軟台灣', 30, N'薪資與投資'),
 ('4QHKSWVA', '2024-11-12', N'宜蘭縣', N'補發', 'S', N'博士', N'運輸物流業', N'日月光半導體', 60, N'投資收入'),
 ('II5P5NVQ', '2012-10-14', N'雲林縣', N'補發', 'M', N'碩士', N'住宿餐飲業', N'台積電', 40, N'遺產繼承'),
@@ -2269,7 +2269,7 @@ INSERT INTO customer_kyc (customer_id, id_issue_date, id_issue_location, id_issu
 ('GMD478MF', '2021-01-03', N'苗栗縣', N'補發', 'S', N'碩士', N'藝術娛樂業', N'第一金控', 120, N'投資收入');
 GO
 
-INSERT INTO customer_kyc (customer_id, id_issue_date, id_issue_location, id_issue_type, marital_status, education_level, occupation_category, company_name, annual_income, source_of_wealth) VALUES
+INSERT INTO CUSTOMER_KYC (customer_id, id_issue_date, id_issue_location, id_issue_type, marital_status, education_level, occupation_category, company_name, annual_income, source_of_wealth) VALUES
 ('NAYYOSYE', '2011-08-22', N'台北市', N'初發', 'M', N'博士', N'不動產業', N'群創光電', 70, N'營業收入'),
 ('KRST3TA1', '2015-12-19', N'台北市', N'換發', 'M', N'碩士', N'服務業', N'中信金控', 150, N'薪資與股票'),
 ('6CKMALQ5', '2023-10-04', N'台東縣', N'補發', 'M', N'高中', N'電子商務', N'微軟台灣', 350, N'投資收入'),
@@ -2322,7 +2322,7 @@ INSERT INTO customer_kyc (customer_id, id_issue_date, id_issue_location, id_issu
 ('F5B1SA3Y', '2022-06-01', N'新竹市', N'補發', 'S', N'博士', N'服務業', N'富邦金控', 90, N'租金收入');
 GO
 
-INSERT INTO customer_kyc (customer_id, id_issue_date, id_issue_location, id_issue_type, marital_status, education_level, occupation_category, company_name, annual_income, source_of_wealth) VALUES
+INSERT INTO CUSTOMER_KYC (customer_id, id_issue_date, id_issue_location, id_issue_type, marital_status, education_level, occupation_category, company_name, annual_income, source_of_wealth) VALUES
 ('DUB9RBDL', '2015-10-28', N'雲林縣', N'初發', 'D', N'碩士', N'醫療保健業', N'華碩電腦', 50, N'執行業務所得'),
 ('RQGKCUMC', '2012-10-13', N'桃園市', N'初發', 'M', N'碩士', N'不動產業', N'中華電信', 150, N'投資收入'),
 ('771HLL9R', '2016-06-25', N'新竹縣', N'初發', 'S', N'大學', N'出版傳媒業', N'合庫金控', 300, N'遺產繼承'),
@@ -2375,7 +2375,7 @@ INSERT INTO customer_kyc (customer_id, id_issue_date, id_issue_location, id_issu
 ('ZKWIJ0KZ', '2021-05-21', N'宜蘭縣', N'補發', 'M', N'專科', N'農林漁牧業', N'友達光電', 300, N'遺產繼承');
 GO
 
-INSERT INTO customer_kyc (customer_id, id_issue_date, id_issue_location, id_issue_type, marital_status, education_level, occupation_category, company_name, annual_income, source_of_wealth) VALUES
+INSERT INTO CUSTOMER_KYC (customer_id, id_issue_date, id_issue_location, id_issue_type, marital_status, education_level, occupation_category, company_name, annual_income, source_of_wealth) VALUES
 ('UL7W8COF', '2024-12-11', N'嘉義市', N'初發', 'M', N'大學', N'服務業', N'全聯實業', 250, N'退休金'),
 ('D9VVN5X4', '2011-10-04', N'台中市', N'初發', 'M', N'博士', N'不動產業', N'清華大學', 200, N'退休金'),
 ('GLSXKUGW', '2019-08-27', N'嘉義縣', N'補發', 'D', N'博士', N'電子商務', N'長榮航空', 200, N'執行業務所得'),
@@ -2428,7 +2428,7 @@ INSERT INTO customer_kyc (customer_id, id_issue_date, id_issue_location, id_issu
 ('F8NK5G2Z', '2023-05-08', N'基隆市', N'初發', 'S', N'大學', N'教育研究', N'蘋果台灣', 350, N'營業收入');
 GO
 
-INSERT INTO customer_kyc (customer_id, id_issue_date, id_issue_location, id_issue_type, marital_status, education_level, occupation_category, company_name, annual_income, source_of_wealth) VALUES
+INSERT INTO CUSTOMER_KYC (customer_id, id_issue_date, id_issue_location, id_issue_type, marital_status, education_level, occupation_category, company_name, annual_income, source_of_wealth) VALUES
 ('DVSZ2TVH', '2020-12-16', N'嘉義市', N'換發', 'M', N'博士', N'服務業', N'85度C', 200, N'薪資收入'),
 ('CV35XUDK', '2012-07-25', N'台北市', N'初發', 'S', N'高中', N'漁業', N'理律法律事務所', 90, N'薪資與股票'),
 ('C7H81JMB', '2020-06-15', N'台北市', N'換發', 'S', N'博士', N'批發零售業', N'台灣銀行', 50, N'營業收入'),
@@ -2481,7 +2481,7 @@ INSERT INTO customer_kyc (customer_id, id_issue_date, id_issue_location, id_issu
 ('DL7U1P8O', '2013-01-17', N'台東縣', N'換發', 'M', N'專科', N'醫療保健業', N'中鋼', 70, N'薪資收入');
 GO
 
-INSERT INTO customer_kyc (customer_id, id_issue_date, id_issue_location, id_issue_type, marital_status, education_level, occupation_category, company_name, annual_income, source_of_wealth) VALUES
+INSERT INTO CUSTOMER_KYC (customer_id, id_issue_date, id_issue_location, id_issue_type, marital_status, education_level, occupation_category, company_name, annual_income, source_of_wealth) VALUES
 ('JKX2KABF', '2011-02-21', N'台東縣', N'換發', 'M', N'專科', N'電子商務', N'榮民總醫院', 180, N'薪資與投資'),
 ('MFFOHK94', '2024-05-14', N'嘉義市', N'初發', 'D', N'博士', N'運輸物流業', N'遠東集團', 100, N'薪資收入'),
 ('3X5U7DF8', '2023-06-04', N'台南市', N'初發', 'S', N'碩士', N'公用事業', N'三星電子', 180, N'薪資與股票'),
@@ -2534,7 +2534,7 @@ INSERT INTO customer_kyc (customer_id, id_issue_date, id_issue_location, id_issu
 ('IARPH3Q2', '2020-06-28', N'台北市', N'換發', 'D', N'大學', N'電子商務', N'台塑', 70, N'營利所得');
 GO
 
-INSERT INTO customer_kyc (customer_id, id_issue_date, id_issue_location, id_issue_type, marital_status, education_level, occupation_category, company_name, annual_income, source_of_wealth) VALUES
+INSERT INTO CUSTOMER_KYC (customer_id, id_issue_date, id_issue_location, id_issue_type, marital_status, education_level, occupation_category, company_name, annual_income, source_of_wealth) VALUES
 ('YPOH41OF', '2019-09-22', N'新竹市', N'初發', 'D', N'專科', N'公用事業', N'南亞科技', 30, N'營利所得'),
 ('GW3PAJVF', '2022-01-04', N'屏東縣', N'初發', 'D', N'專科', N'出版傳媒業', N'全聯實業', 120, N'薪資收入'),
 ('68CFFF8T', '2017-01-21', N'高雄市', N'補發', 'S', N'大學', N'農林漁牧業', N'廣達電腦', 90, N'薪資與股票'),
@@ -2587,7 +2587,7 @@ INSERT INTO customer_kyc (customer_id, id_issue_date, id_issue_location, id_issu
 ('FBF4FKKH', '2012-05-05', N'南投縣', N'換發', 'D', N'大學', N'教育研究', N'中央大學', 250, N'租金收入');
 GO
 
-INSERT INTO customer_kyc (customer_id, id_issue_date, id_issue_location, id_issue_type, marital_status, education_level, occupation_category, company_name, annual_income, source_of_wealth) VALUES
+INSERT INTO CUSTOMER_KYC (customer_id, id_issue_date, id_issue_location, id_issue_type, marital_status, education_level, occupation_category, company_name, annual_income, source_of_wealth) VALUES
 ('IWAAYRIB', '2019-02-27', N'嘉義市', N'補發', 'S', N'博士', N'餐飲業', N'玉山金控', 180, N'營業收入'),
 ('3ON2FOL4', '2019-12-25', N'基隆市', N'初發', 'S', N'高中', N'金融保險業', N'台灣大學', 40, N'租金收入'),
 ('03L38GX8', '2023-02-02', N'彰化縣', N'換發', 'D', N'專科', N'不動產業', N'中央大學', 100, N'薪資收入'),
@@ -2640,7 +2640,7 @@ INSERT INTO customer_kyc (customer_id, id_issue_date, id_issue_location, id_issu
 ('2HLS0QLF', '2023-11-10', N'新竹縣', N'初發', 'M', N'博士', N'休閒旅遊業', N'緯創資通', 130, N'薪資與股票');
 GO
 
-INSERT INTO customer_kyc (customer_id, id_issue_date, id_issue_location, id_issue_type, marital_status, education_level, occupation_category, company_name, annual_income, source_of_wealth) VALUES
+INSERT INTO CUSTOMER_KYC (customer_id, id_issue_date, id_issue_location, id_issue_type, marital_status, education_level, occupation_category, company_name, annual_income, source_of_wealth) VALUES
 ('6OE3L3RD', '2021-05-20', N'嘉義市', N'初發', 'D', N'碩士', N'服務業', N'友達光電', 300, N'薪資與股票'),
 ('NISOSZ0D', '2024-09-25', N'澎湖縣', N'換發', 'D', N'博士', N'批發零售業', N'台灣大哥大', 110, N'薪資與股票'),
 ('U7NSPN5M', '2011-10-26', N'高雄市', N'補發', 'S', N'大學', N'藝術娛樂業', N'永豐金控', 300, N'執行業務所得'),
@@ -2693,7 +2693,7 @@ INSERT INTO customer_kyc (customer_id, id_issue_date, id_issue_location, id_issu
 ('SWSO0CIS', '2013-08-13', N'嘉義市', N'補發', 'M', N'碩士', N'出版傳媒業', N'成功大學', 60, N'營利所得');
 GO
 
-INSERT INTO customer_kyc (customer_id, id_issue_date, id_issue_location, id_issue_type, marital_status, education_level, occupation_category, company_name, annual_income, source_of_wealth) VALUES
+INSERT INTO CUSTOMER_KYC (customer_id, id_issue_date, id_issue_location, id_issue_type, marital_status, education_level, occupation_category, company_name, annual_income, source_of_wealth) VALUES
 ('3OLM2ZZZ', '2021-11-26', N'桃園市', N'換發', 'M', N'博士', N'電子商務', N'中央大學', 60, N'薪資與投資'),
 ('D33I7OPS', '2024-08-16', N'彰化縣', N'換發', 'D', N'大學', N'住宿餐飲業', N'遠東集團', 250, N'營業收入'),
 ('ZX79V37P', '2019-02-28', N'台北市', N'換發', 'D', N'碩士', N'電信業', N'台灣大哥大', 180, N'遺產繼承'),
@@ -2746,7 +2746,7 @@ INSERT INTO customer_kyc (customer_id, id_issue_date, id_issue_location, id_issu
 ('W4Q46DER', '2020-12-11', N'台東縣', N'補發', 'S', N'專科', N'醫療保健業', N'華碩電腦', 50, N'薪資與股票');
 GO
 
-INSERT INTO customer_kyc (customer_id, id_issue_date, id_issue_location, id_issue_type, marital_status, education_level, occupation_category, company_name, annual_income, source_of_wealth) VALUES
+INSERT INTO CUSTOMER_KYC (customer_id, id_issue_date, id_issue_location, id_issue_type, marital_status, education_level, occupation_category, company_name, annual_income, source_of_wealth) VALUES
 ('QQWHH3TT', '2016-03-15', N'高雄市', N'換發', 'M', N'大學', N'服務業', N'凱基證券', 60, N'營業收入'),
 ('LB8JOD5J', '2019-08-18', N'澎湖縣', N'補發', 'S', N'碩士', N'休閒旅遊業', N'國泰金控', 50, N'執行業務所得'),
 ('YSF699PA', '2017-11-17', N'台東縣', N'補發', 'D', N'高中', N'批發零售業', N'宏碁', 70, N'營業收入'),
@@ -2799,7 +2799,7 @@ INSERT INTO customer_kyc (customer_id, id_issue_date, id_issue_location, id_issu
 ('KA0J2NBI', '2014-08-24', N'彰化縣', N'換發', 'M', N'博士', N'會計法律', N'全家便利商店', 100, N'投資收入');
 GO
 
-INSERT INTO customer_kyc (customer_id, id_issue_date, id_issue_location, id_issue_type, marital_status, education_level, occupation_category, company_name, annual_income, source_of_wealth) VALUES
+INSERT INTO CUSTOMER_KYC (customer_id, id_issue_date, id_issue_location, id_issue_type, marital_status, education_level, occupation_category, company_name, annual_income, source_of_wealth) VALUES
 ('0L8O9ICS', '2015-05-21', N'台北市', N'補發', 'S', N'專科', N'農林漁牧業', N'統一企業', 60, N'退休金'),
 ('TATC9S8Q', '2018-07-20', N'台南市', N'補發', 'S', N'大學', N'出版傳媒業', N'聯發科', 40, N'退休金'),
 ('5Q8CVRSV', '2011-03-19', N'嘉義縣', N'初發', 'D', N'博士', N'專業科學技術', N'廣達電腦', 40, N'遺產繼承'),
@@ -2852,7 +2852,7 @@ INSERT INTO customer_kyc (customer_id, id_issue_date, id_issue_location, id_issu
 ('C2T47F06', '2019-11-14', N'新北市', N'初發', 'M', N'碩士', N'半導體產業', N'中央大學', 90, N'營業收入');
 GO
 
-INSERT INTO customer_kyc (customer_id, id_issue_date, id_issue_location, id_issue_type, marital_status, education_level, occupation_category, company_name, annual_income, source_of_wealth) VALUES
+INSERT INTO CUSTOMER_KYC (customer_id, id_issue_date, id_issue_location, id_issue_type, marital_status, education_level, occupation_category, company_name, annual_income, source_of_wealth) VALUES
 ('4JS6NLM4', '2024-08-02', N'花蓮縣', N'初發', 'M', N'碩士', N'行銷廣告業', N'永豐金控', 180, N'薪資與股票'),
 ('W710RWTC', '2020-04-20', N'嘉義縣', N'補發', 'M', N'高中', N'不動產業', N'國泰金控', 130, N'營業收入'),
 ('C3Q1D05A', '2016-08-09', N'新北市', N'換發', 'D', N'博士', N'服務業', N'統一企業', 40, N'薪資與股票'),
@@ -2905,7 +2905,7 @@ INSERT INTO customer_kyc (customer_id, id_issue_date, id_issue_location, id_issu
 ('AOJTRRWB', '2021-10-08', N'彰化縣', N'初發', 'M', N'大學', N'出版傳媒業', N'瑞昱半導體', 70, N'薪資收入');
 GO
 
-INSERT INTO customer_kyc (customer_id, id_issue_date, id_issue_location, id_issue_type, marital_status, education_level, occupation_category, company_name, annual_income, source_of_wealth) VALUES
+INSERT INTO CUSTOMER_KYC (customer_id, id_issue_date, id_issue_location, id_issue_type, marital_status, education_level, occupation_category, company_name, annual_income, source_of_wealth) VALUES
 ('NWSGL97C', '2017-03-26', N'澎湖縣', N'初發', 'D', N'大學', N'休閒旅遊業', N'新光金控', 500, N'薪資收入'),
 ('WY0TN1QA', '2010-08-28', N'新北市', N'初發', 'S', N'專科', N'住宿餐飲業', N'鼎泰豐', 250, N'薪資與股票'),
 ('DPTMD4F9', '2015-11-27', N'嘉義縣', N'補發', 'S', N'高中', N'服務業', N'台塑', 250, N'營利所得'),
@@ -2958,7 +2958,7 @@ INSERT INTO customer_kyc (customer_id, id_issue_date, id_issue_location, id_issu
 ('KQKP90NE', '2022-05-04', N'台南市', N'補發', 'S', N'大學', N'電子商務', N'長榮海運', 60, N'執行業務所得');
 GO
 
-INSERT INTO customer_kyc (customer_id, id_issue_date, id_issue_location, id_issue_type, marital_status, education_level, occupation_category, company_name, annual_income, source_of_wealth) VALUES
+INSERT INTO CUSTOMER_KYC (customer_id, id_issue_date, id_issue_location, id_issue_type, marital_status, education_level, occupation_category, company_name, annual_income, source_of_wealth) VALUES
 ('N26F4DQW', '2019-04-06', N'台中市', N'換發', 'D', N'大學', N'住宿餐飲業', N'台灣大學', 90, N'執行業務所得'),
 ('6EZ96SJM', '2020-04-09', N'高雄市', N'初發', 'S', N'碩士', N'家管', N'鴻海精密', 120, N'薪資與投資'),
 ('QW856U0R', '2016-09-09', N'雲林縣', N'初發', 'M', N'高中', N'餐飲業', N'王品集團', 80, N'退休金'),
@@ -3011,7 +3011,7 @@ INSERT INTO customer_kyc (customer_id, id_issue_date, id_issue_location, id_issu
 ('9IWEUSNS', '2017-05-14', N'宜蘭縣', N'換發', 'D', N'專科', N'教育研究', N'鴻海精密', 150, N'薪資與投資');
 GO
 
-INSERT INTO customer_kyc (customer_id, id_issue_date, id_issue_location, id_issue_type, marital_status, education_level, occupation_category, company_name, annual_income, source_of_wealth) VALUES
+INSERT INTO CUSTOMER_KYC (customer_id, id_issue_date, id_issue_location, id_issue_type, marital_status, education_level, occupation_category, company_name, annual_income, source_of_wealth) VALUES
 ('BIF9YROD', '2019-03-26', N'嘉義市', N'換發', 'M', N'高中', N'餐飲業', N'群創光電', 50, N'營業收入'),
 ('RJ48L94W', '2013-09-13', N'澎湖縣', N'換發', 'S', N'高中', N'餐飲業', N'中信金控', 350, N'營利所得'),
 ('3SRB3XC3', '2016-01-18', N'基隆市', N'換發', 'S', N'博士', N'服務業', N'遠東集團', 200, N'薪資收入'),
@@ -3064,7 +3064,7 @@ INSERT INTO customer_kyc (customer_id, id_issue_date, id_issue_location, id_issu
 ('P003Y2AE', '2016-08-06', N'嘉義市', N'初發', 'D', N'博士', N'住宿餐飲業', N'統一企業', 500, N'投資收入');
 GO
 
-INSERT INTO customer_kyc (customer_id, id_issue_date, id_issue_location, id_issue_type, marital_status, education_level, occupation_category, company_name, annual_income, source_of_wealth) VALUES
+INSERT INTO CUSTOMER_KYC (customer_id, id_issue_date, id_issue_location, id_issue_type, marital_status, education_level, occupation_category, company_name, annual_income, source_of_wealth) VALUES
 ('GNOUROYU', '2016-09-06', N'花蓮縣', N'換發', 'D', N'博士', N'運輸物流業', N'富邦金控', 500, N'執行業務所得'),
 ('VAS4K586', '2020-12-02', N'南投縣', N'換發', 'M', N'專科', N'自由接案', N'台達電子', 90, N'執行業務所得'),
 ('NUVLATZQ', '2022-11-22', N'新竹市', N'初發', 'M', N'碩士', N'專業科學技術', N'台塑', 40, N'遺產繼承'),
@@ -3110,7 +3110,7 @@ INSERT INTO customer_kyc (customer_id, id_issue_date, id_issue_location, id_issu
 GO
 
 -- ===== customer_risk_tag (892 筆) =====
-INSERT INTO customer_risk_tag (customer_id, aml_risk_level, pep_status, is_fraud_suspect, block_reason, kyc_next_review_date) VALUES
+INSERT INTO CUSTOMER_RISK_TAG (customer_id, aml_risk_level, pep_status, is_fraud_suspect, block_reason, kyc_next_review_date) VALUES
 ('JI0Y6DPB', 'LOW', 'N', 'N', NULL, '2028-11-21'),
 ('G0FN9XUY', 'LOW', 'N', 'Y', N'異常登入行為偵測', '2026-07-17'),
 ('4SHNF877', 'LOW', 'N', 'N', NULL, '2028-04-18'),
@@ -3163,7 +3163,7 @@ INSERT INTO customer_risk_tag (customer_id, aml_risk_level, pep_status, is_fraud
 ('4S7AZV2E', 'LOW', 'N', 'N', NULL, '2028-08-25');
 GO
 
-INSERT INTO customer_risk_tag (customer_id, aml_risk_level, pep_status, is_fraud_suspect, block_reason, kyc_next_review_date) VALUES
+INSERT INTO CUSTOMER_RISK_TAG (customer_id, aml_risk_level, pep_status, is_fraud_suspect, block_reason, kyc_next_review_date) VALUES
 ('2CZO2SUG', 'LOW', 'N', 'N', NULL, '2028-12-21'),
 ('4QHKSWVA', 'LOW', 'N', 'N', NULL, '2028-03-22'),
 ('II5P5NVQ', 'LOW', 'N', 'Y', N'異常登入行為偵測', '2026-08-01'),
@@ -3216,7 +3216,7 @@ INSERT INTO customer_risk_tag (customer_id, aml_risk_level, pep_status, is_fraud
 ('GMD478MF', 'LOW', 'N', 'N', NULL, '2028-07-07');
 GO
 
-INSERT INTO customer_risk_tag (customer_id, aml_risk_level, pep_status, is_fraud_suspect, block_reason, kyc_next_review_date) VALUES
+INSERT INTO CUSTOMER_RISK_TAG (customer_id, aml_risk_level, pep_status, is_fraud_suspect, block_reason, kyc_next_review_date) VALUES
 ('NAYYOSYE', 'LOW', 'N', 'N', NULL, '2028-09-25'),
 ('KRST3TA1', 'LOW', 'N', 'N', NULL, '2028-04-21'),
 ('6CKMALQ5', 'LOW', 'N', 'N', NULL, '2028-05-17'),
@@ -3269,7 +3269,7 @@ INSERT INTO customer_risk_tag (customer_id, aml_risk_level, pep_status, is_fraud
 ('F5B1SA3Y', 'LOW', 'N', 'N', NULL, '2028-04-21');
 GO
 
-INSERT INTO customer_risk_tag (customer_id, aml_risk_level, pep_status, is_fraud_suspect, block_reason, kyc_next_review_date) VALUES
+INSERT INTO CUSTOMER_RISK_TAG (customer_id, aml_risk_level, pep_status, is_fraud_suspect, block_reason, kyc_next_review_date) VALUES
 ('DUB9RBDL', 'LOW', 'N', 'N', NULL, '2028-01-05'),
 ('RQGKCUMC', 'LOW', 'N', 'N', NULL, '2028-02-03'),
 ('771HLL9R', 'LOW', 'N', 'N', NULL, '2028-06-23'),
@@ -3322,7 +3322,7 @@ INSERT INTO customer_risk_tag (customer_id, aml_risk_level, pep_status, is_fraud
 ('ZKWIJ0KZ', 'LOW', 'N', 'N', NULL, '2028-09-09');
 GO
 
-INSERT INTO customer_risk_tag (customer_id, aml_risk_level, pep_status, is_fraud_suspect, block_reason, kyc_next_review_date) VALUES
+INSERT INTO CUSTOMER_RISK_TAG (customer_id, aml_risk_level, pep_status, is_fraud_suspect, block_reason, kyc_next_review_date) VALUES
 ('UL7W8COF', 'LOW', 'N', 'N', NULL, '2028-08-25'),
 ('D9VVN5X4', 'LOW', 'N', 'N', NULL, '2028-08-28'),
 ('GLSXKUGW', 'MEDIUM', 'N', 'N', NULL, '2028-07-24'),
@@ -3375,7 +3375,7 @@ INSERT INTO customer_risk_tag (customer_id, aml_risk_level, pep_status, is_fraud
 ('F8NK5G2Z', 'LOW', 'N', 'N', NULL, '2028-12-08');
 GO
 
-INSERT INTO customer_risk_tag (customer_id, aml_risk_level, pep_status, is_fraud_suspect, block_reason, kyc_next_review_date) VALUES
+INSERT INTO CUSTOMER_RISK_TAG (customer_id, aml_risk_level, pep_status, is_fraud_suspect, block_reason, kyc_next_review_date) VALUES
 ('DVSZ2TVH', 'MEDIUM', 'N', 'N', NULL, '2028-10-26'),
 ('CV35XUDK', 'LOW', 'N', 'N', NULL, '2028-01-13'),
 ('C7H81JMB', 'LOW', 'N', 'Y', N'可疑交易模式', '2026-09-19'),
@@ -3428,7 +3428,7 @@ INSERT INTO customer_risk_tag (customer_id, aml_risk_level, pep_status, is_fraud
 ('DL7U1P8O', 'LOW', 'N', 'N', NULL, '2028-01-25');
 GO
 
-INSERT INTO customer_risk_tag (customer_id, aml_risk_level, pep_status, is_fraud_suspect, block_reason, kyc_next_review_date) VALUES
+INSERT INTO CUSTOMER_RISK_TAG (customer_id, aml_risk_level, pep_status, is_fraud_suspect, block_reason, kyc_next_review_date) VALUES
 ('JKX2KABF', 'LOW', 'N', 'N', NULL, '2028-08-24'),
 ('MFFOHK94', 'LOW', 'N', 'N', NULL, '2028-12-16'),
 ('3X5U7DF8', 'LOW', 'N', 'N', NULL, '2028-10-11'),
@@ -3481,7 +3481,7 @@ INSERT INTO customer_risk_tag (customer_id, aml_risk_level, pep_status, is_fraud
 ('IARPH3Q2', 'LOW', 'N', 'N', NULL, '2028-09-14');
 GO
 
-INSERT INTO customer_risk_tag (customer_id, aml_risk_level, pep_status, is_fraud_suspect, block_reason, kyc_next_review_date) VALUES
+INSERT INTO CUSTOMER_RISK_TAG (customer_id, aml_risk_level, pep_status, is_fraud_suspect, block_reason, kyc_next_review_date) VALUES
 ('YPOH41OF', 'LOW', 'N', 'N', NULL, '2028-07-15'),
 ('GW3PAJVF', 'LOW', 'N', 'N', NULL, '2028-11-18'),
 ('68CFFF8T', 'MEDIUM', 'N', 'N', NULL, '2028-11-09'),
@@ -3534,7 +3534,7 @@ INSERT INTO customer_risk_tag (customer_id, aml_risk_level, pep_status, is_fraud
 ('FBF4FKKH', 'LOW', 'N', 'N', NULL, '2028-02-19');
 GO
 
-INSERT INTO customer_risk_tag (customer_id, aml_risk_level, pep_status, is_fraud_suspect, block_reason, kyc_next_review_date) VALUES
+INSERT INTO CUSTOMER_RISK_TAG (customer_id, aml_risk_level, pep_status, is_fraud_suspect, block_reason, kyc_next_review_date) VALUES
 ('IWAAYRIB', 'LOW', 'N', 'N', NULL, '2028-04-03'),
 ('3ON2FOL4', 'LOW', 'N', 'N', NULL, '2028-02-18'),
 ('03L38GX8', 'MEDIUM', 'N', 'N', NULL, '2028-10-15'),
@@ -3587,7 +3587,7 @@ INSERT INTO customer_risk_tag (customer_id, aml_risk_level, pep_status, is_fraud
 ('2HLS0QLF', 'LOW', 'N', 'N', NULL, '2028-05-06');
 GO
 
-INSERT INTO customer_risk_tag (customer_id, aml_risk_level, pep_status, is_fraud_suspect, block_reason, kyc_next_review_date) VALUES
+INSERT INTO CUSTOMER_RISK_TAG (customer_id, aml_risk_level, pep_status, is_fraud_suspect, block_reason, kyc_next_review_date) VALUES
 ('6OE3L3RD', 'LOW', 'N', 'N', NULL, '2028-07-14'),
 ('NISOSZ0D', 'HIGH', 'N', 'N', N'可疑現金交易', '2026-06-09'),
 ('U7NSPN5M', 'LOW', 'N', 'N', NULL, '2028-01-05'),
@@ -3640,7 +3640,7 @@ INSERT INTO customer_risk_tag (customer_id, aml_risk_level, pep_status, is_fraud
 ('SWSO0CIS', 'LOW', 'N', 'N', NULL, '2028-06-02');
 GO
 
-INSERT INTO customer_risk_tag (customer_id, aml_risk_level, pep_status, is_fraud_suspect, block_reason, kyc_next_review_date) VALUES
+INSERT INTO CUSTOMER_RISK_TAG (customer_id, aml_risk_level, pep_status, is_fraud_suspect, block_reason, kyc_next_review_date) VALUES
 ('3OLM2ZZZ', 'MEDIUM', 'N', 'N', NULL, '2028-01-12'),
 ('D33I7OPS', 'LOW', 'N', 'N', NULL, '2028-12-06'),
 ('ZX79V37P', 'LOW', 'N', 'N', NULL, '2028-03-03'),
@@ -3693,7 +3693,7 @@ INSERT INTO customer_risk_tag (customer_id, aml_risk_level, pep_status, is_fraud
 ('W4Q46DER', 'MEDIUM', 'N', 'N', NULL, '2028-09-24');
 GO
 
-INSERT INTO customer_risk_tag (customer_id, aml_risk_level, pep_status, is_fraud_suspect, block_reason, kyc_next_review_date) VALUES
+INSERT INTO CUSTOMER_RISK_TAG (customer_id, aml_risk_level, pep_status, is_fraud_suspect, block_reason, kyc_next_review_date) VALUES
 ('QQWHH3TT', 'LOW', 'N', 'N', NULL, '2028-04-21'),
 ('LB8JOD5J', 'LOW', 'N', 'N', NULL, '2028-07-24'),
 ('YSF699PA', 'LOW', 'N', 'N', NULL, '2028-01-19'),
@@ -3746,7 +3746,7 @@ INSERT INTO customer_risk_tag (customer_id, aml_risk_level, pep_status, is_fraud
 ('KA0J2NBI', 'MEDIUM', 'N', 'N', NULL, '2028-06-07');
 GO
 
-INSERT INTO customer_risk_tag (customer_id, aml_risk_level, pep_status, is_fraud_suspect, block_reason, kyc_next_review_date) VALUES
+INSERT INTO CUSTOMER_RISK_TAG (customer_id, aml_risk_level, pep_status, is_fraud_suspect, block_reason, kyc_next_review_date) VALUES
 ('0L8O9ICS', 'HIGH', 'N', 'N', N'高風險國家交易', '2026-07-17'),
 ('TATC9S8Q', 'LOW', 'N', 'N', NULL, '2028-06-03'),
 ('5Q8CVRSV', 'LOW', 'N', 'N', NULL, '2028-08-25'),
@@ -3799,7 +3799,7 @@ INSERT INTO customer_risk_tag (customer_id, aml_risk_level, pep_status, is_fraud
 ('C2T47F06', 'LOW', 'N', 'N', NULL, '2028-08-20');
 GO
 
-INSERT INTO customer_risk_tag (customer_id, aml_risk_level, pep_status, is_fraud_suspect, block_reason, kyc_next_review_date) VALUES
+INSERT INTO CUSTOMER_RISK_TAG (customer_id, aml_risk_level, pep_status, is_fraud_suspect, block_reason, kyc_next_review_date) VALUES
 ('4JS6NLM4', 'MEDIUM', 'N', 'N', NULL, '2028-02-10'),
 ('W710RWTC', 'LOW', 'N', 'N', NULL, '2028-01-01'),
 ('C3Q1D05A', 'LOW', 'N', 'N', NULL, '2028-12-15'),
@@ -3852,7 +3852,7 @@ INSERT INTO customer_risk_tag (customer_id, aml_risk_level, pep_status, is_fraud
 ('AOJTRRWB', 'LOW', 'N', 'N', NULL, '2028-04-01');
 GO
 
-INSERT INTO customer_risk_tag (customer_id, aml_risk_level, pep_status, is_fraud_suspect, block_reason, kyc_next_review_date) VALUES
+INSERT INTO CUSTOMER_RISK_TAG (customer_id, aml_risk_level, pep_status, is_fraud_suspect, block_reason, kyc_next_review_date) VALUES
 ('NWSGL97C', 'LOW', 'N', 'N', NULL, '2028-12-12'),
 ('WY0TN1QA', 'LOW', 'N', 'N', NULL, '2028-12-25'),
 ('DPTMD4F9', 'LOW', 'N', 'Y', N'詐騙通報關聯', '2026-06-28'),
@@ -3905,7 +3905,7 @@ INSERT INTO customer_risk_tag (customer_id, aml_risk_level, pep_status, is_fraud
 ('KQKP90NE', 'LOW', 'N', 'N', NULL, '2028-12-05');
 GO
 
-INSERT INTO customer_risk_tag (customer_id, aml_risk_level, pep_status, is_fraud_suspect, block_reason, kyc_next_review_date) VALUES
+INSERT INTO CUSTOMER_RISK_TAG (customer_id, aml_risk_level, pep_status, is_fraud_suspect, block_reason, kyc_next_review_date) VALUES
 ('N26F4DQW', 'LOW', 'N', 'N', NULL, '2028-06-02'),
 ('6EZ96SJM', 'LOW', 'N', 'N', NULL, '2028-08-06'),
 ('QW856U0R', 'LOW', 'N', 'N', NULL, '2028-11-10'),
@@ -3958,7 +3958,7 @@ INSERT INTO customer_risk_tag (customer_id, aml_risk_level, pep_status, is_fraud
 ('9IWEUSNS', 'LOW', 'N', 'N', NULL, '2028-03-09');
 GO
 
-INSERT INTO customer_risk_tag (customer_id, aml_risk_level, pep_status, is_fraud_suspect, block_reason, kyc_next_review_date) VALUES
+INSERT INTO CUSTOMER_RISK_TAG (customer_id, aml_risk_level, pep_status, is_fraud_suspect, block_reason, kyc_next_review_date) VALUES
 ('BIF9YROD', 'LOW', 'N', 'N', NULL, '2028-12-08'),
 ('RJ48L94W', 'LOW', 'N', 'N', NULL, '2028-06-28'),
 ('3SRB3XC3', 'LOW', 'N', 'N', NULL, '2028-09-19'),
@@ -4011,7 +4011,7 @@ INSERT INTO customer_risk_tag (customer_id, aml_risk_level, pep_status, is_fraud
 ('P003Y2AE', 'LOW', 'N', 'N', NULL, '2028-02-12');
 GO
 
-INSERT INTO customer_risk_tag (customer_id, aml_risk_level, pep_status, is_fraud_suspect, block_reason, kyc_next_review_date) VALUES
+INSERT INTO CUSTOMER_RISK_TAG (customer_id, aml_risk_level, pep_status, is_fraud_suspect, block_reason, kyc_next_review_date) VALUES
 ('GNOUROYU', 'LOW', 'N', 'N', NULL, '2028-02-13'),
 ('VAS4K586', 'LOW', 'N', 'N', NULL, '2028-05-22'),
 ('NUVLATZQ', 'MEDIUM', 'N', 'Y', N'可疑交易模式', '2026-05-20'),

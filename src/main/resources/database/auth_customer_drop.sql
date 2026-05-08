@@ -4,10 +4,10 @@ Java Easy Bank 系統權限模組 (Auth Module)
 ===============================================================================
 */
 
-IF OBJECT_ID('auth_login_log', 'U') IS NOT NULL DROP TABLE auth_login_log;
-IF OBJECT_ID('auth_emp', 'U') IS NOT NULL DROP TABLE auth_emp;
-IF OBJECT_ID('auth_role', 'U') IS NOT NULL DROP TABLE auth_role;
-IF OBJECT_ID('auth_dept', 'U') IS NOT NULL DROP TABLE auth_dept;
+IF OBJECT_ID('AUTH_LOGIN_LOG', 'U') IS NOT NULL DROP TABLE AUTH_LOGIN_LOG;
+IF OBJECT_ID('AUTH_EMP', 'U') IS NOT NULL DROP TABLE AUTH_EMP;
+IF OBJECT_ID('AUTH_ROLE', 'U') IS NOT NULL DROP TABLE AUTH_ROLE;
+IF OBJECT_ID('AUTH_DEPT', 'U') IS NOT NULL DROP TABLE AUTH_DEPT;
 GO
 
 /*
@@ -16,8 +16,8 @@ Java Easy Bank 客戶模組 (Customer Module)
 ===============================================================================
 */
 
-IF OBJECT_ID('customer_risk_tag', 'U') IS NOT NULL DROP TABLE customer_risk_tag;
-IF OBJECT_ID('customer_kyc', 'U') IS NOT NULL DROP TABLE customer_kyc;
-IF OBJECT_ID('customer_profile', 'U') IS NOT NULL DROP TABLE customer_profile;
-IF OBJECT_ID('customer_application', 'U') IS NOT NULL DROP TABLE customer_application;
+IF OBJECT_ID('CUSTOMER_RISK_TAG', 'U') IS NOT NULL DROP TABLE CUSTOMER_RISK_TAG;
+IF OBJECT_ID('CUSTOMER_KYC', 'U') IS NOT NULL DROP TABLE CUSTOMER_KYC;
+IF OBJECT_ID('CUSTOMER_PROFILE', 'U') IS NOT NULL DROP TABLE CUSTOMER_PROFILE;
+IF OBJECT_ID('CUSTOMER_APPLICATION', 'U') IS NOT NULL DROP TABLE CUSTOMER_APPLICATION;
 GO

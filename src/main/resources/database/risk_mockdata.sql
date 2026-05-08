@@ -4,7 +4,7 @@
 -- ============================================================
 
 -- 清除舊資料
-DELETE FROM risk_event_log;
+DELETE FROM RISK_EVENT_LOG;
 
 -- 使用 CTE 產生 200 筆風控事件
 WITH Numbers AS (
@@ -12,7 +12,7 @@ WITH Numbers AS (
     FROM master.sys.all_columns a
              CROSS JOIN master.sys.all_columns b
 )
-INSERT INTO risk_event_log (
+INSERT INTO RISK_EVENT_LOG (
     event_type,
     target_identifier,
     risk_level,
