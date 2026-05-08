@@ -45,6 +45,18 @@ const router = createRouter({
           name: 'user-profile',
           component: () => import('../views/user/UserProfileView.vue'),
         },
+        {
+          path: 'card-types',
+          name: 'user-card-types',
+          component: () => import('../views/user/CardTypeListView.vue'),
+        },
+        {
+          path:'card-applications',
+          name:'user-card-applications',
+          component: () => import('../views/user/CardApplicationForm.vue'),
+        },
+        
+      
       ],
     },
 
@@ -106,6 +118,13 @@ const router = createRouter({
           //http://localhost:5173/admin/card-applications
           component: () => import('../views/admin/CardApplicationList.vue'),
         },
+        {
+          path:'card-txns',
+          name:'admin-card-txns',
+          //http://localhost:5173/admin/card-txns
+          component: () => import('../views/admin/CardTxnView.vue'),
+        }
+        ,
         {
           path: 'risk-events',
           name: 'admin-risk-events',

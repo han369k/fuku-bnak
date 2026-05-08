@@ -1,7 +1,7 @@
 package com.javaeasybank.creditcard.controller;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.javaeasybank.common.dto.response.ApiResponse;
+import com.javaeasybank.common.dto.response.PageResponse;
 import com.javaeasybank.creditcard.dto.CardTxnRequestDto;
 import com.javaeasybank.creditcard.dto.CardTxnResponseDto;
 import com.javaeasybank.creditcard.service.CardTxnService;
@@ -19,15 +20,28 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/card-txns")
+@RequestMapping("/user/card-txns")
 public class CardTxnController {
 
     private final CardTxnService cardTxnService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<CardTxnResponseDto>>> getAllTransactions() {
-        return ResponseEntity.ok(ApiResponse.success(cardTxnService.findAll()));
-    }
+    public ResponseEntity<ApiResponse<PageResponse<CardTxnResponseDto>>> getAllTransactions(
+        Pageable pageable
+) {
+
+    Page<CardTxnResponseDto> page = cardTxnService.findAll(pageable);
+
+    PageResponse<CardTxnResponseDto> response =
+            PageResponse.of(
+                    page.getContent(),
+                    page.getNumber(),
+                    page.getSize(),
+                    page.getTotalElements()
+            );
+
+    return ResponseEntity.ok(ApiResponse.success(response));
+}
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<CardTxnResponseDto>> getTransaction(@PathVariable Integer id) {
