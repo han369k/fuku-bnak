@@ -50,7 +50,7 @@ public class CustomerCreateHandler extends BaseRiskHandler {
             // 確保有 businessID，優先使用 ID_CARD，若無則回退至手機號碼
             String businessId = checkMap.getOrDefault(BlacklistType.ID_CARD,
                     checkMap.getOrDefault(BlacklistType.PHONE, "UNKNOWN_CUSTOMER"));
-            // 嚴格處置：拋出異常前，必須確保 Event 被送出以供 RiskLogService 記錄
+            // 拋出異常前，必須確保 Event 被送出以供 RiskLogService 記錄
             String reason = "命中黑名單: " + hitDetails;
 
             // 記錄log (注意：在生產環境中 ID 應脫敏)

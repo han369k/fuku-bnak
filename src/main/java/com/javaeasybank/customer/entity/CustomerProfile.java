@@ -46,7 +46,7 @@ public class CustomerProfile {
     @Column(length = 255, nullable = false)
     private String address;
 
-    @Column(name = "avatar_url", length = 255)
+    @Column(name = "avatar_url",length = 255)
     private String avatarUrl;
 
     @Column(length = 20, nullable = false)

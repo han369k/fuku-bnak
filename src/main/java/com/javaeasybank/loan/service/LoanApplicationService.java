@@ -191,7 +191,7 @@ public class LoanApplicationService {
 
     // 送審：草稿 → SUBMITTED，主表推進為 PENDING_REVIEW
     // 申請狀態必須是 IN_CONTACT
-    @RiskCheck(scene = BusinessScene.LOAN)
+    @RiskCheck(scene = BusinessScene.LOAN_APPLY)
     public void submitReview(String applicationId) {
 
         LoanApplication loan = laRepo.findById(applicationId)
