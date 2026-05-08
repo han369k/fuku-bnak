@@ -118,7 +118,7 @@ function handleServiceClick(item) {
 
 <style scoped>
 .home-page {
-  max-width: 900px;
+  max-width: 100%;
 }
 
 /* === Welcome === */
