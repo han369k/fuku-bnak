@@ -13,4 +13,7 @@ public interface LoanApplicationRepository extends JpaRepository<LoanApplication
     List<LoanApplication> findByApplicationStatusOrderByCreateTimeDesc(LoanApplicationStatus status);
 
     List<LoanApplication> findByCustomerIdOrderByCreateTimeDesc(String customerId);
+
+    // 查 updateTime 不為 null 的申請，依 updateTime 降序（置頂用）
+    List<LoanApplication> findByUpdateTimeIsNotNullOrderByUpdateTimeDesc();
 }
