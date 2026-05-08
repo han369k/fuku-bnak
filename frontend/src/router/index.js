@@ -100,9 +100,20 @@ const router = createRouter({
           component: () => import('../views/admin/EmployeeListView.vue'),
         },
         {
+          path: 'employees/create',
+          name: 'admin-employees-create',
+          meta: { requiresAdmin: true },
+          component: () => import('../views/admin/EmployeeCreateView.vue'),
+        },
+        {
           path: 'customers',
           name: 'admin-customers',
           component: () => import('../views/admin/CustomerListView.vue'),
+        },
+        {
+          path: 'customers/create',
+          name: 'admin-customers-create',
+          component: () => import('../views/admin/CustomerCreateView.vue'),
         },
         {
           path: 'card-types',

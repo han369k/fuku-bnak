@@ -16,18 +16,21 @@
         autocomplete="off"
       >
         <a-form-item
-          label="帳號"
-          name="username"
-          :rules="[{ required: true, message: '請輸入帳號' }]"
+          label="Email"
+          name="email"
+          :rules="[
+            { required: true, message: '請輸入 Email' },
+            { type: 'email', message: '請輸入正確的 Email 格式' }
+          ]"
         >
           <a-input
-            v-model:value="form.username"
-            placeholder="請輸入帳號"
+            v-model:value="form.email"
+            placeholder="請輸入 Email（如 name@javabank.com）"
             class="custom-input"
             @press-enter="handleLogin"
           >
             <template #prefix>
-              <UserOutlined style="color: rgba(92, 107, 95, 0.5)" />
+              <MailOutlined style="color: rgba(92, 107, 95, 0.5)" />
             </template>
           </a-input>
         </a-form-item>
@@ -69,7 +72,7 @@
         <div class="quick-btn-grid">
           <a-button
             v-for="acc in testAccounts"
-            :key="acc.username"
+            :key="acc.email"
             @click="fillAccount(acc)"
             class="quick-btn"
           >
@@ -86,7 +89,7 @@
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
-import { UserOutlined, LockOutlined } from '@ant-design/icons-vue'
+import { MailOutlined, LockOutlined } from '@ant-design/icons-vue'
 import { login } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
 
@@ -95,38 +98,32 @@ const authStore = useAuthStore()
 const loading = ref(false)
 
 const form = reactive({
-  username: '',
+  email: '',
   password: '',
 })
 
-// 測試帳號
+// 快速登入帳號（直接使用完整 email）
 const testAccounts = [
-  { name: '鄭文華', role: 'CISO',  username: 'wenhua.cheng' },
-  { name: '林家豪', role: 'CFSO',  username: 'chiahao.lin' },
+  { name: '鄭文華', role: 'CISO', email: 'wenhua.cheng@javabank.com' },
+  { name: '林家豪', role: 'CFSO', email: 'chiahao.lin@javabank.com' },
 ]
 
 function fillAccount(acc) {
-  form.username = acc.username
+  form.email = acc.email
   form.password = '123456'
 }
 
 async function handleLogin() {
-  if (!form.username || !form.password) return
+  if (!form.email || !form.password) return
   loading.value = true
   try {
-    // 處理帳號轉信箱格式，以符合後端需求
-    let loginEmail = form.username
-    if (!loginEmail.includes('@')) {
-      loginEmail += '@javabank.com'
-    }
-
-    const res = await login({ email: loginEmail, password: form.password })
+    const res = await login({ email: form.email, password: form.password })
     const userData = res.data.data
     authStore.setUser(userData)
     message.success(`歡迎回來，${userData.empName}！`)
     router.push({ name: 'admin-home' })
   } catch (err) {
-    message.error(err.response?.data?.message || '登入失敗，請檢查帳號密碼')
+    message.error(err.response?.data?.message || '登入失敗，請檢查 Email 與密碼')
   } finally {
     loading.value = false
   }

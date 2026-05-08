@@ -41,6 +41,11 @@ export function suspendEmployee(empId) {
   return api.delete(`/api/auth/employees/${empId}/suspend`)
 }
 
+// 重新啟用員工
+export function resumeEmployee(empId) {
+  return api.put(`/api/auth/employees/${empId}/resume`)
+}
+
 // 一鍵帶入測試資料
 export function seedEmployees() {
   return api.post('/api/auth/employees/seed')

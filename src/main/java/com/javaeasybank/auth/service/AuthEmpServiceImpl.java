@@ -1,6 +1,7 @@
 package com.javaeasybank.auth.service;
 
 import com.javaeasybank.auth.dto.AuthDto;
+import com.javaeasybank.auth.entity.AuthActionLog;
 import com.javaeasybank.auth.entity.AuthEmp;
 import com.javaeasybank.auth.entity.AuthRole;
 import com.javaeasybank.auth.repository.AuthEmpRepository;
@@ -35,38 +36,77 @@ public class AuthEmpServiceImpl implements AuthEmpService {
         this.actionLogService = actionLogService;
     }
 
-    private void recordLog(String action, String details) {
-        String empId = "SYSTEM";
-        String empName = "系統";
+    /**
+     * 記錄操作日誌
+     * - empId / empName：優先從 SecurityContext 查；LOGIN 時由呼叫方直接帶入
+     * - target：被操作對象的 ID（如員工編號）
+     * - details：操作說明
+     * - ipAddress：來源 IP
+     */
+    private void recordLog(String empId, String empName,
+                           String action, String target,
+                           String details, String ipAddress) {
+        AuthActionLog log = new AuthActionLog();
+        log.setEmpId(empId != null ? empId : "SYSTEM");
+        log.setEmpName(empName != null ? empName : "系統");
+        log.setAction(action);
+        log.setTarget(target != null ? target : "-");
+        log.setDetails(details != null ? details : "-");
+        log.setIpAddress(ipAddress != null ? ipAddress : "127.0.0.1");
+        actionLogService.saveLog(log);
+    }
+
+    /**
+     * 從 SecurityContext 取得當前登入員工資訊，回傳 [empId, empName]
+     */
+    private String[] resolveCurrentEmp() {
         try {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
                 String email = auth.getName();
                 Optional<AuthEmp> optEmp = authEmpRepository.findByEmail(email);
                 if (optEmp.isPresent()) {
-                    empId = optEmp.get().getEmpId();
-                    empName = optEmp.get().getEmpName();
+                    return new String[]{ optEmp.get().getEmpId(), optEmp.get().getEmpName() };
                 }
             }
-        } catch (Exception e) {
-            // Ignored for system level actions
-        }
-        actionLogService.saveLog(empId, empName, action, details);
+        } catch (Exception ignored) { }
+        return new String[]{ "SYSTEM", "系統" };
     }
 
     // ===========================
-    // 登入
+    // 登入：使用 email 驗證，帶入 IP
     // ===========================
     @Override
-    public AuthDto.AuthEmpResponse login(AuthDto.LoginRequest request) {
+    public AuthDto.AuthEmpResponse login(AuthDto.LoginRequest request, String ipAddress) {
         AuthEmp emp = authEmpRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new BusinessException("帳號或密碼錯誤"));
 
         emp.setLastLoginDate(LocalDateTime.now());
         authEmpRepository.save(emp);
 
-        recordLog("LOGIN", "員工登入");
+        // LOGIN 時 SecurityContext 尚未建立，直接帶入查到的員工資訊
+        recordLog(emp.getEmpId(), emp.getEmpName(),
+                  "LOGIN", emp.getEmpId(),
+                  "員工登入系統", ipAddress);
+
         return convertToResponse(emp);
+    }
+
+    // ===========================
+    // 登出：記錄 LOGOUT 日誌
+    // ===========================
+    @Override
+    public void logout(String email, String ipAddress) {
+        String empId = "SYSTEM";
+        String empName = "系統";
+        if (email != null) {
+            Optional<AuthEmp> optEmp = authEmpRepository.findByEmail(email);
+            if (optEmp.isPresent()) {
+                empId = optEmp.get().getEmpId();
+                empName = optEmp.get().getEmpName();
+            }
+        }
+        recordLog(empId, empName, "LOGOUT", empId, "員工登出系統", ipAddress);
     }
 
     // ===========================
@@ -105,7 +145,11 @@ public class AuthEmpServiceImpl implements AuthEmpService {
         }
 
         AuthEmp saved = authEmpRepository.save(emp);
-        recordLog("CREATE_EMP", "新增員工: " + saved.getEmpName());
+        String[] cur = resolveCurrentEmp();
+        recordLog(cur[0], cur[1],
+                  "CREATE_EMP", saved.getEmpId(),
+                  "新增員工：" + saved.getEmpName() + "（" + saved.getEmpId() + "）",
+                  null);
         return convertToResponse(saved);
     }
 
@@ -124,7 +168,11 @@ public class AuthEmpServiceImpl implements AuthEmpService {
         }
 
         AuthEmp saved = authEmpRepository.save(emp);
-        recordLog("UPDATE_EMP", "修改員工: " + saved.getEmpName());
+        String[] cur = resolveCurrentEmp();
+        recordLog(cur[0], cur[1],
+                  "UPDATE_EMP", saved.getEmpId(),
+                  "修改員工資料：" + saved.getEmpName() + "（" + saved.getEmpId() + "）",
+                  null);
         return convertToResponse(saved);
     }
 
@@ -134,7 +182,24 @@ public class AuthEmpServiceImpl implements AuthEmpService {
                 .orElseThrow(() -> new BusinessException("查無此員工"));
         emp.setStatus("SUSPENDED");
         authEmpRepository.save(emp);
-        recordLog("SUSPEND_EMP", "停用員工: " + emp.getEmpName());
+        String[] cur = resolveCurrentEmp();
+        recordLog(cur[0], cur[1],
+                  "SUSPEND_EMP", empId,
+                  "停用員工：" + emp.getEmpName() + "（" + empId + "）",
+                  null);
+    }
+
+    @Override
+    public void resumeEmp(String empId) {
+        AuthEmp emp = authEmpRepository.findById(empId)
+                .orElseThrow(() -> new BusinessException("查無此員工"));
+        emp.setStatus("ACTIVE");
+        authEmpRepository.save(emp);
+        String[] cur = resolveCurrentEmp();
+        recordLog(cur[0], cur[1],
+                  "RESUME_EMP", empId,
+                  "重新啟用員工：" + emp.getEmpName() + "（" + empId + "）",
+                  null);
     }
 
     // ===========================
@@ -174,7 +239,8 @@ public class AuthEmpServiceImpl implements AuthEmpService {
             emp.setPermissionExpire(LocalDateTime.now().plusYears(1));
             authEmpRepository.save(emp);
         }
-        recordLog("SEED_DATA", "一鍵帶入測試員工資料");
+        String[] cur = resolveCurrentEmp();
+        recordLog(cur[0], cur[1], "SEED_DATA", null, "一鍵帶入員工測試資料（13筆）", null);
     }
 
     // ===========================

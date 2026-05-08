@@ -23,22 +23,35 @@
       :loading="loading"
       row-key="id"
       class="custom-table"
+      :scroll="{ x: 1000 }"
+      :pagination="{ pageSize: 15, showSizeChanger: false }"
     >
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'emp'">
           <div class="emp-name-cell">
-            <div class="emp-avatar">{{ record.empName ? record.empName.charAt(0) : '系' }}</div>
+            <div class="emp-avatar">{{ (record.empName && record.empName !== '???') ? record.empName.charAt(0) : '系' }}</div>
             <div class="emp-info">
-              <span class="emp-name-text">{{ record.empName || '系統' }}</span>
-              <span class="emp-id-text">{{ record.empId || 'SYSTEM' }}</span>
+              <span class="emp-name-text">{{ (record.empName && record.empName !== '???') ? record.empName : '系統' }}</span>
+              <span class="emp-id-text">{{ (record.empId && record.empId !== '???') ? record.empId : 'SYSTEM' }}</span>
             </div>
           </div>
         </template>
         <template v-else-if="column.key === 'action'">
-          <a-tag color="blue">{{ record.action }}</a-tag>
+          <a-tag :color="actionColor(record.action)">{{ record.action }}</a-tag>
+        </template>
+        <template v-else-if="column.key === 'target'">
+          <span class="mono-text">{{ record.target || '-' }}</span>
+        </template>
+        <template v-else-if="column.key === 'details'">
+          <a-tooltip :title="record.details">
+            <span class="details-cell">{{ (record.details && record.details !== '???') ? record.details : '-' }}</span>
+          </a-tooltip>
+        </template>
+        <template v-else-if="column.key === 'ipAddress'">
+          <span class="mono-text">{{ record.ipAddress || '-' }}</span>
         </template>
         <template v-else-if="column.key === 'actionTime'">
-          {{ formatTime(record.actionTime) }}
+          <span class="time-text">{{ formatTime(record.actionTime) }}</span>
         </template>
       </template>
     </a-table>
@@ -55,14 +68,35 @@ const logs = ref([])
 const loading = ref(false)
 
 const columns = [
-  { title: '日誌 ID', dataIndex: 'id', key: 'id', width: 80 },
-  { title: '操作人員', dataIndex: 'empName', key: 'emp', width: 160 },
-  { title: '動作', dataIndex: 'action', key: 'action', width: 120 },
-  { title: '目標', dataIndex: 'target', key: 'target', width: 100 },
-  { title: '詳情', dataIndex: 'details', key: 'details' },
-  { title: '時間', dataIndex: 'actionTime', key: 'actionTime', width: 170 },
-  { title: 'IP', dataIndex: 'ipAddress', key: 'ipAddress', width: 130 },
+  { title: 'ID',    dataIndex: 'id',         key: 'id',         width: 60 },
+  { title: '操作人員', dataIndex: 'empName',  key: 'emp',        width: 160 },
+  { title: '動作',  dataIndex: 'action',     key: 'action',     width: 130 },
+  { title: '目標',  dataIndex: 'target',     key: 'target',     width: 100 },
+  {
+    title: '詳情',
+    dataIndex: 'details',
+    key: 'details',
+    width: 400,
+    ellipsis: true,
+  },
+  { title: '時間',  dataIndex: 'actionTime', key: 'actionTime', width: 170 },
+  { title: 'IP',    dataIndex: 'ipAddress',  key: 'ipAddress',  width: 120 },
 ]
+
+const actionColorMap = {
+  LOGIN:      'green',
+  LOGOUT:     'default',
+  CREATE_EMP: 'blue',
+  UPDATE_EMP: 'orange',
+  SUSPEND_EMP: 'red',
+  SEED_DATA:  'purple',
+  CREATE_CUSTOMER: 'cyan',
+  UPDATE_CUSTOMER: 'geekblue',
+}
+
+function actionColor(action) {
+  return actionColorMap[action] || 'default'
+}
 
 function formatTime(value) {
   if (!value) return '-'
@@ -118,12 +152,12 @@ onMounted(() => {
 .emp-name-cell {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .emp-avatar {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   background-color: rgba(92, 107, 95, 0.1);
   color: #5C6B5F;
@@ -131,7 +165,8 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 13px;
+  flex-shrink: 0;
 }
 
 .emp-info {
@@ -142,12 +177,38 @@ onMounted(() => {
 .emp-name-text {
   font-weight: 600;
   color: #1a1a2e;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .emp-id-text {
   font-size: 11px;
   color: #8c8c8c;
-  margin-top: 2px;
+  margin-top: 1px;
+}
+
+/* 詳情欄位：截斷 + hover 顯示全文 */
+.details-cell {
+  display: block;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: #444;
+  cursor: default;
+}
+
+/* 等寬字體：IP / 目標 */
+.mono-text {
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 12px;
+  color: #555;
+}
+
+/* 時間格式 */
+.time-text {
+  font-size: 12px;
+  color: #666;
+  white-space: nowrap;
 }
 </style>

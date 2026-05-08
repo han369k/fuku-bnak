@@ -17,12 +17,10 @@
         </a-input>
         <a-button type="primary" class="rounded-btn" @click="handleSearch">查詢</a-button>
         <a-button class="rounded-btn btn-ghost" @click="handleClear">清除</a-button>
-        <a-button type="primary" class="rounded-btn" @click="openCreateModal">
+        <a-button type="primary" class="rounded-btn" @click="goCreate">
           新增客戶
         </a-button>
       </div>
-      <div class="global-actions">
-        </div>
     </div>
 
     <a-table
@@ -58,64 +56,69 @@
             <a-button type="link" class="action-btn edit-btn" @click="openEditModal(record)">
               編輯
             </a-button>
-            <a-divider v-if="isSuperAdmin" type="vertical" />
-            <a-button
-              v-if="isSuperAdmin"
-              type="link"
-              class="action-btn suspend-btn"
-              @click="handleDeactivate(record.customerId)"
-              :disabled="record.status === 'DEACTIVATED' || record.status === 'INACTIVE'"
-            >
-              停用
-            </a-button>
+            <a-divider type="vertical" />
+            <template v-if="record.status === 'INACTIVE' || record.status === 'DEACTIVATED'">
+              <a-button
+                type="link"
+                class="action-btn resume-btn"
+                @click="handleActivate(record)"
+              >
+                啟用
+              </a-button>
+            </template>
+            <template v-else>
+              <a-button
+                type="link"
+                class="action-btn suspend-btn"
+                @click="handleDeactivate(record)"
+              >
+                停用
+              </a-button>
+            </template>
           </div>
         </template>
       </template>
     </a-table>
 
+    <!-- 編輯 Modal（僅修改聯絡資訊）-->
     <a-modal
-      v-model:open="showModal"
-      :title="isEdit ? '編輯客戶' : '新增客戶'"
-      @ok="handleSubmit"
+      v-model:open="showEditModal"
+      title="編輯客戶資料"
+      @ok="handleSubmitEdit"
       :confirm-loading="submitLoading"
-      @cancel="resetForm"
+      @cancel="resetEditForm"
+      ok-text="儲存變更"
+      cancel-text="取消"
     >
       <a-form layout="vertical">
-        <div v-if="!isEdit" style="margin-bottom: 12px; display: flex; gap: 8px;">
-          <span style="font-size: 12px; color: #999; margin-right: 8px; line-height: 24px;">快速帶入：</span>
-          <a-button size="small" @click="fillDemoCustomer('M')">男性客戶</a-button>
-          <a-button size="small" @click="fillDemoCustomer('F')">女性客戶</a-button>
-          <a-button size="small" type="dashed" @click="handleSeed" :loading="seedLoading">一鍵帶入</a-button>
-        </div>
-
         <a-form-item label="身分證字號">
-          <a-input v-model:value="form.idNumber" placeholder="請輸入身分證字號" :disabled="isEdit" />
+          <a-input :value="editForm.idNumber" disabled />
         </a-form-item>
         <a-form-item label="姓名">
-          <a-input v-model:value="form.name" placeholder="請輸入姓名" />
+          <a-input v-model:value="editForm.name" placeholder="請輸入姓名" />
         </a-form-item>
         <a-form-item label="生日">
           <a-date-picker
-            v-model:value="form.birthday"
+            v-model:value="editForm.birthday"
             style="width: 100%"
             value-format="YYYY-MM-DD"
             placeholder="請選擇生日"
           />
         </a-form-item>
         <a-form-item label="性別">
-          <a-select v-model:value="form.gender" placeholder="請選擇性別">
+          <a-select v-model:value="editForm.gender" placeholder="請選擇性別">
             <a-select-option value="M">男</a-select-option>
             <a-select-option value="F">女</a-select-option>
           </a-select>
         </a-form-item>
         <a-form-item label="Email">
-          <a-input v-model:value="form.email" placeholder="請輸入 Email" />
+          <a-input v-model:value="editForm.email" placeholder="請輸入 Email" />
         </a-form-item>
         <a-form-item label="電話">
-          <a-input v-model:value="form.phone" placeholder="請輸入電話" />
+          <a-input v-model:value="editForm.phone" placeholder="請輸入電話" />
         </a-form-item>
         <a-form-item label="地址">
-          <a-input v-model:value="form.address" placeholder="請輸入地址" />
+          <a-input v-model:value="editForm.address" placeholder="請輸入地址" />
         </a-form-item>
       </a-form>
     </a-modal>
@@ -123,30 +126,25 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
 import { SearchOutlined } from '@ant-design/icons-vue'
 import {
   getCustomers,
-  createCustomer,
   updateCustomer,
   deactivateCustomer,
-  seedCustomers,
+  activateCustomer,
 } from '@/api/customer'
-import { useAuthStore } from '@/stores/auth'
 
-const authStore = useAuthStore()
-
-const isSuperAdmin = computed(() => {
-  const roleCode = authStore.user?.roleCode
-  return ['CISO', 'CSDM'].includes(roleCode)
-})
+const router = useRouter()
 
 const statusMap = {
   ACTIVE: '正常',
-  DEACTIVATED: '已註銷',
+  DEACTIVATED: '已停用',
   PENDING: '待審核',
   FROZEN: '凍結',
+  INACTIVE: '停用',
 }
 
 const genderMap = {
@@ -154,69 +152,20 @@ const genderMap = {
   F: '女',
 }
 
-const maleNames = ['張志豪', '林建宏', '黃柏翔', '吳宗翰', '陳俊傑', '劉冠廷', '周政廷', '方建宏']
-const femaleNames = ['陳怡君', '林佳蓉', '王雅婷', '黃詩涵', '許家瑩', '曾婉茹', '卓佩樺', '賴怡君']
-const cities = ['台北市', '新北市', '桃園市', '台中市', '高雄市', '台南市']
-const districts = {
-  '台北市': ['中正區', '大安區', '信義區', '松山區', '中山區'],
-  '新北市': ['板橋區', '中和區', '新莊區', '三重區', '永和區'],
-  '桃園市': ['桃園區', '中壢區', '龜山區', '八德區'],
-  '台中市': ['西屯區', '北屯區', '南屯區', '豐原區'],
-  '高雄市': ['前鎮區', '鼓山區', '左營區', '三民區'],
-  '台南市': ['東區', '中西區', '安平區', '北區'],
-}
-const roads = ['中正路', '民生路', '忠孝東路', '復興南路', '和平東路', '仁愛路', '光復路', '建國路']
-
-function generateIdNumber(gender) {
-  const cityCode = 'ABCDEFGHJKLMNPQRSTUVWXYZ'
-  const letter = cityCode[Math.floor(Math.random() * cityCode.length)]
-  const genderDigit = gender === 'M' ? '1' : '2'
-  let digits = genderDigit
-  for (let i = 0; i < 8; i++) {
-    digits += Math.floor(Math.random() * 10)
-  }
-  return letter + digits
-}
-
-function fillDemoCustomer(gender) {
-  const names = gender === 'M' ? maleNames : femaleNames
-  const name = names[Math.floor(Math.random() * names.length)]
-  const city = cities[Math.floor(Math.random() * cities.length)]
-  const district = districts[city][Math.floor(Math.random() * districts[city].length)]
-  const road = roads[Math.floor(Math.random() * roads.length)]
-  const num = Math.floor(Math.random() * 200) + 1
-  const floor = Math.floor(Math.random() * 12) + 1
-
-  const year = Math.floor(Math.random() * 30) + 1970
-  const month = String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')
-  const day = String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')
-
-  const phoneNum = '09' + String(Math.floor(Math.random() * 100000000)).padStart(8, '0')
-  const emailPrefix = `demo${Math.floor(Math.random() * 9000) + 1000}`
-
-  form.idNumber = generateIdNumber(gender)
-  form.name = name
-  form.birthday = `${year}-${month}-${day}`
-  form.gender = gender
-  form.email = `${emailPrefix}@gmail.com`
-  form.phone = phoneNum
-  form.address = `${city}${district}${road}${num}號${floor}樓`
-}
-
 const keyword = ref('')
 const customers = ref([])
 const loading = ref(false)
 
 const columns = [
-  { title: '客戶資訊', dataIndex: 'name', key: 'name', width: 200, fixed: 'left' },
-  { title: 'CIF', dataIndex: 'cif', key: 'cif', width: 120 },
-  { title: '身分證字號', dataIndex: 'idNumber', key: 'idNumber', width: 130 },
-  { title: '性別', dataIndex: 'gender', key: 'gender', width: 70 },
-  { title: '生日', dataIndex: 'birthday', key: 'birthday', width: 120 },
-  { title: 'Email', dataIndex: 'email', key: 'email', width: 180 },
-  { title: '電話', dataIndex: 'phone', key: 'phone', width: 130 },
-  { title: '狀態', dataIndex: 'status', key: 'status', width: 100 },
-  { title: '操作', key: 'action', width: 140, align: 'right', fixed: 'right' },
+  { title: '客戶資訊',  dataIndex: 'name',      key: 'name',      width: 180, fixed: 'left' },
+  { title: 'CIF',       dataIndex: 'cif',        key: 'cif',       width: 120 },
+  { title: '身分證字號', dataIndex: 'idNumber',   key: 'idNumber',  width: 130 },
+  { title: '性別',      dataIndex: 'gender',     key: 'gender',    width: 60 },
+  { title: '生日',      dataIndex: 'birthday',   key: 'birthday',  width: 110 },
+  { title: 'Email',     dataIndex: 'email',      key: 'email',     width: 200 },
+  { title: '電話',      dataIndex: 'phone',      key: 'phone',     width: 130 },
+  { title: '狀態',      dataIndex: 'status',     key: 'status',    width: 100 },
+  { title: '操作',      key: 'action',           width: 140, fixed: 'right' },
 ]
 
 async function fetchData() {
@@ -240,12 +189,18 @@ function handleClear() {
   customers.value = []
 }
 
-const showModal = ref(false)
-const isEdit = ref(false)
+function goCreate() {
+  router.push({ name: 'admin-customers-create' })
+}
+
+// ===========================
+// 編輯 Modal
+// ===========================
+const showEditModal = ref(false)
 const submitLoading = ref(false)
 const editingCustomerId = ref('')
 
-const form = reactive({
+const editForm = reactive({
   idNumber: '',
   name: '',
   birthday: null,
@@ -255,101 +210,99 @@ const form = reactive({
   address: '',
 })
 
-function resetForm() {
-  form.idNumber = ''
-  form.name = ''
-  form.birthday = null
-  form.gender = undefined
-  form.email = ''
-  form.phone = ''
-  form.address = ''
-  isEdit.value = false
+function resetEditForm() {
+  editForm.idNumber = ''
+  editForm.name = ''
+  editForm.birthday = null
+  editForm.gender = undefined
+  editForm.email = ''
+  editForm.phone = ''
+  editForm.address = ''
   editingCustomerId.value = ''
 }
 
-function openCreateModal() {
-  resetForm()
-  showModal.value = true
-}
-
 function openEditModal(record) {
-  isEdit.value = true
   editingCustomerId.value = record.customerId
-  form.idNumber = record.idNumber
-  form.name = record.name
-  form.birthday = record.birthday || null
-  form.gender = record.gender
-  form.email = record.email
-  form.phone = record.phone
-  form.address = record.address
-  showModal.value = true
+  editForm.idNumber = record.idNumber
+  editForm.name = record.name
+  editForm.birthday = record.birthday || null
+  editForm.gender = record.gender
+  editForm.email = record.email
+  editForm.phone = record.phone
+  editForm.address = record.address
+  showEditModal.value = true
 }
 
-async function handleSubmit() {
+async function handleSubmitEdit() {
   submitLoading.value = true
   try {
-    const payload = {
-      idNumber: form.idNumber,
-      name: form.name,
-      birthday: form.birthday,
-      gender: form.gender,
-      email: form.email,
-      phone: form.phone,
-      address: form.address,
-    }
-
-    if (isEdit.value) {
-      await updateCustomer(editingCustomerId.value, payload)
-      message.success('客戶修改成功')
-    } else {
-      await createCustomer(payload)
-      message.success('客戶新增成功')
-    }
-
-    showModal.value = false
-    resetForm()
+    await updateCustomer(editingCustomerId.value, {
+      idNumber: editForm.idNumber,
+      name: editForm.name,
+      birthday: editForm.birthday,
+      gender: editForm.gender,
+      email: editForm.email,
+      phone: editForm.phone,
+      address: editForm.address,
+    })
+    message.success('客戶資料已更新')
+    showEditModal.value = false
+    resetEditForm()
     await fetchData()
   } catch (err) {
-    message.error(err.response?.data?.message || (isEdit.value ? '修改失敗' : '新增失敗'))
+    message.error(err.response?.data?.message || '修改失敗')
   } finally {
     submitLoading.value = false
   }
 }
 
-function handleDeactivate(customerId) {
+// ===========================
+// 停用客戶（帶確認對話框）
+// ===========================
+function handleDeactivate(record) {
   Modal.confirm({
-    title: '確定要註銷此客戶嗎？',
-    content: `客戶 ID: ${customerId}，註銷後該客戶所有服務將停止。`,
-    okText: '確定註銷',
+    title: '確定要停用此客戶嗎？',
+    content: `姓名：${record.name}（${record.customerId}），停用後該客戶所有服務將暫停。`,
+    okText: '確定停用',
     okType: 'danger',
     cancelText: '取消',
     async onOk() {
       try {
-        await deactivateCustomer(customerId)
-        message.success('客戶已註銷')
+        await deactivateCustomer(record.customerId)
+        message.success(`客戶「${record.name}」已停用`)
         await fetchData()
       } catch (err) {
-        message.error(err.response?.data?.message || '註銷失敗')
+        message.error(err.response?.data?.message || '停用失敗')
       }
     },
   })
 }
 
-const seedLoading = ref(false)
-
-async function handleSeed() {
-  seedLoading.value = true
-  try {
-    const res = await seedCustomers()
-    message.success(res.data.data || '一鍵帶入成功')
-    await fetchData()
-    showModal.value = false
-  } catch (err) {
-    message.error(err.response?.data?.message || '一鍵帶入失敗')
-  } finally {
-    seedLoading.value = false
-  }
+// ===========================
+// 重新啟用客戶
+// ===========================
+function handleActivate(record) {
+  Modal.confirm({
+    title: '確定要重新啟用此客戶嗎？',
+    content: `姓名：${record.name}（${record.customerId}），啟用後該客戶可再次登入。`,
+    okText: '確定啟用',
+    okType: 'primary',
+    cancelText: '取消',
+    async onOk() {
+      try {
+        await activateCustomer(record.customerId)
+        message.success(`客戶「${record.name}」已重新啟用`)
+        await fetchData()
+      } catch (err) {
+        message.error(err.response?.data?.message || '啟用失敗')
+      }
+    },
+  })
 }
+
+onMounted(() => {
+  fetchData()
+})
 </script>
 
 <style scoped>
@@ -370,6 +323,7 @@ async function handleSeed() {
   justify-content: center;
   font-weight: 700;
   font-size: 16px;
+  flex-shrink: 0;
 }
 
 .emp-info {
@@ -411,11 +365,13 @@ async function handleSeed() {
 }
 .status-active .status-dot { background-color: #52c41a; }
 
-.status-deactivated, .status-frozen {
+.status-deactivated, .status-frozen, .status-inactive {
   background-color: rgba(255, 77, 79, 0.1);
   color: #d9363e;
 }
-.status-deactivated .status-dot, .status-frozen .status-dot { background-color: #ff4d4f; }
+.status-deactivated .status-dot,
+.status-frozen .status-dot,
+.status-inactive .status-dot { background-color: #ff4d4f; }
 
 .status-pending {
   background-color: rgba(250, 140, 22, 0.1);
@@ -430,5 +386,14 @@ async function handleSeed() {
 .suspend-btn:hover {
   color: #d9363e;
   background-color: rgba(255, 77, 79, 0.05);
+}
+
+.resume-btn {
+  color: #52c41a;
+}
+
+.resume-btn:hover {
+  color: #389e0d;
+  background-color: rgba(82, 196, 26, 0.05);
 }
 </style>

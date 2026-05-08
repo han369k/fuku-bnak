@@ -3,6 +3,7 @@ package com.javaeasybank.auth.controller;
 import com.javaeasybank.auth.dto.AuthDto;
 import com.javaeasybank.auth.service.AuthEmpService;
 import com.javaeasybank.common.dto.response.ApiResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -31,7 +32,8 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<AuthDto.AuthEmpResponse>> login(
             @RequestBody AuthDto.LoginRequest request,
-            HttpSession session) {
+            HttpSession session,
+            HttpServletRequest httpRequest) {
 
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
@@ -40,7 +42,9 @@ public class AuthController {
         SecurityContextHolder.getContext().setAuthentication(authentication);
         session.setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
 
-        AuthDto.AuthEmpResponse response = authEmpService.login(request);
+        // 擷取來源 IP
+        String ipAddress = getClientIp(httpRequest);
+        AuthDto.AuthEmpResponse response = authEmpService.login(request, ipAddress);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -52,7 +56,17 @@ public class AuthController {
 
     // ===== 登出 =====
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<Void>> logout(HttpSession session) {
+    public ResponseEntity<ApiResponse<Void>> logout(HttpSession session,
+                                                     HttpServletRequest httpRequest) {
+        // 取得當前登入者 email，記錄登出日誌
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String email = (auth != null && auth.isAuthenticated()
+                && !"anonymousUser".equals(auth.getPrincipal()))
+                ? auth.getName() : null;
+
+        String ipAddress = getClientIp(httpRequest);
+        authEmpService.logout(email, ipAddress);
+
         SecurityContextHolder.clearContext();
         session.invalidate();
         return ResponseEntity.ok(ApiResponse.success(null));
@@ -97,11 +111,32 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 
+    // ===== 重新啟用員工 =====
+    @PreAuthorize("hasAnyRole('CISO', 'ISSA')")
+    @PutMapping("/employees/{empId}/resume")
+    public ResponseEntity<ApiResponse<Void>> resumeEmp(@PathVariable String empId) {
+        authEmpService.resumeEmp(empId);
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
     // ===== 一鍵帶入資料 =====
     @PreAuthorize("hasAnyRole('CISO', 'ISSA')")
     @PostMapping("/employees/seed")
     public ResponseEntity<ApiResponse<String>> seedEmployees() {
         authEmpService.seedTestData();
         return ResponseEntity.ok(ApiResponse.success("已成功帶入資料"));
+    }
+
+    // ===== 工具方法：取得真實 IP =====
+    private String getClientIp(HttpServletRequest request) {
+        String xForwardedFor = request.getHeader("X-Forwarded-For");
+        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
+            return xForwardedFor.split(",")[0].trim();
+        }
+        String xRealIp = request.getHeader("X-Real-IP");
+        if (xRealIp != null && !xRealIp.isEmpty()) {
+            return xRealIp;
+        }
+        return request.getRemoteAddr();
     }
 }
