@@ -55,6 +55,11 @@ const router = createRouter({
           name:'user-card-applications',
           component: () => import('../views/user/CardApplicationForm.vue'),
         },
+        {
+          path:'card-txns',
+          name:'user-card-txns',
+          component: () => import('../views/user/CardTxnView.vue'),
+        }
         
       
       ],
