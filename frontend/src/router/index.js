@@ -60,6 +60,12 @@ const router = createRouter({
           name:'user-card-txns',
           component: () => import('../views/user/CardTxnView.vue'),
         }
+        ,
+        {
+          path: 'account-application',
+          name: 'user-account-application',
+          component: () => import('../views/user/AccountApplicationView.vue'),
+        },
         
       
       ],
