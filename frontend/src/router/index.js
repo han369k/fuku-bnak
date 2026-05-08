@@ -55,6 +55,11 @@ const router = createRouter({
           name:'user-card-applications',
           component: () => import('../views/user/CardApplicationForm.vue'),
         },
+        {
+          path: 'account-application',
+          name: 'user-account-application',
+          component: () => import('../views/user/AccountApplicationView.vue'),
+        },
         
       
       ],
