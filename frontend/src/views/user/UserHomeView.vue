@@ -2,8 +2,41 @@
   <div class="customer-page home-page">
     <div class="washi-overlay" aria-hidden="true"></div>
 
+    <!-- 未開戶引導 -->
+    <section v-if="!hasAccount" class="onboard-card" aria-label="開戶引導">
+      <div class="onboard-icon">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="5" width="20" height="14" rx="2"/>
+          <line x1="2" y1="10" x2="22" y2="10"/>
+        </svg>
+      </div>
+      <div class="onboard-content">
+        <h2 class="onboard-title">歡迎加入 Java Easy Bank</h2>
+        <p class="onboard-desc">
+          您尚未擁有任何帳戶。立即申請開戶，即可享有存款、轉帳、換匯等完整金融服務。
+        </p>
+        <div class="onboard-actions">
+          <button class="jb-btn jb-btn-primary jb-btn-lg" @click="$router.push({ name: 'user-account-application' })">
+            立即申請開戶
+          </button>
+          <button class="jb-btn jb-btn-secondary" @click="$router.push({ name: 'user-account-application' })">
+            查看申請進度
+          </button>
+        </div>
+      </div>
+      <div class="onboard-features">
+        <div class="onboard-feature" v-for="f in onboardFeatures" :key="f.title">
+          <div class="feature-icon" v-html="f.icon"></div>
+          <div>
+            <p class="feature-title">{{ f.title }}</p>
+            <p class="feature-desc">{{ f.desc }}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- 上方：個人卡片 + 資產總覽 -->
-    <div class="dashboard-top">
+    <div v-if="hasAccount" class="dashboard-top">
       <!-- 左：個人資訊卡片 -->
       <section class="profile-card" aria-label="個人資訊">
         <div class="profile-header">
@@ -114,7 +147,7 @@
     </div>
 
     <!-- 下方：資產分佈 + 匯率 + 歷史水位 -->
-    <div class="dashboard-bottom">
+    <div v-if="hasAccount" class="dashboard-bottom">
       <!-- 資產分佈 -->
       <section class="distribution-card" aria-label="資產分佈">
         <h3 class="card-title">資產分佈</h3>
@@ -198,11 +231,45 @@ import { useRouter } from 'vue-router'
 import { useCustomerAuthStore } from '@/stores/customerAuth'
 import { BASE_URL } from '@/api/axios'
 import { Chart, registerables } from 'chart.js'
+import { getMyAccountApplications } from '@/api/accountApplication'
 
 Chart.register(...registerables)
 
 const router = useRouter()
 const customerAuthStore = useCustomerAuthStore()
+
+// === 是否已開戶 ===
+const hasAccount = ref(true) // 預設 true 避免閃爍
+
+const onboardFeatures = [
+  {
+    title: '快速開戶',
+    desc: '線上申請，最快 1 個工作天完成審核',
+    icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+  },
+  {
+    title: '安全保障',
+    desc: '嚴格 KYC 實名認證，保障帳戶安全',
+    icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+  },
+  {
+    title: '多元服務',
+    desc: '存款、轉帳、外幣、信用卡一站搞定',
+    icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>',
+  },
+]
+
+async function checkAccountStatus() {
+  try {
+    const apps = await getMyAccountApplications()
+    // 有任一筆 APPROVED 的申請 → 已開戶
+    const hasApproved = apps && apps.some(a => a.status === 'APPROVED')
+    hasAccount.value = hasApproved
+  } catch {
+    // API 失敗時保持顯示 dashboard（避免影響已有帳戶的用戶）
+    hasAccount.value = true
+  }
+}
 
 // === 個人資訊 ===
 const customerName = computed(() => customerAuthStore.customer?.name || '會員')
@@ -397,9 +464,12 @@ const exchangeRates = [
 
 watch(activePeriod, () => drawLine())
 
-onMounted(() => {
-  drawDonut()
-  drawLine()
+onMounted(async () => {
+  await checkAccountStatus()
+  if (hasAccount.value) {
+    drawDonut()
+    drawLine()
+  }
 })
 </script>
 
@@ -421,6 +491,91 @@ onMounted(() => {
 .home-page > *:not(.washi-overlay) {
   position: relative;
   z-index: 1;
+}
+
+/* === 開戶引導 === */
+.onboard-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: var(--space-8) var(--space-6);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+.onboard-icon {
+  opacity: 0.7;
+}
+
+.onboard-content {
+  max-width: 480px;
+}
+
+.onboard-title {
+  font-family: var(--font-heading);
+  font-size: var(--text-h2);
+  letter-spacing: 3px;
+  margin-bottom: var(--space-3);
+}
+
+.onboard-desc {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  line-height: 1.7;
+  margin-bottom: var(--space-5);
+}
+
+.onboard-actions {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.onboard-features {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-5);
+  width: 100%;
+  max-width: 700px;
+  margin-top: var(--space-4);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--border);
+}
+
+.onboard-feature {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  text-align: center;
+}
+
+.feature-icon {
+  color: var(--primary);
+  margin-bottom: var(--space-1);
+}
+
+.feature-title {
+  font-weight: 600;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.feature-desc {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+@media (max-width: 640px) {
+  .onboard-features {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* === 上方佈局 === */
