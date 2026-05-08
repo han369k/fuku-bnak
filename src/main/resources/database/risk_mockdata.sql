@@ -27,25 +27,25 @@ SELECT
         WHEN 1 THEN 'CREDIT_CARD'
         WHEN 2 THEN 'USER_LOGIN'
         ELSE 'LOAN'
-    END AS event_type,
+        END AS event_type,
 
     CASE (n % 4)
         WHEN 0 THEN '822' + CAST(100000000 + n AS VARCHAR)
         WHEN 1 THEN '4579-' + CAST(1000 + n AS VARCHAR) + '-0000-1234'
         ELSE 'USER-' + CAST(5000 + n AS VARCHAR)
-    END AS target_identifier,
+        END AS target_identifier,
 
     CASE
         WHEN n % 10 IN (0, 1, 2, 3, 4, 5, 6) THEN 'LOW'
         WHEN n % 10 IN (7, 8) THEN 'MEDIUM'
         ELSE 'HIGH'
-    END AS risk_level,
+END AS risk_level,
 
     CASE
         WHEN n % 10 IN (0, 1, 2, 3, 4, 5, 6) THEN 'PASSED'
         WHEN n % 10 IN (7, 8) THEN 'MANUAL_REVIEW'
         ELSE 'REJECTED'
-    END AS action_taken,
+END AS action_taken,
 
     CASE (n % 8)
         WHEN 0 THEN N'系統例行掃描正常'
@@ -56,12 +56,12 @@ SELECT
         WHEN 5 THEN N'跨境交易風險偵測'
         WHEN 6 THEN N'異常時段登入警示'
         ELSE N'多重帳戶關聯偵測'
-    END AS trigger_reason,
+END AS trigger_reason,
 
     CASE
         WHEN (n % 4) = 2 THEN NULL
         ELSE CAST((RAND(n) * 100000) AS DECIMAL(18, 2))
-    END AS transaction_amount,
+END AS transaction_amount,
 
     DATEADD(SECOND, -n * 4320, GETDATE()) AS created_at
 FROM Numbers;

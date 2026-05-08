@@ -4,6 +4,9 @@
 CREATE TABLE LOAN_APPLICATION (
                                   application_id        NVARCHAR(50)    NOT NULL,
                                   customer_id           NVARCHAR(50)    NOT NULL,
+                                  applicant_name        NVARCHAR(50)    NULL,
+                                  applicant_phone       NVARCHAR(20)    NULL,
+                                  applicant_email       NVARCHAR(100)   NULL,
                                   apply_type            NVARCHAR(50)    NULL,
                                   apply_amount          DECIMAL(18, 2)  NULL,
                                   apply_period          INT             NULL,

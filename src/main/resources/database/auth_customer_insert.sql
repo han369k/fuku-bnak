@@ -33,23 +33,23 @@ GO
 -- 寫入 11 位擬真員工帳號（密碼皆為 123456）
 INSERT INTO AUTH_EMP (emp_id, emp_name, dept_id, role_id, email, password_hash, status, contract_end_date, permission_expire) VALUES
 -- 消費金融部
-('E26001', N'林家豪', 'DPT001', 'R001', 'chiahao.lin@javabank.com',  '$2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36Fy0dS8qWOdLAyFwPiyMCu', 'ACTIVE', NULL, '2026-12-31'),
-('E26002', N'王淑芬', 'DPT001', 'R002', 'shufen.wang@javabank.com', '$2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36Fy0dS8qWOdLAyFwPiyMCu', 'ACTIVE', NULL, '2026-12-31'),
+('E26001', N'林家豪', 'DPT001', 'R001', 'chiahao.lin@javabank.com',  '$2a$10$1Wa/uOR8VZXCrOwfd9.2ZOtgSeATa0xVvdSsYudUgtCSsQJ0M2cDS', 'ACTIVE', NULL, '2026-12-31'),
+('E26002', N'王淑芬', 'DPT001', 'R002', 'shufen.wang@javabank.com', '$2a$10$1Wa/uOR8VZXCrOwfd9.2ZOtgSeATa0xVvdSsYudUgtCSsQJ0M2cDS', 'ACTIVE', NULL, '2026-12-31'),
 -- 客戶服務部
-('E26003', N'陳建志', 'DPT002', 'R003', 'chienchih.chen@javabank.com', '$2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36Fy0dS8qWOdLAyFwPiyMCu', 'ACTIVE', NULL, '2026-12-31'),
-('E26004', N'張雅婷', 'DPT002', 'R004', 'yating.chang@javabank.com','$2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36Fy0dS8qWOdLAyFwPiyMCu', 'ACTIVE', NULL, '2026-12-31'),
+('E26003', N'陳建志', 'DPT002', 'R003', 'chienchih.chen@javabank.com', '$2a$10$1Wa/uOR8VZXCrOwfd9.2ZOtgSeATa0xVvdSsYudUgtCSsQJ0M2cDS', 'ACTIVE', NULL, '2026-12-31'),
+('E26004', N'張雅婷', 'DPT002', 'R004', 'yating.chang@javabank.com','$2a$10$1Wa/uOR8VZXCrOwfd9.2ZOtgSeATa0xVvdSsYudUgtCSsQJ0M2cDS', 'ACTIVE', NULL, '2026-12-31'),
 -- 授信審查部
-('E26005', N'劉冠宇', 'DPT003', 'R005', 'kuanyu.liu@javabank.com',  '$2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36Fy0dS8qWOdLAyFwPiyMCu', 'ACTIVE', NULL, '2026-12-31'),
-('E26006', N'吳建國', 'DPT003', 'R006', 'chienkuo.wu@javabank.com',   '$2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36Fy0dS8qWOdLAyFwPiyMCu', 'SUSPENDED', NULL, '2024-01-01'), -- 離職停用
-('E26007', N'李志明', 'DPT003', 'R007', 'chihming.lee@javabank.com',   '$2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36Fy0dS8qWOdLAyFwPiyMCu', 'ACTIVE', NULL, '2026-12-31'),
+('E26005', N'劉冠宇', 'DPT003', 'R005', 'kuanyu.liu@javabank.com',  '$2a$10$1Wa/uOR8VZXCrOwfd9.2ZOtgSeATa0xVvdSsYudUgtCSsQJ0M2cDS', 'ACTIVE', NULL, '2026-12-31'),
+('E26006', N'吳建國', 'DPT003', 'R006', 'chienkuo.wu@javabank.com',   '$2a$10$1Wa/uOR8VZXCrOwfd9.2ZOtgSeATa0xVvdSsYudUgtCSsQJ0M2cDS', 'SUSPENDED', NULL, '2024-01-01'), -- 離職停用
+('E26007', N'李志明', 'DPT003', 'R007', 'chihming.lee@javabank.com',   '$2a$10$1Wa/uOR8VZXCrOwfd9.2ZOtgSeATa0xVvdSsYudUgtCSsQJ0M2cDS', 'ACTIVE', NULL, '2026-12-31'),
 -- 營運企劃部
-('E26008', N'趙宇軒', 'DPT004', 'R008', 'yuhsuan.chao@javabank.com','$2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36Fy0dS8qWOdLAyFwPiyMCu', 'ACTIVE', '2026-06-30', '2026-06-30'), -- 約聘人員
-('E26009', N'黃志成', 'DPT004', 'R009', 'chihcheng.huang@javabank.com', '$2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36Fy0dS8qWOdLAyFwPiyMCu', 'ACTIVE', NULL, '2026-12-31'),
+('E26008', N'趙宇軒', 'DPT004', 'R008', 'yuhsuan.chao@javabank.com','$2a$10$1Wa/uOR8VZXCrOwfd9.2ZOtgSeATa0xVvdSsYudUgtCSsQJ0M2cDS', 'ACTIVE', '2026-06-30', '2026-06-30'), -- 約聘人員
+('E26009', N'黃志成', 'DPT004', 'R009', 'chihcheng.huang@javabank.com', '$2a$10$1Wa/uOR8VZXCrOwfd9.2ZOtgSeATa0xVvdSsYudUgtCSsQJ0M2cDS', 'ACTIVE', NULL, '2026-12-31'),
 -- 資訊安全部
-('E26010', N'蔡宗翰', 'DPT005', 'R010', 'tsunghan.tsai@javabank.com', '$2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36Fy0dS8qWOdLAyFwPiyMCu', 'LOCKED', NULL, '2026-12-31'), -- 密碼鎖定
-('E26011', N'鄭文華', 'DPT005', 'R011', 'wenhua.cheng@javabank.com','$2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36Fy0dS8qWOdLAyFwPiyMCu', 'ACTIVE', NULL, '2026-12-31'),
-('E26012', N'管理員甲', 'DPT005', 'R012', 'admin.a@javabank.com', '$2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36Fy0dS8qWOdLAyFwPiyMCu', 'ACTIVE', NULL, '2026-12-31'),
-('E26013', N'管理員乙', 'DPT005', 'R013', 'admin.b@javabank.com', '$2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36Fy0dS8qWOdLAyFwPiyMCu', 'ACTIVE', NULL, '2026-12-31');
+('E26010', N'蔡宗翰', 'DPT005', 'R010', 'tsunghan.tsai@javabank.com', '$2a$10$1Wa/uOR8VZXCrOwfd9.2ZOtgSeATa0xVvdSsYudUgtCSsQJ0M2cDS', 'LOCKED', NULL, '2026-12-31'), -- 密碼鎖定
+('E26011', N'鄭文華', 'DPT005', 'R011', 'wenhua.cheng@javabank.com','$2a$10$1Wa/uOR8VZXCrOwfd9.2ZOtgSeATa0xVvdSsYudUgtCSsQJ0M2cDS', 'ACTIVE', NULL, '2026-12-31'),
+('E26012', N'管理員甲', 'DPT005', 'R012', 'admin.a@javabank.com', '$2a$10$1Wa/uOR8VZXCrOwfd9.2ZOtgSeATa0xVvdSsYudUgtCSsQJ0M2cDS', 'ACTIVE', NULL, '2026-12-31'),
+('E26013', N'管理員乙', 'DPT005', 'R013', 'admin.b@javabank.com', '$2a$10$1Wa/uOR8VZXCrOwfd9.2ZOtgSeATa0xVvdSsYudUgtCSsQJ0M2cDS', 'ACTIVE', NULL, '2026-12-31');
 GO
 
 -- 寫入登入日誌模擬資料
@@ -120,6 +120,15 @@ INSERT INTO CUSTOMER_PROFILE (customer_id, cif, id_number, name, birthday, gende
 ('W2R5T8C1', '2605-M7N3P6V9', 'R223456789', N'卓佩樺', '1996-07-07', 'F', 'pei.cho@email.com', '0912000018', N'基隆市中正區義一路1號', 'ACTIVE'),
 ('C4H1K7N9', '2605-V5L2W8R3', 'S123456789', N'江宇軒', '1989-09-30', 'M', 'yu.chiang@email.com', '0912000019', N'台北市中正區重慶南路一段122號', 'ACTIVE'),
 ('V7P3M1R6', '2605-T9C4F2J8', 'T223456789', N'郭欣儀', '1993-04-25', 'F', 'hsin.kuo@email.com', '0912000020', N'新北市三重區重新路一段1號', 'ACTIVE');
+GO
+
+-- 寫入 5 筆 customer_auth（密碼皆為 123456）
+INSERT INTO CUSTOMER_AUTH (auth_id, customer_id, username, password_hash, role, status) VALUES
+('CA00000001', 'X7K9P2M4', 'mingwang85',   '$2a$10$1Wa/uOR8VZXCrOwfd9.2ZOtgSeATa0xVvdSsYudUgtCSsQJ0M2cDS', 'CUSTOMER', 'ACTIVE'),
+('CA00000002', 'V4L6T1Y8', 'hualin90',     '$2a$10$1Wa/uOR8VZXCrOwfd9.2ZOtgSeATa0xVvdSsYudUgtCSsQJ0M2cDS', 'CUSTOMER', 'ACTIVE'),
+('CA00000003', 'D3H8F5G2', 'chienchen78',  '$2a$10$1Wa/uOR8VZXCrOwfd9.2ZOtgSeATa0xVvdSsYudUgtCSsQJ0M2cDS', 'CUSTOMER', 'ACTIVE'),
+('CA00000004', 'B9W1C7R5', 'yachang95',    '$2a$10$1Wa/uOR8VZXCrOwfd9.2ZOtgSeATa0xVvdSsYudUgtCSsQJ0M2cDS', 'CUSTOMER', 'ACTIVE'),
+('CA00000005', 'P6M4N2Q8', 'chihlee82',    '$2a$10$1Wa/uOR8VZXCrOwfd9.2ZOtgSeATa0xVvdSsYudUgtCSsQJ0M2cDS', 'CUSTOMER', 'ACTIVE');
 GO
 
 -- 寫入 20 筆 customer_kyc

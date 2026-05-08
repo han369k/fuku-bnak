@@ -59,6 +59,18 @@ CREATE TABLE AUTH_LOGIN_LOG (
     
     CONSTRAINT FK_Log_Emp FOREIGN KEY (emp_id) REFERENCES AUTH_EMP(emp_id)
 );
+
+-- [5] 操作行為日誌表 (AUTH_ACTION_LOG)
+CREATE TABLE AUTH_ACTION_LOG (
+    id              BIGINT IDENTITY(1,1) PRIMARY KEY,
+    emp_id          VARCHAR(10)     NULL,
+    emp_name        NVARCHAR(50)    NULL,
+    action          VARCHAR(50)     NOT NULL,
+    target          VARCHAR(50)     NULL,
+    details         NVARCHAR(500)   NULL,
+    action_time     DATETIME2       DEFAULT GETDATE(),
+    ip_address      VARCHAR(45)     NULL
+);
 GO
 
 /*
@@ -102,13 +114,32 @@ CREATE TABLE CUSTOMER_PROFILE (
     phone VARCHAR(20) NOT NULL UNIQUE,
     address NVARCHAR(255) NOT NULL,
     avatar_url VARCHAR(255) NULL,
+    job NVARCHAR(100) NULL,
+    annual_income INT NULL,
+    risk_level VARCHAR(20) NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
     created_at DATETIME2 NOT NULL DEFAULT GETDATE(),
     updated_at DATETIME2 NOT NULL DEFAULT GETDATE(),
     CONSTRAINT CHK_Profile_Gender CHECK (gender IN ('M', 'F'))
 );
 
--- [3] KYC 資料表
+-- [3] 客戶認證表（帳號密碼 / JWT）
+CREATE TABLE CUSTOMER_AUTH (
+    auth_id VARCHAR(20) NOT NULL PRIMARY KEY,
+    customer_id VARCHAR(20) NOT NULL UNIQUE,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    role VARCHAR(20) NOT NULL DEFAULT 'CUSTOMER',
+    status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+    reset_token VARCHAR(255) NULL,
+    reset_token_expiry DATETIME2 NULL,
+    last_login_date DATETIME2 NULL,
+    created_at DATETIME2 NOT NULL DEFAULT GETDATE(),
+    updated_at DATETIME2 NOT NULL DEFAULT GETDATE(),
+    CONSTRAINT FK_Auth_Profile FOREIGN KEY (customer_id) REFERENCES CUSTOMER_PROFILE(customer_id)
+);
+
+-- [4] KYC 資料表
 CREATE TABLE CUSTOMER_KYC (
     customer_id VARCHAR(20) NOT NULL PRIMARY KEY,
     id_issue_date DATE NOT NULL,
@@ -126,7 +157,7 @@ CREATE TABLE CUSTOMER_KYC (
     CONSTRAINT CHK_Issue_Type CHECK (id_issue_type IN (N'初發', N'補發', N'換發'))
 );
 
--- [4] 風控標籤表
+-- [5] 風控標籤表
 CREATE TABLE CUSTOMER_RISK_TAG (
     customer_id VARCHAR(20) NOT NULL PRIMARY KEY,
     aml_risk_level VARCHAR(10) NOT NULL DEFAULT 'LOW',
