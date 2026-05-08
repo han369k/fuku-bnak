@@ -34,7 +34,7 @@
 
     <properties>
         <java.version>21</java.version>
-    <kotlin.version>2.3.10</kotlin.version>
+        <kotlin.version>2.3.10</kotlin.version>
     </properties>
 
     <dependencies>
@@ -107,18 +107,21 @@
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
+        
+        <!-- MapStruct 主程式 -->
         <dependency>
-  			<groupId>org.mapstruct</groupId>
-  			<artifactId>mapstruct</artifactId>
-  			<version>1.5.5.Final</version>
-		</dependency>
-
-		<dependency>
-		  <groupId>org.mapstruct</groupId>
-		  <artifactId>mapstruct-processor</artifactId>
-		  <version>1.5.5.Final</version>
-		  <scope>provided</scope>
-		</dependency>
+            <groupId>org.mapstruct</groupId>
+            <artifactId>mapstruct</artifactId>
+            <version>1.5.5.Final</version>
+        </dependency>
+        <!-- MapStruct 處理器 (必須在 dependencies 宣告，也必須在 plugin 中綁定) -->
+        <dependency>
+          <groupId>org.mapstruct</groupId>
+          <artifactId>mapstruct-processor</artifactId>
+          <version>1.5.5.Final</version>
+          <scope>provided</scope>
+        </dependency>
+        
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-stdlib-jdk8</artifactId>
@@ -131,30 +134,41 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- JWT -->
+        <!-- CSV Export -->
+        <dependency>
+            <groupId>com.opencsv</groupId>
+            <artifactId>opencsv</artifactId>
+            <version>5.9</version>
+        </dependency>
+
+        <!-- PDF Export -->
+        <dependency>
+            <groupId>com.github.librepdf</groupId>
+            <artifactId>openpdf</artifactId>
+            <version>2.0.2</version>
+        </dependency>
+
+        <!-- ========================================== -->
+        <!-- JWT 相關套件 (已升級至 0.12.5 支援最新語法) -->
+        <!-- ========================================== -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-api</artifactId>
-            <version>0.12.6</version>
+            <version>0.12.5</version>
         </dependency>
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-impl</artifactId>
-            <version>0.12.6</version>
+            <version>0.12.5</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-jackson</artifactId>
-            <version>0.12.6</version>
+            <version>0.12.5</version>
             <scope>runtime</scope>
         </dependency>
 
-        <!-- Mail（密碼重設寄信用） -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-mail</artifactId>
-        </dependency>
     </dependencies>
 
     <build>
@@ -213,6 +227,8 @@
                     </compilerPlugins>
                 </configuration>
             </plugin>
+            
+            <!-- Maven Compiler Plugin (處理 Lombok 與 MapStruct 衝突的關鍵) -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -228,6 +244,12 @@
                             <groupId>org.mapstruct</groupId>
                             <artifactId>mapstruct-processor</artifactId>
                             <version>1.5.5.Final</version>
+                        </path>
+                        <!-- 關鍵：Lombok 與 MapStruct 的綁定橋樑 -->
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok-mapstruct-binding</artifactId>
+                            <version>0.2.0</version>
                         </path>
                     </annotationProcessorPaths>
                 </configuration>
