@@ -37,12 +37,12 @@ Java Easy Bank 是一套銀行業務系統，提供**管理端（行員）**與*
 
 | 模組 | 主要職責 | 負責人 |
 |---|---|---|
-| Common | 共用設定、統一回應、例外處理、JWT、CORS、檔案上傳 | 漢億 |
+| Common | 共用設定、統一回應、例外處理、JWT、CORS、檔案上傳、Email、匯率 API | 漢億 |
 | Auth | 管理端登入、員工、角色、系統日誌 | 以琳 |
-| Customer | 顧客資料、顧客登入註冊、個資、密碼重設、開戶申請資料同步 | 以琳 |
+| Customer | 顧客資料、註冊驗證信、顧客登入、個資、密碼重設、開戶申請資料同步 | 以琳 |
 | Account | 帳戶、開戶申請、轉帳、存提款、交易紀錄、沖正、常用帳號、預約轉帳 | 漢億 |
 | Loan | 貸款申請、聯繫紀錄、二次填單、送審 | 泓翔 |
-| Credit Card | 卡別、信用卡申請、明細審核、發卡、交易、刷退 | 王昶 |
+| Credit Card | 卡別、信用卡申請、明細審核、發卡、交易、刷退、帳單查詢 | 王昶 |
 | Risk | 黑名單、風險事件、AOP 風控框架 | 世帆 |
 
 Account 與 Customer 目前有一個明確整合點：客戶送出開戶申請、管理端核准、補件或駁回後，Account 會呼叫 Customer 的 `syncAccountApplicationProfile`，把申請表欄位與審核結果同步到 `CUSTOMER_PROFILE`。
@@ -76,25 +76,45 @@ CREATE DATABASE java_easy_bank;
 
 ### 4. 建立本機設定檔
 
-在 `src/main/resources/` 建立 `application-local.properties`，填入自己的資料庫帳號密碼：
+`src/main/resources/application.properties` 目前只負責匯入本機設定，內容不要更動。請在 `src/main/resources/` 建立自己的 `application-local.properties`，放 DB、SMTP、JWT 等本機或私密設定：
 
 ```properties
 server.port=8080
 
+# Database
 spring.datasource.url=jdbc:sqlserver://localhost:1433;databaseName=java_easy_bank;encrypt=false;trustServerCertificate=true
 spring.datasource.username=你的帳號
 spring.datasource.password=你的密碼
 spring.datasource.driver-class-name=com.microsoft.sqlserver.jdbc.SQLServerDriver
 
+# JPA
 spring.jpa.hibernate.ddl-auto=update
 spring.jpa.show-sql=true
 spring.jpa.properties.hibernate.format_sql=true
 
+# Jackson
 spring.jackson.time-zone=Asia/Taipei
 spring.jackson.serialization.write-dates-as-timestamps=false
+
+# App
+app.frontend-url=http://localhost:5173
+app.jwt.secret=請放至少 32 字元以上的本機密鑰
+app.jwt.expiration-ms=86400000
+app.upload.dir=uploads
+
+# SMTP / Mail
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+spring.mail.username=你的寄件信箱
+spring.mail.password=你的應用程式密碼
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+spring.mail.properties.mail.smtp.starttls.required=true
+spring.mail.properties.mail.smtp.ssl.protocols=TLSv1.2
+spring.mail.properties.mail.smtp.ssl.trust=smtp.gmail.com
 ```
 
-`application-local.properties` 已加入 `.gitignore`，請勿將本機密碼提交到遠端。
+`application-local.properties` 會包含資料庫密碼、SMTP 密碼與 JWT secret，請勿提交到遠端。
 
 ### 5. 初始化資料
 
