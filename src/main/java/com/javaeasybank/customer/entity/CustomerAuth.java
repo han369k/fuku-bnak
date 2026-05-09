@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
  * - resetToken / resetTokenExpiry 用於密碼重設郵件連結
  */
 @Entity
-@Table(name = "customer_auth")
+@Table(name = "CUSTOMER_AUTH")
 @Getter
 @Setter
 public class CustomerAuth {

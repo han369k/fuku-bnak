@@ -58,6 +58,14 @@ public class CustomerController {
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 
+    // ===== 啟用客戶 =====
+    @PreAuthorize("isAuthenticated()")
+    @PutMapping("/{customerId}/activate")
+    public ResponseEntity<ApiResponse<Void>> activateCustomer(@PathVariable String customerId) {
+        customerService.activateCustomer(customerId);
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
     // ===== 一鍵帶入資料 =====
     @PreAuthorize("isAuthenticated()") 
     @PostMapping("/seed")

@@ -14,7 +14,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "risk_event_log")
+@Table(name = "RISK_EVENT_LOG")
 @Getter
 @Setter
 @NoArgsConstructor

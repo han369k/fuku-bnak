@@ -9,7 +9,7 @@
    ============================================================ */
 
 /* === 1. Google Fonts（@import 必須在最前面） === */
-@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700&family=Noto+Sans+TC:wght@300;400;500;600&family=Playfair+Display:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700;900&family=Noto+Sans+TC:wght@300;400;500;600&family=Cormorant+Garamond:wght@400;500;600;700&display=swap');
 
 /* === 2. Design Tokens（嚴格鎖定） === */
 :root {
@@ -45,7 +45,8 @@
   --space-8:  64px;   /* 8x */
 
   /* ── 字體規範 ── */
-  --font-heading: 'Noto Serif TC', 'Playfair Display', serif;
+  --font-heading: 'Noto Serif TC', 'Cormorant Garamond', serif;
+  --font-display: 'Cormorant Garamond', 'Noto Serif TC', serif;
   --font-body:    'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono:    'SF Mono', 'Consolas', monospace;
 

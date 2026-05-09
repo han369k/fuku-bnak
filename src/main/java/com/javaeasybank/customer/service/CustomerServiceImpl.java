@@ -4,8 +4,8 @@ import com.javaeasybank.common.exception.BusinessException;
 import com.javaeasybank.customer.dto.CustomerDto;
 import com.javaeasybank.customer.entity.CustomerProfile;
 import com.javaeasybank.customer.repository.CustomerProfileRepository;
-import com.javaeasybank.risk.core.annotation.RiskCheck;
-import com.javaeasybank.risk.core.enums.BusinessScene;
+import com.javaeasybank.risk.core.enums.BlacklistType;
+import com.javaeasybank.risk.service.BlackListService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -22,6 +22,7 @@ public class CustomerServiceImpl implements CustomerService {
 
     private final CustomerProfileRepository customerProfileRepository;
 
+    private final BlackListService blackListService;
     // 加入 JdbcTemplate 依賴，用於執行原生 SQL
     private final JdbcTemplate jdbcTemplate;
 
@@ -30,9 +31,10 @@ public class CustomerServiceImpl implements CustomerService {
     private static final String ALPHANUMERIC_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
     private final SecureRandom secureRandom = new SecureRandom();
 
-    public CustomerServiceImpl(CustomerProfileRepository customerProfileRepository, JdbcTemplate jdbcTemplate) {
+    public CustomerServiceImpl(CustomerProfileRepository customerProfileRepository, JdbcTemplate jdbcTemplate, BlackListService blackListService) {
         this.customerProfileRepository = customerProfileRepository;
         this.jdbcTemplate = jdbcTemplate;
+        this.blackListService = blackListService;
     }
 
     // ===========================
@@ -52,11 +54,16 @@ public class CustomerServiceImpl implements CustomerService {
                 .collect(Collectors.toList());
     }
 
-    @RiskCheck(scene = BusinessScene.CREATE_CUSTOMER)
     @Override
     public CustomerDto.CustomerResponse createCustomer(CustomerDto.CustomerRequest request) {
         if (customerProfileRepository.findByIdNumber(request.getIdNumber()).isPresent()) {
             throw new BusinessException("身分證字號已存在");
+        }
+        if (customerProfileRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new BusinessException("Email 已被使用");
+        }
+        if (customerProfileRepository.findByPhone(request.getPhone()).isPresent()) {
+            throw new BusinessException("電話號碼已被使用");
         }
 
         CustomerProfile profile = new CustomerProfile();
@@ -71,6 +78,10 @@ public class CustomerServiceImpl implements CustomerService {
         String yymm = LocalDate.now().format(DateTimeFormatter.ofPattern("yyMM"));
         profile.setCif(yymm + "-" + generateAlphanumeric(8));
 
+        if(blackListService.isBlacklisted(BlacklistType.PHONE, request.getPhone())){
+            throw new BusinessException("此電話號碼已在黑名單中，無法新增");
+        }
+
         profile.setStatus("ACTIVE");
 
         CustomerProfile saved = customerProfileRepository.save(profile);
@@ -82,9 +93,21 @@ public class CustomerServiceImpl implements CustomerService {
         CustomerProfile profile = customerProfileRepository.findById(customerId)
                 .orElseThrow(() -> new BusinessException("查無此客戶"));
 
+        // 檢查 Email 與 Phone 是否被他人使用
+        customerProfileRepository.findByEmail(request.getEmail()).ifPresent(p -> {
+            if (!p.getCustomerId().equals(customerId)) throw new BusinessException("Email 已被他人使用");
+        });
+        customerProfileRepository.findByPhone(request.getPhone()).ifPresent(p -> {
+            if (!p.getCustomerId().equals(customerId)) throw new BusinessException("電話號碼已被他人使用");
+        });
+
+        profile.setName(request.getName());
         profile.setPhone(request.getPhone());
         profile.setAddress(request.getAddress());
         profile.setEmail(request.getEmail());
+        if (request.getBirthday() != null) {
+            profile.setBirthday(request.getBirthday());
+        }
 
         CustomerProfile saved = customerProfileRepository.save(profile);
         return convertToResponse(saved);
@@ -95,6 +118,14 @@ public class CustomerServiceImpl implements CustomerService {
         CustomerProfile profile = customerProfileRepository.findById(customerId)
                 .orElseThrow(() -> new BusinessException("查無此客戶"));
         profile.setStatus("INACTIVE");
+        customerProfileRepository.save(profile);
+    }
+
+    @Override
+    public void activateCustomer(String customerId) {
+        CustomerProfile profile = customerProfileRepository.findById(customerId)
+                .orElseThrow(() -> new BusinessException("查無此客戶"));
+        profile.setStatus("ACTIVE");
         customerProfileRepository.save(profile);
     }
 

@@ -14,7 +14,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "black_list", indexes = {
+@Table(name = "BLACK_LIST", indexes = {
         @Index(name = "idx_bl_lookup", columnList = "list_type, list_value")
 })
 @EntityListeners(AuditingEntityListener.class)

@@ -8,7 +8,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Entity
-@Table(name = "auth_dept")
+@Table(name = "AUTH_DEPT")
 @Getter
 @Setter
 public class AuthDept {

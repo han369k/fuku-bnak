@@ -30,9 +30,17 @@ public class CardTransaction {
 	@Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer txnId;
-
+    
 	@Column(precision = 15, scale = 2)
     private BigDecimal txnAmount;
+
+    //交易回饋
+    @Column(precision = 15, scale = 2)
+    private BigDecimal cashbackRate;
+
+    //交易回饋金額
+    @Column(precision = 15, scale = 2)
+    private BigDecimal cashbackAmount;
 
     @Enumerated(EnumType.STRING)
     private TxnType txnType;
