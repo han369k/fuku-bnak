@@ -44,7 +44,10 @@
               <a-menu-item key="loan-applications" @click="$router.push({ name: 'loan-applications' })">
                 <template #icon><AuditOutlined /></template>
                 <span>貸款申請管理</span>
-              </a-menu-item>
+                </a-menu-item>
+            </a-menu-item-group>
+
+            <a-menu-item-group title="信用卡業務">
               <a-menu-item key="admin-card-types" @click="$router.push({ name: 'admin-card-types' })">
                 <template #icon><AppstoreAddOutlined /></template>
                 <span>信用卡卡別管理</span>
@@ -57,8 +60,17 @@
                 <template #icon><CreditCardOutlined /></template>
                 <span>信用卡卡片管理</span>
               </a-menu-item>
-            </a-menu-item-group>
+              <a-menu-item key="admin-card-txns" @click="$router.push({ name: 'admin-card-txns' })">
+                <template #icon><ProfileOutlined /></template>
+                <span>信用卡交易管理</span>
+              </a-menu-item>
+              <a-menu-item key="admin-card-bills" @click="$router.push({ name: 'admin-card-bills' })">
+                <template #icon><CreditCardOutlined /></template>
+                <span>信用卡帳單管理</span>
+              </a-menu-item>
 
+
+            </a-menu-item-group>
             <a-menu-item-group title="風險管理">
               <a-menu-item key="admin-risk-events" @click="$router.push({ name: 'admin-risk-events' })">
                 <template #icon><AlertOutlined /></template>
