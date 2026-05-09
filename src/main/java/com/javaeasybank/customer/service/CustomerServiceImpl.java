@@ -4,7 +4,7 @@ import com.javaeasybank.common.exception.BusinessException;
 import com.javaeasybank.customer.dto.CustomerDto;
 import com.javaeasybank.customer.entity.CustomerProfile;
 import com.javaeasybank.customer.repository.CustomerProfileRepository;
-import com.javaeasybank.risk.annotation.RiskCheck;
+import com.javaeasybank.risk.core.annotation.RiskCheck;
 import com.javaeasybank.risk.core.enums.BusinessScene;
 import org.springframework.beans.BeanUtils;
 import org.springframework.jdbc.core.JdbcTemplate;

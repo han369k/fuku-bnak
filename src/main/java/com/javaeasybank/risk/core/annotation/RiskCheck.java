@@ -1,4 +1,4 @@
-package com.javaeasybank.risk.annotation;
+package com.javaeasybank.risk.core.annotation;
 
 import com.javaeasybank.risk.core.enums.BusinessScene;
 

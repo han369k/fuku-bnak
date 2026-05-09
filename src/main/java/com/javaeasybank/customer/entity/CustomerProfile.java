@@ -2,6 +2,7 @@ package com.javaeasybank.customer.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.javaeasybank.risk.core.RiskTarget;
+import com.javaeasybank.risk.entity.CustomerCreditInfo;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -60,6 +61,11 @@ public class CustomerProfile {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedAt;
 
+//    // mappedBy 表示此關聯由 CustomerCreditInfo 的 customerProfile 欄位維護
+//    // cascade = CascadeType.ALL 表示當 CustomerProfile 儲存或刪除時，連動處理 CreditInfo
+//    @OneToOne(mappedBy = "customerProfile", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+//    private CustomerCreditInfo creditInfo;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
@@ -71,5 +77,15 @@ public class CustomerProfile {
         this.updatedAt = LocalDateTime.now();
     }
 
-
+//    // 加入一個輔助方法 (Helper Method) 來建立雙向關聯
+//    public void setCreditInfo(CustomerCreditInfo creditInfo) {
+//        if (creditInfo == null) {
+//            if (this.creditInfo != null) {
+//                this.creditInfo.setCustomerProfile(null);
+//            }
+//        } else {
+//            creditInfo.setCustomerProfile(this);
+//        }
+//        this.creditInfo = creditInfo;
+//    }
 }

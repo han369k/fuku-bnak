@@ -1,4 +1,4 @@
-package com.javaeasybank.risk.event;
+package com.javaeasybank.risk.core.event;
 
 import com.javaeasybank.risk.core.enums.Disposition;
 import com.javaeasybank.risk.dto.ManualReviewEvent;

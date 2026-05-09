@@ -15,7 +15,7 @@ import com.javaeasybank.account.exception.TransferException;
 import com.javaeasybank.account.repository.AccountRepository;
 import com.javaeasybank.account.repository.TransLogRepository;
 import com.javaeasybank.account.utils.ReferenceIdGenerator;
-import com.javaeasybank.risk.annotation.RiskCheck;
+import com.javaeasybank.risk.core.annotation.RiskCheck;
 import com.javaeasybank.risk.core.enums.BusinessScene;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

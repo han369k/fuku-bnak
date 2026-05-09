@@ -1,6 +1,6 @@
-package com.javaeasybank.risk.aspect;
+package com.javaeasybank.risk.core.aspect;
 
-import com.javaeasybank.risk.annotation.RiskCheck;
+import com.javaeasybank.risk.core.annotation.RiskCheck;
 import com.javaeasybank.risk.core.RiskHandler;
 import com.javaeasybank.risk.core.enums.BusinessScene;
 import com.javaeasybank.risk.core.RiskTarget;
@@ -31,7 +31,7 @@ public class RiskCheckAspect {
                 .collect(Collectors.toMap(RiskHandler::getScene, h -> h));
     }
 
-    @Pointcut("@annotation(com.javaeasybank.risk.annotation.RiskCheck)")
+    @Pointcut("@annotation(com.javaeasybank.risk.core.annotation.RiskCheck)")
     public void riskCheckPointcut() {}
 
     @Around("riskCheckPointcut() && @annotation(riskCheck)")
