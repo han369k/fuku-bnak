@@ -39,6 +39,7 @@ CREATE TABLE [CARD_APPLICATION_ITEM] (
     approved_limit DECIMAL(15,2),
     annual_fee DECIMAL(10,2),
     create_card_flag BIT DEFAULT 0,
+    review_date DATETIME2 NULL,
     remark NVARCHAR(200),
     FOREIGN KEY (application_id) REFERENCES CARD_APPLICATION(application_id),
     FOREIGN KEY (card_type_id) REFERENCES CARD_TYPE(card_type_id)

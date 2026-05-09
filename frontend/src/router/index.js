@@ -71,8 +71,31 @@ const router = createRouter({
           name: 'user-account-application',
           component: () => import('../views/user/AccountApplicationView.vue'),
         },
-        
-      
+        {
+          path: 'accounts',
+          name: 'user-accounts',
+          component: () => import('../views/user/UserAccountsView.vue'),
+        },
+        {
+          path: 'transactions',
+          name: 'user-transactions',
+          component: () => import('../views/user/UserTransactionsView.vue'),
+        },
+        {
+          path: 'transfer',
+          name: 'user-transfer',
+          component: () => import('../views/user/TransferView.vue'),
+        },
+        {
+          path: 'scheduled-transfer',
+          name: 'user-scheduled-transfer',
+          component: () => import('../views/user/ScheduledTransferView.vue'),
+        },
+        {
+          path: 'favorite-accounts',
+          name: 'user-favorite-accounts',
+          component: () => import('../views/user/FavoriteAccountsView.vue'),
+        },
       ],
     },
 
@@ -103,11 +126,6 @@ const router = createRouter({
           path: 'account-applications',
           name: 'admin-account-applications',
           component: () => import('../views/admin/AccountApplicationListView.vue'),
-        },
-        {
-          path: 'transfers',
-          name: 'admin-transfers',
-          component: () => import('../views/admin/TransferView.vue'),
         },
         {
           path: 'trans-logs',

@@ -72,6 +72,12 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 
+    // ===== 員工人數（所有已登入角色皆可存取）=====
+    @GetMapping("/employees/count")
+    public ResponseEntity<ApiResponse<Long>> getEmpCount() {
+        return ResponseEntity.ok(ApiResponse.success(authEmpService.getEmpCount()));
+    }
+
     // ===== 查詢員工（支援模糊搜尋）=====
     @PreAuthorize("hasAnyRole('CISO', 'ISSA')")
     @GetMapping("/employees")
@@ -120,7 +126,6 @@ public class AuthController {
     }
 
     // ===== 一鍵帶入資料 =====
-    @PreAuthorize("hasAnyRole('CISO', 'ISSA')")
     @PostMapping("/employees/seed")
     public ResponseEntity<ApiResponse<String>> seedEmployees() {
         authEmpService.seedTestData();

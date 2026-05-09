@@ -10,6 +10,7 @@ public interface AuthEmpService {
     void logout(String email, String ipAddress);
 
     // === 員工 CRUD ===
+    Long getEmpCount();
     List<AuthDto.AuthEmpResponse> getAllEmps();
     List<AuthDto.AuthEmpResponse> searchEmpsByName(String keyword);
     AuthDto.AuthEmpResponse createEmp(AuthDto.AuthEmpRequest request);
