@@ -1,4 +1,4 @@
-package com.javaeasybank.customer.dto;
+package com.javaeasybank.customer.repository;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -6,7 +6,7 @@ import lombok.Setter;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-public class CustomerDto {
+public class CustomerRespository {
 
     // ===== 管理端：新增/修改客戶 =====
     @Getter
@@ -140,6 +140,7 @@ public class CustomerDto {
     @Getter
     @Setter
     public static class LoginRequest {
+        private String idNumber;
         private String username;
         private String password;
     }
@@ -170,6 +171,8 @@ public class CustomerDto {
     @Getter
     @Setter
     public static class PasswordResetEmailRequest {
+        private String idNumber;
+        private LocalDate birthday;
         private String email;
     }
 

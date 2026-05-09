@@ -10,7 +10,7 @@ import com.javaeasybank.account.repository.AccountRepository;
 import com.javaeasybank.account.utils.AccountNumberGenerator;
 import com.javaeasybank.account.utils.ApplicationNoGenerator;
 import com.javaeasybank.common.exception.BusinessException;
-import com.javaeasybank.customer.dto.CustomerDto;
+import com.javaeasybank.customer.repository.CustomerRespository;
 import com.javaeasybank.customer.service.CustomerService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -288,8 +288,8 @@ public class AccountApplicationService {
     }
 
     private void syncCustomerProfileFromApplication(AccountApplication app) {
-        CustomerDto.AccountApplicationProfileSyncRequest request =
-                new CustomerDto.AccountApplicationProfileSyncRequest();
+        CustomerRespository.AccountApplicationProfileSyncRequest request =
+                new CustomerRespository.AccountApplicationProfileSyncRequest();
 
         request.setName(app.getName());
         request.setIdNumber(app.getIdNumber());

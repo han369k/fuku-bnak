@@ -1,7 +1,7 @@
 package com.javaeasybank.customer.service;
 
 import com.javaeasybank.common.exception.BusinessException;
-import com.javaeasybank.customer.dto.CustomerDto;
+import com.javaeasybank.customer.repository.CustomerRespository;
 import com.javaeasybank.customer.entity.CustomerProfile;
 import com.javaeasybank.customer.repository.CustomerProfileRepository;
 import com.javaeasybank.risk.core.enums.BlacklistType;
@@ -42,21 +42,21 @@ public class CustomerServiceImpl implements CustomerService {
     // CRUD
     // ===========================
     @Override
-    public List<CustomerDto.CustomerResponse> getAllCustomers() {
+    public List<CustomerRespository.CustomerResponse> getAllCustomers() {
         return customerProfileRepository.findAll().stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<CustomerDto.CustomerResponse> searchByName(String keyword) {
+    public List<CustomerRespository.CustomerResponse> searchByName(String keyword) {
         return customerProfileRepository.findByNameContaining(keyword).stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public CustomerDto.CustomerResponse createCustomer(CustomerDto.CustomerRequest request) {
+    public CustomerRespository.CustomerResponse createCustomer(CustomerRespository.CustomerRequest request) {
         if (customerProfileRepository.findByIdNumber(request.getIdNumber()).isPresent()) {
             throw new BusinessException("身分證字號已存在");
         }
@@ -92,7 +92,7 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     @Override
-    public CustomerDto.CustomerResponse updateCustomer(String customerId, CustomerDto.CustomerRequest request) {
+    public CustomerRespository.CustomerResponse updateCustomer(String customerId, CustomerRespository.CustomerRequest request) {
         CustomerProfile profile = customerProfileRepository.findById(customerId)
                 .orElseThrow(() -> new BusinessException("查無此客戶"));
 
@@ -273,21 +273,21 @@ public class CustomerServiceImpl implements CustomerService {
     // 給其他模組對接用
     // ===========================
     @Override
-    public CustomerDto.CustomerResponse findByCustomerId(String customerId) {
+    public CustomerRespository.CustomerResponse findByCustomerId(String customerId) {
         CustomerProfile profile = customerProfileRepository.findById(customerId)
                 .orElseThrow(() -> new BusinessException("查無此客戶"));
         return convertToResponse(profile);
     }
 
     @Override
-    public CustomerDto.CustomerResponse findByIdNumber(String idNumber) {
+    public CustomerRespository.CustomerResponse findByIdNumber(String idNumber) {
         CustomerProfile profile = customerProfileRepository.findByIdNumber(idNumber)
                 .orElseThrow(() -> new BusinessException("查無此客戶"));
         return convertToResponse(profile);
     }
 
     @Override
-    public CustomerDto.CustomerResponse findByCif(String cif) {
+    public CustomerRespository.CustomerResponse findByCif(String cif) {
         CustomerProfile profile = customerProfileRepository.findByCif(cif)
                 .orElseThrow(() -> new BusinessException("查無此客戶編號：" + cif));
         return convertToResponse(profile);
@@ -295,9 +295,9 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     @Transactional
-    public CustomerDto.CustomerResponse syncAccountApplicationProfile(
+    public CustomerRespository.CustomerResponse syncAccountApplicationProfile(
             String customerId,
-            CustomerDto.AccountApplicationProfileSyncRequest request) {
+            CustomerRespository.AccountApplicationProfileSyncRequest request) {
         CustomerProfile profile = customerProfileRepository.findById(customerId)
                 .orElseThrow(() -> new BusinessException("查無此客戶"));
 
@@ -351,13 +351,13 @@ public class CustomerServiceImpl implements CustomerService {
     // ===========================
     // 私有方法
     // ===========================
-    private CustomerDto.CustomerResponse convertToResponse(CustomerProfile profile) {
-        CustomerDto.CustomerResponse res = new CustomerDto.CustomerResponse();
+    private CustomerRespository.CustomerResponse convertToResponse(CustomerProfile profile) {
+        CustomerRespository.CustomerResponse res = new CustomerRespository.CustomerResponse();
         BeanUtils.copyProperties(profile, res);
         return res;
     }
 
-    private void applyOptionalApplicationFields(CustomerProfile profile, CustomerDto.CustomerRequest request) {
+    private void applyOptionalApplicationFields(CustomerProfile profile, CustomerRespository.CustomerRequest request) {
         if (request.getNationality() != null) profile.setNationality(request.getNationality());
         if (request.getRegisteredAddress() != null) profile.setRegisteredAddress(request.getRegisteredAddress());
         if (request.getCurrentAddress() != null) profile.setCurrentAddress(request.getCurrentAddress());

@@ -1,6 +1,6 @@
 package com.javaeasybank.auth.service;
 
-import com.javaeasybank.auth.dto.AuthDto;
+import com.javaeasybank.auth.repository.AuthRespository;
 import com.javaeasybank.auth.entity.AuthActionLog;
 import com.javaeasybank.auth.entity.AuthEmp;
 import com.javaeasybank.auth.entity.AuthRole;
@@ -77,7 +77,7 @@ public class AuthEmpServiceImpl implements AuthEmpService {
     // 登入：使用 email 驗證，帶入 IP
     // ===========================
     @Override
-    public AuthDto.AuthEmpResponse login(AuthDto.LoginRequest request, String ipAddress) {
+    public AuthRespository.AuthEmpResponse login(AuthRespository.LoginRequest request, String ipAddress) {
         AuthEmp emp = authEmpRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new BusinessException("帳號或密碼錯誤"));
 
@@ -118,21 +118,21 @@ public class AuthEmpServiceImpl implements AuthEmpService {
     }
 
     @Override
-    public List<AuthDto.AuthEmpResponse> getAllEmps() {
+    public List<AuthRespository.AuthEmpResponse> getAllEmps() {
         return authEmpRepository.findAll().stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<AuthDto.AuthEmpResponse> searchEmpsByName(String keyword) {
+    public List<AuthRespository.AuthEmpResponse> searchEmpsByName(String keyword) {
         return authEmpRepository.findByEmpNameContaining(keyword).stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public AuthDto.AuthEmpResponse createEmp(AuthDto.AuthEmpRequest request) {
+    public AuthRespository.AuthEmpResponse createEmp(AuthRespository.AuthEmpRequest request) {
         if (authEmpRepository.existsById(request.getEmpId())) {
             throw new BusinessException("員工編號已存在");
         }
@@ -159,7 +159,7 @@ public class AuthEmpServiceImpl implements AuthEmpService {
     }
 
     @Override
-    public AuthDto.AuthEmpResponse updateEmp(String empId, AuthDto.AuthEmpRequest request) {
+    public AuthRespository.AuthEmpResponse updateEmp(String empId, AuthRespository.AuthEmpRequest request) {
         AuthEmp emp = authEmpRepository.findById(empId)
                 .orElseThrow(() -> new BusinessException("查無此員工"));
 
@@ -252,14 +252,14 @@ public class AuthEmpServiceImpl implements AuthEmpService {
     // 給其他模組對接用
     // ===========================
     @Override
-    public AuthDto.AuthEmpResponse getEmpByEmpId(String empId) {
+    public AuthRespository.AuthEmpResponse getEmpByEmpId(String empId) {
         AuthEmp emp = authEmpRepository.findById(empId)
                 .orElseThrow(() -> new BusinessException("查無此員工"));
         return convertToResponse(emp);
     }
 
     @Override
-    public AuthDto.AuthEmpResponse getEmpByEmail(String email) {
+    public AuthRespository.AuthEmpResponse getEmpByEmail(String email) {
         AuthEmp emp = authEmpRepository.findByEmail(email)
                 .orElseThrow(() -> new BusinessException("查無此員工"));
         return convertToResponse(emp);
@@ -274,8 +274,8 @@ public class AuthEmpServiceImpl implements AuthEmpService {
         return role.getRoleCode();
     }
 
-    private AuthDto.AuthEmpResponse convertToResponse(AuthEmp emp) {
-        AuthDto.AuthEmpResponse res = new AuthDto.AuthEmpResponse();
+    private AuthRespository.AuthEmpResponse convertToResponse(AuthEmp emp) {
+        AuthRespository.AuthEmpResponse res = new AuthRespository.AuthEmpResponse();
         BeanUtils.copyProperties(emp, res);
 
         authRoleRepository.findById(emp.getRoleId()).ifPresent(role -> {

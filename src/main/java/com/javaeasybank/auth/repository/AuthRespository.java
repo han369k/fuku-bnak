@@ -1,10 +1,10 @@
-package com.javaeasybank.auth.dto;
+package com.javaeasybank.auth.repository;
 
 import lombok.Getter;
 import lombok.Setter;
 import java.time.LocalDateTime;
 
-public class AuthDto {
+public class AuthRespository {
 
     @Getter
     @Setter

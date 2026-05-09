@@ -9,5 +9,6 @@ public interface CustomerAuthRepository extends JpaRepository<CustomerAuth, Stri
     Optional<CustomerAuth> findByUsername(String username);
     Optional<CustomerAuth> findByCustomerId(String customerId);
     Optional<CustomerAuth> findByResetToken(String resetToken);
+    Optional<CustomerAuth> findByVerificationToken(String verificationToken);
     boolean existsByUsername(String username);
 }

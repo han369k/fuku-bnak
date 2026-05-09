@@ -1,6 +1,6 @@
 package com.javaeasybank.auth.controller;
 
-import com.javaeasybank.auth.dto.AuthDto;
+import com.javaeasybank.auth.repository.AuthRespository;
 import com.javaeasybank.auth.service.AuthEmpService;
 import com.javaeasybank.common.dto.response.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,8 +30,8 @@ public class AuthController {
 
     // ===== 登入（所有人都能打）=====
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<AuthDto.AuthEmpResponse>> login(
-            @RequestBody AuthDto.LoginRequest request,
+    public ResponseEntity<ApiResponse<AuthRespository.AuthEmpResponse>> login(
+            @RequestBody AuthRespository.LoginRequest request,
             HttpSession session,
             HttpServletRequest httpRequest) {
 
@@ -44,7 +44,7 @@ public class AuthController {
 
         // 擷取來源 IP
         String ipAddress = getClientIp(httpRequest);
-        AuthDto.AuthEmpResponse response = authEmpService.login(request, ipAddress);
+        AuthRespository.AuthEmpResponse response = authEmpService.login(request, ipAddress);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -81,9 +81,9 @@ public class AuthController {
     // ===== 查詢員工（支援模糊搜尋）=====
     @PreAuthorize("hasAnyRole('CISO', 'ISSA')")
     @GetMapping("/employees")
-    public ResponseEntity<ApiResponse<List<AuthDto.AuthEmpResponse>>> getEmps(
+    public ResponseEntity<ApiResponse<List<AuthRespository.AuthEmpResponse>>> getEmps(
             @RequestParam(required = false) String keyword) {
-        List<AuthDto.AuthEmpResponse> result;
+        List<AuthRespository.AuthEmpResponse> result;
         if (keyword != null && !keyword.isEmpty()) {
             result = authEmpService.searchEmpsByName(keyword);
         } else {
@@ -95,17 +95,17 @@ public class AuthController {
     // ===== 新增員工 =====
     @PreAuthorize("hasAnyRole('CISO', 'ISSA')")
     @PostMapping("/employees")
-    public ResponseEntity<ApiResponse<AuthDto.AuthEmpResponse>> createEmp(
-            @RequestBody AuthDto.AuthEmpRequest request) {
+    public ResponseEntity<ApiResponse<AuthRespository.AuthEmpResponse>> createEmp(
+            @RequestBody AuthRespository.AuthEmpRequest request) {
         return ResponseEntity.ok(ApiResponse.success(authEmpService.createEmp(request)));
     }
 
     // ===== 修改員工 =====
     @PreAuthorize("hasAnyRole('CISO', 'ISSA')")
     @PutMapping("/employees/{empId}")
-    public ResponseEntity<ApiResponse<AuthDto.AuthEmpResponse>> updateEmp(
+    public ResponseEntity<ApiResponse<AuthRespository.AuthEmpResponse>> updateEmp(
             @PathVariable String empId,
-            @RequestBody AuthDto.AuthEmpRequest request) {
+            @RequestBody AuthRespository.AuthEmpRequest request) {
         return ResponseEntity.ok(ApiResponse.success(authEmpService.updateEmp(empId, request)));
     }
 
