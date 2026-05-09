@@ -1,7 +1,14 @@
+drop table if exists
+    loan_application,
+    loan_contact_log,
+    loan_review_detail,
+    loan_account,
+    loan_repayment;
+
 -- ══════════════════════════════════════════
---  1. LOAN_APPLICATION  貸款申請主表
+--  1. loan_application  貸款申請主表
 -- ══════════════════════════════════════════
-CREATE TABLE LOAN_APPLICATION (
+    CREATE TABLE loan_application (
                                   application_id        NVARCHAR(50)    NOT NULL,
                                   customer_id           NVARCHAR(50)    NOT NULL,
                                   apply_type            NVARCHAR(50)    NULL,
@@ -17,9 +24,9 @@ CREATE TABLE LOAN_APPLICATION (
 );
 
 -- ══════════════════════════════════════════
---  2. LOAN_CONTACT_LOG  聯繫紀錄子表（只寫不改）
+--  2. loan_contact_log  聯繫紀錄子表（只寫不改）
 -- ══════════════════════════════════════════
-CREATE TABLE LOAN_CONTACT_LOG (
+CREATE TABLE loan_contact_log (
                                   log_id             NVARCHAR(50)    NOT NULL,
                                   application_id     NVARCHAR(50)    NOT NULL,
                                   emp_id             NVARCHAR(50)    NULL,
@@ -30,13 +37,13 @@ CREATE TABLE LOAN_CONTACT_LOG (
                                   CONSTRAINT PK_LOAN_CONTACT_LOG PRIMARY KEY (log_id),
                                   CONSTRAINT FK_CONTACT_LOG_APPLICATION
                                       FOREIGN KEY (application_id)
-                                          REFERENCES LOAN_APPLICATION (application_id)
+                                          REFERENCES loan_application (application_id)
 );
 
 -- ══════════════════════════════════════════
---  3. LOAN_REVIEW_DETAIL  二次填單子表
+--  3. loan_review_detail  二次填單子表
 -- ══════════════════════════════════════════
-CREATE TABLE LOAN_REVIEW_DETAIL (
+CREATE TABLE loan_review_detail (
                                     review_id          NVARCHAR(50)    NOT NULL,
                                     application_id     NVARCHAR(50)    NOT NULL,
                                     confirmed_amount   DECIMAL(18, 2)  NULL,
@@ -51,19 +58,19 @@ CREATE TABLE LOAN_REVIEW_DETAIL (
                                     CONSTRAINT PK_LOAN_REVIEW_DETAIL PRIMARY KEY (review_id),
                                     CONSTRAINT FK_REVIEW_DETAIL_APPLICATION
                                         FOREIGN KEY (application_id)
-                                            REFERENCES LOAN_APPLICATION (application_id)
+                                            REFERENCES loan_application (application_id)
 );
 
 -- ══════════════════════════════════════════
---  4. LOAN_ACCOUNT  貸款帳戶主表
+--  4. loan_account  貸款帳戶主表
 -- ══════════════════════════════════════════
-CREATE TABLE LOAN_ACCOUNT (
+CREATE TABLE loan_account (
                               account_id            NVARCHAR(50)    NOT NULL,
                               application_id        NVARCHAR(50)    NOT NULL,
                               customer_id           NVARCHAR(50)    NOT NULL,
                               apply_type            NVARCHAR(50)    NULL,
                               principal_amount      BIGINT          NULL,
-                              period                INT             NULL,
+                              confirmed_period      INT             NULL,
                               rate                  DECIMAL(10, 6)  NULL,
                               monthly_payment       DECIMAL(18, 2)  NULL,
                               paid_periods          INT             NOT NULL  DEFAULT 0,
@@ -76,13 +83,13 @@ CREATE TABLE LOAN_ACCOUNT (
                               CONSTRAINT PK_LOAN_ACCOUNT PRIMARY KEY (account_id),
                               CONSTRAINT FK_LOAN_ACCOUNT_APPLICATION
                                   FOREIGN KEY (application_id)
-                                      REFERENCES LOAN_APPLICATION (application_id)
+                                      REFERENCES loan_application (application_id)
 );
 
 -- ══════════════════════════════════════════
---  5. LOAN_REPAYMENT  每期還款紀錄
+--  5. loan_repayment  每期還款紀錄
 -- ══════════════════════════════════════════
-CREATE TABLE LOAN_REPAYMENT (
+CREATE TABLE loan_repayment (
                                 repayment_id        NVARCHAR(50)    NOT NULL,
                                 account_id          NVARCHAR(50)    NOT NULL,
                                 period_index        INT             NOT NULL,
@@ -98,5 +105,6 @@ CREATE TABLE LOAN_REPAYMENT (
                                 CONSTRAINT PK_LOAN_REPAYMENT PRIMARY KEY (repayment_id),
                                 CONSTRAINT FK_REPAYMENT_ACCOUNT
                                     FOREIGN KEY (account_id)
-                                        REFERENCES LOAN_ACCOUNT (account_id)
+                                        REFERENCES loan_account (account_id)
 );
+

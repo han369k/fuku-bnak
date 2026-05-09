@@ -17,16 +17,16 @@ public class LoanAccountResponseDTO {
     private String customerId;
 
     // ── 核准條件 ─────────────────────────────────────────────────────
-    private Long principalAmount;           // 核准金額
-    private Integer period;                 // 總期數
-    private BigDecimal rate;                // 年利率
-    private BigDecimal monthlyPayment;      // 每期應繳金額
+    private Long principalAmount; // 核准金額
+    private Integer confirmedPeriod; // 核准期數
+    private BigDecimal rate; // 年利率
+    private BigDecimal monthlyPayment; // 每期應繳金額
 
     // ── 還款進度 ─────────────────────────────────────────────────────
-    private Integer paidPeriods;            // 已繳期數
-    private BigDecimal remainingPrincipal;  // 剩餘本金
-    private LocalDate startDate;            // 撥款日
-    private LocalDate nextPaymentDate;      // 下次應繳日
+    private Integer paidPeriods; // 已繳期數
+    private BigDecimal remainingPrincipal; // 剩餘本金
+    private LocalDate startDate; // 撥款日
+    private LocalDate nextPaymentDate; // 下次應繳日
 
     // ── 帳戶狀態 ─────────────────────────────────────────────────────
     private LoanAccountStatus accountStatus;
