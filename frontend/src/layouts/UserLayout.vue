@@ -28,14 +28,14 @@
             v-for="(menu, idx) in menus"
             :key="idx"
             class="mega-nav-item"
-            @mouseenter="openMenu = idx"
-            @mouseleave="openMenu = -1"
+            @mouseenter="handleMouseEnter(idx)"
+            @mouseleave="handleMouseLeave"
           >
             <button
               class="mega-nav-trigger"
               :class="{ active: openMenu === idx }"
               :aria-expanded="openMenu === idx"
-              @click="handleMenuClick(menu)"
+              @click="toggleMenu(idx)"
             >
               <span class="mega-nav-icon" v-html="menu.svg" aria-hidden="true"></span>
               <span>{{ menu.label }}</span>
@@ -46,7 +46,7 @@
 
             <!-- 下拉面板 -->
             <transition name="dropdown">
-              <div v-if="openMenu === idx" class="mega-dropdown" @mouseenter="openMenu = idx" @mouseleave="openMenu = -1">
+              <div v-if="openMenu === idx" class="mega-dropdown">
                 <ul class="dropdown-list">
                   <li v-for="sub in menu.children" :key="sub.label">
                     <a
@@ -75,7 +75,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCustomerAuthStore } from '@/stores/customerAuth'
 import { BASE_URL } from '@/api/axios'
@@ -84,6 +84,23 @@ import JbLogo from '@/components/JbLogo.vue'
 const router = useRouter()
 const customerAuthStore = useCustomerAuthStore()
 const openMenu = ref(-1)
+let leaveTimer = null
+
+function handleMouseEnter(idx) {
+  clearTimeout(leaveTimer)
+  openMenu.value = idx
+}
+
+function handleMouseLeave() {
+  leaveTimer = setTimeout(() => {
+    openMenu.value = -1
+  }, 120)
+}
+
+function toggleMenu(idx) {
+  clearTimeout(leaveTimer)
+  openMenu.value = openMenu.value === idx ? -1 : idx
+}
 
 const customerName = computed(() => customerAuthStore.customer?.name || '會員')
 const customerInitial = computed(() => (customerAuthStore.customer?.name || '會')[0])
@@ -100,10 +117,8 @@ const menus = [
     svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 10h20"/></svg>',
     route: null,
     children: [
-      { label: '查看帳戶', desc: '帳戶餘額與明細', route: null },
-      { label: '轉帳', desc: '國內轉帳服務', route: null },
-      { label: '換匯', desc: '外幣兌換服務', route: null },
-      { label: '查看電子存簿', desc: '數位存摺紀錄', route: null },
+      { label: '查看所有帳戶', desc: '帳戶餘額與明細總覽', route: 'user-accounts' },
+      { label: '查看所有交易紀錄', desc: '全帳戶交易歷史', route: 'user-transactions' },
     ],
   },
   {
@@ -111,9 +126,10 @@ const menus = [
     svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17l9.2-9.2M17 17V7H7"/></svg>',
     route: null,
     children: [
-      { label: '國內轉帳', desc: '台幣即時轉帳', route: null },
-      { label: '預約轉帳', desc: '設定未來轉帳', route: null },
-      { label: '常用帳號管理', desc: '管理常用收款帳戶', route: null },
+      { label: '國內轉帳', desc: '台幣即時轉帳', route: 'user-transfer' },
+      { label: '預約轉帳', desc: '設定未來轉帳', route: 'user-scheduled-transfer' },
+      { label: '常用帳號管理', desc: '管理常用收款帳戶', route: 'user-favorite-accounts' },
+      { label: '換匯', desc: '外幣兌換服務', route: null },
     ],
   },
   {
@@ -157,13 +173,6 @@ const menus = [
   },
 ]
 
-function handleMenuClick(menu) {
-  if (menu.route) {
-    router.push({ name: menu.route })
-    openMenu.value = -1
-  }
-}
-
 function handleSubClick(sub) {
   if (sub.route) {
     router.push({ name: sub.route })
@@ -172,6 +181,15 @@ function handleSubClick(sub) {
     alert('此功能即將推出，敬請期待！')
   }
 }
+
+function closeOnOutsideClick(e) {
+  if (!e.target.closest('.mega-nav-item')) {
+    openMenu.value = -1
+  }
+}
+
+onMounted(() => document.addEventListener('click', closeOnOutsideClick))
+onUnmounted(() => document.removeEventListener('click', closeOnOutsideClick))
 
 function handleLogout() {
   customerAuthStore.clearCustomer()
@@ -199,9 +217,9 @@ function handleLogout() {
 }
 
 .header-top-inner {
-  max-width: 1080px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 0 var(--space-6);
+  padding: 0 var(--space-8);
   height: 80px;
   display: flex;
   align-items: center;
@@ -257,24 +275,26 @@ function handleLogout() {
 }
 
 .mega-nav-inner {
-  max-width: 1080px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 0 var(--space-6);
+  padding: 0 var(--space-8);
   display: flex;
   align-items: stretch;
-  gap: 0;
 }
 
 .mega-nav-item {
   position: relative;
+  flex: 1;
 }
 
 .mega-nav-trigger {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
-  font-size: var(--text-sm);
+  width: 100%;
+  padding: 18px var(--space-3);
+  font-size: 16px;
   font-family: var(--font-body);
   font-weight: 500;
   color: var(--text-primary);
@@ -393,9 +413,9 @@ function handleLogout() {
 
 /* === Content === */
 .user-content {
-  max-width: 1080px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: var(--space-5) var(--space-6);
+  padding: var(--space-6) var(--space-8);
 }
 
 /* === Mobile === */

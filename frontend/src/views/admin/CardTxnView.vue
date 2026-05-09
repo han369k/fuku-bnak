@@ -46,6 +46,20 @@ const columns = [
     align: 'center',
   },
   {
+    title: '回饋率',
+    dataIndex: 'cashbackRate',
+    key: 'cashbackRate',
+    width: 150,
+    align: 'center',
+  },
+  {
+    title: '回饋金額',
+    dataIndex: 'cashbackAmount',
+    key: 'cashbackAmount',
+    width: 150,
+    align: 'center',
+  },
+  {
     title: '交易類型',
     dataIndex: 'txnType',
     key: 'txnType',
@@ -110,13 +124,7 @@ const handleTableChange = (pager) => {
 }
 //已刷退
 const isRefunded = (record) => {
-
-  return transactions.value.some(
-    txn =>
-      txn.txnType === 'REFUND' 
-      // && txn.description === `Refund - ${record.description}`
-  )
-
+  return record.refunded === true
 }
 
 onMounted(() => {
@@ -139,7 +147,7 @@ onMounted(() => {
         :data-source="transactions"
         :loading="loading"
         :pagination="pagination"
-        row-key="id"
+        row-key="txnId"
         @change="handleTableChange"
       >
         <!-- 客製欄位 -->
@@ -154,6 +162,16 @@ onMounted(() => {
             NT$
             {{ Number(record.txnAmount).toLocaleString() }}
           </template>
+          <!-- 回饋率 -->
+          <template v-else-if="column.dataIndex === 'cashbackRate'">
+            {{ record.cashbackRate }}%
+          </template>
+
+          <!-- 回饋金 -->
+          <template v-else-if="column.dataIndex === 'cashbackAmount'">
+            NT$
+            {{ Number(record.cashbackAmount).toLocaleString() }}
+          </template>
 
           <!-- 類型 -->
           <template v-else-if="column.dataIndex === 'txnType'">
@@ -164,28 +182,18 @@ onMounted(() => {
 
           <!-- 刷退按鈕 -->
           <template v-else-if="column.key === 'action'">
+            <template v-if="record.txnType === 'REFUND'">
+              <a-tag color="red"> 刷退交易 </a-tag>
+            </template>
 
-  <template v-if="isRefunded(record)">
+            <template v-else-if="isRefunded(record)">
+              <a-tag color="red"> 已刷退 </a-tag>
+            </template>
 
-    <a-tag color="red">
-      已刷退
-    </a-tag>
-
-  </template>
-
-  <template v-else>
-
-    <a-button
-      danger
-      size="small"
-      @click="handleRefund(record)"
-    >
-      刷退
-    </a-button>
-
-  </template>
-
-</template>
+            <template v-else>
+              <a-button danger size="small" @click="handleRefund(record)"> 刷退 </a-button>
+            </template>
+          </template>
         </template>
       </a-table>
     </a-card>

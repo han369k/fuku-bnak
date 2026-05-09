@@ -1,5 +1,8 @@
 <template>
   <div class="customer-page landing">
+    <!-- 和紙紋理 -->
+    <div class="washi-overlay" aria-hidden="true"></div>
+
     <!-- 頂部導覽 -->
     <header class="landing-header">
       <div class="header-inner">
@@ -14,8 +17,13 @@
     <!-- 主視覺 Hero -->
     <section class="hero" aria-label="主視覺">
       <div class="hero-inner">
-        <div class="hero-content">
-          <h1 class="hero-title">靜心理財<br />安穩致遠</h1>
+        <div class="hero-content" ref="heroContent">
+          <p class="hero-eyebrow">JAVA EASY BANK</p>
+          <h1 class="hero-title">
+            <span class="hero-line-1">靜心理財</span>
+            <span class="hero-line-2">安穩致遠</span>
+          </h1>
+          <div class="hero-rule" aria-hidden="true"></div>
           <p class="hero-sub">
             以沉穩的態度面對每一筆資產，<br />
             讓您的財務如流水般自在運行。
@@ -30,20 +38,27 @@
           </div>
         </div>
         <div class="hero-visual" aria-hidden="true">
-          <JbLogo size="lg" />
+          <div class="hero-logo-breath">
+            <JbLogo size="lg" />
+          </div>
         </div>
       </div>
     </section>
 
     <!-- 服務預覽 -->
     <section class="preview" aria-label="服務預覽">
-      <h2 class="section-heading">穩健服務</h2>
-      <p class="section-sub">開戶即享以下全方位金融服務</p>
+      <div class="section-header">
+        <p class="section-eyebrow">Services</p>
+        <h2 class="section-heading">穩健服務</h2>
+        <div class="section-rule"></div>
+        <p class="section-sub">開戶即享以下全方位金融服務</p>
+      </div>
       <div class="preview-grid">
         <article
-          v-for="item in previewItems"
+          v-for="(item, i) in previewItems"
           :key="item.label"
-          class="preview-card"
+          class="preview-card reveal"
+          :style="{ transitionDelay: i * 80 + 'ms' }"
         >
           <div class="preview-icon" v-html="item.svg" aria-hidden="true"></div>
           <h3>{{ item.label }}</h3>
@@ -54,29 +69,23 @@
 
     <!-- 品牌特色 -->
     <section class="values" aria-label="品牌特色">
-      <h2 class="section-heading">為何選擇爪哇銀行</h2>
+      <div class="section-header">
+        <p class="section-eyebrow">Why Us</p>
+        <h2 class="section-heading">為何選擇爪哇銀行</h2>
+        <div class="section-rule"></div>
+      </div>
       <div class="values-grid">
-        <div class="value-item">
-          <span class="value-num">01</span>
-          <h3>安全至上</h3>
-          <p>多重身分驗證與加密傳輸，保障每一筆交易安全無虞。</p>
-        </div>
-        <div class="value-item">
-          <span class="value-num">02</span>
-          <h3>即時便捷</h3>
-          <p>24 小時線上服務，轉帳、查詢、申辦一站完成。</p>
-        </div>
-        <div class="value-item">
-          <span class="value-num">03</span>
-          <h3>專業團隊</h3>
-          <p>消金、授信、客服多部門協作，提供完善的金融方案。</p>
+        <div v-for="(val, i) in valueItems" :key="i" class="value-item reveal" :style="{ transitionDelay: i * 100 + 'ms' }">
+          <span class="value-num">{{ String(i + 1).padStart(2, '0') }}</span>
+          <h3>{{ val.title }}</h3>
+          <p>{{ val.desc }}</p>
         </div>
       </div>
     </section>
 
     <!-- CTA -->
     <section class="cta-section" aria-label="立即加入">
-      <div class="cta-card">
+      <div class="cta-card reveal">
         <h2>準備好開始了嗎？</h2>
         <p>只需幾分鐘，即可線上開立您的數位帳戶。</p>
         <button class="jb-btn jb-btn-primary jb-btn-lg" @click="$router.push('/register')">
@@ -87,6 +96,7 @@
 
     <!-- 底部 -->
     <footer class="landing-footer">
+      <div class="footer-rule"></div>
       <JbLogo size="sm" />
       <p class="footer-text">&copy; 2026 Java Easy Bank. All rights reserved.</p>
     </footer>
@@ -94,36 +104,85 @@
 </template>
 
 <script setup>
+import { onMounted } from 'vue'
 import JbLogo from '@/components/JbLogo.vue'
 
 const previewItems = [
   {
     label: '帳戶總覽',
     desc: '即時查看台幣與外幣帳戶餘額、交易紀錄，掌握資金動態。',
-    svg: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 10h20"/></svg>',
+    svg: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 10h20"/></svg>',
   },
   {
     label: '轉帳匯款',
     desc: '支援本行與跨行轉帳，三步驟輕鬆完成，即時到帳。',
-    svg: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17l9.2-9.2M17 17V7H7"/></svg>',
+    svg: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17l9.2-9.2M17 17V7H7"/></svg>',
   },
   {
     label: '信用卡',
     desc: '多款卡片任選，線上申辦、帳單查詢、消費明細一目瞭然。',
-    svg: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>',
+    svg: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>',
   },
   {
     label: '貸款服務',
     desc: '個人信貸、房貸、車貸、創業貸款，利率透明、審核快速。',
-    svg: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
+    svg: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
   },
 ]
+
+const valueItems = [
+  { title: '安全至上', desc: '多重身分驗證與加密傳輸，保障每一筆交易安全無虞。' },
+  { title: '即時便捷', desc: '24 小時線上服務，轉帳、查詢、申辦一站完成。' },
+  { title: '專業團隊', desc: '消金、授信、客服多部門協作，提供完善的金融方案。' },
+]
+
+// Scroll Reveal — subtle fade-in
+onMounted(() => {
+  const els = document.querySelectorAll('.reveal')
+  if (!els.length) return
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('revealed')
+        observer.unobserve(e.target)
+      }
+    })
+  }, { threshold: 0.15 })
+  els.forEach(el => observer.observe(el))
+})
 </script>
 
 <style scoped>
 .landing {
   min-height: 100vh;
   background: var(--bg-primary);
+  position: relative;
+}
+
+/* === Washi Texture Overlay === */
+.washi-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: url('/washi-texture.png') repeat;
+  opacity: 0.04;
+}
+
+.landing > *:not(.washi-overlay) {
+  position: relative;
+  z-index: 1;
+}
+
+/* === Scroll Reveal === */
+.reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
+}
+.reveal.revealed {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* === Header === */
@@ -133,13 +192,13 @@ const previewItems = [
   z-index: 100;
   background: rgba(245, 241, 234, 0.92);
   backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .header-inner {
-  max-width: 1080px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: var(--space-3) var(--space-6);
+  padding: var(--space-3) var(--space-8);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -152,11 +211,11 @@ const previewItems = [
 
 /* === Hero === */
 .hero {
-  padding: var(--space-8) var(--space-6);
+  padding: 100px var(--space-8) 140px;
 }
 
 .hero-inner {
-  max-width: 1080px;
+  max-width: 1400px;
   margin: 0 auto;
   display: flex;
   align-items: center;
@@ -166,20 +225,52 @@ const previewItems = [
 
 .hero-content {
   flex: 1;
-  max-width: 480px;
+  max-width: 600px;
 }
 
-.hero-title {
-  font-size: 48px;
-  letter-spacing: 4px;
+.hero-eyebrow {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 6px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
   margin-bottom: var(--space-4);
 }
 
-.hero-sub {
-  font-size: 16px;
+.hero-title {
+  font-size: 52px;
+  letter-spacing: 6px;
+  margin-bottom: var(--space-4);
+  line-height: 1.25;
+}
+
+.hero-line-1 {
+  display: block;
+  font-weight: 600;
   color: var(--text-secondary);
-  line-height: 1.8;
-  margin-bottom: var(--space-6);
+  font-size: 44px;
+}
+
+.hero-line-2 {
+  display: block;
+  font-weight: 900;
+  color: var(--text-primary);
+  font-size: 56px;
+}
+
+.hero-rule {
+  width: 48px;
+  height: 1px;
+  background: var(--border);
+  margin-bottom: var(--space-5);
+}
+
+.hero-sub {
+  font-size: 17px;
+  color: var(--text-secondary);
+  line-height: 2;
+  margin-bottom: var(--space-7);
 }
 
 .hero-actions {
@@ -192,67 +283,104 @@ const previewItems = [
   display: flex;
   align-items: center;
   justify-content: center;
-  max-width: 400px;
+  max-width: 480px;
 }
 
-/* === Preview (服務預覽) === */
-.preview {
-  padding: var(--space-8) var(--space-6);
-  max-width: 1080px;
-  margin: 0 auto;
+/* Logo 呼吸感動畫 */
+.hero-logo-breath {
+  animation: breathe 10s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scale(1); opacity: 0.92; }
+  50% { transform: scale(1.03); opacity: 1; }
+}
+
+/* === Section Header === */
+.section-header {
+  text-align: center;
+  margin-bottom: var(--space-7);
+}
+
+.section-eyebrow {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 5px;
+  color: var(--text-disabled);
+  text-transform: uppercase;
+  margin-bottom: var(--space-2);
 }
 
 .section-heading {
   font-family: var(--font-heading);
-  font-size: var(--text-h2);
-  text-align: center;
-  margin-bottom: var(--space-2);
+  font-size: 28px;
+  font-weight: 700;
   letter-spacing: 6px;
+  margin-bottom: var(--space-3);
+}
+
+.section-rule {
+  width: 32px;
+  height: 1px;
+  background: var(--border);
+  margin: 0 auto var(--space-3);
 }
 
 .section-sub {
-  text-align: center;
   font-size: var(--text-body);
   color: var(--text-secondary);
-  margin-bottom: var(--space-7);
+}
+
+/* === Preview (服務預覽) === */
+.preview {
+  padding: 0 var(--space-8) 96px;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .preview-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: var(--space-3);
+  gap: var(--space-4);
 }
 
 .preview-card {
-  background: var(--bg-card);
-  border: 1px solid rgba(214, 206, 195, 0.5);
-  border-radius: var(--radius-md);
-  padding: var(--space-5) var(--space-4);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: var(--space-6) var(--space-4);
   text-align: center;
-  transition: transform var(--duration) var(--ease),
-              box-shadow var(--duration) var(--ease);
+  box-shadow: none;
+  transition: background 0.25s var(--ease),
+              border-color 0.25s var(--ease),
+              opacity 0.7s var(--ease),
+              transform 0.7s var(--ease);
 }
 
 .preview-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-md);
+  background: #e5ddd2;
+  border-color: #c8beb1;
 }
 
 .preview-icon {
-  width: 56px;
-  height: 56px;
+  width: 52px;
+  height: 52px;
   margin: 0 auto var(--space-3);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--primary);
-  background: var(--primary-light);
+  background: transparent;
+  border: 1px solid rgba(92, 107, 95, 0.15);
   border-radius: 50%;
 }
 
 .preview-card h3 {
   font-size: var(--text-body);
+  font-weight: 600;
   margin-bottom: var(--space-2);
+  letter-spacing: 1px;
 }
 
 .preview-card p {
@@ -263,22 +391,21 @@ const previewItems = [
 
 /* === Values (品牌特色) === */
 .values {
-  padding: var(--space-7) var(--space-6) var(--space-8);
-  max-width: 1080px;
+  padding: 96px var(--space-8) 140px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
 .values-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-4);
-  margin-top: var(--space-7);
+  gap: var(--space-5);
 }
 
 .value-item {
-  padding: var(--space-4);
-  border-left: 3px solid var(--border);
-  transition: border-color var(--duration) var(--ease);
+  padding: var(--space-5) var(--space-4);
+  border-left: 2px solid var(--border);
+  transition: border-color 0.3s var(--ease);
 }
 
 .value-item:hover {
@@ -286,80 +413,84 @@ const previewItems = [
 }
 
 .value-num {
-  font-family: var(--font-heading);
-  font-size: var(--text-h2);
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 400;
   color: var(--border);
   display: block;
   margin-bottom: var(--space-3);
   line-height: 1;
+  letter-spacing: 2px;
 }
 
 .value-item h3 {
   font-size: var(--text-h3);
   margin-bottom: var(--space-2);
+  letter-spacing: 2px;
 }
 
 .value-item p {
   font-size: var(--text-sm);
   color: var(--text-secondary);
-  line-height: var(--leading);
+  line-height: 1.8;
 }
 
 /* === CTA === */
 .cta-section {
-  padding: 0 var(--space-6) var(--space-8);
-  max-width: 1080px;
+  padding: 0 var(--space-8) 120px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
 .cta-card {
   background: var(--bg-secondary);
-  border: 1px solid rgba(214, 206, 195, 0.5);
-  border-radius: var(--radius-lg);
-  padding: var(--space-8) var(--space-6);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 80px var(--space-8);
   text-align: center;
+  box-shadow: none;
 }
 
 .cta-card h2 {
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-3);
+  letter-spacing: 4px;
 }
 
 .cta-card p {
-  font-size: var(--text-body);
+  font-size: 16px;
   color: var(--text-secondary);
-  margin-bottom: var(--space-5);
+  margin-bottom: var(--space-6);
+  line-height: 1.8;
 }
 
 /* === Footer === */
 .landing-footer {
   text-align: center;
-  padding: var(--space-6);
-  border-top: 1px solid var(--border);
+  padding: var(--space-7) var(--space-6);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--space-3);
 }
 
+.footer-rule {
+  width: 100%;
+  max-width: 1400px;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.05);
+  margin-bottom: var(--space-4);
+}
+
 .footer-text {
+  font-family: var(--font-display);
   font-size: var(--text-sm);
-  color: var(--text-secondary);
-}
-
-.admin-entry {
-  font-size: var(--text-xs);
-  color: var(--border);
-  text-decoration: none;
-  transition: color var(--duration) var(--ease);
-}
-
-.admin-entry:hover {
-  color: var(--text-secondary);
+  color: var(--text-disabled);
+  letter-spacing: 1px;
 }
 
 /* === RWD === */
 @media (max-width: 900px) {
+  .hero { padding: 64px var(--space-4) 96px; }
   .hero-inner {
     flex-direction: column;
     text-align: center;
@@ -368,19 +499,25 @@ const previewItems = [
   .hero-content { max-width: 100%; }
   .hero-actions { justify-content: center; }
   .hero-visual { max-width: 280px; }
+  .hero-line-1 { font-size: 32px; }
+  .hero-line-2 { font-size: 40px; }
+  .hero-rule { margin: 0 auto var(--space-5); }
+  .preview { padding: 0 var(--space-4) 64px; }
   .preview-grid { grid-template-columns: repeat(2, 1fr); }
+  .values { padding: 64px var(--space-4) 96px; }
   .values-grid { grid-template-columns: 1fr; }
-  .hero-title { font-size: 36px; }
+  .cta-section { padding: 0 var(--space-4) 80px; }
 }
 
 @media (max-width: 500px) {
   .header-inner { padding: var(--space-3); }
-  .hero { padding: var(--space-6) var(--space-3); }
-  .preview { padding: var(--space-6) var(--space-3); }
-  .values { padding: var(--space-6) var(--space-3); }
-  .cta-section { padding: 0 var(--space-3) var(--space-6); }
+  .hero { padding: var(--space-7) var(--space-3) var(--space-8); }
+  .preview { padding: 0 var(--space-3) var(--space-7); }
+  .values { padding: var(--space-7) var(--space-3) var(--space-8); }
+  .cta-section { padding: 0 var(--space-3) var(--space-7); }
   .preview-grid { grid-template-columns: 1fr; }
-  .hero-title { font-size: 30px; }
-  .cta-card { padding: var(--space-6) var(--space-4); }
+  .hero-line-1 { font-size: 28px; }
+  .hero-line-2 { font-size: 34px; }
+  .cta-card { padding: var(--space-7) var(--space-4); }
 }
 </style>
