@@ -1,13 +1,10 @@
 package com.javaeasybank.customer.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.javaeasybank.risk.core.RiskTarget;
-import com.javaeasybank.risk.entity.CustomerCreditInfo;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -47,7 +44,81 @@ public class CustomerProfile {
     @Column(length = 255, nullable = false)
     private String address;
 
-    @Column(name = "avatar_url",length = 255)
+    @Column(length = 10)
+    private String nationality;
+
+    @Column(name = "registered_address", length = 255)
+    private String registeredAddress;
+
+    @Column(name = "current_address", length = 255)
+    private String currentAddress;
+
+    @Column(length = 50)
+    private String occupation;
+
+    @Column(name = "employer", length = 100)
+    private String employer;
+
+    @Column(name = "estimated_monthly_tx")
+    private Integer estimatedMonthlyTx;
+
+    @Column(name = "account_purpose", length = 30)
+    private String accountPurpose;
+
+    @Column(name = "fund_source", length = 30)
+    private String fundSource;
+
+    @Column(name = "tax_residency", length = 10)
+    private String taxResidency;
+
+    @Column(name = "is_pep", nullable = false)
+    private Boolean isPep = false;
+
+    @Column(name = "id_front_url", length = 255)
+    private String idFrontUrl;
+
+    @Column(name = "id_back_url", length = 255)
+    private String idBackUrl;
+
+    @Column(name = "second_id_url", length = 255)
+    private String secondIdUrl;
+
+    @Column(name = "latest_account_application_id")
+    private Long latestAccountApplicationId;
+
+    @Column(name = "latest_account_application_no", length = 30)
+    private String latestAccountApplicationNo;
+
+    @Column(name = "latest_applied_account_type", length = 20)
+    private String latestAppliedAccountType;
+
+    @Column(name = "latest_applied_currency", length = 3)
+    private String latestAppliedCurrency;
+
+    @Column(name = "latest_account_application_status", length = 20)
+    private String latestAccountApplicationStatus;
+
+    @Column(name = "latest_account_application_risk_flag", length = 30)
+    private String latestAccountApplicationRiskFlag;
+
+    @Column(name = "latest_account_application_reviewed_at")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime latestAccountApplicationReviewedAt;
+
+    @Column(name = "latest_account_application_reviewed_by", length = 50)
+    private String latestAccountApplicationReviewedBy;
+
+    @Column(name = "latest_account_application_reject_reason", length = 500)
+    private String latestAccountApplicationRejectReason;
+
+    @Column(name = "created_account_number", length = 12)
+    private String createdAccountNumber;
+
+    @Column(name = "account_application_synced_at")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime accountApplicationSyncedAt;
+
+    @Column(name = "avatar_url", length = 255)
     private String avatarUrl;
 
     @Column(length = 20, nullable = false)
@@ -61,10 +132,14 @@ public class CustomerProfile {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedAt;
 
-//    // mappedBy 表示此關聯由 CustomerCreditInfo 的 customerProfile 欄位維護
-//    // cascade = CascadeType.ALL 表示當 CustomerProfile 儲存或刪除時，連動處理 CreditInfo
-//    @OneToOne(mappedBy = "customerProfile", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-//    private CustomerCreditInfo creditInfo;
+
+    //風控
+    @Column(name="job")
+    private String job;
+    @Column(name="annual_income")
+    private Integer annualIncome;
+    @Column(name="risk_level")
+    private String riskLevel;
 
     @PrePersist
     protected void onCreate() {
@@ -76,16 +151,4 @@ public class CustomerProfile {
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
-
-//    // 加入一個輔助方法 (Helper Method) 來建立雙向關聯
-//    public void setCreditInfo(CustomerCreditInfo creditInfo) {
-//        if (creditInfo == null) {
-//            if (this.creditInfo != null) {
-//                this.creditInfo.setCustomerProfile(null);
-//            }
-//        } else {
-//            creditInfo.setCustomerProfile(this);
-//        }
-//        this.creditInfo = creditInfo;
-//    }
 }

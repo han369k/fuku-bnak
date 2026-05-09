@@ -34,6 +34,8 @@ public class TransferService {
 
     private final AccountRepository accountRepository;
     private final TransLogRepository transLogRepository;
+    private final com.javaeasybank.customer.repository.CustomerProfileRepository customerProfileRepository;
+    private final com.javaeasybank.common.service.EmailService emailService;
 
     /**
      * 執行行內同幣別轉帳。
@@ -138,7 +140,22 @@ public class TransferService {
 
         log.info("轉帳成功: refId={}, from={}, to={}, amount={}", referenceId, fromAccNum, toAccNum, amount);
 
-        // 4. 回傳結果
+        // 4. 發送轉帳通知
+        customerProfileRepository.findById(fromAccount.getCustomerId())
+                .ifPresent(profile -> {
+                    if (profile.getEmail() != null) {
+                        emailService.sendTransferNotification(
+                                profile.getEmail(),
+                                fromAccNum,
+                                toAccNum,
+                                amount,
+                                fromAccount.getCurrency().name(),
+                                referenceId
+                        );
+                    }
+                });
+
+        // 5. 回傳結果
         TransferResponse response = new TransferResponse();
         response.setReferenceId(referenceId);
         response.setFromAccountBalance(fromAccount.getBalance());

@@ -2,7 +2,7 @@ package com.javaeasybank.customer.controller;
 
 import com.javaeasybank.common.dto.response.ApiResponse;
 import com.javaeasybank.common.util.JwtUtil;
-import com.javaeasybank.customer.dto.CustomerDto;
+import com.javaeasybank.customer.repository.CustomerRespository;
 import com.javaeasybank.customer.service.CustomerAuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.MediaType;
@@ -37,22 +37,29 @@ public class CustomerAuthController {
 
     // ===== 客戶註冊（所有人都能打）=====
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<CustomerDto.LoginResponse>> register(
-            @RequestBody CustomerDto.RegisterRequest request) {
+    public ResponseEntity<ApiResponse<CustomerRespository.LoginResponse>> register(
+            @RequestBody CustomerRespository.RegisterRequest request) {
         return ResponseEntity.ok(ApiResponse.success(customerAuthService.register(request)));
     }
 
     // ===== 客戶登入（所有人都能打）=====
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<CustomerDto.LoginResponse>> login(
-            @RequestBody CustomerDto.LoginRequest request) {
+    public ResponseEntity<ApiResponse<CustomerRespository.LoginResponse>> login(
+            @RequestBody CustomerRespository.LoginRequest request) {
         return ResponseEntity.ok(ApiResponse.success(customerAuthService.login(request)));
+    }
+
+    // ===== 電子郵件驗證 =====
+    @GetMapping("/verify-email")
+    public ResponseEntity<ApiResponse<String>> verifyEmail(@RequestParam("token") String token) {
+        customerAuthService.verifyEmail(token);
+        return ResponseEntity.ok(ApiResponse.success("電子郵件驗證成功，請重新登入"));
     }
 
     // ===== 取得目前客戶資訊（需登入）=====
     @PreAuthorize("hasRole('CUSTOMER')")
     @GetMapping("/me")
-    public ResponseEntity<ApiResponse<CustomerDto.CustomerResponse>> getProfile(
+    public ResponseEntity<ApiResponse<CustomerRespository.CustomerResponse>> getProfile(
             HttpServletRequest request) {
         String customerId = extractCustomerId(request);
         return ResponseEntity.ok(ApiResponse.success(customerAuthService.getProfile(customerId)));
@@ -61,9 +68,9 @@ public class CustomerAuthController {
     // ===== 修改個人資料（需登入，僅能改自己的）=====
     @PreAuthorize("hasRole('CUSTOMER')")
     @PutMapping("/profile")
-    public ResponseEntity<ApiResponse<CustomerDto.CustomerResponse>> updateProfile(
+    public ResponseEntity<ApiResponse<CustomerRespository.CustomerResponse>> updateProfile(
             HttpServletRequest httpRequest,
-            @RequestBody CustomerDto.ProfileUpdateRequest request) {
+            @RequestBody CustomerRespository.ProfileUpdateRequest request) {
         String customerId = extractCustomerId(httpRequest);
         return ResponseEntity.ok(ApiResponse.success(customerAuthService.updateProfile(customerId, request)));
     }
@@ -71,7 +78,7 @@ public class CustomerAuthController {
     // ===== 上傳大頭照（需登入）=====
     @PreAuthorize("hasRole('CUSTOMER')")
     @PostMapping(value = "/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ApiResponse<CustomerDto.CustomerResponse>> uploadAvatar(
+    public ResponseEntity<ApiResponse<CustomerRespository.CustomerResponse>> uploadAvatar(
             HttpServletRequest httpRequest,
             @RequestParam("file") MultipartFile file) throws IOException {
 
@@ -103,15 +110,15 @@ public class CustomerAuthController {
     // ===== 請求密碼重設（發送 Email 連結）=====
     @PostMapping("/request-reset")
     public ResponseEntity<ApiResponse<String>> requestPasswordReset(
-            @RequestBody CustomerDto.PasswordResetEmailRequest request) {
-        customerAuthService.requestPasswordReset(request.getEmail());
+            @RequestBody CustomerRespository.PasswordResetEmailRequest request) {
+        customerAuthService.requestPasswordReset(request);
         return ResponseEntity.ok(ApiResponse.success("密碼重設連結已發送至您的信箱"));
     }
 
     // ===== 執行密碼重設 =====
     @PostMapping("/reset-password")
     public ResponseEntity<ApiResponse<String>> resetPassword(
-            @RequestBody CustomerDto.PasswordResetRequest request) {
+            @RequestBody CustomerRespository.PasswordResetRequest request) {
         customerAuthService.resetPassword(request);
         return ResponseEntity.ok(ApiResponse.success("密碼已成功重設，請使用新密碼登入"));
     }

@@ -14,7 +14,7 @@
         <a-form-item label="銀行名稱">
           <a-input v-model:value="form.bankName" placeholder="選填" style="width: 160px" :maxlength="50" />
         </a-form-item>
-        <a-form-item>
+        <a-form-item style="margin-top: 30px;">
           <a-button type="primary" html-type="submit" :loading="adding">新增常用帳號</a-button>
         </a-form-item>
       </a-form>
@@ -24,6 +24,9 @@
     <a-card class="list-card" style="margin-top: 20px">
       <a-table :dataSource="favorites" :columns="columns" :loading="loading"
                rowKey="id" :pagination="{ pageSize: 10 }">
+        <template #emptyText>
+          <div style="padding: 32px 0; color: #999;">尚無常用帳號</div>
+        </template>
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'action'">
             <a-space>

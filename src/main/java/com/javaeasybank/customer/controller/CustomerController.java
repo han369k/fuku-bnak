@@ -1,7 +1,7 @@
 package com.javaeasybank.customer.controller;
 
 import com.javaeasybank.common.dto.response.ApiResponse;
-import com.javaeasybank.customer.dto.CustomerDto;
+import com.javaeasybank.customer.repository.CustomerRespository;
 import com.javaeasybank.customer.service.CustomerService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,9 +22,9 @@ public class CustomerController {
     // ===== 查詢客戶（支援模糊搜尋）=====
     @PreAuthorize("isAuthenticated()")
     @GetMapping
-    public ResponseEntity<ApiResponse<List<CustomerDto.CustomerResponse>>> getCustomers(
+    public ResponseEntity<ApiResponse<List<CustomerRespository.CustomerResponse>>> getCustomers(
             @RequestParam(required = false) String keyword) {
-        List<CustomerDto.CustomerResponse> result;
+        List<CustomerRespository.CustomerResponse> result;
         if (keyword != null && !keyword.isEmpty()) {
             result = customerService.searchByName(keyword);
         } else {
@@ -36,17 +36,17 @@ public class CustomerController {
     // ===== 新增客戶 =====
     @PreAuthorize("isAuthenticated()")
     @PostMapping
-    public ResponseEntity<ApiResponse<CustomerDto.CustomerResponse>> createCustomer(
-            @RequestBody CustomerDto.CustomerRequest request) {
+    public ResponseEntity<ApiResponse<CustomerRespository.CustomerResponse>> createCustomer(
+            @RequestBody CustomerRespository.CustomerRequest request) {
         return ResponseEntity.ok(ApiResponse.success(customerService.createCustomer(request)));
     }
 
     // ===== 修改客戶聯絡資訊 =====
     @PreAuthorize("isAuthenticated()")
     @PutMapping("/{customerId}")
-    public ResponseEntity<ApiResponse<CustomerDto.CustomerResponse>> updateCustomer(
+    public ResponseEntity<ApiResponse<CustomerRespository.CustomerResponse>> updateCustomer(
             @PathVariable String customerId,
-            @RequestBody CustomerDto.CustomerRequest request) {
+            @RequestBody CustomerRespository.CustomerRequest request) {
         return ResponseEntity.ok(ApiResponse.success(customerService.updateCustomer(customerId, request)));
     }
 

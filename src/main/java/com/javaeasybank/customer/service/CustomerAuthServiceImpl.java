@@ -2,12 +2,12 @@ package com.javaeasybank.customer.service;
 
 import com.javaeasybank.common.exception.BusinessException;
 import com.javaeasybank.common.util.JwtUtil;
-import com.javaeasybank.customer.dto.CustomerDto;
+import com.javaeasybank.customer.repository.CustomerRespository;
 import com.javaeasybank.customer.entity.CustomerAuth;
 import com.javaeasybank.customer.entity.CustomerProfile;
 import com.javaeasybank.customer.repository.CustomerAuthRepository;
 import com.javaeasybank.customer.repository.CustomerProfileRepository;
-import com.javaeasybank.risk.service.CreditSCoreService;
+import com.javaeasybank.common.service.EmailService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -29,10 +29,9 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
 
     private final CustomerAuthRepository customerAuthRepository;
     private final CustomerProfileRepository customerProfileRepository;
-    //測試用
-    private final CreditSCoreService ccService;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final EmailService emailService;
 
     @Value("${app.frontend-url:http://localhost:5173}")
     private String frontendUrl;
@@ -45,14 +44,12 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
                                    CustomerProfileRepository customerProfileRepository,
                                    PasswordEncoder passwordEncoder,
                                    JwtUtil jwtUtil,
-                                   //測試用
-                                   CreditSCoreService ccService) {
+                                   EmailService emailService) {
         this.customerAuthRepository = customerAuthRepository;
         this.customerProfileRepository = customerProfileRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
-        //測試用
-        this.ccService = ccService;
+        this.emailService = emailService;
     }
 
     // ===========================
@@ -60,7 +57,7 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
     // ===========================
     @Override
     @Transactional
-    public CustomerDto.LoginResponse register(CustomerDto.RegisterRequest request) {
+    public CustomerRespository.LoginResponse register(CustomerRespository.RegisterRequest request) {
         // 1. 檢查帳號是否重複
         if (customerAuthRepository.existsByUsername(request.getUsername())) {
             throw new BusinessException("使用者帳號已存在");
@@ -84,27 +81,28 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
         profile.setEmail(request.getEmail());
         profile.setPhone(request.getPhone());
         profile.setAddress(request.getAddress());
+        profile.setRegisteredAddress(request.getAddress());
+        profile.setCurrentAddress(request.getAddress());
+        profile.setIsPep(false);
         profile.setStatus("ACTIVE");
         customerProfileRepository.save(profile);
 
         // 3. 建立 customer_auth
+        String verificationToken = UUID.randomUUID().toString();
         CustomerAuth auth = new CustomerAuth();
         auth.setAuthId(generateAlphanumeric(10));
         auth.setCustomerId(customerId);
         auth.setUsername(request.getUsername());
         auth.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         auth.setRole("CUSTOMER");
-        auth.setStatus("ACTIVE");
+        auth.setStatus("PENDING"); // 註冊後預設為 PENDING
+        auth.setVerificationToken(verificationToken);
         customerAuthRepository.save(auth);
 
-        // 初始化信用評分（Mock 資料 + 評分寫入 DB）
-        ccService.initializeCreditInfo(customerId, request.getBirthday());
+        // 4. 發送驗證信
+        emailService.sendVerificationEmail(request.getEmail(), verificationToken);
 
-        // 4. 產生 JWT 並回傳
-        String token = jwtUtil.generateToken(request.getUsername(), "CUSTOMER", customerId);
-
-        CustomerDto.LoginResponse response = new CustomerDto.LoginResponse();
-        response.setToken(token);
+        CustomerRespository.LoginResponse response = new CustomerRespository.LoginResponse();
         response.setCustomerId(customerId);
         response.setCif(cif);
         response.setName(request.getName());
@@ -117,18 +115,33 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
     // 登入
     // ===========================
     @Override
-    public CustomerDto.LoginResponse login(CustomerDto.LoginRequest request) {
+    public CustomerRespository.LoginResponse login(CustomerRespository.LoginRequest request) {
         // 1. 查帳號
         CustomerAuth auth = customerAuthRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new BusinessException("帳號或密碼錯誤"));
+                .orElse(null);
+
+        if (auth == null) {
+            throw new BusinessException("帳號或密碼錯誤");
+        }
+
+        // 取得客戶信箱用於發信
+        CustomerProfile profile = customerProfileRepository.findById(auth.getCustomerId())
+                .orElse(null);
+        String email = (profile != null) ? profile.getEmail() : null;
 
         // 2. 檢查狀態
+        if ("PENDING".equals(auth.getStatus())) {
+            throw new BusinessException("帳號尚未驗證，請先至信箱收取驗證信");
+        }
         if (!"ACTIVE".equals(auth.getStatus())) {
             throw new BusinessException("此帳號已被停用");
         }
 
         // 3. 驗密碼
         if (!passwordEncoder.matches(request.getPassword(), auth.getPasswordHash())) {
+            if (email != null) {
+                emailService.sendLoginNotification(email, auth.getUsername(), false, "未知位置");
+            }
             throw new BusinessException("帳號或密碼錯誤");
         }
 
@@ -136,29 +149,51 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
         auth.setLastLoginDate(LocalDateTime.now());
         customerAuthRepository.save(auth);
 
-        // 5. 查 profile 取得完整資訊
-        CustomerProfile profile = customerProfileRepository.findById(auth.getCustomerId())
-                .orElseThrow(() -> new BusinessException("客戶資料異常"));
+        // 5. 驗證身分證字號
+        if (request.getIdNumber() != null && !request.getIdNumber().isEmpty()) {
+            if (profile == null || !profile.getIdNumber().equals(request.getIdNumber())) {
+                if (email != null) {
+                    emailService.sendLoginNotification(email, auth.getUsername(), false, "未知位置");
+                }
+                throw new BusinessException("身分證字號不正確");
+            }
+        }
 
         // 6. 產生 JWT
         String token = jwtUtil.generateToken(auth.getUsername(), "CUSTOMER", auth.getCustomerId());
 
-        CustomerDto.LoginResponse response = new CustomerDto.LoginResponse();
+        // 7. 發送登入成功通知
+        if (email != null) {
+            emailService.sendLoginNotification(email, auth.getUsername(), true, "未知位置");
+        }
+
+        CustomerRespository.LoginResponse response = new CustomerRespository.LoginResponse();
         response.setToken(token);
-        response.setCustomerId(profile.getCustomerId());
-        response.setCif(profile.getCif());
-        response.setName(profile.getName());
+        response.setCustomerId(auth.getCustomerId());
+        response.setCif(profile != null ? profile.getCif() : "");
+        response.setName(profile != null ? profile.getName() : "");
         response.setUsername(auth.getUsername());
-        response.setAvatarUrl(profile.getAvatarUrl());
+        response.setAvatarUrl(profile != null ? profile.getAvatarUrl() : null);
         response.setRole("CUSTOMER");
         return response;
+    }
+
+    @Override
+    @Transactional
+    public void verifyEmail(String token) {
+        CustomerAuth auth = customerAuthRepository.findByVerificationToken(token)
+                .orElseThrow(() -> new BusinessException("無效的驗證連結"));
+
+        auth.setStatus("ACTIVE");
+        auth.setVerificationToken(null);
+        customerAuthRepository.save(auth);
     }
 
     // ===========================
     // 取得個人資料
     // ===========================
     @Override
-    public CustomerDto.CustomerResponse getProfile(String customerId) {
+    public CustomerRespository.CustomerResponse getProfile(String customerId) {
         CustomerProfile profile = customerProfileRepository.findById(customerId)
                 .orElseThrow(() -> new BusinessException("查無此客戶"));
         CustomerAuth auth = customerAuthRepository.findByCustomerId(customerId)
@@ -172,13 +207,16 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
     // ===========================
     @Override
     @Transactional
-    public CustomerDto.CustomerResponse updateProfile(String customerId, CustomerDto.ProfileUpdateRequest request) {
+    public CustomerRespository.CustomerResponse updateProfile(String customerId, CustomerRespository.ProfileUpdateRequest request) {
         CustomerProfile profile = customerProfileRepository.findById(customerId)
                 .orElseThrow(() -> new BusinessException("查無此客戶"));
 
         if (request.getPhone() != null) profile.setPhone(request.getPhone());
         if (request.getEmail() != null) profile.setEmail(request.getEmail());
-        if (request.getAddress() != null) profile.setAddress(request.getAddress());
+        if (request.getAddress() != null) {
+            profile.setAddress(request.getAddress());
+            profile.setCurrentAddress(request.getAddress());
+        }
 
         customerProfileRepository.save(profile);
 
@@ -192,7 +230,7 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
     // ===========================
     @Override
     @Transactional
-    public CustomerDto.CustomerResponse uploadAvatar(String customerId, String avatarUrl) {
+    public CustomerRespository.CustomerResponse uploadAvatar(String customerId, String avatarUrl) {
         CustomerProfile profile = customerProfileRepository.findById(customerId)
                 .orElseThrow(() -> new BusinessException("查無此客戶"));
 
@@ -209,12 +247,14 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
     // ===========================
     @Override
     @Transactional
-    public void requestPasswordReset(String email) {
-        // 用 email 找到 customer_profile → 再找到 customer_auth
+    public void requestPasswordReset(CustomerRespository.PasswordResetEmailRequest request) {
+        // 用 email, idNumber, birthday 找到 customer_profile
         CustomerProfile profile = customerProfileRepository.findAll().stream()
-                .filter(p -> email.equals(p.getEmail()))
+                .filter(p -> request.getEmail().equals(p.getEmail())
+                        && request.getIdNumber().equals(p.getIdNumber())
+                        && request.getBirthday().equals(p.getBirthday()))
                 .findFirst()
-                .orElseThrow(() -> new BusinessException("查無此信箱對應的客戶"));
+                .orElseThrow(() -> new BusinessException("驗證失敗：查無此身分資料或信箱錯誤"));
 
         CustomerAuth auth = customerAuthRepository.findByCustomerId(profile.getCustomerId())
                 .orElseThrow(() -> new BusinessException("認證資料異常"));
@@ -228,13 +268,7 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
         // 組成重設連結
         String resetLink = frontendUrl + "/reset-password?token=" + resetToken;
 
-        // TODO: 接入 SMTP 寄信（目前先用 Console 輸出 Demo）
-        System.out.println("==============================================");
-        System.out.println("【密碼重設連結】");
-        System.out.println("收件人：" + email);
-        System.out.println("連結：" + resetLink);
-        System.out.println("有效期限：30 分鐘");
-        System.out.println("==============================================");
+        emailService.sendPasswordResetEmail(request.getEmail(), resetLink);
     }
 
     // ===========================
@@ -242,7 +276,7 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
     // ===========================
     @Override
     @Transactional
-    public void resetPassword(CustomerDto.PasswordResetRequest request) {
+    public void resetPassword(CustomerRespository.PasswordResetRequest request) {
         CustomerAuth auth = customerAuthRepository.findByResetToken(request.getToken())
                 .orElseThrow(() -> new BusinessException("無效的重設連結"));
 
@@ -264,11 +298,11 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
     public void seedAuthTestData() {
         // 為已有的 seed 客戶資料建立對應的 customer_auth
         String[][] data = {
-                {"X7K9P2M4", "mingwang85"},
-                {"V4L6T1Y8", "hualin90"},
-                {"D3H8F5G2", "chienchen78"},
-                {"B9W1C7R5", "yachang95"},
-                {"P6M4N2Q8", "chihlee82"},
+            {"X7K9P2M4", "mingwang85"},
+            {"V4L6T1Y8", "hualin90"},
+            {"D3H8F5G2", "chienchen78"},
+            {"B9W1C7R5", "yachang95"},
+            {"P6M4N2Q8", "chihlee82"},
         };
 
         for (String[] d : data) {
@@ -288,19 +322,9 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
     // ===========================
     // 私有方法
     // ===========================
-    private CustomerDto.CustomerResponse convertToResponse(CustomerProfile profile, CustomerAuth auth) {
-        CustomerDto.CustomerResponse res = new CustomerDto.CustomerResponse();
-        res.setCustomerId(profile.getCustomerId());
-        res.setCif(profile.getCif());
-        res.setIdNumber(profile.getIdNumber());
-        res.setName(profile.getName());
-        res.setBirthday(profile.getBirthday());
-        res.setGender(profile.getGender());
-        res.setEmail(profile.getEmail());
-        res.setPhone(profile.getPhone());
-        res.setAddress(profile.getAddress());
-        res.setStatus(profile.getStatus());
-        res.setAvatarUrl(profile.getAvatarUrl());
+    private CustomerRespository.CustomerResponse convertToResponse(CustomerProfile profile, CustomerAuth auth) {
+        CustomerRespository.CustomerResponse res = new CustomerRespository.CustomerResponse();
+        org.springframework.beans.BeanUtils.copyProperties(profile, res);
         res.setUsername(auth.getUsername());
         return res;
     }

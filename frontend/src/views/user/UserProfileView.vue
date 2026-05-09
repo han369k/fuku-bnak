@@ -1,102 +1,241 @@
 <template>
   <div class="customer-page profile-page">
-    <h2 class="page-title">會員中心</h2>
+    <h2 class="page-title">個人設定</h2>
 
-    <div class="profile-layout">
-      <!-- 左欄：大頭照 + CIF -->
-      <aside class="profile-left">
-        <div class="avatar-section">
-          <button class="avatar-wrapper" @click="triggerUpload" aria-label="更換大頭照">
-            <img v-if="avatarSrc" :src="avatarSrc" class="avatar-img" alt="使用者大頭照" />
-            <span v-else class="avatar-fallback" aria-hidden="true">{{ (profile.name || '會')[0] }}</span>
-            <span class="avatar-overlay" aria-hidden="true">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-                <circle cx="12" cy="13" r="4"/>
-              </svg>
-            </span>
-          </button>
-          <input
-            ref="fileInput"
-            type="file"
-            accept="image/*"
-            style="display: none"
-            @change="handleFileChange"
-          />
-          <p class="avatar-hint">點擊更換大頭照</p>
+    <!-- 頂部設定項目選擇 -->
+    <div class="setting-selector jb-card">
+      <span class="setting-label">請選擇設定項目</span>
+      <div class="radio-group">
+        <label class="custom-radio">
+          <input type="radio" v-model="activeTab" value="email" />
+          <span class="radio-mark"></span>
+          帳號及電子郵件
+        </label>
+        <label class="custom-radio">
+          <input type="radio" v-model="activeTab" value="basic" />
+          <span class="radio-mark"></span>
+          銀行個人基本資料
+        </label>
+      </div>
+    </div>
+
+    <!-- 主內容區塊 -->
+    <section class="profile-content jb-card">
+      <h3 class="section-title">
+        {{ activeTab === 'email' ? '帳號、電子郵件與大頭照' : '銀行個人基本資料' }}
+      </h3>
+
+      <form @submit.prevent="handleSave" novalidate>
+        
+        <!-- 帳號及電子郵件 -->
+        <div v-if="activeTab === 'email'" class="ctbc-form">
+          <div class="ctbc-row avatar-tab" style="margin-bottom: 24px;">
+            <div class="avatar-section">
+              <button type="button" class="avatar-wrapper" @click="triggerUpload" aria-label="更換大頭照">
+                <img v-if="avatarSrc" :src="avatarSrc" class="avatar-img" alt="使用者大頭照" />
+                <span v-else class="avatar-fallback" aria-hidden="true">{{ (profile.name || '會')[0] }}</span>
+                <span class="avatar-overlay" aria-hidden="true">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                    <circle cx="12" cy="13" r="4"/>
+                  </svg>
+                </span>
+              </button>
+              <input
+                ref="fileInput"
+                type="file"
+                accept="image/*"
+                style="display: none"
+                @change="handleFileChange"
+              />
+              <p class="avatar-hint">點擊更換大頭照</p>
+            </div>
+            <div class="cif-box">
+              <span class="cif-label">客戶編號 (CIF)</span>
+              <span class="cif-value">{{ profile.cif || '-' }}</span>
+            </div>
+          </div>
+          <div class="divider" style="margin-bottom: 16px; border-top: 1px solid var(--border);"></div>
+          <div class="ctbc-row">
+            <label class="ctbc-label">使用者帳號</label>
+            <div class="ctbc-field">
+              <input :value="profile.username" class="jb-input" disabled />
+            </div>
+          </div>
+          <div class="ctbc-row">
+            <label class="ctbc-label">姓名</label>
+            <div class="ctbc-field">
+              <input :value="profile.name" class="jb-input" disabled />
+            </div>
+          </div>
+          <div class="ctbc-row">
+            <label class="ctbc-label">目前電子郵件信箱</label>
+            <div class="ctbc-field">
+              <input :value="maskEmail(profile.email)" type="text" class="jb-input" disabled />
+            </div>
+          </div>
+          <div class="ctbc-row">
+            <label class="ctbc-label">輸入新的電子郵件信箱</label>
+            <div class="ctbc-field">
+              <input v-model="editForm.email" type="email" class="jb-input" placeholder="若不修改請留空" />
+            </div>
+          </div>
+          <div class="ctbc-row">
+            <label class="ctbc-label">再次輸入電子郵件信箱</label>
+            <div class="ctbc-field">
+              <input v-model="editForm.emailConfirm" type="email" class="jb-input" placeholder="請再次輸入以確認" />
+            </div>
+          </div>
+          <div class="ctbc-row">
+            <label class="ctbc-label">密碼</label>
+            <div class="ctbc-field password-field">
+              <input value="••••••••" class="jb-input" disabled style="width: 180px;" />
+              <button type="button" class="jb-btn jb-btn-secondary jb-btn-sm" @click="handleRequestReset">
+                變更密碼
+              </button>
+            </div>
+          </div>
         </div>
 
-        <div class="cif-box">
-          <span class="cif-label">客戶編號 (CIF)</span>
-          <span class="cif-value">{{ profile.cif || '-' }}</span>
-        </div>
-      </aside>
-
-      <!-- 右欄：個人資料 -->
-      <section class="profile-right jb-card">
-        <form @submit.prevent="handleSave" novalidate>
-          <div class="form-grid">
-            <!-- 唯讀 -->
-            <div class="jb-form-item">
-              <label class="jb-label">姓名</label>
-              <input :value="profile.name" class="jb-input" disabled aria-label="姓名" />
+        <!-- 銀行個人基本資料 -->
+        <div v-if="activeTab === 'basic'" class="ctbc-form">
+          <h4 class="sub-section-title">基本資料</h4>
+          <div class="ctbc-row">
+            <label class="ctbc-label">身分證字號</label>
+            <div class="ctbc-field">
+              <input :value="profile.idNumber" class="jb-input" disabled />
             </div>
-            <div class="jb-form-item">
-              <label class="jb-label">生日</label>
-              <input :value="profile.birthday" class="jb-input" disabled aria-label="生日" />
+          </div>
+          <div class="ctbc-row">
+            <label class="ctbc-label">生日</label>
+            <div class="ctbc-field">
+              <input :value="profile.birthday" class="jb-input" disabled />
             </div>
-            <div class="jb-form-item">
-              <label class="jb-label">性別</label>
-              <input :value="genderMap[profile.gender] || profile.gender" class="jb-input" disabled aria-label="性別" />
-            </div>
-            <div class="jb-form-item">
-              <label class="jb-label">使用者帳號</label>
-              <input :value="profile.username" class="jb-input" disabled aria-label="帳號" />
-            </div>
-
-            <!-- 密碼 -->
-            <div class="jb-form-item full-width">
-              <label class="jb-label">密碼</label>
-              <div class="password-row">
-                <input value="••••••••" class="jb-input" disabled style="flex: 1" aria-label="密碼" />
-                <button type="button" class="jb-btn jb-btn-secondary jb-btn-sm" @click="handleRequestReset">
-                  變更密碼
-                </button>
-              </div>
-            </div>
-
-            <!-- 可編輯 -->
-            <div class="jb-form-item">
-              <label for="profile-phone" class="jb-label">手機號碼</label>
-              <input id="profile-phone" v-model="editForm.phone" type="tel" class="jb-input" placeholder="請輸入手機號碼" />
-            </div>
-            <div class="jb-form-item">
-              <label for="profile-email" class="jb-label">電子信箱</label>
-              <input id="profile-email" v-model="editForm.email" type="email" class="jb-input" placeholder="請輸入信箱" />
-            </div>
-            <div class="jb-form-item full-width">
-              <label for="profile-address" class="jb-label">通訊地址</label>
-              <input id="profile-address" v-model="editForm.address" type="text" class="jb-input" placeholder="請輸入地址" />
+          </div>
+          <div class="ctbc-row">
+            <label class="ctbc-label">性別</label>
+            <div class="ctbc-field">
+              <input :value="genderMap[profile.gender] || profile.gender" class="jb-input" disabled />
             </div>
           </div>
 
-          <button
-            type="submit"
-            class="jb-btn jb-btn-primary jb-btn-lg"
-            :disabled="saving"
-            style="margin-top: var(--space-2)"
-          >
+          <div class="divider" style="margin: 16px 0; border-top: 1px solid var(--border);"></div>
+
+          <h4 class="sub-section-title">聯絡資料</h4>
+          <div class="ctbc-row">
+            <label class="ctbc-label">手機號碼</label>
+            <div class="ctbc-field">
+              <input v-model="editForm.phone" type="tel" class="jb-input" />
+              <span class="field-hint">範例：0912987654</span>
+            </div>
+          </div>
+          <div class="ctbc-row">
+            <label class="ctbc-label">戶籍地址</label>
+            <div class="ctbc-field">
+              <input :value="profile.registeredAddress" type="text" class="jb-input" disabled style="width: 100%; max-width: 400px;" />
+            </div>
+          </div>
+          <div class="ctbc-row">
+            <label class="ctbc-label">通訊地址</label>
+            <div class="ctbc-field">
+              <input v-model="editForm.address" type="text" class="jb-input" style="width: 100%; max-width: 400px;" />
+            </div>
+          </div>
+
+          <div class="divider" style="margin: 16px 0; border-top: 1px solid var(--border);"></div>
+
+          <h4 class="sub-section-title">職業與財務資料</h4>
+          <div class="ctbc-row">
+            <label class="ctbc-label">行業</label>
+            <div class="ctbc-field" style="flex-wrap: wrap;">
+              <select v-model="editForm.jobSelect" class="jb-input" style="width: 200px;">
+                <option value="">請選擇</option>
+                <option v-for="opt in jobOptions" :key="opt" :value="opt">{{ opt }}</option>
+              </select>
+              <input v-if="editForm.jobSelect === '其他'" v-model="editForm.jobOther" type="text" class="jb-input" placeholder="請填寫行業" style="width: 200px;" />
+            </div>
+          </div>
+          <div class="ctbc-row">
+            <label class="ctbc-label">職稱</label>
+            <div class="ctbc-field" style="flex-wrap: wrap;">
+              <select v-model="editForm.occupationSelect" class="jb-input" style="width: 200px;">
+                <option value="">請選擇</option>
+                <option v-for="opt in occupationOptions" :key="opt" :value="opt">{{ opt }}</option>
+              </select>
+              <input v-if="editForm.occupationSelect === '其他'" v-model="editForm.occupationOther" type="text" class="jb-input" placeholder="請填寫職稱" style="width: 200px;" />
+            </div>
+          </div>
+          <div class="ctbc-row">
+            <label class="ctbc-label">公司/學校名稱</label>
+            <div class="ctbc-field">
+              <input v-model="editForm.employer" type="text" class="jb-input" style="width: 100%; max-width: 400px;" />
+            </div>
+          </div>
+          <div class="ctbc-row">
+            <label class="ctbc-label">收入及資產來源</label>
+            <div class="ctbc-field" style="flex-wrap: wrap;">
+              <select v-model="editForm.fundSourceSelect" class="jb-input" style="width: 200px;">
+                <option value="">請選擇</option>
+                <option v-for="opt in fundSourceOptions" :key="opt" :value="opt">{{ opt }}</option>
+              </select>
+              <input v-if="editForm.fundSourceSelect === '其他'" v-model="editForm.fundSourceOther" type="text" class="jb-input" placeholder="請填寫來源" style="width: 200px;" />
+            </div>
+          </div>
+          <div class="ctbc-row">
+            <label class="ctbc-label">年收入</label>
+            <div class="ctbc-field">
+              <select v-model="editForm.annualIncome" class="jb-input" style="width: 200px;">
+                <option value="">請選擇</option>
+                <option :value="500000">50萬以下</option>
+                <option :value="1000000">50萬 - 100萬</option>
+                <option :value="2000000">100萬 - 200萬</option>
+                <option :value="3000000">200萬以上</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- 底部按鈕區 -->
+        <div class="form-actions">
+          <button type="submit" class="jb-btn jb-btn-primary btn-action" :disabled="saving">
             <span v-if="saving" class="jb-spinner" style="width:18px;height:18px;"></span>
-            <span>{{ saving ? '儲存中...' : '儲存變更' }}</span>
+            <span>{{ saving ? '處理中...' : '儲存變更' }}</span>
           </button>
-        </form>
-      </section>
-    </div>
+          <button type="button" class="jb-btn jb-btn-secondary btn-action" @click="resetForm">
+            清除重填
+          </button>
+        </div>
+
+      </form>
+    </section>
+
+    <!-- Custom Toast -->
+    <transition name="toast-fade">
+      <div v-if="toast.visible" class="jb-toast" :class="`toast-${toast.type}`">
+        {{ toast.text }}
+      </div>
+    </transition>
+
+    <!-- Custom Confirm Modal -->
+    <transition name="modal-fade">
+      <div v-if="confirmModal.visible" class="jb-modal-overlay">
+        <div class="jb-modal jb-card">
+          <h3 class="jb-modal-title">{{ confirmModal.title }}</h3>
+          <p class="jb-modal-content">{{ confirmModal.content }}</p>
+          <div class="jb-modal-actions">
+            <button class="jb-btn jb-btn-secondary" @click="confirmModal.onCancel">取消</button>
+            <button class="jb-btn jb-btn-primary" @click="confirmModal.onOk">確定離開</button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { onBeforeRouteLeave } from 'vue-router'
 import {
   customerGetProfile,
   customerUpdateProfile,
@@ -109,6 +248,7 @@ import { BASE_URL } from '@/api/axios'
 const customerAuthStore = useCustomerAuthStore()
 const fileInput = ref(null)
 const saving = ref(false)
+const activeTab = ref('email')
 
 const genderMap = { M: '男', F: '女' }
 
@@ -116,34 +256,118 @@ const profile = reactive({
   customerId: '',
   cif: '',
   name: '',
+  idNumber: '',
   birthday: '',
   gender: '',
   username: '',
   email: '',
   phone: '',
   address: '',
+  registeredAddress: '',
+  job: '',
+  occupation: '',
+  employer: '',
+  fundSource: '',
+  annualIncome: null,
   avatarUrl: null,
 })
 
 const editForm = reactive({
   phone: '',
   email: '',
+  emailConfirm: '',
   address: '',
+  jobSelect: '',
+  jobOther: '',
+  occupationSelect: '',
+  occupationOther: '',
+  employer: '',
+  fundSourceSelect: '',
+  fundSourceOther: '',
+  annualIncome: '',
 })
+
+const jobOptions = ['農林漁牧業', '礦業及土石採取業', '製造業', '水電燃氣業', '營造業', '批發及零售業', '住宿及餐飲業', '運輸及通信業', '金融及保險業', '不動產及租賃業', '專業科學及技術服務業', '教育服務業', '醫療保健及社會工作服務業', '藝術娛樂及休閒服務業', '家管/學生/退休/無業', '其他']
+const occupationOptions = ['民意代表/高階主管', '專業人員', '技術員及助理專業人員', '事務支援人員', '服務及銷售工作人員', '農林漁牧業生產人員', '技藝有關工作人員', '機械設備操作及組裝人員', '基層技術工及勞力工', '軍人', '無', '其他']
+const fundSourceOptions = ['薪資', '經營事業收入', '退休(職)金', '遺產繼承(含贈與)', '買賣房地產', '理財投資', '租金收入', '其他']
 
 const avatarSrc = ref(null)
 
+function maskEmail(email) {
+  if (!email) return ''
+  const parts = email.split('@')
+  if (parts.length !== 2) return email
+  const name = parts[0]
+  if (name.length <= 2) return `**@${parts[1]}`
+  return `${name.slice(0, 2)}***${name.slice(-1)}@${parts[1]}`
+}
+
+const isDirty = computed(() => {
+  if (editForm.email || editForm.emailConfirm) return true
+  if (editForm.phone !== (profile.phone || '')) return true
+  if (editForm.address !== (profile.address || '')) return true
+  
+  const currentJob = editForm.jobSelect === '其他' ? editForm.jobOther : editForm.jobSelect
+  if (currentJob !== (profile.job || '')) return true
+  
+  const currentOcc = editForm.occupationSelect === '其他' ? editForm.occupationOther : editForm.occupationSelect
+  if (currentOcc !== (profile.occupation || '')) return true
+  
+  const currentFund = editForm.fundSourceSelect === '其他' ? editForm.fundSourceOther : editForm.fundSourceSelect
+  if (currentFund !== (profile.fundSource || '')) return true
+  
+  if (editForm.employer !== (profile.employer || '')) return true
+  if (editForm.annualIncome !== (profile.annualIncome || '')) return true
+  
+  return false
+})
+
+function handleBeforeUnload(e) {
+  if (isDirty.value) {
+    e.preventDefault()
+    e.returnValue = ''
+  }
+}
+
+// --- Custom Toast & Modal ---
+const toast = reactive({ visible: false, text: '', type: 'success', timer: null })
+function showToast(text, type = 'success') {
+  toast.text = text
+  toast.type = type
+  toast.visible = true
+  if (toast.timer) clearTimeout(toast.timer)
+  toast.timer = setTimeout(() => { toast.visible = false }, 3000)
+}
+
+const confirmModal = reactive({
+  visible: false,
+  title: '',
+  content: '',
+  onOk: () => {},
+  onCancel: () => {},
+})
+
+function showConfirm(title, content) {
+  return new Promise((resolve) => {
+    confirmModal.title = title
+    confirmModal.content = content
+    confirmModal.visible = true
+    confirmModal.onOk = () => { confirmModal.visible = false; resolve(true) }
+    confirmModal.onCancel = () => { confirmModal.visible = false; resolve(false) }
+  })
+}
+// ----------------------------
+
 onMounted(async () => {
+  window.addEventListener('beforeunload', handleBeforeUnload)
   try {
     const res = await customerGetProfile()
     const data = res.data.data
     Object.assign(profile, data)
-    editForm.phone = data.phone
-    editForm.email = data.email
-    editForm.address = data.address
+    resetForm()
     updateAvatarSrc(data.avatarUrl)
   } catch {
-    alert('載入個人資料失敗')
+    showToast('載入個人資料失敗', 'error')
   }
 })
 
@@ -170,35 +394,102 @@ async function handleFileChange(e) {
       customerAuthStore.customer.avatarUrl = data.avatarUrl
       customerAuthStore.setCustomer(customerAuthStore.customer)
     }
-    alert('大頭照更新成功')
+    showToast('大頭照更新成功', 'success')
   } catch {
-    alert('大頭照上傳失敗')
+    showToast('大頭照上傳失敗', 'error')
   }
 }
 
 async function handleSave() {
+  if (activeTab.value === 'email' && editForm.email) {
+    if (editForm.email !== editForm.emailConfirm) {
+      showToast('兩次輸入的電子郵件不一致', 'warning')
+      return
+    }
+  }
+
   saving.value = true
+  
+  const finalJob = editForm.jobSelect === '其他' ? editForm.jobOther : editForm.jobSelect
+  const finalOcc = editForm.occupationSelect === '其他' ? editForm.occupationOther : editForm.occupationSelect
+  const finalFund = editForm.fundSourceSelect === '其他' ? editForm.fundSourceOther : editForm.fundSourceSelect
+
   try {
     const res = await customerUpdateProfile({
       phone: editForm.phone,
-      email: editForm.email,
+      email: editForm.email || profile.email,
       address: editForm.address,
+      job: finalJob,
+      occupation: finalOcc,
+      employer: editForm.employer,
+      fundSource: finalFund,
+      annualIncome: editForm.annualIncome ? Number(editForm.annualIncome) : null,
     })
     Object.assign(profile, res.data.data)
-    alert('個人資料已更新')
+    resetForm()
+    showToast('個人資料已更新', 'success')
   } catch (err) {
-    alert(err.response?.data?.message || '更新失敗')
+    showToast(err.response?.data?.message || '更新失敗', 'error')
   } finally {
     saving.value = false
   }
 }
 
+function parseSelectOther(value, options) {
+  if (!value) return { select: '', other: '' }
+  if (options.includes(value)) return { select: value, other: '' }
+  return { select: '其他', other: value }
+}
+
+function resetForm() {
+  editForm.phone = profile.phone || ''
+  editForm.email = ''
+  editForm.emailConfirm = ''
+  editForm.address = profile.address || ''
+  
+  const j = parseSelectOther(profile.job, jobOptions)
+  editForm.jobSelect = j.select
+  editForm.jobOther = j.other
+  
+  const o = parseSelectOther(profile.occupation, occupationOptions)
+  editForm.occupationSelect = o.select
+  editForm.occupationOther = o.other
+  
+  const f = parseSelectOther(profile.fundSource, fundSourceOptions)
+  editForm.fundSourceSelect = f.select
+  editForm.fundSourceOther = f.other
+  
+  editForm.employer = profile.employer || ''
+  editForm.annualIncome = profile.annualIncome || ''
+}
+
+onUnmounted(() => {
+  window.removeEventListener('beforeunload', handleBeforeUnload)
+})
+
+onBeforeRouteLeave(async (to, from, next) => {
+  if (isDirty.value) {
+    const answer = await showConfirm('您有尚未儲存的變更', '確定要離開嗎？未儲存的資料將會遺失。')
+    if (answer) {
+      next()
+    } else {
+      next(false)
+    }
+  } else {
+    next()
+  }
+})
+
 async function handleRequestReset() {
   try {
-    await customerRequestReset({ email: profile.email })
-    alert('密碼重設連結已發送至您的信箱，請查收')
+    await customerRequestReset({
+      email: profile.email,
+      idNumber: profile.idNumber,
+      birthday: profile.birthday
+    })
+    showToast('密碼重設連結已發送至您的信箱，請查收', 'success')
   } catch (err) {
-    alert(err.response?.data?.message || '發送失敗')
+    showToast(err.response?.data?.message || '發送失敗', 'error')
   }
 }
 </script>
@@ -206,6 +497,7 @@ async function handleRequestReset() {
 <style scoped>
 .profile-page {
   max-width: 900px;
+  margin: 0 auto;
 }
 
 .page-title {
@@ -215,22 +507,138 @@ async function handleRequestReset() {
   letter-spacing: 3px;
 }
 
-.profile-layout {
+/* 頂部設定項目選擇 (Radio) */
+.setting-selector {
   display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  padding: var(--space-4) var(--space-5);
+  margin-bottom: var(--space-4);
+}
+
+.setting-label {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 16px;
+}
+
+.radio-group {
+  display: flex;
+  gap: var(--space-5);
+  flex-wrap: wrap;
+}
+
+.custom-radio {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  font-size: 15px;
+  color: var(--text-primary);
+  transition: opacity 0.2s;
+}
+
+.custom-radio:hover {
+  opacity: 0.8;
+}
+
+.custom-radio input {
+  display: none;
+}
+
+.radio-mark {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  position: relative;
+  transition: all 0.2s;
+}
+
+.custom-radio input:checked + .radio-mark {
+  border-color: var(--primary);
+}
+
+.custom-radio input:checked + .radio-mark::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+
+/* 主內容區塊 */
+.profile-content {
+  padding: var(--space-5) var(--space-6);
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: var(--space-5);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.sub-section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+  margin-top: 0;
+}
+
+.ctbc-form {
+  display: flex;
+  flex-direction: column;
   gap: var(--space-4);
 }
 
-/* 左欄 */
-.profile-left {
-  width: 200px;
-  flex-shrink: 0;
+.ctbc-row {
   display: flex;
-  flex-direction: column;
   align-items: center;
 }
 
+.ctbc-label {
+  width: 160px;
+  font-weight: 500;
+  color: var(--text-primary);
+  flex-shrink: 0;
+  font-size: 15px;
+}
+
+.ctbc-field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: 1;
+}
+
+.field-hint {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.password-field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* 大頭照區塊 */
+.avatar-tab {
+  align-items: flex-start;
+  gap: var(--space-5);
+}
+
 .avatar-section {
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .avatar-wrapper {
@@ -245,8 +653,8 @@ async function handleRequestReset() {
 }
 
 .avatar-img {
-  width: 120px;
-  height: 120px;
+  width: 100px;
+  height: 100px;
   border-radius: 50%;
   object-fit: cover;
   border: 3px solid var(--border);
@@ -254,8 +662,8 @@ async function handleRequestReset() {
 }
 
 .avatar-fallback {
-  width: 120px;
-  height: 120px;
+  width: 100px;
+  height: 100px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -263,7 +671,7 @@ async function handleRequestReset() {
   background: var(--bg-secondary);
   color: var(--primary);
   font-family: var(--font-heading);
-  font-size: 48px;
+  font-size: 40px;
   font-weight: 600;
   border: 3px solid var(--border);
 }
@@ -291,13 +699,10 @@ async function handleRequestReset() {
 }
 
 .cif-box {
-  margin-top: var(--space-4);
-  text-align: center;
-  padding: var(--space-3);
   background: var(--bg-secondary);
-  border-radius: var(--radius-md);
-  width: 100%;
   border: 1px solid rgba(214, 206, 195, 0.5);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
@@ -309,36 +714,109 @@ async function handleRequestReset() {
 }
 
 .cif-value {
-  font-size: var(--text-body);
+  font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
   letter-spacing: 1px;
 }
 
-/* 右欄 */
-.profile-right {
-  flex: 1;
-  min-width: 0;
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0 var(--space-3);
-}
-
-.form-grid .full-width {
-  grid-column: 1 / -1;
-}
-
-.password-row {
+/* 底部按鈕區 */
+.form-actions {
+  margin-top: 40px;
   display: flex;
-  gap: var(--space-3);
+  justify-content: center;
+  gap: var(--space-4);
+}
+
+.btn-action {
+  width: 180px;
 }
 
 @media (max-width: 700px) {
-  .profile-layout { flex-direction: column; }
-  .profile-left { width: 100%; }
-  .form-grid { grid-template-columns: 1fr; }
+  .setting-selector {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
+  }
+  .ctbc-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+  .ctbc-label {
+    width: 100%;
+  }
+  .form-actions {
+    flex-direction: column;
+  }
+  .btn-action {
+    width: 100%;
+  }
 }
+
+/* Custom Toast */
+.jb-toast {
+  position: fixed;
+  top: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  z-index: 9999;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+}
+.toast-success { border-left: 4px solid var(--primary); }
+.toast-error { border-left: 4px solid var(--accent); }
+.toast-warning { border-left: 4px solid #C4A47C; }
+
+.toast-fade-enter-active, .toast-fade-leave-active { transition: all 0.3s var(--ease); }
+.toast-fade-enter-from, .toast-fade-leave-to { opacity: 0; transform: translate(-50%, -10px); }
+
+/* Custom Modal */
+.jb-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(43, 43, 43, 0.4);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.jb-modal {
+  width: 90%;
+  max-width: 400px;
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+}
+.jb-modal-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+.jb-modal-content {
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+.jb-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+.modal-fade-enter-active, .modal-fade-leave-active { transition: opacity 0.2s var(--ease); }
+.modal-fade-enter-from, .modal-fade-leave-to { opacity: 0; }
 </style>

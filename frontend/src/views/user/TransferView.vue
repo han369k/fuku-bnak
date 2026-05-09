@@ -13,10 +13,10 @@
         </a-form-item>
 
         <a-form-item label="轉入帳號" name="toAccount" :rules="[{ required: true, message: '請輸入轉入帳號' }]">
-          <a-input-group compact>
-            <a-input v-model:value="form.toAccount" placeholder="請輸入12碼帳號" style="width: calc(100% - 120px)" />
+          <div style="display: flex; gap: 8px;">
+            <a-input v-model:value="form.toAccount" placeholder="請輸入12碼帳號" style="flex: 1" />
             <a-button @click="showFavorites = true">常用帳號</a-button>
-          </a-input-group>
+          </div>
         </a-form-item>
 
         <a-form-item label="轉帳金額" name="amount" :rules="[{ required: true, message: '請輸入金額' }]">
@@ -50,7 +50,10 @@
 
     <!-- 常用帳號選擇 -->
     <a-modal v-model:open="showFavorites" title="常用帳號" :footer="null" width="500px">
-      <a-list :data-source="favorites" :loading="favLoading">
+      <div v-if="favorites.length === 0 && !favLoading" style="text-align:center;color:#999;padding:32px 20px">
+        尚無常用帳號，請至「常用帳號管理」新增
+      </div>
+      <a-list v-else :data-source="favorites" :loading="favLoading">
         <template #renderItem="{ item }">
           <a-list-item>
             <a-list-item-meta :title="item.alias" :description="item.accountNumber" />
@@ -58,11 +61,6 @@
               <a-button size="small" type="link" @click="selectFavorite(item)">選用</a-button>
             </template>
           </a-list-item>
-        </template>
-        <template #header>
-          <div v-if="favorites.length === 0" style="text-align:center;color:#999;padding:20px">
-            尚無常用帳號，請至「常用帳號管理」新增
-          </div>
         </template>
       </a-list>
     </a-modal>

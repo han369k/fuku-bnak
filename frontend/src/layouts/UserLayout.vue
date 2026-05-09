@@ -214,6 +214,7 @@ function handleLogout() {
 
 .header-top {
   border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
 }
 
 .header-top-inner {
