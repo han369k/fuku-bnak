@@ -1,5 +1,6 @@
 package com.javaeasybank.risk.service;
 
+import com.javaeasybank.risk.dto.request.RiskReviewRequest;
 import com.javaeasybank.risk.utils.CreditMockUtils;
 import com.javaeasybank.risk.core.enums.Occupation;
 import com.javaeasybank.risk.core.enums.RiskLevel;
@@ -12,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.Optional;
 
 @Service
 @Transactional
@@ -62,7 +64,7 @@ public class CreditSCoreService {
     private int scoreExternalCredit(Integer externalScore) {
         if (externalScore == null) return 0;
         int clamped = Math.clamp(externalScore, EXTERNAL_SCORE_MIN, EXTERNAL_SCORE_MIN + EXTERNAL_SCORE_RANGE);
-        return (int) Math.round((double)(clamped - EXTERNAL_SCORE_MIN) / EXTERNAL_SCORE_RANGE * 40);
+        return (int) Math.round((double) (clamped - EXTERNAL_SCORE_MIN) / EXTERNAL_SCORE_RANGE * 40);
     }
 
     /**
@@ -77,9 +79,9 @@ public class CreditSCoreService {
         BigDecimal ratio = otherBankDebt.divide(annualIncome, 4, RoundingMode.HALF_UP);
         double r = ratio.doubleValue();
 
-        if (r < 0.3)  return 30;
-        if (r < 0.8)  return 20;
-        if (r < 1.5)  return 10;
+        if (r < 0.3) return 30;
+        if (r < 0.8) return 20;
+        if (r < 1.5) return 10;
         return 0;
     }
 
@@ -89,12 +91,12 @@ public class CreditSCoreService {
     private int scoreOccupation(Occupation occupation) {
         if (occupation == null) return 0;
         return switch (occupation) {
-            case GOVERNMENT_EMPLOYEE            -> 20;
-            case PROFESSIONAL, MANAGER          -> 18;
-            case OFFICE_WORKER, MANUFACTURING   -> 15;
+            case GOVERNMENT_EMPLOYEE -> 20;
+            case PROFESSIONAL, MANAGER -> 18;
+            case OFFICE_WORKER, MANUFACTURING -> 15;
             case SERVICE_INDUSTRY, SELF_EMPLOYED -> 12;
             case FREELANCER, HOUSEWIFE, RETIRED -> 8;
-            case STUDENT, UNEMPLOYED            -> 3;
+            case STUDENT, UNEMPLOYED -> 3;
         };
     }
 
@@ -113,5 +115,21 @@ public class CreditSCoreService {
         if (finalScore >= 70) return RiskLevel.LOW;
         if (finalScore >= 40) return RiskLevel.MEDIUM;
         return RiskLevel.HIGH;
+    }
+
+    // 2. 選填欄位覆蓋（從 RiskReviewRequest 更新 CustomerCreditInfo）
+    @Transactional
+    public void updateIfPresent(RiskReviewRequest dto) {
+        CustomerCreditInfo info = ccRepos.findById(dto.getCustomerId())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "CustomerCreditInfo not found: " + dto.getCustomerId()));
+
+        Optional.ofNullable(dto.getAnnualIncome()).ifPresent(info::setAnnualIncome);
+        Optional.ofNullable(dto.getExternalScore()).ifPresent(info::setExternalScore);
+        Optional.ofNullable(dto.getOtherBankDebt()).ifPresent(info::setOtherBankDebt);
+        Optional.ofNullable(dto.getOccupation()).ifPresent(info::setOccupation);
+        Optional.ofNullable(dto.getHasRealEstate()).ifPresent(info::setHasRealEstate);
+
+        ccRepos.save(info);
     }
 }
