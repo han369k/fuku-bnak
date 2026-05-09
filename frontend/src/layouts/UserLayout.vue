@@ -13,7 +13,7 @@
                 <button class="session-continue-btn" @click="isTimerPaused = !isTimerPaused">
                   {{ isTimerPaused ? '保持登入' : '暫停計時' }}
                 </button>
-                <div class="demo-mode-badge">Demo 模式</div>
+                <button class="demo-mode-badge" @click="triggerIdleAlert">Demo 模式</button>
               </div>
               
               <button
@@ -354,6 +354,13 @@ function handleLogout() {
   border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.demo-mode-badge:hover {
+  background-color: rgba(166, 90, 77, 0.12);
+  border-color: rgba(166, 90, 77, 0.42);
 }
 
 .logout-btn {
