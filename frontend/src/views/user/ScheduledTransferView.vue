@@ -17,10 +17,10 @@
           </a-col>
           <a-col :span="12">
             <a-form-item label="轉入帳號" name="toAccount" :rules="[{ required: true, message: '請輸入轉入帳號' }]">
-              <a-input-group compact>
-                <a-input v-model:value="form.toAccount" placeholder="12碼帳號" style="width: calc(100% - 100px)" />
+              <div style="display: flex; gap: 8px;">
+                <a-input v-model:value="form.toAccount" placeholder="12碼帳號" style="flex: 1" />
                 <a-button @click="showFavPicker = true">常用帳號</a-button>
-              </a-input-group>
+              </div>
             </a-form-item>
           </a-col>
         </a-row>
@@ -77,7 +77,10 @@
 
     <!-- 常用帳號選擇 Modal -->
     <a-modal v-model:open="showFavPicker" title="常用帳號" :footer="null" width="480px">
-      <a-list :data-source="favorites" :loading="favLoading" size="small">
+      <div v-if="favorites.length === 0 && !favLoading" style="text-align:center;color:#999;padding:32px 16px">
+        尚無常用帳號
+      </div>
+      <a-list v-else :data-source="favorites" :loading="favLoading" size="small">
         <template #renderItem="{ item }">
           <a-list-item>
             <a-list-item-meta :title="item.alias" :description="item.accountNumber" />
@@ -85,11 +88,6 @@
               <a-button size="small" type="link" @click="pickFavorite(item)">選用</a-button>
             </template>
           </a-list-item>
-        </template>
-        <template #header>
-          <div v-if="favorites.length === 0" style="text-align:center;color:#999;padding:16px">
-            尚無常用帳號
-          </div>
         </template>
       </a-list>
     </a-modal>

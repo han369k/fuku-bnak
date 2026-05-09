@@ -72,9 +72,15 @@
       <!-- 右：資產總覽 -->
       <section class="asset-overview" aria-label="資產總覽">
         <div class="asset-header">
-          <h2 class="asset-title">資產總覽</h2>
+          <div class="asset-title-wrap" style="display: flex; align-items: center; gap: 8px;">
+            <h2 class="asset-title" style="margin-bottom: 0;">資產總覽</h2>
+            <button class="toggle-amount-btn" @click="showAmounts = !showAmounts" :aria-label="showAmounts ? '隱藏金額' : '顯示金額'">
+              <svg v-if="showAmounts" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+            </button>
+          </div>
           <p class="asset-subtitle">淨資產（折合臺幣）</p>
-          <p class="asset-total">$ {{ formatMoney(mockData.netAsset) }}</p>
+          <p class="asset-total">$ {{ formatMoney(Math.round(assetData.netAsset)) }}</p>
         </div>
 
         <div class="asset-grid">
@@ -83,20 +89,20 @@
             <div class="asset-block-header">
               <span class="asset-block-label">存款</span>
             </div>
-            <p class="asset-block-amount">$ {{ formatMoney(mockData.deposit) }}</p>
+            <p class="asset-block-amount">$ {{ formatMoney(Math.round(assetData.deposit)) }}</p>
             <div class="asset-block-detail">
               <div class="detail-row">
                 <span>臺幣淨資產</span>
-                <span>$ {{ formatMoney(mockData.twdAsset) }}</span>
+                <span>$ {{ formatMoney(Math.round(assetData.twdAsset)) }}</span>
               </div>
               <div class="detail-row">
                 <span>外幣淨資產</span>
-                <span>$ {{ formatMoney(mockData.foreignAsset) }}</span>
+                <span>$ {{ formatMoney(Math.round(assetData.foreignAsset)) }}</span>
               </div>
             </div>
             <div class="asset-block-actions">
-              <button class="block-action-btn" @click="comingSoon">臺幣轉帳</button>
-              <button class="block-action-btn" @click="comingSoon">臺幣明細</button>
+              <button class="block-action-btn" @click="$router.push({ name: 'user-transfer' })">臺幣轉帳</button>
+              <button class="block-action-btn" @click="$router.push({ name: 'user-transactions' })">臺幣明細</button>
             </div>
           </div>
 
@@ -105,11 +111,11 @@
             <div class="asset-block-header">
               <span class="asset-block-label">信用卡消費總額</span>
             </div>
-            <p class="asset-block-amount">$ {{ formatMoney(mockData.creditTotal) }}</p>
+            <p class="asset-block-amount">$ {{ formatMoney(assetData.creditTotal) }}</p>
             <div class="asset-block-detail">
               <div class="detail-row">
                 <span>臺幣未出帳</span>
-                <span>$ {{ formatMoney(mockData.creditUnbilled) }}</span>
+                <span>$ {{ formatMoney(assetData.creditUnbilled) }}</span>
               </div>
               <div class="detail-row">
                 <span>{{ currentMonth }} 月帳單</span>
@@ -194,19 +200,17 @@
 
       <!-- 歷史水位圖 -->
       <section class="watermark-card" aria-label="歷史水位圖">
-        <div class="card-title-row">
-          <h3 class="card-title">臺外幣歷史水位圖</h3>
-          <div class="period-tabs">
-            <button
-              v-for="p in periods"
-              :key="p.value"
-              class="period-tab"
-              :class="{ active: activePeriod === p.value }"
-              @click="activePeriod = p.value"
-            >{{ p.label }}</button>
-          </div>
-        </div>
+        <h3 class="card-title">臺外幣歷史水位圖</h3>
         <div class="section-rule"></div>
+        <div class="period-tabs" style="margin-bottom: 16px;">
+          <button
+            v-for="p in periods"
+            :key="p.value"
+            class="period-tab"
+            :class="{ active: activePeriod === p.value }"
+            @click="activePeriod = p.value"
+          >{{ p.label }}</button>
+        </div>
         <div class="chart-wrap">
           <canvas ref="lineCanvas" height="260"></canvas>
         </div>
@@ -260,12 +264,16 @@ const onboardFeatures = [
   },
 ]
 
+const accountsList = ref([])
+
 async function checkAccountStatus() {
   try {
     // 優先檢查是否已有帳戶（帳戶可能是直接建立的，不一定透過開戶申請）
     const accounts = await getMyAccounts()
     if (accounts && accounts.length > 0) {
       hasAccount.value = true
+      accountsList.value = accounts
+      calculateAssets()
       return
     }
     // 沒有帳戶，再檢查是否有已核准的開戶申請
@@ -296,18 +304,59 @@ const todayStr = computed(() => {
 })
 const currentMonth = computed(() => String(new Date().getMonth() + 1).padStart(2, '0'))
 
-// === 假資料 ===
-const mockData = {
-  netAsset: 1523680,
-  deposit: 1280000,
-  twdAsset: 1150000,
-  foreignAsset: 130000,
+// === 資產資料 ===
+const assetData = ref({
+  netAsset: 0,
+  deposit: 0,
+  twdAsset: 0,
+  foreignAsset: 0,
   creditTotal: 43680,
   creditUnbilled: 12500,
+})
+
+function calculateAssets() {
+  let twd = 0
+  let fxTwd = 0
+
+  accountsList.value.forEach(a => {
+    if (a.accountType === 'LOAN') return
+    if (a.currency === 'TWD') {
+      twd += Number(a.balance || 0)
+    } else {
+      const rateObj = exchangeRates.value.find(r => r.code === a.currency)
+      if (rateObj && rateObj.buy !== '-') {
+        // 使用買入匯率折算台幣
+        fxTwd += Number(a.balance || 0) * Number(rateObj.buy)
+      } else {
+        // 粗估匯率（如果還沒讀取到）
+        const fallbacks = { USD: 32.5, CNY: 4.5, JPY: 0.2, EUR: 35, AUD: 21 }
+        fxTwd += Number(a.balance || 0) * (fallbacks[a.currency] || 30)
+      }
+    }
+  })
+
+  assetData.value.twdAsset = twd
+  assetData.value.foreignAsset = fxTwd
+  assetData.value.deposit = twd + fxTwd
+  assetData.value.netAsset = assetData.value.deposit - assetData.value.creditTotal
+
+  const total = twd + fxTwd + assetData.value.creditTotal;
+  if (total > 0) {
+    distributionData.value[0].pct = Math.round((twd / total) * 100);
+    distributionData.value[1].pct = Math.round((fxTwd / total) * 100);
+    distributionData.value[2].pct = Math.round((assetData.value.creditTotal / total) * 100);
+  }
+
+  // 重繪圖表
+  drawDonut()
+  drawLine()
 }
 
+const showAmounts = ref(true)
+
 function formatMoney(n) {
-  return n.toLocaleString('en-US')
+  if (!showAmounts.value) return '***'
+  return Number(n || 0).toLocaleString('en-US')
 }
 
 function comingSoon() {
@@ -315,12 +364,12 @@ function comingSoon() {
 }
 
 // === 資產分佈 ===
-const distributionData = [
-  { label: '臺幣', pct: 75, color: 'var(--primary)' },
-  { label: '外幣', pct: 9, color: '#8BA58E' },
-  { label: '信用卡', pct: 3, color: 'var(--accent)' },
+const distributionData = ref([
+  { label: '臺幣', pct: 0, color: 'var(--primary)' },
+  { label: '外幣', pct: 0, color: '#8BA58E' },
+  { label: '信用卡', pct: 0, color: 'var(--accent)' },
   { label: '貸款', pct: 0, color: 'var(--border)' },
-]
+])
 
 const donutCanvas = ref(null)
 let donutChart = null
@@ -331,9 +380,9 @@ function drawDonut() {
   donutChart = new Chart(donutCanvas.value, {
     type: 'doughnut',
     data: {
-      labels: distributionData.map(d => d.label),
+      labels: distributionData.value.map(d => d.label),
       datasets: [{
-        data: distributionData.map(d => d.pct || 0.5),
+        data: distributionData.value.map(d => d.pct || 0.1), // if all 0, use 0.1 to avoid empty chart
         backgroundColor: ['#5C6B5F', '#8BA58E', '#A65A4D', '#D6CEC3'],
         borderWidth: 0,
         hoverOffset: 4,
@@ -350,7 +399,7 @@ function drawDonut() {
           titleFont: { family: 'Noto Sans TC' },
           bodyFont: { family: 'Noto Sans TC' },
           callbacks: {
-            label: (ctx) => ` ${ctx.label}：${distributionData[ctx.dataIndex].pct}%`,
+            label: (ctx) => ` ${ctx.label}：${distributionData.value[ctx.dataIndex].pct}%`,
           },
         },
       },
@@ -375,11 +424,24 @@ function generateMockLine(months) {
   const twdData = []
   const fxData = []
   const now = new Date()
+
+  const currentTwd = assetData.value.twdAsset || 0
+  const currentFx = assetData.value.foreignAsset || 0
+
   for (let i = months; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
     labels.push(`${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}`)
-    twdData.push(Math.round(900000 + Math.random() * 400000))
-    fxData.push(Math.round(80000 + Math.random() * 80000))
+    
+    if (i === 0) {
+      twdData.push(currentTwd)
+      fxData.push(currentFx)
+    } else {
+      const seed = d.getMonth() + d.getFullYear();
+      const rand1 = (Math.sin(seed) * 0.5 + 0.5) * 0.2 - 0.1; // -10% ~ +10%
+      const rand2 = (Math.cos(seed) * 0.5 + 0.5) * 0.2 - 0.1;
+      twdData.push(Math.round(currentTwd * (1 + rand1)))
+      fxData.push(Math.round(currentFx * (1 + rand2)))
+    }
   }
   return { labels, twdData, fxData }
 }
@@ -493,6 +555,9 @@ async function fetchExchangeRates() {
       
       return { ...currency, sell, buy }
     })
+    
+    // 匯率更新後，重新計算外幣資產
+    calculateAssets()
   } catch (e) {
     console.error('Failed to fetch exchange rates', e)
   } finally {
@@ -749,7 +814,7 @@ onMounted(async () => {
 }
 
 .asset-title {
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 700;
   letter-spacing: 3px;
   margin-bottom: var(--space-1);
@@ -759,6 +824,25 @@ onMounted(async () => {
   font-size: var(--text-xs);
   color: var(--text-secondary);
   margin-bottom: var(--space-2);
+  margin-top: 4px;
+}
+
+.toggle-amount-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.toggle-amount-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--text-primary);
 }
 
 .asset-total {
@@ -787,7 +871,7 @@ onMounted(async () => {
 }
 
 .asset-block-label {
-  font-size: var(--text-sm);
+  font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
   letter-spacing: 1px;
@@ -866,6 +950,7 @@ onMounted(async () => {
   font-size: 18px;
   font-weight: 600;
   letter-spacing: 3px;
+  white-space: nowrap;
 }
 
 .card-title-row {
@@ -1042,6 +1127,7 @@ onMounted(async () => {
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all 0.2s var(--ease);
+  white-space: nowrap;
 }
 
 .period-tab.active {
