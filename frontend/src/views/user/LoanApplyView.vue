@@ -98,15 +98,19 @@
           <!-- ── 申請人識別 ── -->
           <div class="form-section">
             <div class="section-label">申請人識別</div>
-            <div class="field" :class="{ 'field-error': errors.customerId }">
-              <label>顧客 ID<span class="req">*</span></label>
-              <input
-                v-model="form.customerId"
-                type="text"
-                placeholder="e.g. 0001"
-                @blur="validate('customerId')"
-              />
-              <span class="err-msg" v-if="errors.customerId">{{ errors.customerId }}</span>
+            <div class="applicant-info-row">
+              <div class="ai-item">
+                <span class="ai-label">顧客識別碼（CIF）</span>
+                <span class="ai-value">{{ customerCif || '—' }}</span>
+              </div>
+              <div class="ai-item">
+                <span class="ai-label">使用者名稱</span>
+                <span class="ai-value">{{ customerName || '—' }}</span>
+              </div>
+            </div>
+            <div class="id-notice">
+              <span class="notice-icon">🔒</span>
+              申請人資訊將依您的登入帳號自動帶入，無需手動填寫。
             </div>
           </div>
 
@@ -269,8 +273,8 @@
             <span class="ds-rate">{{ computedRate ? (computedRate * 100).toFixed(2) + '%' : '—' }}</span>
           </div>
           <div class="ds-row">
-            <span>顧客 ID</span>
-            <span class="ds-mono">{{ form.customerId }}</span>
+            <span>顧客識別碼（CIF）</span>
+            <span class="ds-mono">{{ customerCif || '—' }}</span>
           </div>
         </div>
 
@@ -284,6 +288,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import axios from 'axios'
+import { useCustomerAuthStore } from '@/stores/customerAuth'
 
 // ── Constants ──
 const BASE_URL = 'http://localhost:8080'
@@ -303,6 +308,11 @@ const LOAN_TYPE_MAP = Object.fromEntries(LOAN_TYPE_LIST.map(t => [t.key, t.name]
 const showcaseIndex = ref(0)
 let showcaseTimer = null
 
+// ── Auth Store ──
+const customerAuthStore = useCustomerAuthStore()
+const customerCif  = computed(() => customerAuthStore.customer?.cif  || '')
+const customerName = computed(() => customerAuthStore.customer?.name || '')
+
 // ── State ──
 const step        = ref('entry')
 const rateRules   = ref(null)
@@ -311,14 +321,12 @@ const submitError = ref('')
 const resultId    = ref('')
 
 const form = reactive({
-  customerId:  '',
   applyType:   '',
   applyAmount: null,
   applyPeriod: null,
 })
 
 const errors = reactive({
-  customerId:  '',
   applyType:   '',
   applyAmount: '',
   applyPeriod: '',
@@ -400,9 +408,6 @@ function onPeriodSelect(p) {
 // 單欄驗證
 function validate(field) {
   switch (field) {
-    case 'customerId':
-      errors.customerId = !form.customerId ? '請填寫顧客 ID' : ''
-      break
     case 'applyType':
       errors.applyType = !form.applyType ? '請選擇貸款類型' : ''
       break
@@ -419,7 +424,7 @@ function validate(field) {
 
 // 全表驗證
 function validateAll() {
-  const fields = ['customerId', 'applyType', 'applyAmount', 'applyPeriod']
+  const fields = ['applyType', 'applyAmount', 'applyPeriod']
   fields.forEach(validate)
   return fields.every(f => !errors[f])
 }
@@ -430,13 +435,18 @@ async function submitForm() {
 
   submitting.value = true
   try {
-    const res = await axios.post(`${BASE_URL}/api/loan-applications/member`, {
-      customerId:  form.customerId,
-      applyType:   form.applyType,
-      applyAmount: form.applyAmount,
-      applyPeriod: form.applyPeriod,
-      rate:        computedRate.value,
-    })
+    // customerId 由後端從 JWT Token 自動解析，前端無需傳遞
+    const token = localStorage.getItem('customer_token')
+    const res = await axios.post(
+      `${BASE_URL}/api/loan-applications/member`,
+      {
+        applyType:   form.applyType,
+        applyAmount: form.applyAmount,
+        applyPeriod: form.applyPeriod,
+        rate:        computedRate.value,
+      },
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
     if (res.data.success) {
       resultId.value = res.data.data
       step.value = 'done'
@@ -451,7 +461,7 @@ async function submitForm() {
 }
 
 function resetForm() {
-  Object.assign(form, { customerId: '', applyType: '', applyAmount: null, applyPeriod: null })
+  Object.assign(form, { applyType: '', applyAmount: null, applyPeriod: null })
   Object.keys(errors).forEach(k => errors[k] = '')
   submitError.value = ''
 }
@@ -651,6 +661,36 @@ onUnmounted(() => clearInterval(showcaseTimer))
   padding: 28px;
   display: flex; flex-direction: column; gap: 0;
   min-width: 340px;   /* 欄位最小可讀寬度 */
+}
+
+/* 申請人資訊只讀顯示 */
+.applicant-info-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.ai-item {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ai-label {
+  font-size: 11px;
+  color: var(--muted-2);
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: 0.04em;
+}
+.ai-value {
+  font-size: 14px;
+  color: var(--ink);
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 600;
+  word-break: break-all;
 }
 
 .applicant-tag {
