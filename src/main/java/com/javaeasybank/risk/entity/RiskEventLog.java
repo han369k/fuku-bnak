@@ -57,6 +57,10 @@ public class RiskEventLog {
     @Column(name = "transaction_amount", precision = 18, scale = 4)
     private BigDecimal transactionAmount;
 
+    @Column(name = "callback_url", length = 255)
+    private String callbackUrl;
+
+
     @Column(name = "created_at", nullable = false, updatable = false)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     @CreatedDate

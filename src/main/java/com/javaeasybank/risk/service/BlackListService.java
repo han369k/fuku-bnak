@@ -104,7 +104,7 @@ public class BlackListService {
         response.setStatus(bl.getStatus());
         response.setExpireAt(bl.getExpireAt());
         response.setCreatedAt(bl.getCreatedAt());
-        // response.setUpdatedAt(bl.getUpdatedAt());complie有問題
+        response.setUpdatedAt(bl.getUpdatedAt());
 
         return response;
     }
@@ -118,8 +118,7 @@ public class BlackListService {
         request.setStatus(bl.getStatus());
         request.setExpireAt(bl.getExpireAt());
         request.setCreatedAt(bl.getCreatedAt());
-        // request.setUpdatedAt(bl.getUpdatedAt());complie有問題
-
+        request.setUpdatedAt(bl.getUpdatedAt());
         return request;
     }
 

@@ -1,7 +1,5 @@
 package com.javaeasybank.risk.dto.request;
 
-import com.javaeasybank.risk.core.enums.Disposition;
-import com.javaeasybank.risk.core.enums.RiskLevel;
 import lombok.Builder;
 import lombok.Getter;
 
