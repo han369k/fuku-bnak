@@ -52,6 +52,9 @@ public class CustomerAuth {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime lastLoginDate;
 
+    @Column(name = "verification_token", length = 255)
+    private String verificationToken;
+
     @Column(name = "created_at", updatable = false)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;

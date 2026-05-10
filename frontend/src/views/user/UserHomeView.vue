@@ -38,108 +38,124 @@
     <!-- 上方：個人卡片 + 資產總覽 -->
     <div v-if="hasAccount" class="dashboard-top">
       <!-- 左：個人資訊卡片 -->
-      <section class="profile-card" aria-label="個人資訊">
-        <div class="profile-header">
+      <section class="profile-summary-card" aria-label="個人資訊">
+        <div class="profile-header-wrap">
           <button
-            class="profile-avatar"
+            class="profile-avatar-btn"
             aria-label="前往會員中心"
             @click="$router.push({ name: 'user-profile' })"
           >
             <img v-if="avatarSrc" :src="avatarSrc" class="profile-avatar-img" alt="大頭照" />
             <span v-else class="profile-avatar-fallback">{{ customerInitial }}</span>
           </button>
-          <div class="profile-info">
+          <div class="profile-main-info">
             <h2 class="profile-name">{{ customerName }}</h2>
-            <p class="profile-id">帳號 {{ maskedId }}</p>
+            <p class="profile-meta-id">帳號 {{ maskedId }}</p>
           </div>
         </div>
-        <div class="profile-meta">
-          <div class="meta-item">
-            <span class="meta-label">會員等級</span>
-            <span class="meta-value">一般會員</span>
+        
+        <div class="profile-divider"></div>
+
+        <div class="profile-details">
+          <div class="profile-detail-row">
+            <span class="profile-label">會員等級</span>
+            <span class="profile-value">一般會員</span>
           </div>
-          <div class="meta-item">
-            <span class="meta-label">最近登入</span>
-            <span class="meta-value">{{ todayStr }}</span>
+          <div class="profile-detail-row">
+            <span class="profile-label">最近登入</span>
+            <span class="profile-value">{{ todayStr }}</span>
           </div>
         </div>
-        <button class="profile-link" @click="$router.push({ name: 'user-profile' })">
-          我的權益
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-        </button>
+
+        <div class="profile-link-row" @click="$router.push({ name: 'user-profile' })">
+          <span class="profile-label" style="color: var(--text-primary); font-weight: 600;">我的權益</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
       </section>
 
       <!-- 右：資產總覽 -->
-      <section class="asset-overview" aria-label="資產總覽">
-        <div class="asset-header">
-          <h2 class="asset-title">資產總覽</h2>
-          <p class="asset-subtitle">淨資產（折合臺幣）</p>
-          <p class="asset-total">$ {{ formatMoney(mockData.netAsset) }}</p>
+      <section class="asset-overview-card" aria-label="資產總覽">
+        <div class="asset-card-header">
+          <div class="asset-title-group">
+            <h2 class="asset-overview-title">資產總覽</h2>
+            <p class="asset-overview-subtitle">淨資產（折合臺幣）</p>
+          </div>
+          <button class="toggle-visibility-btn" @click="showAmounts = !showAmounts" :aria-label="showAmounts ? '隱藏金額' : '顯示金額'">
+            <svg v-if="showAmounts" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+          </button>
+        </div>
+        
+        <div class="asset-main-amount">
+          <span class="asset-currency-symbol">$</span>
+          <span class="asset-total-amount">{{ formatMoney(Math.round(assetData.netAsset)) }}</span>
         </div>
 
         <div class="asset-grid">
           <!-- 存款 -->
-          <div class="asset-block">
-            <div class="asset-block-header">
-              <span class="asset-block-label">存款</span>
+          <div class="asset-subcard">
+            <div class="asset-subcard-header">
+              <span class="asset-subcard-title">存款</span>
             </div>
-            <p class="asset-block-amount">$ {{ formatMoney(mockData.deposit) }}</p>
-            <div class="asset-block-detail">
-              <div class="detail-row">
+            <p class="asset-subcard-amount">$ {{ formatMoney(Math.round(assetData.deposit)) }}</p>
+            <div class="asset-subcard-details">
+              <div class="asset-subcard-detail">
                 <span>臺幣淨資產</span>
-                <span>$ {{ formatMoney(mockData.twdAsset) }}</span>
+                <span>$ {{ formatMoney(Math.round(assetData.twdAsset)) }}</span>
               </div>
-              <div class="detail-row">
+              <div class="asset-subcard-detail">
                 <span>外幣淨資產</span>
-                <span>$ {{ formatMoney(mockData.foreignAsset) }}</span>
+                <span>$ {{ formatMoney(Math.round(assetData.foreignAsset)) }}</span>
               </div>
             </div>
-            <div class="asset-block-actions">
-              <button class="block-action-btn" @click="comingSoon">臺幣轉帳</button>
-              <button class="block-action-btn" @click="comingSoon">臺幣明細</button>
+            <div class="asset-subcard-actions">
+              <button class="subcard-primary-btn" @click="$router.push({ name: 'user-transfer' })">臺幣轉帳</button>
+              <button class="subcard-secondary-btn" @click="$router.push({ name: 'user-transactions' })">臺幣明細</button>
             </div>
           </div>
 
           <!-- 信用卡 -->
-          <div class="asset-block">
-            <div class="asset-block-header">
-              <span class="asset-block-label">信用卡消費總額</span>
+          <div class="asset-subcard">
+            <div class="asset-subcard-header">
+              <span class="asset-subcard-title">信用卡消費總額</span>
             </div>
-            <p class="asset-block-amount">$ {{ formatMoney(mockData.creditTotal) }}</p>
-            <div class="asset-block-detail">
-              <div class="detail-row">
+            <p class="asset-subcard-amount">$ {{ formatMoney(assetData.creditTotal) }}</p>
+            <div class="asset-subcard-details">
+              <div class="asset-subcard-detail">
                 <span>臺幣未出帳</span>
-                <span>$ {{ formatMoney(mockData.creditUnbilled) }}</span>
+                <span>$ {{ formatMoney(assetData.creditUnbilled) }}</span>
               </div>
-              <div class="detail-row">
+              <div class="asset-subcard-detail">
                 <span>{{ currentMonth }} 月帳單</span>
                 <span class="text-safe">無需繳費</span>
               </div>
             </div>
-            <div class="asset-block-actions">
-              <button class="block-action-btn" @click="comingSoon">我要繳費</button>
-              <button class="block-action-btn" @click="comingSoon">帳單分期</button>
+            <div class="asset-subcard-actions">
+              <button class="subcard-primary-btn" @click="comingSoon">我要繳費</button>
+              <button class="subcard-secondary-btn" @click="comingSoon">帳單分期</button>
             </div>
           </div>
 
           <!-- 貸款 -->
-          <div class="asset-block">
-            <div class="asset-block-header">
-              <span class="asset-block-label">貸款</span>
+          <div class="asset-subcard">
+            <div class="asset-subcard-header">
+              <span class="asset-subcard-title">貸款</span>
             </div>
-            <p class="asset-block-amount asset-block-amount--muted">尚無貸款</p>
-            <div class="asset-block-detail">
-              <div class="detail-row">
+            <p class="asset-subcard-amount asset-subcard-amount--muted">
+              {{ showAmounts ? '尚無貸款' : '***' }}
+            </p>
+            <div class="asset-subcard-details">
+              <div class="asset-subcard-detail">
                 <span>信用貸款</span>
                 <span>—</span>
               </div>
-              <div class="detail-row">
+              <div class="asset-subcard-detail">
                 <span>房屋貸款</span>
                 <span>—</span>
               </div>
             </div>
-            <div class="asset-block-actions">
-              <button class="block-action-btn" @click="comingSoon">申請貸款</button>
+            <div class="asset-subcard-actions">
+              <button class="subcard-primary-btn" @click="comingSoon">申請貸款</button>
             </div>
           </div>
         </div>
@@ -194,19 +210,17 @@
 
       <!-- 歷史水位圖 -->
       <section class="watermark-card" aria-label="歷史水位圖">
-        <div class="card-title-row">
-          <h3 class="card-title">臺外幣歷史水位圖</h3>
-          <div class="period-tabs">
-            <button
-              v-for="p in periods"
-              :key="p.value"
-              class="period-tab"
-              :class="{ active: activePeriod === p.value }"
-              @click="activePeriod = p.value"
-            >{{ p.label }}</button>
-          </div>
-        </div>
+        <h3 class="card-title">臺外幣歷史水位圖</h3>
         <div class="section-rule"></div>
+        <div class="period-tabs" style="margin-bottom: 16px;">
+          <button
+            v-for="p in periods"
+            :key="p.value"
+            class="period-tab"
+            :class="{ active: activePeriod === p.value }"
+            @click="activePeriod = p.value"
+          >{{ p.label }}</button>
+        </div>
         <div class="chart-wrap">
           <canvas ref="lineCanvas" height="260"></canvas>
         </div>
@@ -260,12 +274,16 @@ const onboardFeatures = [
   },
 ]
 
+const accountsList = ref([])
+
 async function checkAccountStatus() {
   try {
     // 優先檢查是否已有帳戶（帳戶可能是直接建立的，不一定透過開戶申請）
     const accounts = await getMyAccounts()
     if (accounts && accounts.length > 0) {
       hasAccount.value = true
+      accountsList.value = accounts
+      calculateAssets()
       return
     }
     // 沒有帳戶，再檢查是否有已核准的開戶申請
@@ -296,18 +314,59 @@ const todayStr = computed(() => {
 })
 const currentMonth = computed(() => String(new Date().getMonth() + 1).padStart(2, '0'))
 
-// === 假資料 ===
-const mockData = {
-  netAsset: 1523680,
-  deposit: 1280000,
-  twdAsset: 1150000,
-  foreignAsset: 130000,
+// === 資產資料 ===
+const assetData = ref({
+  netAsset: 0,
+  deposit: 0,
+  twdAsset: 0,
+  foreignAsset: 0,
   creditTotal: 43680,
   creditUnbilled: 12500,
+})
+
+function calculateAssets() {
+  let twd = 0
+  let fxTwd = 0
+
+  accountsList.value.forEach(a => {
+    if (a.accountType === 'LOAN') return
+    if (a.currency === 'TWD') {
+      twd += Number(a.balance || 0)
+    } else {
+      const rateObj = exchangeRates.value.find(r => r.code === a.currency)
+      if (rateObj && rateObj.buy !== '-') {
+        // 使用買入匯率折算台幣
+        fxTwd += Number(a.balance || 0) * Number(rateObj.buy)
+      } else {
+        // 粗估匯率（如果還沒讀取到）
+        const fallbacks = { USD: 32.5, CNY: 4.5, JPY: 0.2, EUR: 35, AUD: 21 }
+        fxTwd += Number(a.balance || 0) * (fallbacks[a.currency] || 30)
+      }
+    }
+  })
+
+  assetData.value.twdAsset = twd
+  assetData.value.foreignAsset = fxTwd
+  assetData.value.deposit = twd + fxTwd
+  assetData.value.netAsset = assetData.value.deposit - assetData.value.creditTotal
+
+  const total = twd + fxTwd + assetData.value.creditTotal;
+  if (total > 0) {
+    distributionData.value[0].pct = Math.round((twd / total) * 100);
+    distributionData.value[1].pct = Math.round((fxTwd / total) * 100);
+    distributionData.value[2].pct = Math.round((assetData.value.creditTotal / total) * 100);
+  }
+
+  // 重繪圖表
+  drawDonut()
+  drawLine()
 }
 
+const showAmounts = ref(true)
+
 function formatMoney(n) {
-  return n.toLocaleString('en-US')
+  if (!showAmounts.value) return '***'
+  return Number(n || 0).toLocaleString('en-US')
 }
 
 function comingSoon() {
@@ -315,12 +374,12 @@ function comingSoon() {
 }
 
 // === 資產分佈 ===
-const distributionData = [
-  { label: '臺幣', pct: 75, color: 'var(--primary)' },
-  { label: '外幣', pct: 9, color: '#8BA58E' },
-  { label: '信用卡', pct: 3, color: 'var(--accent)' },
+const distributionData = ref([
+  { label: '臺幣', pct: 0, color: 'var(--primary)' },
+  { label: '外幣', pct: 0, color: '#8BA58E' },
+  { label: '信用卡', pct: 0, color: 'var(--accent)' },
   { label: '貸款', pct: 0, color: 'var(--border)' },
-]
+])
 
 const donutCanvas = ref(null)
 let donutChart = null
@@ -331,9 +390,9 @@ function drawDonut() {
   donutChart = new Chart(donutCanvas.value, {
     type: 'doughnut',
     data: {
-      labels: distributionData.map(d => d.label),
+      labels: distributionData.value.map(d => d.label),
       datasets: [{
-        data: distributionData.map(d => d.pct || 0.5),
+        data: distributionData.value.map(d => d.pct || 0.1), // if all 0, use 0.1 to avoid empty chart
         backgroundColor: ['#5C6B5F', '#8BA58E', '#A65A4D', '#D6CEC3'],
         borderWidth: 0,
         hoverOffset: 4,
@@ -350,7 +409,7 @@ function drawDonut() {
           titleFont: { family: 'Noto Sans TC' },
           bodyFont: { family: 'Noto Sans TC' },
           callbacks: {
-            label: (ctx) => ` ${ctx.label}：${distributionData[ctx.dataIndex].pct}%`,
+            label: (ctx) => ` ${ctx.label}：${distributionData.value[ctx.dataIndex].pct}%`,
           },
         },
       },
@@ -375,11 +434,24 @@ function generateMockLine(months) {
   const twdData = []
   const fxData = []
   const now = new Date()
+
+  const currentTwd = assetData.value.twdAsset || 0
+  const currentFx = assetData.value.foreignAsset || 0
+
   for (let i = months; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
     labels.push(`${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}`)
-    twdData.push(Math.round(900000 + Math.random() * 400000))
-    fxData.push(Math.round(80000 + Math.random() * 80000))
+    
+    if (i === 0) {
+      twdData.push(currentTwd)
+      fxData.push(currentFx)
+    } else {
+      const seed = d.getMonth() + d.getFullYear();
+      const rand1 = (Math.sin(seed) * 0.5 + 0.5) * 0.2 - 0.1; // -10% ~ +10%
+      const rand2 = (Math.cos(seed) * 0.5 + 0.5) * 0.2 - 0.1;
+      twdData.push(Math.round(currentTwd * (1 + rand1)))
+      fxData.push(Math.round(currentFx * (1 + rand2)))
+    }
   }
   return { labels, twdData, fxData }
 }
@@ -493,6 +565,9 @@ async function fetchExchangeRates() {
       
       return { ...currency, sell, buy }
     })
+    
+    // 匯率更新後，重新計算外幣資產
+    calculateAssets()
   } catch (e) {
     console.error('Failed to fetch exchange rates', e)
   } finally {
@@ -623,234 +698,260 @@ onMounted(async () => {
 /* === 上方佈局 === */
 .dashboard-top {
   display: grid;
-  grid-template-columns: 340px 1fr;
-  gap: var(--space-5);
-  margin-bottom: var(--space-6);
+  grid-template-columns: 320px 1fr;
+  gap: 24px;
+  margin-bottom: 32px;
 }
 
-/* === 個人資訊卡片 === */
-.profile-card {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: var(--space-5);
-  box-shadow: none;
+/* === 左側：個人資訊卡片 (Profile Summary) === */
+.profile-summary-card {
+  background-color: rgba(255, 249, 239, 0.72);
+  border: 1px solid rgba(214, 206, 195, 0.92);
+  border-radius: 22px;
+  padding: 24px;
+  box-shadow: 0 8px 22px rgba(63, 74, 66, 0.05);
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
 }
 
-.profile-header {
+.profile-header-wrap {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: 16px;
+  margin-bottom: 4px;
 }
 
-.profile-avatar {
+.profile-avatar-btn {
   background: none;
   border: none;
   padding: 0;
   cursor: pointer;
-  border-radius: 50%;
   flex-shrink: 0;
 }
 
-.profile-avatar-img {
-  width: 64px;
-  height: 64px;
+.profile-avatar-img,
+.profile-avatar-fallback {
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid var(--border);
-}
-
-.profile-avatar-fallback {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
+  border: 1px solid var(--border);
+  background-color: rgba(234, 228, 218, 0.75);
+  color: var(--primary-dark);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg-primary);
-  color: var(--primary);
   font-family: var(--font-heading);
-  font-size: 24px;
-  font-weight: 600;
-  border: 2px solid var(--border);
+  font-size: 20px;
+  font-weight: 700;
 }
 
 .profile-name {
-  font-size: 22px;
+  color: var(--text-primary);
+  font-size: 18px;
   font-weight: 700;
-  letter-spacing: 2px;
-  margin-bottom: 2px;
+  margin: 0;
 }
 
-.profile-id {
-  font-size: var(--text-xs);
-  color: var(--text-disabled);
-  letter-spacing: 1px;
+.profile-meta-id {
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin: 2px 0 0;
 }
 
-.profile-meta {
+.profile-divider {
+  height: 1px;
+  margin: 18px 0;
+  background-color: rgba(214, 206, 195, 0.7);
+}
+
+.profile-details {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  padding-top: var(--space-2);
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  gap: 12px;
+  margin-bottom: 24px;
 }
 
-.meta-item {
+.profile-detail-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.meta-label {
-  font-size: var(--text-xs);
+.profile-label {
   color: var(--text-secondary);
+  font-size: 13px;
 }
 
-.meta-value {
-  font-size: var(--text-sm);
-  font-weight: 500;
+.profile-value {
   color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
 }
 
-.profile-link {
+.profile-link-row {
   display: flex;
   align-items: center;
-  gap: 4px;
+  justify-content: space-between;
+  padding: 10px 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-top: 1px solid rgba(214, 206, 195, 0.4);
+  margin-top: auto;
+}
+
+.profile-link-row:hover {
+  color: var(--primary-dark);
+  transform: translateX(2px);
+}
+
+/* === 右側：資產總覽主卡 (Asset Overview) === */
+.asset-overview-card {
+  background-color: rgba(255, 249, 239, 0.78);
+  border: 1px solid rgba(214, 206, 195, 0.92);
+  border-radius: 24px;
+  padding: 28px;
+  box-shadow: 0 10px 26px rgba(63, 74, 66, 0.06);
+}
+
+.asset-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.asset-overview-title {
+  color: var(--text-primary);
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.asset-overview-subtitle {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin: 4px 0 0;
+}
+
+.toggle-visibility-btn {
   background: none;
   border: none;
-  cursor: pointer;
-  font-size: var(--text-sm);
-  font-weight: 500;
-  color: var(--primary);
-  font-family: var(--font-body);
-  padding: 0;
-  transition: color var(--duration) var(--ease);
-}
-
-.profile-link:hover {
-  color: var(--primary-dark);
-}
-
-/* === 資產總覽 === */
-.asset-overview {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: var(--space-5);
-  box-shadow: none;
-}
-
-.asset-header {
-  margin-bottom: var(--space-4);
-}
-
-.asset-title {
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: 3px;
-  margin-bottom: var(--space-1);
-}
-
-.asset-subtitle {
-  font-size: var(--text-xs);
   color: var(--text-secondary);
-  margin-bottom: var(--space-2);
+  cursor: pointer;
+  padding: 4px;
+  opacity: 0.6;
+  transition: opacity 0.2s;
 }
 
-.asset-total {
-  font-family: 'Inter', 'Noto Sans TC', var(--font-body);
-  font-size: 36px;
-  font-weight: 700;
+.toggle-visibility-btn:hover {
+  opacity: 1;
+}
+
+.asset-main-amount {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+
+.asset-currency-symbol {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.asset-total-amount {
   color: var(--text-primary);
+  font-size: clamp(42px, 4vw, 52px);
+  font-weight: 800;
   letter-spacing: -0.02em;
+  line-height: 1;
 }
 
 .asset-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-3);
+  gap: 20px;
 }
 
-.asset-block {
-  background: var(--bg-primary);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  border-radius: var(--radius-md);
-  padding: var(--space-4);
-}
-
-.asset-block-header {
-  margin-bottom: var(--space-2);
-}
-
-.asset-block-label {
-  font-size: var(--text-sm);
-  font-weight: 600;
-  color: var(--text-primary);
-  letter-spacing: 1px;
-}
-
-.asset-block-amount {
-  font-family: 'Inter', 'Noto Sans TC', var(--font-body);
-  font-size: 26px;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: var(--space-3);
-  letter-spacing: -0.02em;
-}
-
-.asset-block-amount--muted {
-  color: var(--text-disabled);
-  font-family: var(--font-body);
-  font-size: var(--text-body);
-}
-
-.asset-block-detail {
+.asset-subcard {
+  background-color: rgba(255, 250, 243, 0.9);
+  border: 1px solid rgba(214, 206, 195, 0.82);
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
-  margin-bottom: var(--space-3);
-  padding-bottom: var(--space-3);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
 }
 
-.detail-row {
+.asset-subcard-title {
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.asset-subcard-amount {
+  color: var(--text-primary);
+  font-size: 22px;
+  font-weight: 700;
+  margin: 8px 0 12px;
+}
+
+.asset-subcard-amount--muted {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.asset-subcard-details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+.asset-subcard-detail {
   display: flex;
   justify-content: space-between;
-  font-size: var(--text-xs);
+  font-size: 13px;
   color: var(--text-secondary);
 }
 
-.text-safe {
-  color: var(--primary);
-  font-weight: 500;
-}
-
-.asset-block-actions {
+.asset-subcard-actions {
   display: flex;
-  gap: var(--space-2);
-  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: auto;
 }
 
-.block-action-btn {
-  padding: 6px 14px;
-  font-size: var(--text-xs);
-  font-family: var(--font-body);
-  font-weight: 500;
-  color: var(--text-primary);
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+.subcard-primary-btn {
+  flex: 1;
+  padding: 8px 12px;
+  color: var(--bg-primary);
+  background-color: var(--primary);
+  border: 1px solid var(--primary);
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
-  transition: border-color 0.2s var(--ease), background 0.2s var(--ease);
+  transition: all 0.2s;
 }
 
-.block-action-btn:hover {
-  border-color: var(--primary);
-  background: var(--primary-light);
+.subcard-primary-btn:hover {
+  background-color: var(--primary-dark);
+  border-color: var(--primary-dark);
+}
+
+.subcard-secondary-btn {
+  flex: 1;
+  padding: 8px 12px;
+  color: var(--primary-dark);
+  background-color: rgba(255, 249, 239, 0.55);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
 /* === 下方佈局 === */
@@ -866,6 +967,7 @@ onMounted(async () => {
   font-size: 18px;
   font-weight: 600;
   letter-spacing: 3px;
+  white-space: nowrap;
 }
 
 .card-title-row {
@@ -1042,6 +1144,7 @@ onMounted(async () => {
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all 0.2s var(--ease);
+  white-space: nowrap;
 }
 
 .period-tab.active {

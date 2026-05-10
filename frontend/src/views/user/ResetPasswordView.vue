@@ -7,8 +7,97 @@
       </div>
 
       <section class="reset-card jb-card">
-        <!-- 重設表單 -->
-        <template v-if="!success">
+        <!-- 步驟 1：身分驗證 (無 token 且未成功發送) -->
+        <template v-if="!token && !requestSuccess">
+          <div class="reset-icon-wrap" aria-hidden="true">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary)">
+              <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+            </svg>
+          </div>
+          <h1 class="reset-title">驗證身分</h1>
+          <p class="reset-subtitle">請輸入您的個人資料以進行驗證</p>
+
+          <form @submit.prevent="handleRequestReset" novalidate>
+            <div class="jb-form-item">
+              <label for="req-idnumber" class="jb-label">身分證字號</label>
+              <input
+                id="req-idnumber"
+                v-model="reqForm.idNumber"
+                type="text"
+                class="jb-input"
+                placeholder="請輸入身分證字號"
+                required
+              />
+            </div>
+            <div class="jb-form-item">
+              <label for="req-birthday" class="jb-label">出生年月日</label>
+              <input
+                id="req-birthday"
+                v-model="reqForm.birthday"
+                type="date"
+                class="jb-input"
+                required
+              />
+            </div>
+            <div class="jb-form-item">
+              <label for="req-email" class="jb-label">電子郵件</label>
+              <input
+                id="req-email"
+                v-model="reqForm.email"
+                type="email"
+                class="jb-input"
+                placeholder="請輸入註冊的電子郵件"
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              class="jb-btn jb-btn-primary jb-btn-block jb-btn-lg"
+              :disabled="loading"
+              style="margin-top: var(--space-2)"
+            >
+              <span v-if="loading" class="jb-spinner" style="width:18px;height:18px;"></span>
+              <span>{{ loading ? '處理中...' : '發送重設信件' }}</span>
+            </button>
+            <button
+              type="button"
+              class="jb-btn jb-btn-secondary jb-btn-block jb-btn-lg"
+              style="margin-top: var(--space-3)"
+              @click="$router.push('/login')"
+            >
+              返回登入
+            </button>
+            <button
+              type="button"
+              class="jb-btn jb-btn-secondary jb-btn-block jb-btn-lg"
+              style="margin-top: var(--space-3)"
+              @click="fillTestAccount"
+            >
+              一鍵帶入測試帳號
+            </button>
+          </form>
+        </template>
+
+        <!-- 步驟 1 成功：已發送信件 -->
+        <template v-else-if="!token && requestSuccess">
+          <div class="success-section">
+            <div class="success-icon" aria-hidden="true">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary)">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+            </div>
+            <h2 class="success-title">驗證信已發送</h2>
+            <p class="success-sub">請前往您的信箱點擊密碼重設連結。（※ 連結有效期限為 30 分鐘）</p>
+            <button class="jb-btn jb-btn-primary jb-btn-lg" @click="$router.push('/login')">
+              返回登入
+            </button>
+          </div>
+        </template>
+
+        <!-- 步驟 2：設定新密碼 (有 token 且未重設成功) -->
+        <template v-else-if="token && !success">
           <div class="reset-icon-wrap" aria-hidden="true">
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary)">
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
@@ -78,8 +167,8 @@
           </form>
         </template>
 
-        <!-- 成功畫面 -->
-        <template v-else>
+        <!-- 步驟 2 成功：密碼重設完成 -->
+        <template v-else-if="token && success">
           <div class="success-section">
             <div class="success-icon" aria-hidden="true">
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary)">
@@ -96,20 +185,54 @@
         </template>
       </section>
     </main>
+
+    <!-- Custom Toast -->
+    <transition name="toast-fade">
+      <div v-if="toast.visible" class="jb-toast" :class="`toast-${toast.type}`">
+        {{ toast.text }}
+      </div>
+    </transition>
   </div>
 </template>
 
 <script setup>
-import { reactive, ref, computed } from 'vue'
+import { reactive, ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { customerResetPassword } from '@/api/customerAuth'
+import { customerResetPassword, customerRequestReset } from '@/api/customerAuth'
 import JbLogo from '@/components/JbLogo.vue'
 
 const route = useRoute()
 const loading = ref(false)
 const success = ref(false)
+const requestSuccess = ref(false)
 const showPwd1 = ref(false)
 const showPwd2 = ref(false)
+const token = ref('')
+
+const toast = reactive({ visible: false, text: '', type: 'error', timer: null })
+function showToast(text, type = 'error') {
+  toast.text = text
+  toast.type = type
+  toast.visible = true
+  if (toast.timer) clearTimeout(toast.timer)
+  toast.timer = setTimeout(() => { toast.visible = false }, 3000)
+}
+
+onMounted(() => {
+  token.value = route.query.token || ''
+})
+
+const reqForm = reactive({
+  idNumber: '',
+  birthday: '',
+  email: '',
+})
+
+function fillTestAccount() {
+  reqForm.idNumber = 'A123456789'
+  reqForm.birthday = '1985-05-15'
+  reqForm.email = 'ming.wang@email.com'
+}
 
 const form = reactive({
   newPassword: '',
@@ -120,24 +243,44 @@ const mismatch = computed(() =>
   form.confirmPassword.length > 0 && form.confirmPassword !== form.newPassword
 )
 
+async function handleRequestReset() {
+  if (!reqForm.idNumber || !reqForm.birthday || !reqForm.email) {
+    showToast('請填寫完整驗證資料', 'warning')
+    return
+  }
+
+  loading.value = true
+  try {
+    await customerRequestReset({
+      idNumber: reqForm.idNumber,
+      birthday: reqForm.birthday,
+      email: reqForm.email,
+    })
+    requestSuccess.value = true
+  } catch (err) {
+    showToast(err.response?.data?.message || '驗證失敗，請確認資料正確', 'error')
+  } finally {
+    loading.value = false
+  }
+}
+
 async function handleReset() {
   if (mismatch.value) return
 
-  const token = route.query.token
-  if (!token) {
-    alert('無效的重設連結')
+  if (!token.value) {
+    showToast('無效的重設連結', 'error')
     return
   }
 
   loading.value = true
   try {
     await customerResetPassword({
-      token,
+      token: token.value,
       newPassword: form.newPassword,
     })
     success.value = true
   } catch (err) {
-    alert(err.response?.data?.message || '密碼重設失敗')
+    showToast(err.response?.data?.message || '密碼重設失敗', 'error')
   } finally {
     loading.value = false
   }
@@ -210,4 +353,29 @@ async function handleReset() {
   color: var(--text-secondary);
   margin-bottom: var(--space-5);
 }
+
+/* Custom Toast */
+.jb-toast {
+  position: fixed;
+  top: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  z-index: 9999;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+}
+.toast-success { border-left: 4px solid var(--primary); }
+.toast-error { border-left: 4px solid var(--accent); }
+.toast-warning { border-left: 4px solid #C4A47C; }
+
+.toast-fade-enter-active, .toast-fade-leave-active { transition: all 0.3s var(--ease); }
+.toast-fade-enter-from, .toast-fade-leave-to { opacity: 0; transform: translate(-50%, -10px); }
 </style>

@@ -8,7 +8,7 @@ import com.javaeasybank.account.enums.*;
 import com.javaeasybank.account.repository.AccountApplicationRepository;
 import com.javaeasybank.account.repository.AccountRepository;
 import com.javaeasybank.common.exception.BusinessException;
-import com.javaeasybank.customer.dto.CustomerDto;
+import com.javaeasybank.customer.repository.CustomerRespository;
 import com.javaeasybank.customer.service.CustomerService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -112,7 +112,7 @@ class AccountApplicationServiceTest {
             verify(applicationRepository, times(1)).save(any(AccountApplication.class));
             verify(customerService).syncAccountApplicationProfile(
                     eq(customerId),
-                    any(CustomerDto.AccountApplicationProfileSyncRequest.class));
+                    any(CustomerRespository.AccountApplicationProfileSyncRequest.class));
         }
 
         @Test
@@ -340,7 +340,7 @@ class AccountApplicationServiceTest {
             assertEquals(12, created.getAccountNumber().length());
             verify(customerService).syncAccountApplicationProfile(
                     eq("C001"),
-                    any(CustomerDto.AccountApplicationProfileSyncRequest.class));
+                    any(CustomerRespository.AccountApplicationProfileSyncRequest.class));
         }
 
         @Test
@@ -458,7 +458,7 @@ class AccountApplicationServiceTest {
             verify(accountRepository, never()).save(any());
             verify(customerService).syncAccountApplicationProfile(
                     eq("C010"),
-                    any(CustomerDto.AccountApplicationProfileSyncRequest.class));
+                    any(CustomerRespository.AccountApplicationProfileSyncRequest.class));
         }
 
         @Test

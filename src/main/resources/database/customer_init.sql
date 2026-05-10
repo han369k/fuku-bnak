@@ -83,6 +83,7 @@ CREATE TABLE CUSTOMER_AUTH (
     reset_token VARCHAR(255) NULL,
     reset_token_expiry DATETIME2 NULL,
     last_login_date DATETIME2 NULL,
+    verification_token VARCHAR(255) NULL,
     created_at DATETIME2 NOT NULL DEFAULT GETDATE(),
     updated_at DATETIME2 NOT NULL DEFAULT GETDATE(),
     CONSTRAINT FK_Auth_Profile FOREIGN KEY (customer_id) REFERENCES CUSTOMER_PROFILE(customer_id)

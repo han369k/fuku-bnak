@@ -21,15 +21,27 @@
           <div class="login-rule"></div>
           <p class="login-subtitle">登入您的帳戶</p>
 
-          <form @submit.prevent="handleLogin" novalidate>
+          <form @submit.prevent="handleLogin(false)" novalidate>
             <div class="jb-form-item">
-              <label for="login-username" class="jb-label">使用者名稱</label>
+              <label for="login-idnumber" class="jb-label">身分證字號</label>
+              <input
+                id="login-idnumber"
+                v-model="form.idNumber"
+                type="text"
+                class="jb-input"
+                placeholder="輸入身分證字號"
+                required
+              />
+            </div>
+
+            <div class="jb-form-item">
+              <label for="login-username" class="jb-label">使用者名稱 / 信箱</label>
               <input
                 id="login-username"
                 v-model="form.username"
                 type="text"
                 class="jb-input"
-                placeholder="輸入使用者名稱"
+                placeholder="輸入使用者名稱或信箱"
                 autocomplete="username"
                 required
               />
@@ -59,6 +71,23 @@
               </div>
             </div>
 
+            <div class="jb-form-item">
+              <label for="login-captcha" class="jb-label">圖形驗證碼</label>
+              <div class="captcha-row">
+                <input
+                  id="login-captcha"
+                  v-model="form.captcha"
+                  type="text"
+                  class="jb-input"
+                  placeholder="請輸入右方驗證碼"
+                  required
+                />
+                <div class="captcha-display" @click="refreshCaptcha" title="點擊重新產生">
+                  {{ generatedCaptcha }}
+                </div>
+              </div>
+            </div>
+
             <div class="login-forgot">
               <router-link to="/reset-password" class="jb-link">忘記密碼？</router-link>
             </div>
@@ -78,7 +107,7 @@
             style="margin-top: var(--space-3)"
             @click="fillTestAccount"
           >
-            一鍵帶入測試帳號
+            一鍵帶入測試帳號並登入
           </button>
 
           <div class="login-divider">
@@ -92,11 +121,18 @@
         </div>
       </section>
     </main>
+
+    <!-- Custom Toast -->
+    <transition name="toast-fade">
+      <div v-if="toast.visible" class="jb-toast" :class="`toast-${toast.type}`">
+        {{ toast.text }}
+      </div>
+    </transition>
   </div>
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
+import { reactive, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { customerLogin } from '@/api/customerAuth'
 import { useCustomerAuthStore } from '@/stores/customerAuth'
@@ -106,22 +142,63 @@ const router = useRouter()
 const customerAuthStore = useCustomerAuthStore()
 const loading = ref(false)
 const showPwd = ref(false)
+const generatedCaptcha = ref('')
+
+const toast = reactive({ visible: false, text: '', type: 'error', timer: null })
+function showToast(text, type = 'error') {
+  toast.text = text
+  toast.type = type
+  toast.visible = true
+  if (toast.timer) clearTimeout(toast.timer)
+  toast.timer = setTimeout(() => { toast.visible = false }, 3000)
+}
+
+function refreshCaptcha() {
+  const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+  let code = ''
+  for (let i = 0; i < 4; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  generatedCaptcha.value = code
+}
+
+onMounted(() => {
+  refreshCaptcha()
+})
 
 const form = reactive({
+  idNumber: '',
   username: '',
   password: '',
+  captcha: '',
 })
 
 function fillTestAccount() {
+  form.idNumber = 'A123456789'
   form.username = 'mingwang85'
   form.password = '123456'
+  form.captcha = generatedCaptcha.value // auto correct
+  handleLogin(true)
 }
 
-async function handleLogin() {
-  if (!form.username || !form.password) return
+async function handleLogin(bypass = false) {
+  if (!bypass) {
+    if (!form.idNumber || !form.username || !form.password || !form.captcha) {
+      showToast('請填寫完整資訊', 'warning')
+      return
+    }
+    if (form.captcha.toUpperCase() !== generatedCaptcha.value) {
+      showToast('驗證碼錯誤', 'error')
+      refreshCaptcha()
+      form.captcha = ''
+      return
+    }
+  }
+
   loading.value = true
   try {
     const res = await customerLogin({
+      idNumber: form.idNumber,
       username: form.username,
       password: form.password,
     })
@@ -129,7 +206,7 @@ async function handleLogin() {
     customerAuthStore.setCustomer(data)
     router.push({ name: 'user-home' })
   } catch (err) {
-    alert(err.response?.data?.message || '登入失敗，請檢查帳號密碼')
+    showToast(err.response?.data?.message || '登入失敗，請檢查帳號密碼', 'error')
   } finally {
     loading.value = false
   }
@@ -295,4 +372,58 @@ async function handleLogin() {
     padding: var(--space-7) var(--space-5);
   }
 }
+
+.captcha-row {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.captcha-display {
+  width: 120px;
+  height: 44px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: monospace;
+  font-size: 18px;
+  font-weight: bold;
+  letter-spacing: 4px;
+  color: var(--primary);
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+  transition: opacity 0.2s;
+}
+
+.captcha-display:hover {
+  opacity: 0.8;
+}
+
+/* Custom Toast */
+.jb-toast {
+  position: fixed;
+  top: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  z-index: 9999;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+}
+.toast-success { border-left: 4px solid var(--primary); }
+.toast-error { border-left: 4px solid var(--accent); }
+.toast-warning { border-left: 4px solid #C4A47C; }
+
+.toast-fade-enter-active, .toast-fade-leave-active { transition: all 0.3s var(--ease); }
+.toast-fade-enter-from, .toast-fade-leave-to { opacity: 0; transform: translate(-50%, -10px); }
 </style>
