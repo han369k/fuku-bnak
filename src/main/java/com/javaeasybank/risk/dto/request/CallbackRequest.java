@@ -9,9 +9,7 @@ import lombok.Getter;
 @Builder
 public class CallbackRequest {
 
-    private String businessId;
-    private Disposition disposition;   // PASS / REJECT
-    private RiskLevel riskLevel;
-    private Long logId;
-    private String reason;
+    private String newStatus;     // APPROVED / REJECTED（不是 disposition enum）
+    private String callerModule;  // 固定帶 "RISK"
+    private String note;          // triggerReason
 }

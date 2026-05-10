@@ -24,16 +24,18 @@ public class CallbackService {
      */
     public void notify(String callbackUrl, Disposition disposition, RiskEventLog eventLog) {
 
+        // Disposition → newStatus 字串轉換
+        String newStatus = switch (disposition) {
+            case PASS -> "APPROVED";
+            case REJECT -> "REJECTED";
+            default -> throw new IllegalArgumentException("不應該 callback MANUAL_REVIEW");
+        };
+
         CallbackRequest body = CallbackRequest.builder()
-                .businessId(eventLog.getBusinessId())
-                .disposition(disposition)
-                .riskLevel(eventLog.getRiskLevel())
-                .logId(eventLog.getLogId())
-                .reason(eventLog.getTriggerReason())
+                .newStatus(newStatus)
+                .callerModule("RISK")
+                .note(eventLog.getTriggerReason())
                 .build();
-
-        log.info("[Callback] 通知 {} disposition={}", callbackUrl, disposition);
-
         try {
             ResponseEntity<Void> response =
                     restTemplate.postForEntity(callbackUrl, body, Void.class);
