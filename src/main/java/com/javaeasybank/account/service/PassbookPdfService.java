@@ -346,6 +346,8 @@ public class PassbookPdfService {
             case TIME_DEPOSIT -> currencyLabel(currency) + "定期存款";
             case LOAN -> "貸款帳戶";
             case SUB_ACCOUNT -> currencyLabel(currency) + "子帳戶";
+            case BUSINESS -> "銀行業務帳戶";
+            case CREDIT_CARD -> "信用卡繳款帳戶";
         };
     }
 

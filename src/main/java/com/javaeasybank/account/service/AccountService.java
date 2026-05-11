@@ -247,6 +247,11 @@ public class AccountService {
         AccountType type = request.getAccountType();
         Currency currency = request.getCurrency();
 
+        if (type == AccountType.LOAN || type == AccountType.CREDIT_CARD || type == AccountType.BUSINESS) {
+            throw new AccountException("DEDICATED_ACCOUNT_TYPE",
+                    "此帳戶類型需透過專用業務服務建立：" + type);
+        }
+
         if (type == AccountType.CHECKING) {
             // CHECKING(活存): 同客戶 + 同 currency 只能有一個
             boolean hasDuplicateChecking = accountRepository.existsByCustomerIdAndAccountTypeAndCurrency(customerId, type, currency);

@@ -464,6 +464,7 @@ npm run dev
 - 沖正。
 - 常用帳號。
 - 預約轉帳。
+- Loan/Card 模組整合用帳戶與金流服務。
 
 ### 主要 Entity
 
@@ -480,10 +481,10 @@ npm run dev
 | Enum | 值 |
 |---|---|
 | `AccountStatus` | `PENDING`, `ACTIVE`, `FROZEN`, `DORMANT`, `CLOSED` |
-| `AccountType` | `CHECKING`, `SAVINGS`, `TIME_DEPOSIT`, `LOAN`, `SUB_ACCOUNT` |
+| `AccountType` | `CHECKING`, `SAVINGS`, `TIME_DEPOSIT`, `LOAN`, `SUB_ACCOUNT`, `BUSINESS`, `CREDIT_CARD` |
 | `Currency` | `TWD`, `USD`, `EUR`, `JPY`, `GBP`, `CNY`, `AUD`, `CAD`, `CHF`, `HKD` |
 | `ApplicationStatus` | `PENDING`, `SUPPLEMENT_REQUIRED`, `APPROVED`, `REJECTED`, `CANCELLED` |
-| `TransactionType` | `TRANSFER`, `TRANSFER_FEE`, `DEPOSIT`, `WITHDRAW`, `EXCHANGE`, `INTEREST`, `LOAN_DISBURSEMENT`, `LOAN_REPAYMENT`, `REVERSAL` |
+| `TransactionType` | `TRANSFER`, `TRANSFER_FEE`, `DEPOSIT`, `WITHDRAW`, `EXCHANGE`, `INTEREST`, `LOAN_DISBURSEMENT`, `LOAN_REPAYMENT`, `CARD_PAYMENT`, `CARD_SETTLEMENT`, `REVERSAL` |
 | `EntryType` | `DEBIT`, `CREDIT` |
 | `TransferBank` | 國內轉帳銀行代碼，含本行 `JVB("909","爪哇銀行")` |
 | `RiskFlag` | `NORMAL`, `WATCH`, `PEP`, `HIGH_RISK`, `HIGH_FREQUENCY`, `PEP_HIGH_FREQUENCY` |
@@ -501,9 +502,24 @@ npm run dev
 
 - `CHECKING`：同一 customer + 同一 currency 只能有一個。
 - `SUB_ACCOUNT`：限定 TWD；需已有 ACTIVE 的 TWD checking；需提供 parent account；parent account 必須存在且同屬該 customer。
-- `TIME_DEPOSIT`、`LOAN`：目前不檢查重複，可多開。
+- `TIME_DEPOSIT`：目前不檢查重複，可多開。
+- `LOAN`、`CREDIT_CARD`、`BUSINESS`：不走一般開戶 API，需透過 `AccountIntegrationService` 或 SQL 初始化。
 - `CHECKING` 初始餘額 1000，利率 0.0015。
 - `SUB_ACCOUNT` 利率比照活存，但不給初始 1000。
+
+開戶申請規則：
+
+- 客戶只要沒有 `PENDING` 申請，就可以再次送出其他帳戶類別申請。
+- 已有台幣活存後，仍可申請外幣活存；外幣活存以 `CHECKING + 外幣 currency` 儲存。
+- 子帳戶申請固定為 TWD，需已有 ACTIVE 台幣活存；核准時會自動掛到該客戶的 ACTIVE 台幣活存。
+- 同一 customer + 同一 currency 的活存不可重複申請或核准。
+
+特殊帳戶規則：
+
+- `BUSINESS`：銀行撥款/收款用，`account_init.sql` 會初始化 `909000000001` 與 `909000000002`。
+- `LOAN`：貸款負債帳戶，`balance` 永遠為 0，以 `liability` 記錄剩餘負債。
+- `CREDIT_CARD`：信用卡繳款暫存帳戶，單一 customer 只能有一個，沒有利率。
+- user 端一般帳戶查詢會排除 `BUSINESS`、`LOAN`、`CREDIT_CARD`。
 
 狀態流轉由 `AccountService.updateAccountStatus` 控制：
 
@@ -531,7 +547,7 @@ npm run dev
 
 | Method | Path | 說明 |
 |---|---|---|
-| GET | `/api/customer/accounts` | 查目前登入客戶的所有帳戶 |
+| GET | `/api/customer/accounts` | 查目前登入客戶的一般帳戶，排除 BUSINESS / LOAN / CREDIT_CARD |
 | GET | `/api/customer/transactions` | 查目前客戶交易紀錄，可依帳號或日期篩選 |
 | GET | `/api/customer/accounts/{accountNumber}/passbook/pdf` | 下載電子存摺 PDF，OpenHTMLtoPDF 轉檔並用 iText AES 加密 |
 
@@ -574,6 +590,21 @@ npm run dev
 | POST | `/api/customer/cash/deposit` | 存款 |
 | POST | `/api/customer/cash/withdraw` | 提款 |
 | POST | `/api/admin/transfers/reversal` | 管理端沖正 |
+
+### Loan/Card 整合 API
+
+詳細 service 方法與交接規則已拆分：
+
+- Loan：`src/main/java/com/javaeasybank/common/doc/LoanAccountIntegrationGuide.md`
+- Card：`src/main/java/com/javaeasybank/common/doc/CardAccountIntegrationGuide.md`
+
+| Method | Path | 說明 |
+|---|---|---|
+| GET | `/api/customer/loan-repayments/debit-accounts` | 查目前登入客戶可用於貸款還款的 ACTIVE TWD 活存 |
+| POST | `/api/customer/loan-repayments` | 貸款還款，悲觀鎖扣款帳戶、貸款帳戶與銀行收款帳戶 |
+| GET | `/api/customer/loan-repayments` | 查貸款還款紀錄 |
+| POST | `/api/customer/card-payments` | 信用卡繳款，扣 TWD 活存並入帳信用卡繳款帳戶 |
+| GET | `/api/customer/card-payments/paid-amount` | 查信用卡已繳金額，可依月份或日期區間 |
 
 ### 交易紀錄 API
 

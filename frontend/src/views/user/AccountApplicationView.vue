@@ -64,8 +64,11 @@ function validateStep(s) {
   clearErrors()
   if (s === 1) {
     if (!form.accountType) errors.accountType = '請選擇帳戶類型'
-    if (form.accountType === 'CHECKING' && form.currency && form.currency !== 'TWD') {
-      // 台幣活存不需選幣別
+    if (showCurrency.value && !form.currency) {
+      errors.currency = '請選擇幣別'
+    }
+    if (form.accountType === 'CHECKING_FOREIGN' && form.currency === 'TWD') {
+      errors.currency = '外幣活存不可選擇台幣'
     }
   } else if (s === 2) {
     if (!form.name) errors.name = '請輸入姓名'
@@ -178,7 +181,9 @@ async function handleFile(field, event) {
 
 // ===== 帳戶類型選項 =====
 const accountTypes = [
-  { value: 'CHECKING', label: '台幣活期存款', desc: '日常存款與轉帳，享有基礎利率' },
+  { value: 'CHECKING_TWD', label: '台幣活期存款', desc: '日常存款與轉帳，享有基礎利率' },
+  { value: 'CHECKING_FOREIGN', label: '外幣活期存款', desc: '申請美元、日圓、歐元等外幣帳戶' },
+  { value: 'SUB_ACCOUNT', label: '子帳戶', desc: '綁定既有台幣活存，管理專用資金' },
   { value: 'TIME_DEPOSIT', label: '定期存款', desc: '固定期限存款，享有較高利率' },
 ]
 
@@ -191,6 +196,8 @@ const currencies = [
   { value: 'CNY', label: '人民幣 CNY' },
   { value: 'AUD', label: '澳幣 AUD' },
 ]
+
+const foreignCurrencies = computed(() => currencies.filter(c => c.value !== 'TWD'))
 
 const purposeOptions = [
   { value: 'SALARY', label: '薪資轉帳' },
@@ -212,8 +219,23 @@ const fundSourceOptions = [
 ]
 
 const showCurrency = computed(() => {
-  return form.accountType === 'TIME_DEPOSIT'
+  return form.accountType === 'CHECKING_FOREIGN' || form.accountType === 'TIME_DEPOSIT'
 })
+
+const currencyOptions = computed(() => {
+  return form.accountType === 'CHECKING_FOREIGN' ? foreignCurrencies.value : currencies
+})
+
+function resolvePayloadAccountType() {
+  return form.accountType === 'CHECKING_TWD' || form.accountType === 'CHECKING_FOREIGN'
+    ? 'CHECKING'
+    : form.accountType
+}
+
+function resolvePayloadCurrency() {
+  if (form.accountType === 'CHECKING_TWD' || form.accountType === 'SUB_ACCOUNT') return 'TWD'
+  return form.currency || 'TWD'
+}
 
 // ===== 提交 =====
 async function handleSubmit() {
@@ -226,8 +248,8 @@ async function handleSubmit() {
     const formData = new FormData()
 
     // 文字欄位
-    formData.append('accountType', form.accountType)
-    if (form.currency) formData.append('currency', form.currency)
+    formData.append('accountType', resolvePayloadAccountType())
+    formData.append('currency', resolvePayloadCurrency())
     formData.append('customerName', form.name)
     formData.append('idNumber', form.idNumber)
     formData.append('birthday', form.birthday)
@@ -282,10 +304,22 @@ function getStatusClass(status) {
   return `status-${map[status] || 'warning'}`
 }
 
+function getAccountTypeLabel(app) {
+  if (app.accountType === 'CHECKING') {
+    return app.currency === 'TWD' ? '台幣活期存款' : `${app.currency || '外幣'} 活期存款`
+  }
+  const map = {
+    TIME_DEPOSIT: '定期存款',
+    SUB_ACCOUNT: '子帳戶',
+    SAVINGS: '儲蓄存款',
+  }
+  return map[app.accountType] || app.accountType || '-'
+}
+
 // ===== 一鍵帶入測試資料 =====
 async function fillMockData() {
   // Step 1
-  form.accountType = 'CHECKING'
+  form.accountType = 'CHECKING_TWD'
   form.currency = ''
 
   // Step 2
@@ -387,8 +421,9 @@ onMounted(fetchApplications)
         <label class="jb-label">幣別</label>
         <select v-model="form.currency" class="jb-select">
           <option value="" disabled>請選擇幣別</option>
-          <option v-for="c in currencies" :key="c.value" :value="c.value">{{ c.label }}</option>
+          <option v-for="c in currencyOptions" :key="c.value" :value="c.value">{{ c.label }}</option>
         </select>
+        <p v-if="errors.currency" class="field-error">{{ errors.currency }}</p>
       </div>
 
       <div class="step-actions">
@@ -625,7 +660,7 @@ onMounted(fetchApplications)
           <tbody>
             <tr v-for="app in existingApplications" :key="app.id">
               <td>#{{ app.id }}</td>
-              <td>{{ app.accountType === 'CHECKING' ? '活期存款' : '定期存款' }}</td>
+              <td>{{ getAccountTypeLabel(app) }}</td>
               <td>{{ app.createdAt?.substring(0, 10) || '-' }}</td>
               <td>
                 <span class="status-pill" :class="getStatusClass(app.status)">
