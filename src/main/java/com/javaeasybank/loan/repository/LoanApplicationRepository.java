@@ -1,7 +1,7 @@
-package com.javaeasybank.customer.loan.repository;
+package com.javaeasybank.loan.repository;
 
-import com.javaeasybank.customer.loan.entity.LoanApplication;
-import com.javaeasybank.customer.loan.enums.LoanApplicationStatus;
+import com.javaeasybank.loan.entity.LoanApplication;
+import com.javaeasybank.loan.enums.LoanApplicationStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

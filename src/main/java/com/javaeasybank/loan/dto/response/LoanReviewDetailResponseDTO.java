@@ -1,6 +1,6 @@
-package com.javaeasybank.customer.loan.dto.response;
+package com.javaeasybank.loan.dto.response;
 
-import com.javaeasybank.customer.loan.enums.LoanReviewStatus;
+import com.javaeasybank.loan.enums.LoanReviewStatus;
 import lombok.Getter;
 import lombok.Setter;
 import java.math.BigDecimal;
