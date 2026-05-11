@@ -96,6 +96,11 @@ const router = createRouter({
           name: 'user-favorite-accounts',
           component: () => import('../views/user/FavoriteAccountsView.vue'),
         },
+        {
+          path: 'loan-apply',
+          name: 'user-loan-apply',
+          component: () => import('../views/user/LoanApplyView.vue'),
+        },
       ],
     },
 
@@ -194,8 +199,8 @@ const router = createRouter({
         // 貸款功能相關
         {
           path: 'loan-apply',
-          name: 'loan-apply',
-          component: () => import('../views/user/LoanApplyView.vue'),
+          name: 'loan-apply',  // 保留舊 name 防止其他地方引用失效
+          redirect: { name: 'user-loan-apply' }, // 重導到客戶端路由
         },
         {
           path: 'loan-applications',

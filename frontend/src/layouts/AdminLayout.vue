@@ -37,10 +37,7 @@
             </a-menu-item-group>
 
             <a-menu-item-group title="消金貸款業務">
-              <a-menu-item key="loan-apply" @click="$router.push({ name: 'loan-apply' })">
-                <template #icon><FileAddOutlined /></template>
-                <span>貸款進件申請</span>
-              </a-menu-item>
+
               <a-menu-item key="loan-applications" @click="$router.push({ name: 'loan-applications' })">
                 <template #icon><AuditOutlined /></template>
                 <span>貸款申請管理</span>
@@ -139,7 +136,7 @@ import { Modal } from 'ant-design-vue'
 import { onMounted, onUnmounted } from 'vue'
 import { 
   HomeOutlined, TeamOutlined, UserOutlined, SettingOutlined, LogoutOutlined,
-  BankOutlined, ProfileOutlined, FileAddOutlined, AuditOutlined,
+  BankOutlined, ProfileOutlined, AuditOutlined,
   AppstoreAddOutlined, SolutionOutlined, CreditCardOutlined, AlertOutlined, StopOutlined
 } from '@ant-design/icons-vue'
 
