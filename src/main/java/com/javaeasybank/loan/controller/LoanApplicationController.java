@@ -1,9 +1,9 @@
-package com.javaeasybank.customer.loan.controller;
+package com.javaeasybank.loan.controller;
 
 import com.javaeasybank.common.dto.response.ApiResponse;
-import com.javaeasybank.customer.loan.dto.requests.LoanMemberRequestDTO;
-import com.javaeasybank.customer.loan.dto.requests.LoanNonMemberRequestDTO;
-import com.javaeasybank.customer.loan.service.LoanApplicationService;
+import com.javaeasybank.loan.dto.requests.LoanMemberRequestDTO;
+import com.javaeasybank.loan.dto.requests.LoanNonMemberRequestDTO;
+import com.javaeasybank.loan.service.LoanApplicationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

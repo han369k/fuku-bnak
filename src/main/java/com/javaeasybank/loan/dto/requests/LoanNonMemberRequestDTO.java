@@ -1,4 +1,4 @@
-package com.javaeasybank.customer.loan.dto.requests;
+package com.javaeasybank.loan.dto.requests;
 
 import lombok.Getter;
 import lombok.Setter;

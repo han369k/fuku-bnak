@@ -1,7 +1,7 @@
-package com.javaeasybank.customer.loan.entity;
+package com.javaeasybank.loan.entity;
 
-import com.javaeasybank.customer.loan.enums.LoanApplicationStatus;
-import com.javaeasybank.customer.loan.enums.LoanContactStatus;
+import com.javaeasybank.loan.enums.LoanApplicationStatus;
+import com.javaeasybank.loan.enums.LoanContactStatus;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;

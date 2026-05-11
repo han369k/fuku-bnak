@@ -1,7 +1,7 @@
-package com.javaeasybank.customer.loan.entity;
+package com.javaeasybank.loan.entity;
 
-import com.javaeasybank.customer.loan.enums.LoanContactChannel;
-import com.javaeasybank.customer.loan.enums.LoanContactStatus;
+import com.javaeasybank.loan.enums.LoanContactChannel;
+import com.javaeasybank.loan.enums.LoanContactStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
