@@ -174,8 +174,8 @@ const menus = [
     route: null,
     children: [
       { label: '快速申請貸款', desc: '線上貸款申請，快速撥款', route: 'user-loan-apply' },
-      { label: '房屋貸款', desc: '房貸方案查詢', route: null },
-      { label: '貸款試算', desc: '利率與還款試算', route: null },
+      { label: '查詢申貸狀態', desc: '查看所有貸款申請進度', route: 'user-loan-status' },
+      { label: '貸款帳戶', desc: '查看核准中的貸款帳戶', route: null },
     ],
   },
   {

@@ -121,6 +121,11 @@ const router = createRouter({
           name: 'user-loan-apply',
           component: () => import('../views/user/LoanApplyView.vue'),
         },
+        {
+          path: 'loan-status',
+          name: 'user-loan-status',
+          component: () => import('../views/user/LoanStatusView.vue'),
+        },
       ],
     },
 
