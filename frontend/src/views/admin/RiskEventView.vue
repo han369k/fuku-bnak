@@ -99,8 +99,8 @@ const riskLevelMap = {
 }
 
 const actionTakenMap = {
-  PASSED: '通過',
-  REJECTED: '拒絕',
+  PASS: '通過',
+  REJECT: '拒絕',
   MANUAL_REVIEW: '人工審核',
 }
 

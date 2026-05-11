@@ -39,7 +39,8 @@ public class LoanRiskClient {
         // 由 client 統一填入回調地址，service 層不需知道
         dto.setCallbackUrl(callbackBaseUrl + "/status");
 
-        String url = riskBaseUrl + "/risk/review";
+        //String url = riskBaseUrl + "/risk/review";
+        String url = riskBaseUrl;
         log.info("[RiskClient] 送審 applicationId={} → {}", dto.getApplicationId(), url);
 
         try {
