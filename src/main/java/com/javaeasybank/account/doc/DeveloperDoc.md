@@ -198,6 +198,13 @@
 | `LOAN` | 貸款負債帳戶，`balance` 永遠為 0，以 `liability` 表示剩餘負債 | 不顯示於 user 一般帳戶 |
 | `CREDIT_CARD` | 信用卡繳款暫存帳戶 | 不顯示於 user 一般帳戶 |
 
+一般開戶申請規則：
+
+- 審核完成後，客戶可以繼續申請其他帳戶類別。
+- 外幣帳戶以 `CHECKING + 外幣 currency` 建立，同一顧客同一幣別只能有一個活存。
+- 子帳戶以 `SUB_ACCOUNT + TWD` 建立，需已有 ACTIVE 台幣活存；核准時自動設定 parent account。
+- 同一客戶同時間仍只能有一筆 `PENDING` 申請，避免審核流程互相覆蓋。
+
 Loan/Card 交接細節已拆分：
 
 - Loan：`src/main/java/com/javaeasybank/common/doc/LoanAccountIntegrationGuide.md`

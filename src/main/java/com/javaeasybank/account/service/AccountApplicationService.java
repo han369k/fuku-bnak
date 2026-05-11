@@ -100,6 +100,7 @@ public class AccountApplicationService {
         }
         app.setAccountType(request.getAccountType());
         app.setCurrency(resolveCurrency(request));
+        validateAccountApplicationRules(customerId, app.getAccountType(), app.getCurrency());
 
         // KYC
         app.setName(request.getCustomerName());
@@ -195,6 +196,7 @@ public class AccountApplicationService {
         if (!app.getAccountType().isCustomerVisible()) {
             throw new BusinessException("此帳戶類型需透過專用業務流程建立");
         }
+        validateAccountApplicationRules(app.getCustomerId(), app.getAccountType(), app.getCurrency());
 
         // 建立帳戶
         Account account = new Account();
@@ -203,10 +205,15 @@ public class AccountApplicationService {
         account.setAccountType(app.getAccountType());
         account.setCurrency(app.getCurrency());
         account.setStatus(AccountStatus.ACTIVE);
+        if (app.getAccountType() == AccountType.SUB_ACCOUNT) {
+            account.setParentAccountNumber(resolveActiveTwdCheckingAccount(app.getCustomerId()).getAccountNumber());
+        }
 
-        // 活存帳戶設定初始餘額和利率
+        // 活存與子帳戶設定初始餘額和利率
         if (app.getAccountType() == AccountType.CHECKING) {
             AccountDefaults.applyCheckingDefaults(account);
+        } else if (app.getAccountType() == AccountType.SUB_ACCOUNT) {
+            AccountDefaults.applySubAccountDefaults(account);
         }
 
         Account savedAccount = accountRepository.save(account);
@@ -280,11 +287,45 @@ public class AccountApplicationService {
      * 決定幣別：台幣活存 / 定存預設 TWD，外幣帳戶由前端指定。
      */
     private Currency resolveCurrency(AccountApplicationRequest request) {
+        if (request.getAccountType() == AccountType.SUB_ACCOUNT) {
+            return Currency.TWD;
+        }
         if (request.getCurrency() != null) {
             return request.getCurrency();
         }
         // 預設 TWD
         return Currency.TWD;
+    }
+
+    private void validateAccountApplicationRules(String customerId, AccountType accountType, Currency currency) {
+        if (accountType == AccountType.CHECKING) {
+            if (accountRepository.existsByCustomerIdAndAccountTypeAndCurrency(customerId, accountType, currency)) {
+                throw new BusinessException("該幣別活期存款帳戶已存在，無法重複申請");
+            }
+            return;
+        }
+
+        if (accountType == AccountType.SUB_ACCOUNT) {
+            boolean hasActiveTwdChecking = accountRepository.existsByCustomerIdAndAccountTypeAndCurrencyAndStatus(
+                    customerId,
+                    AccountType.CHECKING,
+                    Currency.TWD,
+                    AccountStatus.ACTIVE);
+            if (!hasActiveTwdChecking) {
+                throw new BusinessException("需先擁有啟用中的台幣活期存款帳戶，才能申請子帳戶");
+            }
+        }
+    }
+
+    private Account resolveActiveTwdCheckingAccount(String customerId) {
+        return accountRepository.findAllByCustomerIdAndAccountTypeAndCurrencyAndStatus(
+                        customerId,
+                        AccountType.CHECKING,
+                        Currency.TWD,
+                        AccountStatus.ACTIVE)
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> new BusinessException("需先擁有啟用中的台幣活期存款帳戶，才能申請子帳戶"));
     }
 
     private void syncCustomerProfileFromApplication(AccountApplication app) {
