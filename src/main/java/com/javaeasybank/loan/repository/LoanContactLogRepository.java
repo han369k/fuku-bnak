@@ -1,6 +1,6 @@
-package com.javaeasybank.customer.loan.repository;
+package com.javaeasybank.loan.repository;
 
-import com.javaeasybank.customer.loan.entity.LoanContactLog;
+import com.javaeasybank.loan.entity.LoanContactLog;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

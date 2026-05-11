@@ -1,7 +1,7 @@
-package com.javaeasybank.customer.loan.dto.response;
+package com.javaeasybank.loan.dto.response;
 
-import com.javaeasybank.customer.loan.enums.LoanContactChannel;
-import com.javaeasybank.customer.loan.enums.LoanContactStatus;
+import com.javaeasybank.loan.enums.LoanContactChannel;
+import com.javaeasybank.loan.enums.LoanContactStatus;
 import lombok.Getter;
 import lombok.Setter;
 import java.time.LocalDateTime;
