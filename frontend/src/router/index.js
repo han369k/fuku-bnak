@@ -76,6 +76,21 @@ const router = createRouter({
           component: () => import('../views/user/UserAccountsView.vue'),
         },
         {
+          path: 'e-passbook',
+          name: 'user-e-passbook',
+          component: () => import('../views/user/EPassbookView.vue'),
+        },
+        {
+          path: 'security/login-records',
+          name: 'user-security-login-records',
+          component: () => import('../views/user/SecurityLoginRecordsView.vue'),
+        },
+        {
+          path: 'security/devices',
+          name: 'user-security-devices',
+          component: () => import('../views/user/SecurityDevicesView.vue'),
+        },
+        {
           path: 'transactions',
           name: 'user-transactions',
           component: () => import('../views/user/UserTransactionsView.vue'),
@@ -89,6 +104,11 @@ const router = createRouter({
           path: 'scheduled-transfer',
           name: 'user-scheduled-transfer',
           component: () => import('../views/user/ScheduledTransferView.vue'),
+        },
+        {
+          path: 'exchange',
+          name: 'user-exchange',
+          component: () => import('../views/user/ExchangeView.vue'),
         },
         {
           path: 'favorite-accounts',
@@ -235,6 +255,11 @@ const router = createRouter({
           </div>
         `,
       },
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'NotFound',
+      component: () => import('../views/NotFoundView.vue'),
     },
   ],
 })
