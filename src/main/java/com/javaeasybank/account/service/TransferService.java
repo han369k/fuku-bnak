@@ -20,14 +20,9 @@ import com.javaeasybank.account.exception.TransferException;
 import com.javaeasybank.account.repository.AccountRepository;
 import com.javaeasybank.account.repository.TransLogRepository;
 import com.javaeasybank.account.utils.ReferenceIdGenerator;
-<<<<<<< HEAD
-=======
 import com.javaeasybank.common.service.EmailService;
 import com.javaeasybank.common.service.ExchangeRateService;
 import com.javaeasybank.customer.repository.CustomerProfileRepository;
-import com.javaeasybank.risk.annotation.RiskCheck;
-import com.javaeasybank.risk.core.enums.RiskScene;
->>>>>>> dev
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
