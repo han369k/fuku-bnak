@@ -141,6 +141,16 @@
 | POST | `/api/customer/cash/withdraw` | 提款 |
 | POST | `/api/admin/transfers/reversal` | 管理端沖正 |
 
+### Loan / Card 整合 API
+
+| Method | Path | 說明 |
+| --- | --- | --- |
+| GET | `/api/customer/loan-repayments/debit-accounts` | Loan user 端查可扣款台幣活存 |
+| POST | `/api/customer/loan-repayments` | Loan user 端執行貸款還款 |
+| GET | `/api/customer/loan-repayments` | Loan user 端查貸款還款紀錄 |
+| POST | `/api/customer/card-payments` | Card user 端信用卡繳款 |
+| GET | `/api/customer/card-payments/paid-amount` | Card user 端查已繳金額 |
+
 ### 交易紀錄查詢
 
 | Method | Path | 說明 |
@@ -179,6 +189,19 @@
 | `AccountApplication` / `ACCOUNT_APPLICATION` | 開戶申請 | `applicationNo`, `customerId`, KYC 欄位, `riskFlag`, `status`, `createdAccountNumber` |
 | `FavoriteAccount` / `FAVORITE_ACCOUNT` | 常用帳號 | `customerId`, `accountNumber`, `alias`, `bankName` |
 | `ScheduledTransfer` / `SCHEDULED_TRANSFER` | 預約轉帳 | `customerId`, `fromAccountNumber`, `toAccountNumber`, `amount`, `scheduledDate`, `status`, `executedAt`, `failReason` |
+
+新增特殊帳戶型別：
+
+| AccountType | 用途 | 查詢顯示 |
+| --- | --- | --- |
+| `BUSINESS` | 銀行撥款/收款內部帳戶 | 不顯示於 user 一般帳戶 |
+| `LOAN` | 貸款負債帳戶，`balance` 永遠為 0，以 `liability` 表示剩餘負債 | 不顯示於 user 一般帳戶 |
+| `CREDIT_CARD` | 信用卡繳款暫存帳戶 | 不顯示於 user 一般帳戶 |
+
+Loan/Card 交接細節已拆分：
+
+- Loan：`src/main/java/com/javaeasybank/common/doc/LoanAccountIntegrationGuide.md`
+- Card：`src/main/java/com/javaeasybank/common/doc/CardAccountIntegrationGuide.md`
 
 現行 `ACCOUNT` entity 欄位：
 
@@ -1329,7 +1352,7 @@ flowchart TD
 
 | # | 欄位 | 型別 | 限制 | 說明 |
 | --- | --- | --- | --- | --- |
-| 1 | `account_number` | VARCHAR(12) | PK, NOT NULL | 帳戶號碼(業務編號),由 Java 端生成 |
+| 1 | `account_number` | VARCHAR(14) | PK, NOT NULL | 帳戶號碼；一般帳戶 12 碼，貸款/信用卡專用帳戶 14 碼 |
 | 2 | `customer_id` | BIGINT | FK → CUSTOMER, NOT NULL | 客戶號碼(內部關聯主鍵),對應 Java `Long` |
 | 3 | `account_type` | VARCHAR(20) | NOT NULL | 帳戶型別 |
 | 4 | `currency` | CHAR(3) | NOT NULL | 幣別(ISO 4217 固定 3 碼) |
@@ -1337,7 +1360,7 @@ flowchart TD
 | 6 | `liability` | DECIMAL(19,4) | NULL, DEFAULT 0 | 負債 |
 | 7 | `interest_rate` | DECIMAL(7,5) | NULL | 年利率 |
 | 8 | `status` | VARCHAR(20) | NOT NULL | 狀態(常數 enum) |
-| 9 | `parent_account_number` | VARCHAR(12) | FK → ACCOUNT, NULL | 父帳戶(僅子帳戶使用) |
+| 9 | `parent_account_number` | VARCHAR(14) | FK → ACCOUNT, NULL | 父帳戶(僅子帳戶使用) |
 | 10 | `created_at` | DATETIME2 | | 建立時間 |
 | 11 | `created_by` | VARCHAR(20) | | 由誰建立 |
 | 12 | `changed_at` | DATETIME2 | | 更新時間(過去式命名符合語意) |
@@ -1407,7 +1430,7 @@ private LocalDateTime createAt;
 | # | 欄位 | 型別 | 限制 | 說明 |
 | --- | --- | --- | --- | --- |
 | 1 | `history_id` | CHAR(36) | PK, NOT NULL | 歷史紀錄 ID(內部 PK),使用 UUID,Java 端生成 |
-| 2 | `account_number` | VARCHAR(12) | FK → ACCOUNT, NOT NULL | 帳戶號碼(關聯帳戶) |
+| 2 | `account_number` | VARCHAR(14) | FK → ACCOUNT, NOT NULL | 帳戶號碼(關聯帳戶) |
 | 3 | `old_status` | VARCHAR(20) | NULL | 變更前狀態(首次建立帳戶時為 NULL) |
 | 4 | `new_status` | VARCHAR(20) | NOT NULL | 變更後狀態 |
 | 5 | `change_reason` | VARCHAR(200) | NOT NULL | 變更原因(強制填入,前端做預設選項) |
@@ -1445,7 +1468,7 @@ private LocalDateTime createAt;
 | # | 欄位 | 型別 | 限制 | 說明 |
 | --- | --- | --- | --- | --- |
 | 1 | `snapshot_id` | CHAR(36) | PK, NOT NULL | 快照 ID(內部 PK),UUID,Java 端生成 |
-| 2 | `account_number` | VARCHAR(12) | FK → ACCOUNT, NOT NULL | 帳戶號碼(關聯帳戶) |
+| 2 | `account_number` | VARCHAR(14) | FK → ACCOUNT, NOT NULL | 帳戶號碼(關聯帳戶) |
 | 3 | `snapshot_date` | DATE | NOT NULL | 快照日期 |
 | 4 | `balance` | DECIMAL(19,4) | NOT NULL | 當日日終餘額(結帳點當下 ACCOUNT.balance 的值) |
 | 5 | `interest_rate` | DECIMAL(7,5) | NOT NULL | 當日適用年利率 |
@@ -1539,7 +1562,7 @@ WHERE account_number = ?
 | --- | --- | --- | --- | --- |
 | 1 | `transaction_id` | CHAR(36) | PK, NOT NULL | 交易 ID(內部 PK),UUID,內部關聯用 |
 | 2 | `reference_id` | VARCHAR(30) | NOT NULL | 業務交易編號(對外查詢)<br/>格式:`TXN-yyyyMMdd-HHmmss-8碼hex` |
-| 3 | `account_number` | VARCHAR(12) | FK → ACCOUNT, NOT NULL | 影響帳號 |
+| 3 | `account_number` | VARCHAR(14) | FK → ACCOUNT, NOT NULL | 影響帳號 |
 | 4 | `counterpart_account` | VARCHAR(20) | NULL | 對手方帳號 |
 | 5 | `bank_code` | VARCHAR(10) | NOT NULL | 本筆交易所屬銀行代碼，本行固定 909 |
 | 6 | `bank_name` | NVARCHAR(50) | NOT NULL | 本筆交易所屬銀行名稱，本行固定爪哇銀行 |
@@ -1711,7 +1734,7 @@ erDiagram
     ACCOUNT ||--o{ ACCOUNT : "parent_account"
 
     ACCOUNT {
-        varchar(12) account_number PK
+        varchar(14) account_number PK
         bigint customer_id
         varchar(20) account_type
         char(3) currency
@@ -1719,7 +1742,7 @@ erDiagram
         decimal liability
         decimal interest_rate
         varchar(20) status
-        varchar(12) parent_account_number FK
+        varchar(14) parent_account_number FK
         datetime2 created_at
         datetime2 changed_at
         varchar(20) created_by
@@ -1728,7 +1751,7 @@ erDiagram
 
     ACCOUNT_STATUS_HISTORY {
         char(36) history_id PK
-        varchar(12) account_number FK
+        varchar(14) account_number FK
         varchar(20) old_status
         varchar(20) new_status
         nvarchar(200) change_reason
@@ -1738,7 +1761,7 @@ erDiagram
 
     ACCOUNT_DAILY_SNAPSHOTS {
         char(36) snapshot_id PK
-        varchar(12) account_number FK
+        varchar(14) account_number FK
         date snapshot_date
         decimal balance
         decimal interest_rate
@@ -1749,7 +1772,7 @@ erDiagram
     TRANS_LOG {
         char(36) transaction_id PK
         varchar(30) reference_id
-        varchar(12) account_number FK
+        varchar(14) account_number FK
         varchar(20) counterpart_account
         varchar(10) bank_code
         nvarchar(50) bank_name

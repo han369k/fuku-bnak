@@ -23,7 +23,7 @@ public class ScheduledTransfer {
     @Column(name = "customer_id", nullable = false, length = 20)
     private String customerId;
 
-    @Column(name = "from_account_number", nullable = false, length = 12)
+    @Column(name = "from_account_number", nullable = false, length = 14)
     private String fromAccountNumber;
 
     @Column(name = "to_account_number", nullable = false, length = 20)

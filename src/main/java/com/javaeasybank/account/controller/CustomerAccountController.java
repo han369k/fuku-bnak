@@ -54,6 +54,7 @@ public class CustomerAccountController {
         String customerId = jwtUtil.resolveCustomerId(request);
         List<Account> accounts = accountRepository.findAllByCustomerId(customerId);
         List<AccountResponse> list = accounts.stream()
+                .filter(a -> a.getAccountType().isCustomerVisible())
                 .map(a -> {
                     String customerName = customerProfileRepository.findById(a.getCustomerId())
                             .map(cp -> cp.getName())
@@ -81,6 +82,7 @@ public class CustomerAccountController {
         Page<TransLog> result;
 
         List<String> ownedAccounts = accountRepository.findAllByCustomerId(customerId).stream()
+                .filter(a -> a.getAccountType().isCustomerVisible())
                 .map(Account::getAccountNumber).toList();
 
         if (ownedAccounts.isEmpty()) {

@@ -152,7 +152,7 @@ public class AccountApplication {
     private String reviewedBy;
 
     /** 審核通過後建立的帳號 */
-    @Column(name = "created_account_number", length = 12)
+    @Column(name = "created_account_number", length = 14)
     private String createdAccountNumber;
 
     // ===== 時間戳 =====

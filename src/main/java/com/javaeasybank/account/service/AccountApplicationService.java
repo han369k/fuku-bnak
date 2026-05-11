@@ -95,6 +95,9 @@ public class AccountApplicationService {
         app.setCustomerId(customerId);
 
         // 帳戶資訊
+        if (!request.getAccountType().isCustomerVisible()) {
+            throw new BusinessException("此帳戶類型需透過專用業務流程建立");
+        }
         app.setAccountType(request.getAccountType());
         app.setCurrency(resolveCurrency(request));
 
@@ -188,6 +191,9 @@ public class AccountApplicationService {
 
         if (app.getStatus() != ApplicationStatus.PENDING) {
             throw new BusinessException("此申請已非待審核狀態，無法核准");
+        }
+        if (!app.getAccountType().isCustomerVisible()) {
+            throw new BusinessException("此帳戶類型需透過專用業務流程建立");
         }
 
         // 建立帳戶
