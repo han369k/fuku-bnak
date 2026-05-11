@@ -1,6 +1,6 @@
 package com.javaeasybank.risk.dto.request;
 
-import com.javaeasybank.risk.core.enums.ReviewResult;
+import com.javaeasybank.risk.enums.ReviewResult;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 

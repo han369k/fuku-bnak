@@ -1,7 +1,7 @@
 package com.javaeasybank.risk.dto.request;
 
-import com.javaeasybank.risk.core.enums.BusinessScene;
-import com.javaeasybank.risk.core.enums.Occupation;
+import com.javaeasybank.risk.enums.BusinessScene;
+import com.javaeasybank.risk.enums.Occupation;
 import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.Setter;

@@ -1,6 +1,6 @@
 package com.javaeasybank.risk.utils;
 
-import com.javaeasybank.risk.core.enums.Occupation;
+import com.javaeasybank.risk.enums.Occupation;
 import com.javaeasybank.risk.entity.CustomerCreditInfo;
 
 import java.math.BigDecimal;

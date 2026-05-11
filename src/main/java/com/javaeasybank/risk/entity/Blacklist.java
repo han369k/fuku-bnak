@@ -1,7 +1,7 @@
 package com.javaeasybank.risk.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.javaeasybank.risk.core.enums.BlacklistType;
+import com.javaeasybank.risk.enums.BlacklistType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

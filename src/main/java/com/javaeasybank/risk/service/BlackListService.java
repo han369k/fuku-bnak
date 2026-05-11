@@ -1,6 +1,6 @@
 package com.javaeasybank.risk.service;
 
-import com.javaeasybank.risk.core.enums.BlacklistType;
+import com.javaeasybank.risk.enums.BlacklistType;
 import com.javaeasybank.risk.dto.request.BlackListRequest;
 import com.javaeasybank.risk.dto.response.BlackListResponse;
 import com.javaeasybank.risk.entity.Blacklist;

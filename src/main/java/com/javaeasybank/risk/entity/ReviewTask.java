@@ -1,9 +1,8 @@
 package com.javaeasybank.risk.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.javaeasybank.risk.core.enums.BusinessScene;
-import com.javaeasybank.risk.core.enums.ReviewResult;
-import com.javaeasybank.risk.core.enums.RiskLevel;
+import com.javaeasybank.risk.enums.BusinessScene;
+import com.javaeasybank.risk.enums.ReviewResult;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

@@ -1,11 +1,13 @@
 package com.javaeasybank.risk.service;
 
-import com.javaeasybank.risk.core.enums.*;
 import com.javaeasybank.risk.dto.request.RiskReviewRequest;
 import com.javaeasybank.risk.dto.response.RiskReviewResponse;
 import com.javaeasybank.risk.entity.CustomerCreditInfo;
 import com.javaeasybank.risk.entity.ReviewTask;
 import com.javaeasybank.risk.entity.RiskEventLog;
+import com.javaeasybank.risk.enums.BlacklistType;
+import com.javaeasybank.risk.enums.Disposition;
+import com.javaeasybank.risk.enums.RiskLevel;
 import com.javaeasybank.risk.repository.RiskEventLogRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

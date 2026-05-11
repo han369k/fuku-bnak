@@ -1,7 +1,7 @@
 package com.javaeasybank.risk.service;
 
-import com.javaeasybank.risk.core.enums.Disposition;
-import com.javaeasybank.risk.core.enums.RiskLevel;
+import com.javaeasybank.risk.enums.Disposition;
+import com.javaeasybank.risk.enums.RiskLevel;
 import com.javaeasybank.risk.dto.request.RiskReviewRequest;
 import com.javaeasybank.risk.dto.response.RiskEventResponse;
 import com.javaeasybank.risk.entity.RiskEventLog;

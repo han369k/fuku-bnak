@@ -1,10 +1,9 @@
 package com.javaeasybank.risk.service;
 
 import com.javaeasybank.common.exception.BusinessException;
-import com.javaeasybank.risk.core.enums.BusinessScene;
-import com.javaeasybank.risk.core.enums.Disposition;
-import com.javaeasybank.risk.core.enums.ReviewResult;
-import com.javaeasybank.risk.core.enums.RiskLevel;
+import com.javaeasybank.risk.dto.response.ReviewTaskResponse;
+import com.javaeasybank.risk.enums.Disposition;
+import com.javaeasybank.risk.enums.ReviewResult;
 import com.javaeasybank.risk.dto.request.ReviewDecisionRequest;
 import com.javaeasybank.risk.dto.request.RiskReviewRequest;
 import com.javaeasybank.risk.entity.ReviewTask;
@@ -30,8 +29,10 @@ public class ReviewTaskService {
     private final ReviewTaskRepository rtRepos;
     private final CallbackService callbackService;
 
-    public Page<ReviewTask> findAll(Pageable pageable) {
-        return rtRepos.findAll(pageable);
+    @Transactional(readOnly = true)
+    public Page<ReviewTaskResponse> findAll(Pageable pageable) {
+        return rtRepos.findAll(pageable)
+                .map(this::toResponse);
     }
 
     @Transactional
@@ -79,7 +80,7 @@ public class ReviewTaskService {
 
         String newStatus = switch (request.getReviewResult()) {
             case APPROVED, REJECTED -> "COMPLETED";
-            case RETURNED           -> "PENDING";
+            case RETURNED -> "PENDING";
         };
         task.setStatus(newStatus);
 
@@ -117,5 +118,22 @@ public class ReviewTaskService {
                 eventLog.getCallbackUrl(),   // ← 問題在這
                 disposition,
                 eventLog);
+    }
+
+    private ReviewTaskResponse toResponse(ReviewTask task) {
+        RiskEventLog eventLog = task.getRiskEventLog();
+
+        ReviewTaskResponse.ReviewTaskResponseBuilder builder = ReviewTaskResponse.builder()
+                .taskId(task.getTaskId())
+                .businessId(task.getBusinessId())
+                .scene(task.getScene())
+                .status(task.getStatus())
+                .reviewResult(task.getReviewResult())
+                .assignee(task.getAssignee())
+                .adminComment(task.getAdminComment())
+                .priority(task.getPriority())
+                .createAt(task.getCreateAt())
+                .processedAt(task.getProcessedAt());
+        return builder.build();
     }
 }

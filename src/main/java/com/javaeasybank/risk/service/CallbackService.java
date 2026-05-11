@@ -1,6 +1,6 @@
 package com.javaeasybank.risk.service;
 
-import com.javaeasybank.risk.core.enums.Disposition;
+import com.javaeasybank.risk.enums.Disposition;
 import com.javaeasybank.risk.dto.request.CallbackRequest;
 import com.javaeasybank.risk.entity.RiskEventLog;
 import lombok.RequiredArgsConstructor;

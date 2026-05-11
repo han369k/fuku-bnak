@@ -1,6 +1,4 @@
-package com.javaeasybank.risk.core.enums;
-
-import lombok.Getter;
+package com.javaeasybank.risk.enums;
 
 /**
  * 職業類型列舉 - 用於風險評估與隨機資料產生

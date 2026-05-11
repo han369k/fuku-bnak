@@ -1,7 +1,7 @@
 package com.javaeasybank.risk.entity;
 
-import com.javaeasybank.risk.core.enums.Occupation;
-import com.javaeasybank.risk.core.enums.RiskLevel;
+import com.javaeasybank.risk.enums.Occupation;
+import com.javaeasybank.risk.enums.RiskLevel;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

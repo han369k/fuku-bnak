@@ -1,4 +1,4 @@
-package com.javaeasybank.risk.core.enums;
+package com.javaeasybank.risk.enums;
 
 public enum BlacklistType {
     ID_CARD("身分證字號"),

@@ -1,6 +1,6 @@
 package com.javaeasybank.risk.repository;
 
-import com.javaeasybank.risk.core.enums.RiskLevel;
+import com.javaeasybank.risk.enums.RiskLevel;
 import com.javaeasybank.risk.entity.CustomerCreditInfo;
 import org.springframework.data.jpa.repository.JpaRepository;
 

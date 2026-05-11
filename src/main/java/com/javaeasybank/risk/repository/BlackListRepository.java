@@ -1,6 +1,6 @@
 package com.javaeasybank.risk.repository;
 
-import com.javaeasybank.risk.core.enums.BlacklistType;
+import com.javaeasybank.risk.enums.BlacklistType;
 import com.javaeasybank.risk.entity.Blacklist;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

@@ -2,8 +2,8 @@ package com.javaeasybank.risk.service;
 
 import com.javaeasybank.risk.dto.request.RiskReviewRequest;
 import com.javaeasybank.risk.utils.CreditMockUtils;
-import com.javaeasybank.risk.core.enums.Occupation;
-import com.javaeasybank.risk.core.enums.RiskLevel;
+import com.javaeasybank.risk.enums.Occupation;
+import com.javaeasybank.risk.enums.RiskLevel;
 import com.javaeasybank.risk.entity.CustomerCreditInfo;
 import com.javaeasybank.risk.repository.CustomerCreditRepository;
 import lombok.RequiredArgsConstructor;

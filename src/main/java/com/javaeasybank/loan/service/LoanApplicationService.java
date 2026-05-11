@@ -15,7 +15,6 @@ import com.javaeasybank.loan.enums.LoanReviewStatus;
 import com.javaeasybank.loan.repository.LoanApplicationRepository;
 import com.javaeasybank.loan.repository.LoanContactLogRepository;
 import com.javaeasybank.loan.repository.LoanReviewDetailRepository;
-import com.javaeasybank.risk.core.enums.BusinessScene;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
