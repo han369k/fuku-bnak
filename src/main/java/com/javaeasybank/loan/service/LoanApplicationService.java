@@ -1,4 +1,4 @@
-package com.javaeasybank.customer.loan.service;
+package com.javaeasybank.loan.service;
 
 import com.javaeasybank.common.exception.BusinessException;
 import com.javaeasybank.customer.repository.CustomerProfileRepository;
