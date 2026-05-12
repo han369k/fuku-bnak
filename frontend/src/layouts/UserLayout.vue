@@ -143,6 +143,7 @@ const menus = [
     route: null,
     children: [
       { label: '查看所有帳戶', desc: '帳戶餘額與明細總覽', route: 'user-accounts' },
+      { label: '開戶申請', desc: '申請外幣、子帳戶與其他帳戶類型', route: 'user-account-application' },
       { label: '電子存摺', desc: '帳戶封面與銀行資料', route: 'user-e-passbook' },
       { label: '查看所有交易紀錄', desc: '全帳戶交易歷史', route: 'user-transactions' },
     ],
@@ -163,9 +164,11 @@ const menus = [
     svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>',
     route: null,
     children: [
-      { label: '卡片總覽', desc: '查看持有卡片', route: 'user-card-types' },
+      { label: '卡片總覽', desc: '查看所有信用卡', route: 'user-card-types' },
       { label: '線上申辦', desc: '申請新信用卡', route: 'user-card-applications' },
-      { label: '帳單查詢', desc: '查看信用卡帳單', route: null },
+      {label:'卡片管理', desc:'查看持有信用卡', route:'user-cards'},
+      {label:'交易管理', desc:'查看與刷卡交易', route:'user-card-txns'},
+      { label: '帳單查詢', desc: '查看信用卡帳單', route: 'user-card-bills' },
     ],
   },
   {

@@ -11,6 +11,9 @@ import lombok.Data;
 public class CardBillResponseDto {
 
 	private Integer billId;
+
+    private String customerName;
+
     private String billingMonth;
     private LocalDate billDate;
     private LocalDate dueDate;

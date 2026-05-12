@@ -11,14 +11,17 @@ import com.javaeasybank.creditcard.entity.CreditCard;
 public class CashbackCalculator {
 
     public BigDecimal calculateCashback(BigDecimal amount, CreditCard card) {
-     
-        BigDecimal rate = card.getCardType().getCashbackRate();
-
-        if (rate == null) {
+        if (amount == null || card == null || card.getCardType() == null) {
             return BigDecimal.ZERO;
         }
-        return amount.multiply(rate).divide(BigDecimal.valueOf(100),2, RoundingMode.HALF_UP);
-        
-        
+
+        return calculateCashback(amount, card.getCardType().getCashbackRate());
+    }
+
+    public BigDecimal calculateCashback(BigDecimal amount, BigDecimal rate) {
+        if (amount == null || rate == null) {
+            return BigDecimal.ZERO;
+        }
+        return amount.multiply(rate).divide(BigDecimal.valueOf(100),0, RoundingMode.HALF_UP);
     }
 }

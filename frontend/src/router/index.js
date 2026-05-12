@@ -20,6 +20,11 @@ const router = createRouter({
       component: () => import('../views/user/RegisterView.vue'),
     },
     {
+      path: '/verify-email',
+      name: 'verify-email',
+      component: () => import('../views/user/VerifyEmailView.vue'),
+    },
+    {
       path: '/reset-password',
       name: 'reset-password',
       component: () => import('../views/user/ResetPasswordView.vue'),
@@ -51,8 +56,13 @@ const router = createRouter({
           component: () => import('../views/user/CardTypeListView.vue'),
         },
         {
-          path: 'card-applications',
-          name: 'user-card-applications',
+          path: 'cards',
+          name: 'user-cards',
+          component: () => import('../views/user/CardView.vue'),
+        },
+        {
+          path:'card-applications',
+          name:'user-card-applications',
           component: () => import('../views/user/CardApplicationForm.vue'),
         },
         {

@@ -11,6 +11,7 @@ import com.javaeasybank.creditcard.dto.CreditCardRequestDto;
 import com.javaeasybank.creditcard.dto.CreditCardResponseDto;
 import com.javaeasybank.creditcard.entity.CardApplicationItem;
 import com.javaeasybank.creditcard.entity.CreditCard;
+import com.javaeasybank.creditcard.enums.CardStatus;
 import com.javaeasybank.creditcard.mapper.CreditCardMapper;
 import com.javaeasybank.creditcard.repository.CardAppItemRepository;
 import com.javaeasybank.creditcard.repository.CardTypeRepository;
@@ -24,7 +25,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CreditCardService {
 
-	private final CreditCardRepository cardRepository;
+    private final CreditCardRepository cardRepository;
     private final CardTypeRepository cardTypeRepository;
     private final CardAppItemRepository itemRepository;
     private final CreditCardMapper mapper;
@@ -37,7 +38,7 @@ public class CreditCardService {
     // 查單筆
     public CreditCardResponseDto findById(Integer id) {
         CreditCard entity = cardRepository.findById(id)
-            .orElseThrow(() -> new BusinessException("Can not found the creditcard ID:" + id));
+                .orElseThrow(() -> new BusinessException("Can not found the creditcard ID:" + id));
 
         return mapper.toDto(entity);
     }
@@ -49,14 +50,12 @@ public class CreditCardService {
 
         // 關聯處理
         entity.setCardType(
-            cardTypeRepository.findById(dto.getCardTypeId())
-                .orElseThrow(() -> new BusinessException("CardType not found"))
-        );
+                cardTypeRepository.findById(dto.getCardTypeId())
+                        .orElseThrow(() -> new BusinessException("CardType not found")));
 
         entity.setApplicationItem(
-            itemRepository.findById(dto.getApplicationItemId())
-                .orElseThrow(() -> new BusinessException("ApplicationItem not found"))
-        );
+                itemRepository.findById(dto.getApplicationItemId())
+                        .orElseThrow(() -> new BusinessException("ApplicationItem not found")));
 
         return mapper.toDto(cardRepository.save(entity));
     }
@@ -65,7 +64,7 @@ public class CreditCardService {
     public CreditCardResponseDto update(Integer id, CreditCardRequestDto dto) {
 
         CreditCard entity = cardRepository.findById(id)
-            .orElseThrow(() -> new BusinessException("CreditCard not found"));
+                .orElseThrow(() -> new BusinessException("CreditCard not found"));
 
         // 基本欄位更新
         mapper.updateEntityFromDto(dto, entity);
@@ -73,16 +72,14 @@ public class CreditCardService {
         // 關聯更新
         if (dto.getCardTypeId() != null) {
             entity.setCardType(
-                cardTypeRepository.findById(dto.getCardTypeId())
-                    .orElseThrow(() -> new BusinessException("CardType not found"))
-            );
+                    cardTypeRepository.findById(dto.getCardTypeId())
+                            .orElseThrow(() -> new BusinessException("CardType not found")));
         }
 
         if (dto.getApplicationItemId() != null) {
             entity.setApplicationItem(
-                itemRepository.findById(dto.getApplicationItemId())
-                    .orElseThrow(() -> new BusinessException("ApplicationItem not found"))
-            );
+                    itemRepository.findById(dto.getApplicationItemId())
+                            .orElseThrow(() -> new BusinessException("ApplicationItem not found")));
         }
 
         return mapper.toDto(cardRepository.save(entity));
@@ -92,25 +89,30 @@ public class CreditCardService {
     public void deleteById(Integer id) {
         cardRepository.deleteById(id);
     }
-	//查詢客戶卡片列表
-	public List<CreditCardResponseDto> findByCustomerId(Integer customerId) {
-		return mapper.toDtoList(cardRepository.findByCustomerCustomerId(customerId));
-	}
-	//由item產生卡片
-    public void createFromApplicationItem(CardApplicationItem item){
+
+    // 查詢客戶卡片列表
+    public List<CreditCardResponseDto> findByCustomerId(String customerId) {
+        return mapper.toDtoList(cardRepository.findByCustomerCustomerId(customerId));
+    }
+
+    // 由item產生卡片
+    public void createFromApplicationItem(CardApplicationItem item) {
 
         CreditCard card = new CreditCard();
         card.setCustomer(item.getApplication().getCustomer());
-    card.setCardType(item.getCardType());
-    card.setCreditLimit(item.getApprovedLimit());
+        card.setCardType(item.getCardType());
+        card.setCreditLimit(item.getApprovedLimit());
 
-    card.setCardNumber(generateCardNumber());
-    card.setExpiryDate(LocalDate.now().plusYears(5));
+        card.setCardNumber(generateCardNumber());
+        card.setExpiryDate(LocalDate.now().plusYears(5));
 
-    cardRepository.save(card);
+        // 預設狀態為未開通
+        card.setStatus(CardStatus.INACTIVE);
 
-    // 避免重複發卡
-    item.setCreateCardFlag(true);
+        cardRepository.save(card);
+
+        // 避免重複發卡
+        item.setCreateCardFlag(true);
 
     }
 
@@ -126,5 +128,17 @@ public class CreditCardService {
 
         throw new BusinessException("Unable to generate unique card number");
     }
-	
+    // 開通卡片
+    public CreditCardResponseDto activeCard(Integer id) {
+        CreditCard card = cardRepository.findById(id)
+                .orElseThrow(() -> new BusinessException("找不到卡片"));
+
+        if (card.getStatus() == CardStatus.ACTIVE) {
+            throw new BusinessException("卡片已開通");
+        }
+
+        card.setStatus(CardStatus.ACTIVE);
+        return mapper.toDto(cardRepository.save(card));
+    }
+
 }
