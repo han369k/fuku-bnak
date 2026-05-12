@@ -236,6 +236,12 @@ public class LoanApplicationService {
         String cif = customerProfileRepository.findById(loan.getCustomerId())
                 .map(p -> p.getCif())
                 .orElse(null);
+
+        // 風控必填
+        dto.setScene("LOAN_APPLY");
+        dto.setBusinessId(loan.getApplicationId());   // ← businessId
+        dto.setAmount(detail.getConfirmedAmount());    // ← amount
+
         dto.setCif(cif);
         dto.setApplyType(loan.getApplyType());
         dto.setConfirmedAmount(detail.getConfirmedAmount());

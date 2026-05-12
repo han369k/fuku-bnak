@@ -56,8 +56,6 @@ public class RiskEventService {
 
     @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     @Async
-    //********待修正********
-    //因為requestDTO沒有完善 存入metadata的部分出錯
     public void recordEvent(RiskReviewRequest request) {
         log.info("[RiskEvent] 異步開始記錄風險事件: businessId={}, type={}",
                 request.getBusinessId(), request.getScene());
@@ -78,7 +76,8 @@ public class RiskEventService {
             // metaData 從現有欄位組 JSON
             String meta = buildMetaData(request);
             logEntry.setMetaData(meta);
-
+            //callbackurl
+            logEntry.setCallbackUrl(request.getCallbackUrl());
             // 存檔
             relRepos.save(logEntry);
             log.info("[RiskEvent] 日誌記錄成功: logId={}", logEntry.getLogId());

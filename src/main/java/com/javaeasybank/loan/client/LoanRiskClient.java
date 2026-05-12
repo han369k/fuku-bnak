@@ -22,7 +22,7 @@ public class LoanRiskClient {
     //   risk.api.base-url=http://risk-service/api
     //   risk.api.callback-url=http://loan-service/api/loan-callbacks
     @Value("${risk.api.base-url}")
-    private String riskBaseUrl;git
+    private String riskBaseUrl;
 
     @Value("${risk.api.callback-url}")
     private String callbackBaseUrl;
@@ -36,21 +36,16 @@ public class LoanRiskClient {
     // 送審：把 DTO 打到風控的 /risk/review 入口
     public void submitForReview(LoanRiskRequestDTO dto) {
 
-        // 由 client 統一填入回調地址，service 層不需知道
-        dto.setCallbackUrl(callbackBaseUrl + "/status");
+        dto.setCallbackUrl(callbackBaseUrl + "/" + dto.getApplicationId() + "/status");
 
-        //String url = riskBaseUrl + "/risk/review";
         String url = riskBaseUrl;
         log.info("[RiskClient] 送審 applicationId={} → {}", dto.getApplicationId(), url);
 
         try {
             ResponseEntity<Void> response = restTemplate.postForEntity(url, dto, Void.class);
-
             if (!response.getStatusCode().is2xxSuccessful()) {
-                throw new BusinessException(
-                        "風控模組回應異常，HTTP " + response.getStatusCode().value());
+                throw new BusinessException("風控模組回應異常，HTTP " + response.getStatusCode().value());
             }
-
         } catch (RestClientException e) {
             log.error("[RiskClient] 呼叫風控失敗 applicationId={}", dto.getApplicationId(), e);
             throw new BusinessException("送審失敗：無法連接風控模組，請稍後再試");

@@ -148,7 +148,7 @@ public class RiskReviewService {
                 ? overrideReason
                 : buildReason(credit, finalScore));
         log.setMetaData(credit != null ? buildMetaData(credit) : null);
-
+        log.setCallbackUrl(dto.getCallbackUrl());
         return logRepository.save(log);
     }
 

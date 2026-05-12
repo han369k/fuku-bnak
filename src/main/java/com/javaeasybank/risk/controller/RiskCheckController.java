@@ -27,7 +27,7 @@ public class RiskCheckController {
      * 2. 記錄所有風險事件至 RISK_EVENT_LOG。
      * 3. 若判定為 MANUAL_REVIEW，則建立人工審核任務 (ReviewTask)。
      */
-    @PostMapping("/risk-check")
+    @PostMapping
     public ResponseEntity<ApiResponse<RiskCheckResponse>> checkRisk(@Valid @RequestBody RiskCheckRequest request) {
         // 根據 request 中的 scene (例如 TRANSFER, LOGIN) 進行不同邏輯處理
         BusinessScene scene = request.getScene() != null ? request.getScene() : BusinessScene.TRANSFER;
@@ -41,7 +41,6 @@ public class RiskCheckController {
         String reason = "通過系統自動規則檢查";
 
         // 模擬邏輯：如果金額大於 100 萬，標記為 HIGH
-        RiskLevel level = RiskLevel.LOW;
         if (request.getAmount() != null && request.getAmount().doubleValue() > 1000000) {
             level = RiskLevel.HIGH;
             disposition = Disposition.MANUAL_REVIEW;
