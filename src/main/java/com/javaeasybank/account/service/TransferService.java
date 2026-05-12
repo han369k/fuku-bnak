@@ -23,8 +23,6 @@ import com.javaeasybank.account.utils.ReferenceIdGenerator;
 import com.javaeasybank.common.service.EmailService;
 import com.javaeasybank.common.service.ExchangeRateService;
 import com.javaeasybank.customer.repository.CustomerProfileRepository;
-import com.javaeasybank.risk.annotation.RiskCheck;
-import com.javaeasybank.risk.core.enums.RiskScene;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -59,7 +57,7 @@ public class TransferService {
      * 執行國內轉帳。
      * 本行 909 轉帳會查詢目的帳戶並入帳；跨行轉帳只扣轉出帳戶，並額外寫入同業務編號的手續費紀錄。
      */
-    @RiskCheck(scene = RiskScene.TRANSFER)//風控
+
     @Transactional
     public TransferResponse transfer(TransferRequest request) {
         String fromAccNum = normalizeAccountNumber(request.getFromAccountNumber());

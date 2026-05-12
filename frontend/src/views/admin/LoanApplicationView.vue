@@ -1,5 +1,6 @@
 <template>
   <div class="loan-admin" @click="typeDropdownOpen = false">
+
     <!-- ── 頁首 ── -->
     <div class="page-header">
       <div class="header-left">
@@ -50,11 +51,10 @@
               :key="t"
               class="dtag"
               :class="'dtag-' + t"
-              >{{ LOAN_TYPE_NAME[t] }}</span
-            >
-            <span v-if="selectedTypes.length > 3" class="dtag-more"
-              >+{{ selectedTypes.length - 3 }}</span
-            >
+            >{{ LOAN_TYPE_NAME[t] }}</span>
+            <span v-if="selectedTypes.length > 3" class="dtag-more">+{{
+                selectedTypes.length - 3
+              }}</span>
           </span>
           <span class="dropdown-caret" :class="{ rotated: typeDropdownOpen }">▾</span>
         </button>
@@ -69,7 +69,7 @@
             </div>
 
             <label class="dropdown-item all-item" @click.stop>
-              <input type="checkbox" :checked="selectedTypes.length === 0" @change="clearTypes" />
+              <input type="checkbox" :checked="selectedTypes.length === 0" @change="clearTypes"/>
               <span class="check-box"></span>
               <span class="item-name">全部類型</span>
               <span class="item-count">{{ applications.length }}</span>
@@ -77,13 +77,14 @@
 
             <div class="dropdown-divider"></div>
 
-            <label v-for="key in LOAN_TYPE_KEYS" :key="key" class="dropdown-item" @click.stop>
-              <input
-                type="checkbox"
-                :value="key"
-                v-model="selectedTypes"
-                @change="currentPage = 1"
-              />
+            <label
+              v-for="key in LOAN_TYPE_KEYS"
+              :key="key"
+              class="dropdown-item"
+              @click.stop
+            >
+              <input type="checkbox" :value="key" v-model="selectedTypes"
+                     @change="currentPage = 1"/>
               <span class="check-box"></span>
               <span class="item-dot" :class="'idot-' + key"></span>
               <span class="item-name">{{ LOAN_TYPE_NAME[key] }}</span>
@@ -95,10 +96,8 @@
 
       <!-- 結果摘要 -->
       <div class="filter-meta" v-if="!loading">
-        <span
-          class="status-dot"
-          :class="STATUS_OPTIONS.find((s) => s.value === currentStatus)?.dot"
-        ></span>
+        <span class="status-dot"
+              :class="STATUS_OPTIONS.find(s => s.value === currentStatus)?.dot"></span>
         共 <strong>{{ filteredApplications.length }}</strong> 筆
         <span v-if="sortKey" class="sort-hint">
           · 依 {{ SORT_LABEL[sortKey] }} {{ sortDir === 'asc' ? '↑' : '↓' }}
@@ -111,6 +110,7 @@
 
     <!-- ── Table Card ── -->
     <div class="table-card">
+
       <!-- ② 工具列：筆數資訊 + 每頁筆數選單 -->
       <div class="table-toolbar">
         <span class="toolbar-info" v-if="!loading && filteredApplications.length > 0">
@@ -152,133 +152,117 @@
       <div v-else class="table-wrap">
         <table class="data-table">
           <thead>
-            <tr>
-              <!-- ① 可排序欄位 -->
-              <th @click="toggleSort('applicationId')" class="sortable">
-                申請編號<span class="sort-icon">{{ sortIcon('applicationId') }}</span>
-              </th>
-              <th>申請人</th>
-              <th @click="toggleSort('applyType')" class="sortable">
-                類型<span class="sort-icon">{{ sortIcon('applyType') }}</span>
-              </th>
-              <th @click="toggleSort('applyAmount')" class="sortable">
-                金額<span class="sort-icon">{{ sortIcon('applyAmount') }}</span>
-              </th>
-              <th @click="toggleSort('applyPeriod')" class="sortable">
-                期數<span class="sort-icon">{{ sortIcon('applyPeriod') }}</span>
-              </th>
-              <th @click="toggleSort('rate')" class="sortable">
-                利率<span class="sort-icon">{{ sortIcon('rate') }}</span>
-              </th>
-              <th @click="toggleSort('applicationStatus')" class="sortable">
-                申請狀態<span class="sort-icon">{{ sortIcon('applicationStatus') }}</span>
-              </th>
-              <th @click="toggleSort('latestContactStatus')" class="sortable">
-                最新聯繫<span class="sort-icon">{{ sortIcon('latestContactStatus') }}</span>
-              </th>
-              <th @click="toggleSort('createTime')" class="sortable">
-                申請時間<span class="sort-icon">{{ sortIcon('createTime') }}</span>
-              </th>
-              <th class="th-action">操作</th>
-            </tr>
+          <tr>
+            <!-- ① 可排序欄位 -->
+            <th @click="toggleSort('applicationId')" class="sortable">
+              申請編號<span class="sort-icon">{{ sortIcon('applicationId') }}</span>
+            </th>
+            <th>申請人</th>
+            <th @click="toggleSort('applyType')" class="sortable">
+              類型<span class="sort-icon">{{ sortIcon('applyType') }}</span>
+            </th>
+            <th @click="toggleSort('applyAmount')" class="sortable">
+              金額<span class="sort-icon">{{ sortIcon('applyAmount') }}</span>
+            </th>
+            <th @click="toggleSort('applyPeriod')" class="sortable">
+              期數<span class="sort-icon">{{ sortIcon('applyPeriod') }}</span>
+            </th>
+            <th @click="toggleSort('rate')" class="sortable">
+              利率<span class="sort-icon">{{ sortIcon('rate') }}</span>
+            </th>
+            <th @click="toggleSort('applicationStatus')" class="sortable">
+              申請狀態<span class="sort-icon">{{ sortIcon('applicationStatus') }}</span>
+            </th>
+            <th @click="toggleSort('latestContactStatus')" class="sortable">
+              最新聯繫<span class="sort-icon">{{ sortIcon('latestContactStatus') }}</span>
+            </th>
+            <th @click="toggleSort('createTime')" class="sortable">
+              申請時間<span class="sort-icon">{{ sortIcon('createTime') }}</span>
+            </th>
+            <th class="th-action">操作</th>
+          </tr>
           </thead>
           <tbody>
-            <tr
-              v-for="(app, idx) in pagedApplications"
-              :key="app.applicationId"
-              class="data-row"
-              :style="{ animationDelay: idx * 20 + 'ms' }"
-            >
-              <!-- 申請編號 -->
-              <td>
-                <span class="id-chip">{{ app.applicationId }}</span>
-              </td>
+          <tr
+            v-for="(app, idx) in pagedApplications"
+            :key="app.applicationId"
+            class="data-row"
+            :style="{ animationDelay: idx * 20 + 'ms' }"
+          >
+            <!-- 申請編號 -->
+            <td><span class="id-chip">{{ app.applicationId }}</span></td>
 
-              <!-- 申請人 -->
-              <td>
-                <div v-if="app.customerId" class="applicant-member">
-                  <span class="member-badge">會員</span>
-                  <span class="member-id"># {{ app.customerId }}</span>
+            <!-- 申請人 -->
+            <td>
+              <div v-if="app.customerId" class="applicant-member">
+                <span class="member-badge">會員</span>
+                <span class="member-id">{{ app.cif || app.customerId }}</span>
+              </div>
+              <div v-else class="applicant-nonmember">
+                <div class="nm-name">{{ app.applicantName || '—' }}</div>
+                <div class="nm-meta">
+                  <span v-if="app.applicantPhone">📞 {{ app.applicantPhone }}</span>
+                  <span v-if="app.applicantEmail" class="nm-email">✉ {{ app.applicantEmail }}</span>
                 </div>
-                <div v-else class="applicant-nonmember">
-                  <div class="nm-name">{{ app.applicantName || '—' }}</div>
-                  <div class="nm-meta">
-                    <span v-if="app.applicantPhone">📞 {{ app.applicantPhone }}</span>
-                    <span v-if="app.applicantEmail" class="nm-email"
-                      >✉️ {{ app.applicantEmail }}</span
-                    >
-                  </div>
-                </div>
-              </td>
+              </div>
+            </td>
 
-              <!-- 類型 -->
-              <td>
+            <!-- 類型 -->
+            <td>
                 <span class="type-badge" :class="'type-' + app.applyType">
                   {{ LOAN_TYPE_NAME[app.applyType] || app.applyType }}
                 </span>
-              </td>
+            </td>
 
-              <!-- 金額 -->
-              <td>
-                <div class="amount">{{ formatAmount(app.applyAmount) }}</div>
-              </td>
+            <!-- 金額 -->
+            <td>
+              <div class="amount">{{ formatAmount(app.applyAmount) }}</div>
+            </td>
 
-              <!-- 期數 -->
-              <td>
-                <span class="meta-tag">{{ app.applyPeriod }} 個月</span>
-              </td>
+            <!-- 期數 -->
+            <td><span class="meta-tag">{{ app.applyPeriod }} 個月</span></td>
 
-              <!-- 利率 -->
-              <td>
-                <span class="meta-rate">{{ formatRate(app.rate) }}</span>
-              </td>
+            <!-- 利率 -->
+            <td><span class="meta-rate">{{ formatRate(app.rate) }}</span></td>
 
-              <!-- 申請狀態 -->
-              <td>
+            <!-- 申請狀態 -->
+            <td>
                 <span class="status-badge" :class="STATUS_CLASS[app.applicationStatus]">
                   {{ STATUS_LABEL[app.applicationStatus] || app.applicationStatus }}
                 </span>
-              </td>
+            </td>
 
-              <!-- 最新聯繫 -->
-              <td>
-                <div v-if="app.latestContactStatus" class="contact-cell">
+            <!-- 最新聯繫 -->
+            <td>
+              <div v-if="app.latestContactStatus" class="contact-cell">
                   <span class="contact-status" :class="CONTACT_CLASS[app.latestContactStatus]">
                     {{ CONTACT_LABEL[app.latestContactStatus] || app.latestContactStatus }}
                   </span>
-                  <div class="contact-time">{{ formatDate(app.latestContactTime) }}</div>
-                </div>
-                <span v-else class="text-muted">—</span>
-              </td>
+                <div class="contact-time">{{ formatDate(app.latestContactTime) }}</div>
+              </div>
+              <span v-else class="text-muted">—</span>
+            </td>
 
-              <!-- 申請時間 -->
-              <td>
-                <div class="date-cell">
-                  <span class="date-main">{{ formatDateShort(app.createTime) }}</span>
-                  <span class="date-time">{{ formatTime(app.createTime) }}</span>
-                </div>
-              </td>
+            <!-- 申請時間 -->
+            <td>
+              <div class="date-cell">
+                <span class="date-main">{{ formatDateShort(app.createTime) }}</span>
+                <span class="date-time">{{ formatTime(app.createTime) }}</span>
+              </div>
+            </td>
 
-              <!-- 操作 -->
-              <td class="td-action">
-                <div class="action-btns">
-                  <button
-                    class="btn btn-xs btn-outline"
-                    @click="openContactModal(app)"
-                    title="聯繫紀錄"
-                  >
-                    📞
-                  </button>
-                  <button
-                    class="btn btn-xs btn-outline"
-                    @click="openReviewModal(app)"
-                    title="審核填單"
-                  >
-                    🗂
-                  </button>
-                </div>
-              </td>
-            </tr>
+            <!-- 操作 -->
+            <td class="td-action">
+              <div class="action-btns">
+                <button class="btn btn-xs btn-outline" @click="openContactModal(app)"
+                        title="聯繫紀錄">📞
+                </button>
+                <button class="btn btn-xs btn-outline" @click="openReviewModal(app)"
+                        title="審核填單">🗂
+                </button>
+              </div>
+            </td>
+          </tr>
           </tbody>
         </table>
       </div>
@@ -290,21 +274,11 @@
         </span>
 
         <div class="pagination">
-          <button
-            class="page-btn"
-            @click="goToPage(1)"
-            :disabled="currentPage === 1"
-            title="第一頁"
-          >
-            «
+          <button class="page-btn" @click="goToPage(1)" :disabled="currentPage === 1"
+                  title="第一頁">«
           </button>
-          <button
-            class="page-btn nav-btn"
-            @click="goToPage(currentPage - 1)"
-            :disabled="currentPage === 1"
-            title="上一頁"
-          >
-            ‹ 上一頁
+          <button class="page-btn nav-btn" @click="goToPage(currentPage - 1)"
+                  :disabled="currentPage === 1" title="上一頁">‹ 上一頁
           </button>
 
           <div class="page-numbers">
@@ -315,34 +289,28 @@
               :class="{ active: p === currentPage, ellipsis: p === '…' }"
               @click="p !== '…' && goToPage(p)"
               :disabled="p === '…'"
-            >
-              {{ p }}
+            >{{ p }}
             </button>
           </div>
 
-          <button
-            class="page-btn nav-btn"
-            @click="goToPage(currentPage + 1)"
-            :disabled="currentPage === totalPages"
-            title="下一頁"
-          >
-            下一頁 ›
+          <button class="page-btn nav-btn" @click="goToPage(currentPage + 1)"
+                  :disabled="currentPage === totalPages" title="下一頁">下一頁 ›
           </button>
-          <button
-            class="page-btn"
-            @click="goToPage(totalPages)"
-            :disabled="currentPage === totalPages"
-            title="最後一頁"
-          >
-            »
+          <button class="page-btn" @click="goToPage(totalPages)"
+                  :disabled="currentPage === totalPages" title="最後一頁">»
           </button>
         </div>
       </div>
+
     </div>
   </div>
 
   <!-- ── 聯繫紀錄 Modal ── -->
-  <LoanContactLogModal v-model="contactModalOpen" :app="contactModalApp" @log-added="onLogAdded" />
+  <LoanContactLogModal
+    v-model="contactModalOpen"
+    :app="contactModalApp"
+    @log-added="onLogAdded"
+  />
 
   <!-- ── 審核填單 Modal ── -->
   <LoanReviewModal
@@ -353,9 +321,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import {ref, computed, onMounted, onUnmounted} from 'vue'
 import api from '@/api/axios'
-import { BASE_URL } from '@/api/axios'
 import LoanContactLogModal from './LoanContactLogModal.vue'
 import LoanReviewModal from './LoanReviewModal.vue'
 
@@ -363,7 +330,7 @@ import LoanReviewModal from './LoanReviewModal.vue'
 defineEmits([])
 
 // ── Constants ──
-const API_URL = `${BASE_URL}/api/admin/loan-applications`
+const API_URL = '/api/admin/loan-applications'
 
 // ② 每頁筆數選項
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100]
@@ -376,6 +343,7 @@ function openContactModal(app) {
   contactModalApp.value = app
   contactModalOpen.value = true
 }
+
 function onLogAdded() {
   fetchApplications()
 }
@@ -388,76 +356,51 @@ function openReviewModal(app) {
   reviewModalApp.value = app
   reviewModalOpen.value = true
 }
+
 function onReviewUpdated() {
   fetchApplications()
 }
 
 const STATUS_OPTIONS = [
-  { value: 'PENDING_CONTACT', label: '新申請', dot: 'dot-yellow' },
-  { value: 'IN_CONTACT', label: '聯繫中', dot: 'dot-blue' },
-  { value: 'PENDING_REVIEW', label: '審核中', dot: 'dot-purple' },
-  { value: 'APPROVED', label: '已核准', dot: 'dot-green' },
-  { value: 'REJECTED', label: '已拒絕', dot: 'dot-red' },
-  { value: 'DISBURSED', label: '已撥款', dot: 'dot-teal' },
-  { value: 'CLOSED', label: '已結案', dot: 'dot-gray' },
-  { value: 'CANCELLED', label: '已取消',  dot: 'dot-gray'   }
+  {value: 'PENDING_CONTACT', label: '新申請', dot: 'dot-amber'},
+  {value: 'IN_CONTACT', label: '聯繫中', dot: 'dot-blue'},
+  {value: 'PENDING_REVIEW', label: '審核中', dot: 'dot-purple'},
+  {value: 'APPROVED', label: '已核准', dot: 'dot-green'},
+  {value: 'REJECTED', label: '已拒絕', dot: 'dot-red'},
+  {value: 'CANCELLED', label: '已取消', dot: 'dot-orange'},
+  {value: 'DISBURSED', label: '已撥款', dot: 'dot-teal'},
+  {value: 'CLOSED', label: '已結案', dot: 'dot-gray'},
 ]
 
 const STATUS_LABEL = {
-  PENDING_CONTACT: '新申請',
-  IN_CONTACT: '聯繫中',
-  PENDING_REVIEW: '審核中',
-  APPROVED: '已核准',
-  REJECTED: '已拒絕',
-  CANCELLED: '已取消',
-  DISBURSED: '已撥款',
-  CLOSED: '已結案',
+  PENDING_CONTACT: '新申請', IN_CONTACT: '聯繫中', PENDING_REVIEW: '審核中',
+  APPROVED: '已核准', REJECTED: '已拒絕', CANCELLED: '已取消',
+  DISBURSED: '已撥款', CLOSED: '已結案',
 }
 const STATUS_CLASS = {
-  PENDING_CONTACT: 'status-yellow',
-  IN_CONTACT: 'status-blue',
-  PENDING_REVIEW: 'status-purple',
-  APPROVED: 'status-green',
-  REJECTED: 'status-red',
-  CANCELLED: 'status-gray',
-  DISBURSED: 'status-teal',
-  CLOSED: 'status-gray',
+  PENDING_CONTACT: 'status-yellow', IN_CONTACT: 'status-blue', PENDING_REVIEW: 'status-purple',
+  APPROVED: 'status-green', REJECTED: 'status-red', CANCELLED: 'status-gray',
+  DISBURSED: 'status-teal', CLOSED: 'status-gray',
 }
 const CONTACT_LABEL = {
-  NOT_CONTACTED: '未聯繫',
-  ATTEMPTED: '嘗試中',
-  REACHED: '已接通',
-  CONFIRMED: '已確認',
-  DECLINED: '已放棄',
+  NOT_CONTACTED: '未聯繫', ATTEMPTED: '嘗試中', REACHED: '已接通',
+  CONFIRMED: '已確認', DECLINED: '已放棄',
 }
 const CONTACT_CLASS = {
-  NOT_CONTACTED: 'c-gray',
-  ATTEMPTED: 'c-blue',
-  REACHED: 'c-green',
-  CONFIRMED: 'c-gold',
-  DECLINED: 'c-red',
+  NOT_CONTACTED: 'c-gray', ATTEMPTED: 'c-blue', REACHED: 'c-green',
+  CONFIRMED: 'c-gold', DECLINED: 'c-red',
 }
 const LOAN_TYPE_NAME = {
-  PERSONAL: '個人信貸',
-  CAR: '汽車貸款',
-  MOTOR: '機車貸款',
-  STUDENT: '學貸',
-  BUSINESS: '創業貸款',
-  HOUSE: '房屋貸款',
-  LAND: '土地貸款',
+  PERSONAL: '個人信貸', CAR: '汽車貸款', MOTOR: '機車貸款', STUDENT: '學貸',
+  BUSINESS: '創業貸款', HOUSE: '房屋貸款', LAND: '土地貸款',
 }
 const LOAN_TYPE_KEYS = Object.keys(LOAN_TYPE_NAME)
 
 // ① 排序欄位中文對照
 const SORT_LABEL = {
-  applicationId: '申請編號',
-  applyType: '類型',
-  applyAmount: '金額',
-  applyPeriod: '期數',
-  rate: '利率',
-  applicationStatus: '申請狀態',
-  latestContactStatus: '最新聯繫',
-  createTime: '申請時間',
+  applicationId: '申請編號', applyType: '類型', applyAmount: '金額',
+  applyPeriod: '期數', rate: '利率', applicationStatus: '申請狀態',
+  latestContactStatus: '最新聯繫', createTime: '申請時間',
 }
 
 // ── State ──
@@ -485,7 +428,7 @@ const filteredApplications = computed(() => {
   let list = applications.value
 
   if (selectedTypes.value.length > 0)
-    list = list.filter((a) => selectedTypes.value.includes(a.applyType))
+    list = list.filter(a => selectedTypes.value.includes(a.applyType))
 
   if (sortKey.value) {
     const key = sortKey.value
@@ -502,13 +445,14 @@ const filteredApplications = computed(() => {
 
 /** ③ 分頁計算 */
 const totalPages = computed(() =>
-  Math.max(1, Math.ceil(filteredApplications.value.length / pageSize.value)),
+  Math.max(1, Math.ceil(filteredApplications.value.length / pageSize.value))
 )
 const pageStart = computed(() =>
-  filteredApplications.value.length === 0 ? 0 : (currentPage.value - 1) * pageSize.value + 1,
+  filteredApplications.value.length === 0 ? 0
+    : (currentPage.value - 1) * pageSize.value + 1
 )
 const pageEnd = computed(() =>
-  Math.min(currentPage.value * pageSize.value, filteredApplications.value.length),
+  Math.min(currentPage.value * pageSize.value, filteredApplications.value.length)
 )
 const pagedApplications = computed(() => {
   const s = (currentPage.value - 1) * pageSize.value
@@ -519,7 +463,7 @@ const pagedApplications = computed(() => {
 const pageNumbers = computed(() => {
   const total = totalPages.value
   const cur = currentPage.value
-  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
+  if (total <= 7) return Array.from({length: total}, (_, i) => i + 1)
   if (cur <= 4) return [1, 2, 3, 4, 5, '…', total]
   if (cur >= total - 3) return [1, '…', total - 4, total - 3, total - 2, total - 1, total]
   return [1, '…', cur - 1, cur, cur + 1, '…', total]
@@ -531,14 +475,12 @@ async function fetchApplications() {
   error.value = ''
   try {
     const res = await api.get(API_URL, {
-      params: { status: currentStatus.value },
-      headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+      params: {status: currentStatus.value},
+      headers: {'Cache-Control': 'no-cache', 'Pragma': 'no-cache'},
     })
     applications.value = res.data.success ? res.data.data : []
   } catch (e) {
-    error.value =
-      e.response?.data?.message ||
-      '連線失敗，請確認後端服務是否啟動（GET /api/admin/loan-applications）'
+    error.value = e.response?.data?.message || '連線失敗，請確認後端服務是否啟動（GET /api/admin/loan-applications）'
     applications.value = []
   } finally {
     loading.value = false
@@ -560,11 +502,12 @@ function goToPage(page) {
 function toggleSort(key) {
   if (sortKey.value === key) sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
   else {
-    sortKey.value = key
+    sortKey.value = key;
     sortDir.value = 'asc'
   }
   currentPage.value = 1
 }
+
 function sortIcon(key) {
   if (sortKey.value !== key) return '⇅'
   return sortDir.value === 'asc' ? '↑' : '↓'
@@ -572,26 +515,31 @@ function sortIcon(key) {
 
 // ④ 類型篩選
 function clearTypes() {
-  selectedTypes.value = []
+  selectedTypes.value = [];
   currentPage.value = 1
 }
+
 function countByType(key) {
-  return applications.value.filter((a) => a.applyType === key).length
+  return applications.value.filter(a => a.applyType === key).length
 }
 
 // ── Formatters ──
 function formatAmount(n) {
   return n ? '$ ' + Number(n).toLocaleString('zh-TW') : '—'
 }
+
 function formatRate(r) {
   return r == null ? '—' : (r * 100).toFixed(2) + '%'
 }
+
 function formatDate(d) {
   return d ? d.replace('T', ' ').substring(0, 16) : '—'
 }
+
 function formatDateShort(d) {
   return d ? d.substring(0, 10) : '—'
 }
+
 function formatTime(d) {
   return d ? d.replace('T', ' ').substring(11, 16) : ''
 }
@@ -604,7 +552,7 @@ function startAutoRefresh() {
 }
 
 onMounted(() => {
-  fetchApplications()
+  fetchApplications();
   startAutoRefresh()
 })
 onUnmounted(() => clearInterval(refreshTimer))
@@ -612,25 +560,29 @@ onUnmounted(() => clearInterval(refreshTimer))
 
 <style scoped>
 .loan-admin {
-  /* ── Light theme tokens ── */
-  --accent: #2563eb;
-  --accent-dim: rgba(37, 99, 235, 0.08);
-  --accent-lt: rgba(37, 99, 235, 0.15);
-  --bg: #f8fafc;
-  --surface: #ffffff;
-  --surface-2: #f1f5f9;
-  --border: #e2e8f0;
-  --border-2: #cbd5e1;
-  --ink: #0f172a;
-  --ink-2: #1e293b;
-  --muted: #94a3b8;
-  --muted-2: #64748b;
-  --red: #dc2626;
-  --green: #16a34a;
-  --blue: #2563eb;
-  --teal: #0d9488;
-  --purple: #7c3aed;
-  --yellow: #d97706;
+  /* ── 配色依據 ── */
+  --accent: #A65A4D;
+  --accent-dim: rgba(166, 90, 77, 0.10);
+  --accent-lt: rgba(166, 90, 77, 0.20);
+  --bg: #F5F1EA;
+  --surface: #FDFAF6;
+  --surface-2: #EAE4DA;
+  --border: #D6CEC3;
+  --border-2: #C4BBB0;
+  --ink: #2B2B2B;
+  --ink-2: #3D3530;
+  --muted: #A89A8E;
+  --muted-2: #6E6259;
+  --primary: #5C6B5F;
+  --primary-dk: #3F4A42;
+  --red: #A65A4D;
+  --green: #4A8C5C;
+  --yellow: #8C7355;
+  --amber: #C49A3C;
+  --blue: #4E7A96;
+  --teal: #3D8A78;
+  --purple: #7265A0;
+  --orange: #C47A3C;
 
   padding: 32px 28px;
   max-width: 1400px;
@@ -648,6 +600,7 @@ onUnmounted(() => clearInterval(refreshTimer))
   justify-content: space-between;
   margin-bottom: 24px;
 }
+
 .page-title {
   font-family: 'Noto Serif TC', serif;
   font-size: 26px;
@@ -655,6 +608,7 @@ onUnmounted(() => clearInterval(refreshTimer))
   color: var(--ink);
   line-height: 1.2;
 }
+
 .header-actions {
   display: flex;
   align-items: center;
@@ -667,14 +621,17 @@ onUnmounted(() => clearInterval(refreshTimer))
   align-items: center;
   gap: 8px;
 }
+
 .ar-label {
   font-size: 12px;
   color: var(--muted-2);
   white-space: nowrap;
 }
+
 .ar-select {
   min-width: 80px;
 }
+
 .ar-countdown {
   display: inline-flex;
   align-items: center;
@@ -687,6 +644,7 @@ onUnmounted(() => clearInterval(refreshTimer))
   padding: 3px 9px;
   border-radius: 20px;
 }
+
 .ar-dot {
   width: 6px;
   height: 6px;
@@ -694,12 +652,13 @@ onUnmounted(() => clearInterval(refreshTimer))
   background: var(--accent);
   flex-shrink: 0;
 }
+
 .ar-dot.pulsing {
   animation: pulse 1.4s ease-in-out infinite;
 }
+
 @keyframes pulse {
-  0%,
-  100% {
+  0%, 100% {
     opacity: 1;
     transform: scale(1);
   }
@@ -717,11 +676,13 @@ onUnmounted(() => clearInterval(refreshTimer))
   margin-bottom: 16px;
   flex-wrap: wrap;
 }
+
 .pills-group {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
 }
+
 .filter-pill {
   display: inline-flex;
   align-items: center;
@@ -736,15 +697,18 @@ onUnmounted(() => clearInterval(refreshTimer))
   color: var(--muted-2);
   transition: all 0.15s;
 }
+
 .filter-pill:hover {
   border-color: var(--accent);
   color: var(--accent);
 }
+
 .filter-pill.active {
   background: var(--accent-dim);
   border-color: var(--accent);
   color: var(--accent);
 }
+
 .pill-dot {
   width: 6px;
   height: 6px;
@@ -752,6 +716,7 @@ onUnmounted(() => clearInterval(refreshTimer))
   background: currentColor;
   opacity: 0.8;
 }
+
 .pill-count {
   background: rgba(37, 99, 235, 0.12);
   border-radius: 10px;
@@ -763,6 +728,7 @@ onUnmounted(() => clearInterval(refreshTimer))
 .type-dropdown-wrap {
   position: relative;
 }
+
 .type-dropdown-trigger {
   display: inline-flex;
   align-items: center;
@@ -779,34 +745,42 @@ onUnmounted(() => clearInterval(refreshTimer))
   outline: none;
   white-space: nowrap;
 }
+
 .type-dropdown-trigger:hover {
   border-color: var(--accent);
 }
+
 .type-dropdown-trigger.open {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-dim);
 }
+
 .type-dropdown-trigger.active {
   border-color: var(--accent);
   background: var(--accent-dim);
   color: var(--accent);
 }
+
 .trigger-icon {
   font-size: 13px;
 }
+
 .dropdown-caret {
   font-size: 10px;
   color: var(--muted-2);
   transition: transform 0.2s;
   margin-left: 2px;
 }
+
 .dropdown-caret.rotated {
   transform: rotate(180deg);
 }
+
 .dtag-row {
   display: flex;
   gap: 4px;
 }
+
 .dtag {
   font-size: 10px;
   padding: 1px 5px;
@@ -814,41 +788,49 @@ onUnmounted(() => clearInterval(refreshTimer))
   border: 1px solid;
   font-family: 'IBM Plex Mono', monospace;
 }
+
 .dtag-PERSONAL {
-  color: #b45309;
-  border-color: #fde68a;
-  background: #fffbeb;
+  color: #7A5C3A;
+  border-color: #D6CEC3;
+  background: #F5F1EA;
 }
+
 .dtag-CAR {
-  color: #1d4ed8;
-  border-color: #bfdbfe;
-  background: #eff6ff;
+  color: #3F5F5A;
+  border-color: #B5CECA;
+  background: #EEF3F2;
 }
+
 .dtag-MOTOR {
-  color: #c2410c;
-  border-color: #fed7aa;
-  background: #fff7ed;
+  color: #7A4A38;
+  border-color: #D4B8AE;
+  background: #F5EDE9;
 }
+
 .dtag-STUDENT {
-  color: #15803d;
-  border-color: #bbf7d0;
-  background: #f0fdf4;
+  color: #4A6B5C;
+  border-color: #B5CCBF;
+  background: #EEF3EF;
 }
+
 .dtag-BUSINESS {
-  color: #6d28d9;
-  border-color: #ddd6fe;
-  background: #f5f3ff;
+  color: #5C5074;
+  border-color: #C4BCDA;
+  background: #F0EEF5;
 }
+
 .dtag-HOUSE {
-  color: #0f766e;
-  border-color: #99f6e4;
-  background: #f0fdfa;
+  color: #3D5C58;
+  border-color: #AECBC7;
+  background: #EBF2F1;
 }
+
 .dtag-LAND {
-  color: #78716c;
-  border-color: #e7e5e4;
-  background: #fafaf9;
+  color: #6E6259;
+  border-color: #D6CEC3;
+  background: #EAE4DA;
 }
+
 .dtag-more {
   font-size: 10px;
   padding: 1px 6px;
@@ -871,15 +853,13 @@ onUnmounted(() => clearInterval(refreshTimer))
   z-index: 300;
   overflow: hidden;
 }
+
 /* dropdown transition */
-.drop-enter-active,
-.drop-leave-active {
-  transition:
-    opacity 0.15s,
-    transform 0.15s;
+.drop-enter-active, .drop-leave-active {
+  transition: opacity 0.15s, transform 0.15s;
 }
-.drop-enter-from,
-.drop-leave-to {
+
+.drop-enter-from, .drop-leave-to {
   opacity: 0;
   transform: translateY(-6px);
 }
@@ -890,6 +870,7 @@ onUnmounted(() => clearInterval(refreshTimer))
   justify-content: space-between;
   padding: 10px 14px 8px;
 }
+
 .dropdown-title {
   font-size: 11px;
   font-family: 'IBM Plex Mono', monospace;
@@ -897,6 +878,7 @@ onUnmounted(() => clearInterval(refreshTimer))
   text-transform: uppercase;
   color: var(--muted-2);
 }
+
 .clear-btn {
   font-size: 11px;
   color: var(--accent);
@@ -906,14 +888,17 @@ onUnmounted(() => clearInterval(refreshTimer))
   padding: 0;
   font-family: 'Noto Sans TC', sans-serif;
 }
+
 .clear-btn:hover {
   text-decoration: underline;
 }
+
 .dropdown-divider {
   border: none;
   border-top: 1px solid var(--border);
   margin: 2px 0;
 }
+
 .dropdown-item {
   display: flex;
   align-items: center;
@@ -924,12 +909,15 @@ onUnmounted(() => clearInterval(refreshTimer))
   color: var(--ink-2);
   transition: background 0.1s;
 }
+
 .dropdown-item:hover {
   background: var(--surface-2);
 }
+
 .dropdown-item input[type='checkbox'] {
   display: none;
 }
+
 .check-box {
   width: 16px;
   height: 16px;
@@ -942,10 +930,12 @@ onUnmounted(() => clearInterval(refreshTimer))
   align-items: center;
   justify-content: center;
 }
+
 .dropdown-item input[type='checkbox']:checked + .check-box {
   background: var(--accent);
   border-color: var(--accent);
 }
+
 .dropdown-item input[type='checkbox']:checked + .check-box::after {
   content: '✓';
   font-size: 10px;
@@ -953,40 +943,51 @@ onUnmounted(() => clearInterval(refreshTimer))
   font-weight: 700;
   line-height: 1;
 }
+
 .all-item input[type='checkbox']:checked + .check-box {
   background: var(--ink-2);
   border-color: var(--ink-2);
 }
+
 .item-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
 }
+
 .idot-PERSONAL {
-  background: #b45309;
+  background: #7A5C3A;
 }
+
 .idot-CAR {
-  background: #1d4ed8;
+  background: #3F5F5A;
 }
+
 .idot-MOTOR {
-  background: #c2410c;
+  background: #7A4A38;
 }
+
 .idot-STUDENT {
-  background: #15803d;
+  background: #4A6B5C;
 }
+
 .idot-BUSINESS {
-  background: #6d28d9;
+  background: #5C5074;
 }
+
 .idot-HOUSE {
-  background: #0f766e;
+  background: #3D5C58;
 }
+
 .idot-LAND {
-  background: #78716c;
+  background: #6E6259;
 }
+
 .item-name {
   flex: 1;
 }
+
 .item-count {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 11px;
@@ -1005,14 +1006,17 @@ onUnmounted(() => clearInterval(refreshTimer))
   align-items: center;
   gap: 6px;
 }
+
 .filter-meta strong {
   color: var(--ink);
 }
+
 .sort-hint {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 11px;
   color: var(--accent);
 }
+
 .status-dot {
   width: 7px;
   height: 7px;
@@ -1020,24 +1024,47 @@ onUnmounted(() => clearInterval(refreshTimer))
   display: inline-block;
   flex-shrink: 0;
 }
-.dot-yellow {
-  background: var(--yellow);
-}
+
 .dot-blue {
   background: var(--blue);
 }
-.dot-purple {
-  background: var(--purple);
-}
+
 .dot-green {
   background: var(--green);
 }
-.dot-red {
-  background: var(--red);
-}
+
 .dot-teal {
   background: var(--teal);
 }
+
+.dot-amber {
+  background: var(--amber);
+}
+
+.dot-blue {
+  background: var(--blue);
+}
+
+.dot-purple {
+  background: var(--purple);
+}
+
+.dot-green {
+  background: var(--green);
+}
+
+.dot-red {
+  background: var(--red);
+}
+
+.dot-orange {
+  background: var(--orange);
+}
+
+.dot-teal {
+  background: var(--teal);
+}
+
 .dot-gray {
   background: var(--muted);
 }
@@ -1047,8 +1074,8 @@ onUnmounted(() => clearInterval(refreshTimer))
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: rgba(166, 90, 77, 0.08);
+  border: 1px solid rgba(166, 90, 77, 0.25);
   color: var(--red);
   padding: 10px 16px;
   border-radius: 8px;
@@ -1062,9 +1089,7 @@ onUnmounted(() => clearInterval(refreshTimer))
   border: 1px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.06),
-    0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 /* ── Toolbar ── */
@@ -1076,26 +1101,31 @@ onUnmounted(() => clearInterval(refreshTimer))
   border-bottom: 1px solid var(--border);
   background: var(--surface-2);
 }
+
 .toolbar-info {
   font-size: 12px;
   color: var(--muted-2);
   font-family: 'IBM Plex Mono', monospace;
 }
+
 .page-size-wrap {
   display: flex;
   align-items: center;
   gap: 8px;
 }
+
 .size-label {
   font-size: 12px;
   color: var(--muted-2);
   white-space: nowrap;
 }
+
 .styled-select-wrap {
   position: relative;
   display: inline-flex;
   align-items: center;
 }
+
 .styled-select {
   appearance: none;
   background: var(--surface);
@@ -1110,10 +1140,12 @@ onUnmounted(() => clearInterval(refreshTimer))
   transition: border-color 0.15s;
   min-width: 78px;
 }
+
 .styled-select:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-dim);
 }
+
 .select-caret {
   position: absolute;
   right: 9px;
@@ -1126,6 +1158,7 @@ onUnmounted(() => clearInterval(refreshTimer))
 .skeleton-wrap {
   padding: 8px 0;
 }
+
 .skeleton-row {
   display: flex;
   gap: 16px;
@@ -1133,23 +1166,28 @@ onUnmounted(() => clearInterval(refreshTimer))
   border-bottom: 1px solid var(--border);
   align-items: center;
 }
+
 .sk {
-  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background: linear-gradient(90deg, #EAE4DA 25%, #D6CEC3 50%, #EAE4DA 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite;
   border-radius: 4px;
   height: 14px;
   flex-shrink: 0;
 }
+
 .sk-id {
   width: 140px;
 }
+
 .sk-mid {
   width: 110px;
 }
+
 .sk-short {
   width: 70px;
 }
+
 @keyframes shimmer {
   to {
     background-position: -200% 0;
@@ -1162,11 +1200,13 @@ onUnmounted(() => clearInterval(refreshTimer))
   padding: 56px 20px;
   color: var(--muted);
 }
+
 .empty-icon {
   font-size: 40px;
   margin-bottom: 12px;
   opacity: 0.4;
 }
+
 .empty-state p {
   font-size: 14px;
 }
@@ -1175,11 +1215,13 @@ onUnmounted(() => clearInterval(refreshTimer))
 .table-wrap {
   overflow-x: auto;
 }
+
 .data-table {
   width: 100%;
   border-collapse: collapse;
   white-space: nowrap;
 }
+
 .data-table th {
   text-align: left;
   padding: 11px 16px;
@@ -1193,22 +1235,27 @@ onUnmounted(() => clearInterval(refreshTimer))
   background: var(--surface-2);
   user-select: none;
 }
+
 /* ① 排序欄位 */
 .data-table th.sortable {
   cursor: pointer;
 }
+
 .data-table th.sortable:hover {
   color: var(--accent);
-  background: #eef2ff;
+  background: var(--surface-2);
 }
+
 .sort-icon {
   font-size: 11px;
   opacity: 0.45;
   margin-left: 4px;
 }
+
 .data-table th.sortable:hover .sort-icon {
   opacity: 1;
 }
+
 .th-action {
   text-align: center;
 }
@@ -1216,6 +1263,7 @@ onUnmounted(() => clearInterval(refreshTimer))
 .data-row {
   animation: rowIn 0.2s both;
 }
+
 @keyframes rowIn {
   from {
     opacity: 0;
@@ -1226,6 +1274,7 @@ onUnmounted(() => clearInterval(refreshTimer))
     transform: translateY(0);
   }
 }
+
 .data-row td {
   padding: 13px 16px;
   border-bottom: 1px solid var(--border);
@@ -1233,12 +1282,15 @@ onUnmounted(() => clearInterval(refreshTimer))
   font-size: 13px;
   color: var(--ink-2);
 }
+
 .data-row:last-child td {
   border-bottom: none;
 }
+
 .data-row:hover td {
-  background: #f8faff;
+  background: rgba(166, 90, 77, 0.04);
 }
+
 .td-action {
   text-align: center;
 }
@@ -1260,6 +1312,7 @@ onUnmounted(() => clearInterval(refreshTimer))
   align-items: center;
   gap: 8px;
 }
+
 .member-badge {
   font-size: 10px;
   font-family: 'IBM Plex Mono', monospace;
@@ -1269,29 +1322,35 @@ onUnmounted(() => clearInterval(refreshTimer))
   padding: 2px 7px;
   border-radius: 4px;
 }
+
 .member-id {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 13px;
   color: var(--muted-2);
 }
+
 .applicant-nonmember {
   line-height: 1.4;
 }
+
 .nm-name {
   font-size: 13px;
   font-weight: 500;
   color: var(--ink);
 }
+
 .nm-meta {
   display: flex;
   gap: 10px;
   margin-top: 2px;
 }
+
 .nm-meta span {
   font-size: 11px;
   color: var(--muted-2);
   font-family: 'IBM Plex Mono', monospace;
 }
+
 .nm-email {
   max-width: 160px;
   overflow: hidden;
@@ -1308,40 +1367,47 @@ onUnmounted(() => clearInterval(refreshTimer))
   color: var(--muted-2);
   display: inline-block;
 }
+
 .type-PERSONAL {
-  color: #b45309;
-  border-color: #fde68a;
-  background: #fffbeb;
+  color: #7A5C3A;
+  border-color: #D6CEC3;
+  background: #F5F1EA;
 }
+
 .type-CAR {
-  color: #1d4ed8;
-  border-color: #bfdbfe;
-  background: #eff6ff;
+  color: #3F5F5A;
+  border-color: #B5CECA;
+  background: #EEF3F2;
 }
+
 .type-MOTOR {
-  color: #c2410c;
-  border-color: #fed7aa;
-  background: #fff7ed;
+  color: #7A4A38;
+  border-color: #D4B8AE;
+  background: #F5EDE9;
 }
+
 .type-STUDENT {
-  color: #15803d;
-  border-color: #bbf7d0;
-  background: #f0fdf4;
+  color: #4A6B5C;
+  border-color: #B5CCBF;
+  background: #EEF3EF;
 }
+
 .type-BUSINESS {
-  color: #6d28d9;
-  border-color: #ddd6fe;
-  background: #f5f3ff;
+  color: #5C5074;
+  border-color: #C4BCDA;
+  background: #F0EEF5;
 }
+
 .type-HOUSE {
-  color: #0f766e;
-  border-color: #99f6e4;
-  background: #f0fdfa;
+  color: #3D5C58;
+  border-color: #AECBC7;
+  background: #EBF2F1;
 }
+
 .type-LAND {
-  color: #78716c;
-  border-color: #e7e5e4;
-  background: #fafaf9;
+  color: #6E6259;
+  border-color: #D6CEC3;
+  background: #EAE4DA;
 }
 
 .amount {
@@ -1350,11 +1416,13 @@ onUnmounted(() => clearInterval(refreshTimer))
   font-weight: 600;
   color: var(--ink);
 }
+
 .meta-tag {
   font-size: 12px;
   color: var(--muted-2);
   font-family: 'IBM Plex Mono', monospace;
 }
+
 .meta-rate {
   font-size: 12px;
   color: var(--green);
@@ -1372,36 +1440,43 @@ onUnmounted(() => clearInterval(refreshTimer))
   white-space: nowrap;
   font-weight: 500;
 }
+
 .status-yellow {
-  color: #92400e;
-  border-color: #fcd34d;
-  background: #fffbeb;
+  color: #7A5C30;
+  border-color: #C4B090;
+  background: #F5EFE6;
 }
+
 .status-blue {
-  color: #1e40af;
-  border-color: #93c5fd;
-  background: #eff6ff;
+  color: #3F5F5A;
+  border-color: #9BBAB6;
+  background: #EEF3F2;
 }
+
 .status-purple {
-  color: #5b21b6;
-  border-color: #c4b5fd;
-  background: #f5f3ff;
+  color: #5C5074;
+  border-color: #C4BCDA;
+  background: #F0EEF5;
 }
+
 .status-green {
-  color: #166534;
-  border-color: #86efac;
-  background: #f0fdf4;
+  color: var(--primary-dk);
+  border-color: #A5B8A9;
+  background: #ECF0EC;
 }
+
 .status-red {
-  color: #991b1b;
-  border-color: #fca5a5;
-  background: #fef2f2;
+  color: var(--accent);
+  border-color: rgba(166, 90, 77, 0.4);
+  background: rgba(166, 90, 77, 0.08);
 }
+
 .status-teal {
-  color: #115e59;
-  border-color: #5eead4;
-  background: #f0fdfa;
+  color: #3D5C58;
+  border-color: #AECBC7;
+  background: #EBF2F1;
 }
+
 .status-gray {
   color: var(--muted-2);
   border-color: var(--border-2);
@@ -1411,27 +1486,34 @@ onUnmounted(() => clearInterval(refreshTimer))
 .contact-cell {
   line-height: 1.3;
 }
+
 .contact-status {
   font-size: 11px;
   font-family: 'IBM Plex Mono', monospace;
   display: inline-block;
   font-weight: 500;
 }
+
 .c-gray {
   color: var(--muted);
 }
+
 .c-blue {
   color: var(--blue);
 }
+
 .c-green {
-  color: var(--green);
+  color: var(--primary);
 }
+
 .c-gold {
-  color: #d97706;
+  color: var(--yellow);
 }
+
 .c-red {
   color: var(--red);
 }
+
 .contact-time {
   font-size: 11px;
   color: var(--muted);
@@ -1442,12 +1524,14 @@ onUnmounted(() => clearInterval(refreshTimer))
 .date-cell {
   line-height: 1.3;
 }
+
 .date-main {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 12px;
   color: var(--ink-2);
   display: block;
 }
+
 .date-time {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 11px;
@@ -1472,34 +1556,41 @@ onUnmounted(() => clearInterval(refreshTimer))
   transition: all 0.15s;
   font-weight: 500;
 }
+
 .btn-sm {
   padding: 7px 14px;
   font-size: 12px;
 }
+
 .btn-xs {
   padding: 5px 9px;
   font-size: 13px;
   border-radius: 6px;
 }
+
 .btn-ghost {
   background: var(--surface);
   color: var(--muted-2);
   border: 1px solid var(--border);
 }
+
 .btn-ghost:hover {
   border-color: var(--accent);
   color: var(--accent);
   background: var(--accent-dim);
 }
+
 .btn-ghost:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
+
 .btn-outline {
   background: transparent;
   color: var(--muted-2);
   border: 1px solid var(--border);
 }
+
 .btn-outline:hover {
   border-color: var(--accent);
   color: var(--accent);
@@ -1517,11 +1608,13 @@ onUnmounted(() => clearInterval(refreshTimer))
   flex-wrap: wrap;
   gap: 10px;
 }
+
 .footer-count {
   font-size: 12px;
   color: var(--muted-2);
   font-family: 'IBM Plex Mono', monospace;
 }
+
 .footer-count strong {
   color: var(--ink);
 }
@@ -1531,11 +1624,13 @@ onUnmounted(() => clearInterval(refreshTimer))
   align-items: center;
   gap: 4px;
 }
+
 .page-numbers {
   display: flex;
   align-items: center;
   gap: 4px;
 }
+
 .page-btn {
   display: inline-flex;
   align-items: center;
@@ -1552,24 +1647,29 @@ onUnmounted(() => clearInterval(refreshTimer))
   min-width: 32px;
   white-space: nowrap;
 }
+
 .nav-btn {
   padding: 5px 12px;
 }
+
 .page-btn:hover:not(:disabled) {
   border-color: var(--accent);
   color: var(--accent);
   background: var(--accent-dim);
 }
+
 .page-btn:disabled {
   opacity: 0.35;
   cursor: not-allowed;
 }
+
 .page-btn.active {
   background: var(--accent);
   border-color: var(--accent);
   color: #fff;
   font-weight: 600;
 }
+
 .page-btn.ellipsis {
   border-color: transparent;
   background: transparent;
@@ -1581,10 +1681,12 @@ onUnmounted(() => clearInterval(refreshTimer))
 .text-muted {
   color: var(--muted);
 }
+
 .spin {
   animation: spin 0.8s linear infinite;
   display: inline-block;
 }
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
