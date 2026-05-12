@@ -5,7 +5,8 @@
     </div>
 
     <div class="action-bar" style="justify-content: flex-end;">
-      <div class="global-actions">
+      <!-- 僅 CISO (Lvl4+) 才能匯出日誌 -->
+      <div class="global-actions" v-if="isCISO">
         <a-button class="rounded-btn btn-ghost" @click="handleExportCsv">
           <template #icon><DownloadOutlined /></template>
           匯出 CSV
@@ -59,10 +60,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import { DownloadOutlined } from '@ant-design/icons-vue'
 import { getActionLogs, exportLogsCsv, exportLogsPdf } from '@/api/auth'
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore()
+// 只有 permLevel >= 4 的 CISO 才能匯出
+const permLevel = computed(() => authStore.user?.permLevel ?? 0)
+const isCISO = computed(() => permLevel.value >= 4)
 
 const logs = ref([])
 const loading = ref(false)

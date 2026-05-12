@@ -1,8 +1,9 @@
 <script setup>
-import { ref, onMounted, h } from 'vue'
+import { ref, onMounted, h, computed } from 'vue'
 import { message, Modal } from 'ant-design-vue'
 import { DownOutlined, SearchOutlined } from '@ant-design/icons-vue'
 import { BASE_URL } from '@/api/axios'
+import { useAuthStore } from '@/stores/auth'
 import {
   getAccountApplications,
   approveAccountApplication,
@@ -10,6 +11,16 @@ import {
   supplementAccountApplication,
 } from '@/api/accountApplication'
 import dayjs from 'dayjs'
+
+// === 角色權限判斷 ===
+const authStore = useAuthStore()
+// 雙重判斷：permLevel 數字 或 roleCode 字串
+const APPROVER_ROLES = ['CFDM', 'CSDM', 'CRDM', 'CRO', 'COO', 'CISO', 'ISSA']
+const canApprove = computed(() => {
+  const level = parseInt(authStore.user?.permLevel ?? 0)
+  const code = authStore.user?.roleCode ?? ''
+  return level >= 2 || APPROVER_ROLES.includes(code)
+})
 
 // === 資料 ===
 const applications = ref([])
@@ -307,24 +318,36 @@ onMounted(fetchData)
               </a-button>
               <template #overlay>
                 <a-menu>
+                  <!-- 核准：需 permLevel >= 2 (主管) -->
                   <a-menu-item
-                    @click="handleApprove(record)"
-                    :disabled="record.status !== 'PENDING'"
+                    @click="canApprove && handleApprove(record)"
+                    :disabled="record.status !== 'PENDING' || !canApprove"
                   >
-                    核准
+                    <a-tooltip v-if="!canApprove" title="權限不足：需主管 (CFDM) 以上才能核准">
+                      <span style="color:#bbb">核准</span>
+                    </a-tooltip>
+                    <span v-else>核准</span>
                   </a-menu-item>
+                  <!-- 要求補件：需 permLevel >= 2 -->
                   <a-menu-item
-                    @click="handleSupplement(record)"
-                    :disabled="record.status !== 'PENDING'"
+                    @click="canApprove && handleSupplement(record)"
+                    :disabled="record.status !== 'PENDING' || !canApprove"
                   >
-                    要求補件
+                    <a-tooltip v-if="!canApprove" title="權限不足：需主管 (CFDM) 以上才能操作">
+                      <span style="color:#bbb">要求補件</span>
+                    </a-tooltip>
+                    <span v-else>要求補件</span>
                   </a-menu-item>
+                  <!-- 駁回：需 permLevel >= 2 -->
                   <a-menu-item
                     danger
-                    @click="handleReject(record)"
-                    :disabled="record.status !== 'PENDING'"
+                    @click="canApprove && handleReject(record)"
+                    :disabled="record.status !== 'PENDING' || !canApprove"
                   >
-                    駁回
+                    <a-tooltip v-if="!canApprove" title="權限不足：需主管 (CFDM) 以上才能駁回">
+                      <span style="color:#bbb">駁回</span>
+                    </a-tooltip>
+                    <span v-else>駁回</span>
                   </a-menu-item>
                 </a-menu>
               </template>

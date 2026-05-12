@@ -48,31 +48,46 @@
       </div>
     </div>
 
-    <!-- ── 最新交易 ── -->
-    <div class="section-title">最新交易紀錄</div>
-    <a-table
-      :columns="transColumns"
-      :data-source="recentTrans"
-      :loading="transLoading"
-      :pagination="false"
-      size="small"
-      row-key="transactionId"
-      :locale="{ emptyText: '目前沒有交易紀錄' }"
-    >
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.dataIndex === 'transactionType'">
-          <a-tag :color="typeColor(record.transactionType)">
-            {{ typeLabel(record.transactionType) }}
-          </a-tag>
+    <!-- ── 最新交易（業務人員可見）── -->
+    <template v-if="!isCISO">
+      <div class="section-title">最新交易紀錄</div>
+      <a-table
+        :columns="transColumns"
+        :data-source="recentTrans"
+        :loading="transLoading"
+        :pagination="false"
+        size="small"
+        row-key="transactionId"
+        :locale="{ emptyText: '目前沒有交易紀錄' }"
+      >
+        <template #bodyCell="{ column, record }">
+          <template v-if="column.dataIndex === 'transactionType'">
+            <a-tag :color="typeColor(record.transactionType)">
+              {{ typeLabel(record.transactionType) }}
+            </a-tag>
+          </template>
+          <template v-else-if="column.dataIndex === 'amount'">
+            {{ formatAmount(record.amount, record.currency) }}
+          </template>
+          <template v-else-if="column.dataIndex === 'createdAt'">
+            {{ formatDate(record.createdAt) }}
+          </template>
         </template>
-        <template v-else-if="column.dataIndex === 'amount'">
-          {{ formatAmount(record.amount, record.currency) }}
-        </template>
-        <template v-else-if="column.dataIndex === 'createdAt'">
-          {{ formatDate(record.createdAt) }}
-        </template>
-      </template>
-    </a-table>
+      </a-table>
+    </template>
+
+    <!-- ── 資安長專屬：稽核說明區塊 ── -->
+    <template v-if="isCISO">
+      <div class="section-title">稽核職責說明</div>
+      <div class="ciso-notice">
+        <div class="ciso-notice-icon">🔒</div>
+        <div class="ciso-notice-body">
+          <h3>職責分離提醒</h3>
+          <p>您的角色為 <strong>資訊安全長 (CISO)</strong>，依職責分離原則，您僅能查看系統日誌與員工帳號，<strong>不可參與業務審核</strong>。</p>
+          <p>如需查看操作紀錄，請前往 <a @click="$router.push('/admin/logs')" style="cursor:pointer;color:#5C6B5F;font-weight:600;">系統日誌 →</a></p>
+        </div>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -97,6 +112,11 @@ import { getCustomers } from '@/api/customer'
 import { getEmployeeCount } from '@/api/auth'
 
 const authStore = useAuthStore()
+
+// ── 角色權限（permLevel 數字判斷，統一來源）──
+const permLevel = computed(() => authStore.user?.permLevel ?? 0)
+const isCISO   = computed(() => permLevel.value >= 4)  // 資安長 (Lvl4+)
+const isManager = computed(() => permLevel.value >= 2) // 主管及以上
 
 // ── 使用者資訊 ──
 const userName = computed(() => authStore.user?.empName || '使用者')
@@ -133,22 +153,40 @@ const employeeCount = ref(0)
 const todayTransCount = ref(0)
 const statsLoading = ref(true)
 
-const stats = computed(() => [
-  { label: '帳戶總數', value: accountCount.value, icon: BankOutlined, bg: '#e6f7ff', color: '#1890ff', loading: statsLoading.value },
-  { label: '客戶總數', value: customerCount.value, icon: UserOutlined, bg: '#f6ffed', color: '#52c41a', loading: statsLoading.value },
-  { label: '員工人數', value: employeeCount.value, icon: TeamOutlined, bg: '#fff7e6', color: '#fa8c16', loading: statsLoading.value },
-  { label: '最新交易', value: todayTransCount.value, icon: SwapOutlined, bg: '#f9f0ff', color: '#722ed1', loading: statsLoading.value },
-])
+// ── 統計卡片：依角色切換 ──
+const stats = computed(() => {
+  if (isCISO.value) {
+    // 資安長視角：稽核數據
+    return [
+      { label: '員工總人數', value: employeeCount.value, icon: TeamOutlined,        bg: '#fff7e6', color: '#fa8c16', loading: statsLoading.value },
+      { label: '今日系統登入', value: todayTransCount.value || '—',  icon: AccountBookOutlined, bg: '#e6f7ff', color: '#1890ff', loading: false },
+      { label: '系統可用率',   value: '99.9%',                       icon: AlertOutlined,       bg: '#f6ffed', color: '#52c41a', loading: false },
+      { label: '高風險操作',   value: '0',                            icon: AuditOutlined,       bg: '#fff1f0', color: '#f5222d', loading: false },
+    ]
+  }
+  // 業務人員視角：業務數據
+  return [
+    { label: '帳戶總數', value: accountCount.value,   icon: BankOutlined,  bg: '#e6f7ff', color: '#1890ff', loading: statsLoading.value },
+    { label: '客戶總數', value: customerCount.value,  icon: UserOutlined,  bg: '#f6ffed', color: '#52c41a', loading: statsLoading.value },
+    { label: '員工人數', value: employeeCount.value,  icon: TeamOutlined,  bg: '#fff7e6', color: '#fa8c16', loading: statsLoading.value },
+    { label: '最新交易', value: todayTransCount.value, icon: SwapOutlined,  bg: '#f9f0ff', color: '#722ed1', loading: statsLoading.value },
+  ]
+})
 
-// ── 快捷入口 ──
-const shortcuts = [
-  { label: '帳戶管理', desc: '查看與管理帳戶', route: '/admin/accounts', icon: BankOutlined, bg: '#e6f7ff', color: '#1890ff' },
-  { label: '交易操作', desc: '存款/提款/轉帳/沖正', route: '/admin/transfers', icon: DollarOutlined, bg: '#f6ffed', color: '#52c41a' },
-  { label: '交易紀錄', desc: '查看所有交易紀錄', route: '/admin/trans-logs', icon: FileTextOutlined, bg: '#fff7e6', color: '#fa8c16' },
-  { label: '貸款管理', desc: '審核貸款申請', route: '/admin/loan-applications', icon: AuditOutlined, bg: '#f9f0ff', color: '#722ed1' },
-  { label: '風險事件', desc: '監控異常風險', route: '/admin/risk-events', icon: AlertOutlined, bg: '#fff1f0', color: '#f5222d' },
-  { label: '信用卡管理', desc: '卡別與申請', route: '/admin/card-applications', icon: CreditCardOutlined, bg: '#e6fffb', color: '#13c2c2' },
+// ── 快捷入口：依角色切換 ──
+const businessShortcuts = [
+  { label: '帳戶管理',   desc: '查看與管理帳戶',    route: '/admin/accounts',          icon: BankOutlined,    bg: '#e6f7ff', color: '#1890ff' },
+  { label: '交易操作',   desc: '存款/提款/轉帳/沖正', route: '/admin/transfers',        icon: DollarOutlined,  bg: '#f6ffed', color: '#52c41a' },
+  { label: '交易紀錄',   desc: '查看所有交易紀錄',    route: '/admin/trans-logs',       icon: FileTextOutlined,bg: '#fff7e6', color: '#fa8c16' },
+  { label: '貸款管理',   desc: '審核貸款申請',       route: '/admin/loan-applications', icon: AuditOutlined,   bg: '#f9f0ff', color: '#722ed1' },
+  { label: '風險事件',   desc: '監控異常風險',       route: '/admin/risk-events',       icon: AlertOutlined,   bg: '#fff1f0', color: '#f5222d' },
+  { label: '信用卡管理', desc: '卡別與申請',         route: '/admin/card-applications', icon: CreditCardOutlined,bg: '#e6fffb', color: '#13c2c2' },
 ]
+const cisoShortcuts = [
+  { label: '系統日誌', desc: '查看所有操作日誌', route: '/admin/logs',      icon: FileTextOutlined, bg: '#fff7e6', color: '#fa8c16' },
+  { label: '員工管理', desc: '帳號與權限管理',   route: '/admin/employees', icon: TeamOutlined,     bg: '#e6f7ff', color: '#1890ff' },
+]
+const shortcuts = computed(() => isCISO.value ? cisoShortcuts : businessShortcuts)
 
 // ── 最新交易表格 ──
 const recentTrans = ref([])
@@ -201,20 +239,19 @@ function formatDate(d) {
 async function loadStats() {
   statsLoading.value = true
   try {
-    const [accRes, custRes, empRes] = await Promise.allSettled([
-      getLatestAccounts(0, 1),
-      getCustomers(),
-      getEmployeeCount(),
-    ])
-
-    if (accRes.status === 'fulfilled') {
-      accountCount.value = accRes.value.data?.data?.totalElements ?? 0
-    }
-    if (custRes.status === 'fulfilled') {
-      customerCount.value = custRes.value.data?.data?.length ?? 0
-    }
-    if (empRes.status === 'fulfilled') {
-      employeeCount.value = empRes.value.data?.data ?? 0
+    // 資安長不需要帳戶與客戶統計，只取員工數
+if (isCISO.value) {
+      const empRes = await getEmployeeCount().catch(() => null)
+      if (empRes) employeeCount.value = empRes.data?.data ?? 0
+    } else {
+      const [accRes, custRes, empRes] = await Promise.allSettled([
+        getLatestAccounts(0, 1),
+        getCustomers(),
+        getEmployeeCount(),
+      ])
+      if (accRes.status === 'fulfilled') accountCount.value = accRes.value.data?.data?.totalElements ?? 0
+      if (custRes.status === 'fulfilled') customerCount.value = custRes.value.data?.data?.length ?? 0
+      if (empRes.status === 'fulfilled') employeeCount.value = empRes.value.data?.data ?? 0
     }
   } catch {
     // silent
@@ -224,6 +261,7 @@ async function loadStats() {
 }
 
 async function loadRecentTrans() {
+  if (isCISO.value) return // 資安長不顯示交易資料
   transLoading.value = true
   try {
     const res = await getLatestTransLogs(0, 8)
@@ -417,5 +455,38 @@ onUnmounted(() => {
   .shortcut-grid { grid-template-columns: repeat(2, 1fr); }
   .welcome-section { flex-direction: column; gap: 16px; text-align: center; }
   .welcome-date { text-align: center; }
+}
+
+/* ── CISO 職責說明框 ── */
+.ciso-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  background: linear-gradient(135deg, #fafaf7 0%, #f0f4f1 100%);
+  border: 1px solid rgba(92, 107, 95, 0.2);
+  border-left: 4px solid #5C6B5F;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 28px;
+}
+
+.ciso-notice-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.ciso-notice-body h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 8px 0;
+}
+
+.ciso-notice-body p {
+  font-size: 14px;
+  color: #555;
+  margin: 4px 0;
+  line-height: 1.7;
 }
 </style>
