@@ -1,7 +1,6 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted,h } from 'vue'
 import { message, Modal } from 'ant-design-vue'
-import api from '@/api/axios'
 import {
   getApplicationItems,
   approveApplicationItem,
@@ -25,8 +24,9 @@ const fetchDetail = async () => {
   console.log(applicationInfo.value)
 
   //明細
-  items.value = await getApplicationItems(id)
-  console.log(items.value)
+  const itemsData = await getApplicationItems(id)
+  console.log('items', itemsData)
+  items.value = itemsData
 
   loading.value = false
 }

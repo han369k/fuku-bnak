@@ -15,22 +15,22 @@ import com.javaeasybank.creditcard.service.BillService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/admin/card-bills")
+@RequestMapping("/user/card-bills")
 @RequiredArgsConstructor
-public class CardBillAdminController {
+public class CardBillController {
 
-    private final BillService billService;
+    private final BillService cardBillService;
 
+    // 查全部帳單
     @GetMapping
-    public ResponseEntity<ApiResponse<PageResponse<CardBillResponseDto>>> getAllBills(
-            Pageable pageable) {
-        Page<CardBillResponseDto> page = billService.getBills(pageable);
-        PageResponse<CardBillResponseDto> response = PageResponse.of(
+    public ResponseEntity<ApiResponse<PageResponse<CardBillResponseDto>>> getBills(Pageable pageable) {
+        Page<CardBillResponseDto> page= cardBillService.getBills(pageable);
+        return ResponseEntity.ok(ApiResponse.success(PageResponse.of(
                 page.getContent(),
                 page.getNumber(),
                 page.getSize(),
-                page.getTotalElements());
-        return ResponseEntity.ok(ApiResponse.success(response));
+                page.getTotalElements())));
     }
+
 
 }

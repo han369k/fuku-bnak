@@ -161,7 +161,8 @@ const menus = [
     children: [
       { label: '卡片總覽', desc: '查看持有卡片', route: 'user-card-types' },
       { label: '線上申辦', desc: '申請新信用卡', route: 'user-card-applications' },
-      { label: '帳單查詢', desc: '查看信用卡帳單', route: null },
+      {label:'交易管理', desc:'查看與刷卡交易', route:'user-card-txns'},
+      { label: '帳單查詢', desc: '查看信用卡帳單', route: 'user-card-bills' },
     ],
   },
   {

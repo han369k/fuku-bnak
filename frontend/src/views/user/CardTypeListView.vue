@@ -3,9 +3,15 @@ import { computed, onMounted, ref } from 'vue'
 import { message } from 'ant-design-vue'
 import { getUserCardTypes } from '@/api/cardtype'
 import { BASE_URL } from '@/api/axios'
+import { createCardApplication, getMyApplications } from '@/api/userCardApplication'
 
 const cardTypes = ref([])
 const loading = ref(false)
+
+const appliedCardTypeIds = ref([]) // 已申辦的信用卡別 ID 列表
+
+const showApplyModal = ref(false)
+const selectedCardType = ref(null)
 
 const hasCardTypes = computed(() => cardTypes.value.length > 0)
 
@@ -40,8 +46,47 @@ async function fetchCardTypes() {
     loading.value = false
   }
 }
+//開啟申辦模態框
+function openApplyModal(cardType) {
+  selectedCardType.value = cardType
+  showApplyModal.value = true
+}
+//關閉申辦模態框
+function closeApplyModal() {
+  showApplyModal.value = false
+  selectedCardType.value = null
+}
 
-onMounted(fetchCardTypes)
+async function fetchMyApplications() {
+  try {
+    const data = await getMyApplications()
+
+    appliedCardTypeIds.value = data.content.map((app) => app.cardTypeId)
+  } catch (error) {
+    console.error(error)
+  }
+}
+
+async function applyCardType() {
+  if (!selectedCardType.value) return
+
+  try {
+    // 在這裡呼叫申辦信用卡的 API，傳入 selectedCardType.value.cardTypeId
+    // 例如：await createCardApplication({ cardTypeId: selectedCardType.value.cardTypeId })
+    await createCardApplication({ cardTypeId: selectedCardType.value.cardTypeId })
+    message.success(`成功申辦 ${selectedCardType.value.cardTypeName}！`)
+    closeApplyModal()
+  } catch (error) {
+    message.error(error.response?.data?.message || '申辦失敗')
+  }
+}
+
+onMounted(() => {
+  fetchCardTypes()
+  fetchMyApplications()
+})
+
+
 </script>
 
 <template>
@@ -89,12 +134,41 @@ onMounted(fetchCardTypes)
               <dd>{{ formatRate(card.cashbackRate) }}</dd>
             </div>
           </dl>
+          <button
+            class="jb-btn jb-btn-primary jb-btn-sm"
+            type="button"
+            :disabled="appliedCardTypeIds.includes(card.cardTypeId)"
+            @click="openApplyModal(card)"
+          >
+            {{ appliedCardTypeIds.includes(card.cardTypeId) ? '已申辦' : '立即申辦' }}
+          </button>
         </div>
       </article>
     </div>
 
     <div v-else class="state-panel">
       <span>目前沒有可申辦的信用卡別。</span>
+    </div>
+
+    <!-- 申辦模態框 -->
+    <div v-if="showApplyModal" class="modal-overlay">
+      <div class="modal-box">
+        <h3 class="modal-title">確認申辦</h3>
+
+        <p class="modal-text">
+          是否確認申辦
+          <span class="font-semibold">
+            {{ selectedCardType?.cardTypeName }}
+          </span>
+          ？
+        </p>
+
+        <div class="modal-actions">
+          <button class="modal-cancel" @click="closeApplyModal">取消</button>
+
+          <button class="modal-confirm" @click="applyCardType">確認申辦</button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -235,5 +309,58 @@ onMounted(fetchCardTypes)
   .card-image-wrap {
     max-width: 320px;
   }
+}
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.modal-box {
+  width: 360px;
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.modal-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.modal-text {
+  color: #4b5563;
+  line-height: 1.6;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.modal-cancel,
+.modal-confirm {
+  border: none;
+  padding: 10px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.modal-cancel {
+  background: #e5e7eb;
+}
+
+.modal-confirm {
+  background: #1d4ed8;
+  color: white;
 }
 </style>

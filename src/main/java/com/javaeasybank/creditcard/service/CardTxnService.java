@@ -87,7 +87,7 @@ public class CardTxnService {
 
         cardRepository.save(card);
 
-        return mapper.toDto(saved);
+        return toResponseDto(saved);
     }
 
     // 查全部交易(DTO)
@@ -123,7 +123,7 @@ public class CardTxnService {
         }
 
         CardTransaction saved = cardTxnRepository.save(txn);
-        return mapper.toDto(saved);
+        return toResponseDto(saved);
     }
 
     // 刪除交易(不可刪除交易)
@@ -196,9 +196,57 @@ public class CardTxnService {
 
     private CardTxnResponseDto toResponseDto(CardTransaction txn) {
         CardTxnResponseDto dto = mapper.toDto(txn);
+        applyCashbackFallback(txn, dto);
         dto.setRefunded(
                 txn.getTxnType() != TxnType.REFUND
                         && cardTxnRepository.existsByRefTxn_TxnId(txn.getTxnId()));
         return dto;
     }
+
+    private void applyCashbackFallback(CardTransaction txn, CardTxnResponseDto dto) {
+        if (txn.getTxnType() != TxnType.PURCHASE && txn.getTxnType() != TxnType.REFUND) {
+            return;
+        }
+
+        BigDecimal cashbackRate = resolveCashbackRate(txn);
+        if (dto.getCashbackRate() == null) {
+            dto.setCashbackRate(cashbackRate);
+        }
+
+        if (shouldCalculateCashback(txn, dto)) {
+            dto.setCashbackAmount(cashbackCalculator.calculateCashback(txn.getTxnAmount(), cashbackRate));
+        }
+    }
+
+    private boolean shouldCalculateCashback(CardTransaction txn, CardTxnResponseDto dto) {
+        if (dto.getCashbackAmount() == null) {
+            return true;
+        }
+
+        return txn.getTxnType() == TxnType.REFUND
+                && BigDecimal.ZERO.compareTo(dto.getCashbackAmount()) == 0
+                && txn.getRefTxn() != null
+                && txn.getRefTxn().getCashbackAmount() == null;
+    }
+
+    private BigDecimal resolveCashbackRate(CardTransaction txn) {
+        if (txn.getCashbackRate() != null) {
+            return txn.getCashbackRate();
+        }
+        if (txn.getRefTxn() != null && txn.getRefTxn().getCashbackRate() != null) {
+            return txn.getRefTxn().getCashbackRate();
+        }
+        if (txn.getCard() != null
+                && txn.getCard().getCardType() != null
+                && txn.getCard().getCardType().getCashbackRate() != null) {
+            return txn.getCard().getCardType().getCashbackRate();
+        }
+        return BigDecimal.ZERO;
+    }
+
+    public Page<CardTxnResponseDto> findByCustomerId(String customerId, Pageable pageable) {
+        return cardTxnRepository.findByCard_Customer_CustomerId(customerId, pageable)
+                .map(mapper::toDto);
+    }
+
 }
