@@ -78,6 +78,7 @@ public class CardAppService {
 
         entity.setStatus(CardApplicationStatus.PENDING);
 
+        
         CustomerProfile customer = customerRepository.findById(requestDto.getCustomerId())
                 .orElseThrow(() -> new BusinessException("Customer not found"));
         entity.setCustomer(customer);

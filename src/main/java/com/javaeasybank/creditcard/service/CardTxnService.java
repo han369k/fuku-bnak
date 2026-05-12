@@ -13,6 +13,7 @@ import com.javaeasybank.creditcard.dto.CardTxnRequestDto;
 import com.javaeasybank.creditcard.dto.CardTxnResponseDto;
 import com.javaeasybank.creditcard.entity.CardTransaction;
 import com.javaeasybank.creditcard.entity.CreditCard;
+import com.javaeasybank.creditcard.enums.CardStatus;
 import com.javaeasybank.creditcard.enums.TxnType;
 import com.javaeasybank.creditcard.mapper.CardTxnMapper;
 import com.javaeasybank.creditcard.repository.CardTxnRepository;
@@ -38,6 +39,10 @@ public class CardTxnService {
         // 找信用卡
         CreditCard card = cardRepository.findById(dto.getCardId())
                 .orElseThrow(() -> new BusinessException("Card not found"));
+        // 檢查卡片狀態
+        if(card.getStatus() != CardStatus.ACTIVE){
+            throw new BusinessException("卡片尚未開通");
+        }
 
         // 找商家
         var merchant = merchantRepository.findById(dto.getMerchantId())

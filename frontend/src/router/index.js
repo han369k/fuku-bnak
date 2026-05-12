@@ -51,6 +51,11 @@ const router = createRouter({
           component: () => import('../views/user/CardTypeListView.vue'),
         },
         {
+          path: 'cards',
+          name: 'user-cards',
+          component: () => import('../views/user/CardView.vue'),
+        },
+        {
           path:'card-applications',
           name:'user-card-applications',
           component: () => import('../views/user/CardApplicationForm.vue'),
