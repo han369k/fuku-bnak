@@ -8,6 +8,7 @@ const cards = ref([])
 const fetchCards = async () => {
   try {
     const response = await getMyCards()
+    console.log(response)
     cards.value = response
   } catch (error) {
     console.error('Failed to fetch cards:', error)
@@ -43,49 +44,62 @@ onMounted(() => {
 
     <div class="cards-grid">
       <div
-        class="credit-card"
+        class="card-wrapper"
         v-for="card in cards"
         :key="card.cardId"
       >
-        <!-- 卡片圖片 -->
-        <img
-          class="card-bg"
-          :src="getImageUrl(card.cardType?.cardImageUrl)"
-          alt=""
-        />
+        <!-- 卡片上方資訊列 -->
+        <div class="card-header">
+          <!-- 狀態 -->
+          <span
+            class="status-badge"
+            :class="card.status?.toLowerCase()"
+          >
+            {{ card.status }}
+          </span>
 
-        <!-- 黑色遮罩 -->
-        <div class="card-overlay"></div>
+          <!-- 開卡按鈕 -->
+          <button
+            v-if="card.status === 'INACTIVE'"
+            class="activate-btn"
+            @click="handleActivateCard(card.cardId)"
+          >
+            開卡
+          </button>
+        </div>
 
-        <!-- 卡片內容 -->
-        <div class="card-content">
-          <div class="card-brand">
-            {{ card.cardType?.brand }}
-          </div>
+        <!-- 信用卡 -->
+        <div class="credit-card">
+          <!-- 卡片背景 -->
+          <img
+            class="card-bg"
+            :src="getImageUrl(card.cardType?.cardImageUrl)"
+            alt=""
+          />
 
-          <div class="card-type">
-            {{ card.cardType?.cardTypeName }}
-          </div>
+          <!-- 黑色遮罩 -->
+          <div class="card-overlay"></div>
 
-          <div class="card-number">
-            {{ card.cardNumber }}
-          </div>
-
-          <div class="card-footer">
-            <div>
-              <span class="label">VALID THRU</span>
-              <div>{{ card.expiryDate }}</div>
+          <!-- 卡片內容 -->
+          <div class="card-content">
+            <div class="card-brand">
+              {{ card.cardType?.brand }}
             </div>
 
-            <div>
-              <span class="label">STATUS</span>
-              <div>{{ card.status }}</div>
+            <div class="card-type">
+              {{ card.cardType?.cardTypeName }}
             </div>
-          </div>
-          <div v-if="card.status === 'INACTIVE'">
-            <button @click="handleActivateCard(card.cardId)">
-              Activate Card
-            </button>
+
+            <div class="card-number">
+              {{ card.cardNumber }}
+            </div>
+
+            <div class="card-footer">
+              <div>
+                <span class="label">VALID THRU</span>
+                <div>{{ card.expiryDate }}</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -161,7 +175,8 @@ onMounted(() => {
 .card-footer {
   margin-top: 20px;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
+  gap: 12px;
 }
 
 .label {
@@ -183,15 +198,48 @@ onMounted(() => {
   background: #16a34a;
 }
 
-.status.active {
-  color: #4ade80;
+.status-badge {
+  margin-top: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  width: fit-content;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
 }
 
-.status.inactive {
-  color: #facc15;
+/* ACTIVE */
+.status-badge.active {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #22c55e;
 }
 
-.status.blocked {
-  color: #f87171;
+/* INACTIVE */
+.status-badge.inactive {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #f59e0b;
+}
+
+/* BLOCKED */
+.status-badge.blocked {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #ef4444;
+}
+
+.card-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card-header {
+  width: 380px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 </style>

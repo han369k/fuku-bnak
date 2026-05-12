@@ -13,3 +13,7 @@ export const getBills = (page=0, size=10) => {
     }).then(unwrap);
 
 };
+//產生帳單
+export const generateBills=()=>{
+    return api.post(BASE_URL + '/generate').then(unwrap);
+}

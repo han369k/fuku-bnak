@@ -26,8 +26,7 @@ const status = ref(null)
 const statusOptions = [
   { label: '全部', value: null },
   { label: '審核中', value: 'PENDING' },
-  { label: '核准', value: 'APPROVED' },
-  { label: '拒絕', value: 'REJECTED' },
+  { label: '已完成', value: 'COMPLETED' },
 ]
 
 //分頁機
@@ -204,7 +203,9 @@ onMounted(() => {
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'customerName'">
           <div class="emp-name-cell">
-            <div class="emp-avatar">{{ record.customerName ? record.customerName.charAt(0) : '?' }}</div>
+            <div class="emp-avatar">
+              {{ record.customerName ? record.customerName.charAt(0) : '?' }}
+            </div>
             <div class="emp-info">
               <span class="emp-name-text">{{ record.customerName }}</span>
               <span class="emp-id-text">{{ record.applicationId }}</span>
@@ -215,20 +216,18 @@ onMounted(() => {
         <template v-else-if="column.key === 'status'">
           <div :class="['status-tag', `status-${record.status.toLowerCase()}`]">
             <span class="status-dot"></span>
-            {{ statusOptions.find(opt => opt.value === record.status)?.label || record.status }}
+            {{ statusOptions.find((opt) => opt.value === record.status)?.label || record.status }}
           </div>
         </template>
 
         <template v-else-if="column.key === 'action'">
           <div class="action-cell">
             <a-dropdown>
-              <a-button type="link" class="action-btn">
-                操作 <DownOutlined />
-              </a-button>
+              <a-button type="link" class="action-btn"> 操作 <DownOutlined /> </a-button>
               <template #overlay>
                 <a-menu>
-                  <a-menu-item @click="handleApprove(record)">核准</a-menu-item>
-                  <a-menu-item @click="handleReject(record)">拒絕</a-menu-item>
+                  <!-- <a-menu-item @click="handleApprove(record)">核准</a-menu-item>
+                  <a-menu-item @click="handleReject(record)">拒絕</a-menu-item> -->
                   <a-menu-item @click="openRemarkModal(record)">修改備註</a-menu-item>
                   <a-menu-item danger @click="handleDelete(record)">刪除</a-menu-item>
                   <a-menu-item @click="goDetail(record)">查看明細</a-menu-item>
@@ -264,7 +263,7 @@ onMounted(() => {
   height: 36px;
   border-radius: 50%;
   background-color: rgba(92, 107, 95, 0.1);
-  color: #5C6B5F;
+  color: #5c6b5f;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -306,12 +305,36 @@ onMounted(() => {
   border-radius: 50%;
 }
 
-.status-approved { background-color: rgba(82, 196, 26, 0.1); color: #389e0d; }
-.status-approved .status-dot { background-color: #52c41a; }
+.status-approved {
+  background-color: rgba(82, 196, 26, 0.1);
+  color: #389e0d;
+}
+.status-approved .status-dot {
+  background-color: #52c41a;
+}
 
-.status-rejected { background-color: rgba(255, 77, 79, 0.1); color: #d9363e; }
-.status-rejected .status-dot { background-color: #ff4d4f; }
+.status-rejected {
+  background-color: rgba(255, 77, 79, 0.1);
+  color: #d9363e;
+}
+.status-rejected .status-dot {
+  background-color: #ff4d4f;
+}
 
-.status-pending { background-color: rgba(250, 140, 22, 0.1); color: #fa8c16; }
-.status-pending .status-dot { background-color: #fa8c16; }
+.status-pending {
+  background-color: rgba(250, 140, 22, 0.1);
+  color: #fa8c16;
+}
+.status-pending .status-dot {
+  background-color: #fa8c16;
+}
+
+.status-completed {
+  background-color: rgba(82, 196, 26, 0.1);
+  color: #389e0d;
+}
+
+.status-completed .status-dot {
+  background-color: #52c41a;
+}
 </style>

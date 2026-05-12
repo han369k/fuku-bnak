@@ -1,7 +1,5 @@
 package com.javaeasybank.loan.dto.requests;
 
-import com.javaeasybank.loan.enums.LoanContactChannel;
-import com.javaeasybank.loan.enums.LoanContactStatus;
 import lombok.Getter;
 import lombok.Setter;
 
