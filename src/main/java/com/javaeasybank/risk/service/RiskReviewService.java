@@ -164,12 +164,14 @@ public class RiskReviewService {
      */
     private String buildMetaData(CustomerCreditInfo credit) {
         return String.format(
-                "{\"finalScore\":%d,\"annualIncome\":%s," +
-                        "\"otherBankDebt\":%s,\"hasRealEstate\":%b}",
+                "{\"finalScore\":%d,\"externalScore\":%d,\"annualIncome\":%s," +
+                        "\"otherBankDebt\":%s,\"hasRealEstate\":%b,\"occupation\":\"%s\"}",
                 credit.getFinalScore(),
+                credit.getExternalScore(),
                 credit.getAnnualIncome(),
                 credit.getOtherBankDebt(),
-                credit.getHasRealEstate());
+                credit.getHasRealEstate(),
+                credit.getOccupation());
     }
 
     private RiskReviewResponse buildResponse(
