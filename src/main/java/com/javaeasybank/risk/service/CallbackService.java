@@ -36,9 +36,16 @@ public class CallbackService {
                 .callerModule("RISK")
                 .note(eventLog.getTriggerReason())
                 .build();
+
+        log.info("[Callback] 準備發送通知: url={}, status={}, appId={}",
+                callbackUrl, newStatus, eventLog.getBusinessId());
+
         try {
-            ResponseEntity<Void> response =
-                    restTemplate.postForEntity(callbackUrl, body, Void.class);
+            ResponseEntity<String> response =
+                    restTemplate.postForEntity(callbackUrl, body, String.class);
+
+            log.info("[Callback] 收到響應代碼: {}, 內容: {}",
+                    response.getStatusCode(), response.getBody());
 
             if (!response.getStatusCode().is2xxSuccessful()) {
                 log.error("[Callback] 回調失敗 url={} status={}",

@@ -17,9 +17,12 @@ import com.javaeasybank.loan.enums.LoanReviewStatus;
 import com.javaeasybank.loan.repository.LoanApplicationRepository;
 import com.javaeasybank.loan.repository.LoanContactLogRepository;
 import com.javaeasybank.loan.repository.LoanReviewDetailRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -36,7 +39,7 @@ import java.util.stream.Collectors;
  *   - 二次填單草稿儲存與送審（同步更新主表狀態）
  *   - 利率規則回傳 (前端根據規則自行計算)
  */
-
+@Slf4j
 @Service
 @Transactional
 public class LoanApplicationService {
@@ -103,8 +106,8 @@ public class LoanApplicationService {
 
     // 共用：填申請內容
     private void fillLoanContent(LoanApplication loan, String applyType,
-                                 BigDecimal applyAmount, Integer applyPeriod,
-                                 BigDecimal rate) {
+            BigDecimal applyAmount, Integer applyPeriod,
+            BigDecimal rate) {
         loan.setApplyType(applyType);
         loan.setApplyAmount(applyAmount);
         loan.setApplyPeriod(applyPeriod);
@@ -146,7 +149,6 @@ public class LoanApplicationService {
 
         laRepo.save(loan);
     }
-
 
     // 查某申請的所有聯繫紀錄
     public List<LoanContactLogResponseDTO> getContactLogs(String applicationId) {
@@ -195,6 +197,7 @@ public class LoanApplicationService {
 
     // 送審：草稿 → SUBMITTED，主表推進為 PENDING_REVIEW
     // 申請狀態必須是 IN_CONTACT
+    @Transactional
     public void submitReview(String applicationId) {
 
         LoanApplication loan = laRepo.findById(applicationId)
@@ -216,15 +219,28 @@ public class LoanApplicationService {
         // 更新填單狀態
         detail.setReviewStatus(LoanReviewStatus.SUBMITTED);
         detail.setSubmittedTime(LocalDateTime.now());
-        reviewDetailRepo.save(detail);
 
         // 同步更新主表狀態
         loan.setApplicationStatus(LoanApplicationStatus.PENDING_REVIEW);
-        laRepo.save(loan);
 
-        // 送交資料給風控
-        // 失敗呼叫BusinessException
-        loanRiskClient.submitForReview(buildRiskRequest(loan, detail));
+        // 準備送出的 DTO
+        LoanRiskRequestDTO riskDto = buildRiskRequest(loan, detail);
+
+        // 註冊事務提交後的執行邏輯。
+        // 注意：若要在生產環境確保可靠性，建議改用 ApplicationEventPublisher 並搭配
+        // @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                log.info("[SubmitReview] 事務提交，發送風控請求: {}", applicationId);
+                try {
+                    loanRiskClient.submitForReview(riskDto);
+                } catch (Exception e) {
+                    log.error("[SubmitReview] 風控請求發送失敗，appId={}, error={}", applicationId, e.getMessage());
+                    // TODO: 考慮加入補償機制（如寫入補傳表）
+                }
+            }
+        });
     }
 
     // 送風控的DTO (申請資料+二次填單)
@@ -239,8 +255,8 @@ public class LoanApplicationService {
 
         // 風控必填
         dto.setScene("LOAN_APPLY");
-        dto.setBusinessId(loan.getApplicationId());   // ← businessId
-        dto.setAmount(detail.getConfirmedAmount());    // ← amount
+        dto.setBusinessId(loan.getApplicationId()); // ← businessId
+        dto.setAmount(detail.getConfirmedAmount()); // ← amount
 
         dto.setCif(cif);
         dto.setApplyType(loan.getApplyType());
@@ -300,9 +316,9 @@ public class LoanApplicationService {
     // ===利率規則===
     // 回傳利率規則表，供前端頁面載入時抓取
     // 前端依此規則：
-    //   1. 根據貸款種類顯示合法期數下拉選單
-    //   2. 選完期數自動計算並顯示利率
-    //   3. 送出時將算好的利率一併傳入後端
+    // 1. 根據貸款種類顯示合法期數下拉選單
+    // 2. 選完期數自動計算並顯示利率
+    // 3. 送出時將算好的利率一併傳入後端
 
     public Map<String, Object> getRateRules() {
 
@@ -310,33 +326,27 @@ public class LoanApplicationService {
         Map<String, Object> types = new LinkedHashMap<>();
         types.put("PERSONAL", Map.of(
                 "baseRate", new BigDecimal("0.04"),
-                "periods", List.of(12, 24, 36, 48, 60)
-        ));
+                "periods", List.of(12, 24, 36, 48, 60)));
         types.put("CAR", Map.of(
                 "baseRate", new BigDecimal("0.025"),
-                "periods", List.of(12, 24, 36, 48, 60)
-        ));
+                "periods", List.of(12, 24, 36, 48, 60)));
         types.put("MOTOR", Map.of(
                 "baseRate", new BigDecimal("0.045"),
-                "periods", List.of(12, 24, 36)
-        ));
+                "periods", List.of(12, 24, 36)));
         types.put("STUDENT", Map.of(
                 "baseRate", new BigDecimal("0.015"),
                 "periods", List.of(60, 84, 120),
-                "fixedRate", true   // 固定利率，不加 termRate
+                "fixedRate", true // 固定利率，不加 termRate
         ));
         types.put("BUSINESS", Map.of(
                 "baseRate", new BigDecimal("0.02"),
-                "periods", List.of(36, 60, 84)
-        ));
+                "periods", List.of(36, 60, 84)));
         types.put("HOUSE", Map.of(
                 "baseRate", new BigDecimal("0.018"),
-                "periods", List.of(120, 240, 360, 480)
-        ));
+                "periods", List.of(120, 240, 360, 480)));
         types.put("LAND", Map.of(
                 "baseRate", new BigDecimal("0.028"),
-                "periods", List.of(120, 180, 240)
-        ));
+                "periods", List.of(120, 180, 240)));
 
         // 期數加碼對照表
         Map<String, BigDecimal> termRates = new LinkedHashMap<>();
