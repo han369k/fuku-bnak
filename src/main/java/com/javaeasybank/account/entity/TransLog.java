@@ -45,9 +45,9 @@ public class TransLog {
     private String referenceId;
 
     /**
-     * 交易相關的帳號，長度為 12，不可為空。
+     * 交易相關的帳號，不可為空。
      */
-    @Column(name = "account_number", length = 12, nullable = false)
+    @Column(name = "account_number", length = 14, nullable = false)
     private String accountNumber;
 
     /**

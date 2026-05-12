@@ -111,7 +111,7 @@ public class CustomerProfile {
     @Column(name = "latest_account_application_reject_reason", length = 500)
     private String latestAccountApplicationRejectReason;
 
-    @Column(name = "created_account_number", length = 12)
+    @Column(name = "created_account_number", length = 14)
     private String createdAccountNumber;
 
     @Column(name = "account_application_synced_at")

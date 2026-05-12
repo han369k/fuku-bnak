@@ -32,4 +32,8 @@ public class LoanRiskRequestDTO {
     // 回傳設定
     // 由 LoanRiskClient 統一注入，呼叫方不需自行填寫
     private String callbackUrl;
+
+    private String scene;          // 固定帶 "LOAN_APPLY"
+    private String businessId;     // 對應 applicationId
+    private BigDecimal amount;     // 對應 confirmedAmount
 }

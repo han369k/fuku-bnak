@@ -23,8 +23,6 @@ import com.javaeasybank.account.utils.ReferenceIdGenerator;
 import com.javaeasybank.common.service.EmailService;
 import com.javaeasybank.common.service.ExchangeRateService;
 import com.javaeasybank.customer.repository.CustomerProfileRepository;
-import com.javaeasybank.risk.annotation.RiskCheck;
-import com.javaeasybank.risk.core.enums.RiskScene;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -59,7 +57,7 @@ public class TransferService {
      * 執行國內轉帳。
      * 本行 909 轉帳會查詢目的帳戶並入帳；跨行轉帳只扣轉出帳戶，並額外寫入同業務編號的手續費紀錄。
      */
-    @RiskCheck(scene = RiskScene.TRANSFER)//風控
+
     @Transactional
     public TransferResponse transfer(TransferRequest request) {
         String fromAccNum = normalizeAccountNumber(request.getFromAccountNumber());
@@ -79,6 +77,7 @@ public class TransferService {
         Account fromAccount = findAccountOrThrow(fromAccNum, "SOURCE_ACCOUNT_NOT_FOUND", "來源帳戶不存在");
 
         validateActiveAccount(fromAccount, "SOURCE_ACCOUNT_INACTIVE", "來源帳戶非 ACTIVE 狀態");
+        validateGeneralBalanceAccount(fromAccount, "來源帳戶");
         if (interbank && fromAccount.getCurrency() != Currency.TWD) {
             throw new TransferException("INTERBANK_TWD_ONLY", "跨行轉帳僅支援台幣帳戶");
         }
@@ -139,6 +138,7 @@ public class TransferService {
             Account toAccount = findAccountOrThrow(toAccNum, "TARGET_ACCOUNT_NOT_FOUND", "目的帳戶不存在");
 
             validateActiveAccount(toAccount, "TARGET_ACCOUNT_INACTIVE", "目的帳戶非 ACTIVE 狀態");
+            validateGeneralBalanceAccount(toAccount, "目的帳戶");
             if (fromAccount.getCurrency() != toAccount.getCurrency()) {
                 throw new TransferException("CURRENCY_MISMATCH", "來源與目的帳戶幣別不一致");
             }
@@ -338,8 +338,12 @@ public class TransferService {
         if (account.getStatus() != AccountStatus.ACTIVE) {
             throw new TransferException("ACCOUNT_INACTIVE", label + "非 ACTIVE 狀態");
         }
-        if (account.getAccountType() == AccountType.LOAN) {
-            throw new TransferException("INVALID_ACCOUNT_TYPE", label + "不可使用貸款帳戶");
+        validateGeneralBalanceAccount(account, label);
+    }
+
+    private void validateGeneralBalanceAccount(Account account, String label) {
+        if (!account.getAccountType().isGeneralBalanceAccount()) {
+            throw new TransferException("INVALID_ACCOUNT_TYPE", label + "不可使用特殊帳戶類型：" + account.getAccountType());
         }
     }
 
@@ -459,6 +463,7 @@ public class TransferService {
                 "帳戶不存在: " + accountNumber
         );
         validateActiveAccount(account, "ACCOUNT_INACTIVE", "帳戶非 ACTIVE 狀態");
+        validateGeneralBalanceAccount(account, "帳戶");
 
         BigDecimal balanceBefore = account.getBalance();
         if (entryType == EntryType.DEBIT && balanceBefore.compareTo(amount) < 0) {
@@ -645,6 +650,7 @@ public class TransferService {
         for (TransLog originalLog : originalLogs) {
             String accNum = originalLog.getAccountNumber();
             Account account = findAccountOrThrow(accNum, "ACCOUNT_NOT_FOUND", "帳戶不存在: " + accNum);
+            validateGeneralBalanceAccount(account, "沖正帳戶");
 
             BigDecimal balanceBefore = account.getBalance();
             EntryType reversedEntryType;

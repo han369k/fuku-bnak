@@ -7,7 +7,7 @@
         </div>
 
         <a-menu v-model:selectedKeys="selectedKeys" mode="inline">
-          
+
           <a-menu-item key="admin-home" @click="$router.push({ name: 'admin-home' })">
             <template #icon><HomeOutlined /></template>
             <span>首頁</span>
@@ -77,6 +77,13 @@
                 <template #icon><StopOutlined /></template>
                 <span>黑名單</span>
               </a-menu-item>
+              <a-menu-item
+                key="admin-review-task"
+                @click="$router.push({ name: 'admin-review-task' })"
+              >
+                <template #icon><CheckCircleOutlined /></template>
+                <span>人工審核</span>
+              </a-menu-item>
             </a-menu-item-group>
           </template>
 
@@ -101,7 +108,7 @@
       <a-layout-header class="custom-header">
         <div class="header-search">
         </div>
-        
+
         <div class="header-right">
           <div class="admin-timer">
             <span class="timer-text">剩餘登出時間: {{ formatTime(countdown) }}</span>
@@ -134,7 +141,7 @@ import { useAuthStore } from '@/stores/auth'
 import { logout } from '@/api/auth'
 import { Modal } from 'ant-design-vue'
 import { onMounted, onUnmounted } from 'vue'
-import { 
+import {
   HomeOutlined, TeamOutlined, UserOutlined, SettingOutlined, LogoutOutlined,
   BankOutlined, ProfileOutlined, AuditOutlined,
   AppstoreAddOutlined, SolutionOutlined, CreditCardOutlined, AlertOutlined, StopOutlined
@@ -147,7 +154,7 @@ const authStore = useAuthStore()
 const isCISO = computed(() => authStore.user?.roleCode === 'CISO')
 // 排除 CISO 讓其走獨立邏輯，其他需看到系統管理的管理員可在此定義
 const isAdmin = computed(() => {
-  const adminRoles = ['ISSA', 'SYS_SUPER', 'SYS_STAFF'] 
+  const adminRoles = ['ISSA', 'SYS_SUPER', 'SYS_STAFF']
   return adminRoles.includes(authStore.user?.roleCode) && !isCISO.value
 })
 
@@ -195,7 +202,7 @@ onMounted(() => {
   // 每 1 秒更新倒數
   idleTimer = setInterval(() => {
     if (isTimerPaused.value) return
-    
+
     if (countdown.value > 0) {
       countdown.value--
     } else {
@@ -313,7 +320,7 @@ onUnmounted(() => {
 }
 
 .custom-header {
-  height: 80px !important; 
+  height: 80px !important;
   line-height: 80px !important;
   padding: 0 32px !important;
   background: transparent !important;
@@ -389,10 +396,10 @@ onUnmounted(() => {
   overflow-y: auto;
 }
 
-.fade-enter-active, .fade-leave-active { 
-  transition: opacity 0.2s ease; 
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.2s ease;
 }
-.fade-enter-from, .fade-leave-to { 
-  opacity: 0; 
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
 }
 </style>

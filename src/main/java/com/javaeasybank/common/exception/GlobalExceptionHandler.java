@@ -4,6 +4,7 @@ import com.javaeasybank.account.exception.AccountException;
 import com.javaeasybank.common.dto.response.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -96,5 +97,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .internalServerError()
                 .body(ApiResponse.fail("伺服器錯誤: " + e.getMessage()));
+    }
+
+    //風控審核任務被重複審核回傳409
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<ApiResponse<Void>> handleOptimisticLock(
+            ObjectOptimisticLockingFailureException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.fail("409", "該任務已被其他人審核，請重新整理"));
     }
 }

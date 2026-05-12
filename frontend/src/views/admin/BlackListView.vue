@@ -1,72 +1,98 @@
 <template>
-  <div class="page-container">
-    <div class="page-header">
-      <h2 class="page-title">風險管理 - 黑名單系統</h2>
-    </div>
-
+  <div style="padding: 24px">
     <!-- 功能列 -->
-    <div class="action-bar" style="justify-content: flex-end;">
-      <div class="global-actions">
-        <a-button type="primary" class="rounded-btn" @click="openModal('create')">
-          <template #icon><PlusOutlined /></template>
-          新增黑名單
-        </a-button>
+    <div
+      style="
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      "
+    >
+      <a-button type="primary" @click="openModal('create')">新增黑名單</a-button>
+      <div style="display: flex; align-items: center">
+        <span style="margin-right: 8px; white-space: nowrap">顯示狀態：</span>
+        <a-radio-group v-model:value="filterStatus" @change="handleFilterChange">
+          <a-radio-button :value="true">已啟用</a-radio-button>
+          <a-radio-button :value="false">已停用</a-radio-button>
+          <a-radio-button :value="null">全部</a-radio-button>
+        </a-radio-group>
       </div>
     </div>
 
-    <!-- 數據表格 -->
+    <!-- 資料表格 -->
     <a-table
       :columns="columns"
       :data-source="dataSource"
       :pagination="pagination"
       :loading="loading"
-      @change="handleTableChange"
       row-key="id"
-      class="custom-table"
+      @change="handleTableChange"
     >
-      <!-- 狀態欄位插槽 -->
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'listType'">
-          <a-tag color="blue">{{ typeMap[record.listType] || record.listType }}</a-tag>
+          {{ typeLabelMap[record.listType] || record.listType }}
         </template>
-        
-        <template v-else-if="column.key === 'status'">
+
+        <template v-if="column.key === 'status'">
           <a-switch
             v-model:checked="record.status"
             @change="(checked) => handleStatusChange(record, checked)"
           />
         </template>
 
-        <!-- 操作欄位 -->
-        <template v-else-if="column.key === 'action'">
-          <div class="action-cell">
-            <a-button type="link" class="action-btn edit-btn" @click="openModal('edit', record)">編輯</a-button>
-          </div>
+        <template v-if="column.key === 'action'">
+          <a @click="openModal('edit', record)">編輯</a>
         </template>
       </template>
     </a-table>
 
-    <!-- 新增/編輯 彈窗 -->
+    <!-- 新增 / 編輯 Modal -->
     <a-modal
-      v-model:visible="modalVisible"
+      v-model:open="modalVisible"
       :title="modalType === 'create' ? '新增黑名單' : '編輯黑名單'"
+      ok-text="確認"
+      cancel-text="取消"
+      :confirm-loading="submitting"
       @ok="handleModalOk"
+      @cancel="resetForm"
     >
-      <a-form :model="formData" layout="vertical">
-        <a-form-item label="類型">
-          <a-select v-model:value="formData.type" :disabled="modalType === 'edit'">
+      <a-form ref="formRef" :model="formData" :rules="rules" layout="vertical">
+        <a-form-item label="類型" name="listType">
+          <a-select
+            v-model:value="formData.listType"
+            :disabled="modalType === 'edit'"
+            @change="() => formRef.clearValidate('listValue')"
+          >
             <a-select-option value="ID_CARD">身份證字號</a-select-option>
-            <a-select-option value="ACCOUNT_NO">帳戶</a-select-option>
             <a-select-option value="EMAIL">電子郵件</a-select-option>
             <a-select-option value="PHONE">電話</a-select-option>
-            <!--<a-select-option value="IP">IP 位址</a-select-option>-->
           </a-select>
         </a-form-item>
-        <a-form-item label="數值">
-          <a-input v-model:value="formData.listValue" :disabled="modalType === 'edit'" />
+
+        <a-form-item label="資料" name="listValue">
+          <a-input
+            v-model:value="formData.listValue"
+            :disabled="modalType === 'edit'"
+            :placeholder="valuePlaceholder"
+          />
         </a-form-item>
-        <a-form-item label="備註原因">
-          <a-textarea v-model:value="formData.reason" />
+
+        <a-form-item label="備註原因" name="reason">
+          <a-textarea v-model:value="formData.reason" :rows="3" />
+        </a-form-item>
+
+        <a-form-item label="解封時間（不選則為永久）" name="expireAt">
+          <a-date-picker
+            v-model:value="formData.expireAt"
+            show-time
+            placeholder="選擇解封日期時間"
+            value-format="YYYY-MM-DD HH:mm:ss"
+            style="width: 100%"
+          />
+          <div style="font-size: 12px; color: #999; margin-top: 4px">
+            超過此時間後，系統將自動不再攔截該筆資料。
+          </div>
         </a-form-item>
       </a-form>
     </a-modal>
@@ -74,59 +100,102 @@
 </template>
 
 <script setup>
-import { ref, onMounted, reactive } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
-import { PlusOutlined } from '@ant-design/icons-vue'
 import api from '@/api/axios'
 
-// --- 資料定義 ---
+const BASE_URL = '/api/risk/blacklist'
+
 const loading = ref(false)
+const submitting = ref(false)
 const dataSource = ref([])
 const modalVisible = ref(false)
-const modalType = ref('create') // 'create' or 'edit'
+const modalType = ref('create')
+const filterStatus = ref(true)
+const formRef = ref(null)
 
 const formData = reactive({
   listType: 'ID_CARD',
   listValue: '',
   reason: '',
+  expireAt: null,
   status: true,
 })
+
 const pagination = reactive({
   current: 1,
   pageSize: 10,
   total: 0,
+  showTotal: (total) => `共 ${total} 筆`,
 })
 
-const typeMap = {
+const typeLabelMap = {
   ID_CARD: '身份證字號',
-  ACCOUNT_NO: '帳戶',
   EMAIL: '電子郵件',
   PHONE: '電話',
 }
 
+// 依類型動態調整 placeholder
+const valuePlaceholder = computed(
+  () =>
+    ({
+      ID_CARD: '例：A123456789',
+      EMAIL: '例：user@example.com',
+      PHONE: '例：0912345678',
+    })[formData.listType] || '',
+)
+
+// 表單驗證規則
+const rules = computed(() => ({
+  listType: [{ required: true, message: '請選擇類型' }],
+  listValue: [
+    { required: true, message: '此欄位為必填', trigger: 'blur' },
+    {
+      validator: async (_rule, value) => {
+        if (!value) return Promise.resolve()
+        const patterns = {
+          EMAIL: { re: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, msg: '請輸入正確的電子郵件格式' },
+          PHONE: { re: /^09\d{8}$/, msg: '請輸入正確的手機號碼格式' },
+          ID_CARD: { re: /^[A-Z][12]\d{8}$/, msg: '請輸入正確的身分證格式' },
+        }
+        const p = patterns[formData.listType]
+        if (p && !p.re.test(value)) return Promise.reject(p.msg)
+        return Promise.resolve()
+      },
+      trigger: 'change',
+    },
+  ],
+  reason: [{ required: true, message: '請輸入原因', trigger: 'blur' }],
+}))
+
 const columns = [
   { title: '類型', dataIndex: 'listType', key: 'listType', width: 120 },
-  { title: '數值', dataIndex: 'listValue', key: 'listValue', width: 180 },
-  { title: '原因', dataIndex: 'reason', key: 'reason' },
-  { title: '狀態', dataIndex: 'status', key: 'status', width: 100 },
-  { title: '建立時間', dataIndex: 'createdAt', key: 'createdAt', width: 180 },
-  { title: '操作', key: 'action', width: 100, align: 'right', fixed: 'right' },
+  { title: '資料', dataIndex: 'listValue', key: 'listValue' },
+  { title: '原因', dataIndex: 'reason', key: 'reason', ellipsis: true },
+  { title: '啟用狀態', dataIndex: 'status', key: 'status', width: 100 },
+  { title: '資料來源', dataIndex: 'source', key: 'source', ellipsis: true },
+  { title: '建立時間', dataIndex: 'createdAt', key: 'createdAt', width: 160 },
+  { title: '解封時間', dataIndex: 'expireAt', key: 'expireAt', width: 160 },
+  { title: '更新時間', dataIndex: 'updatedAt', key: 'updatedAt', width: 160 },
+  { title: '操作', key: 'action', width: 80, fixed: 'right' },
 ]
 
-// --- 邏輯處理 ---
+// ── API ──────────────────────────────────────────────
 
-// 獲取列表資料
-const fetchList = async () => {
+async function fetchList() {
   loading.value = true
   try {
-    // 對應後端 @GetMapping
-    const res = await api.get('/api/blacklist', {
-      params: {
-        page: pagination.current - 1, // Spring Pageable 從 0 開始
-        size: pagination.pageSize,
-        sort: 'createdAt,desc',
-      },
-    })
+    const params = {
+      page: pagination.current - 1,
+      size: pagination.pageSize,
+      sort: 'createdAt,desc',
+    }
+    // filterStatus 為 null 時不帶參數，避免後端收到 'null' 字串
+    if (filterStatus.value !== null) {
+      params.activated = filterStatus.value
+    }
+
+    const res = await api.get(BASE_URL, { params })
     dataSource.value = res.data.data.content
     pagination.total = res.data.data.totalElements
   } catch {
@@ -136,57 +205,83 @@ const fetchList = async () => {
   }
 }
 
-// 切換狀態
-const handleStatusChange = async (record, checked) => {
+async function handleStatusChange(record, checked) {
   try {
-    // 對應後端 @PutMapping("/{type}/{value}/status")
-    await api.put(`/api/blacklist/${record.listType}/${record.listValue}/status`, null, {
-      params: { enabled: checked },
+    // 對應 PUT /api/risk/blacklist/{type}/{value}/status
+    await api.put(`${BASE_URL}/${record.listType}/${record.listValue}/status`, null, {
+      params: { status: checked },
     })
     message.success('狀態更新成功')
   } catch {
-    record.status = !checked // 失敗時還原開關狀態
+    record.status = !checked // 失敗時還原開關
     message.error('狀態更新失敗')
   }
 }
 
-// 打開彈窗
-const openModal = (type, record = null) => {
+async function handleModalOk() {
+  try {
+    await formRef.value.validateFields()
+    submitting.value = true
+
+    if (modalType.value === 'create') {
+      // 對應 POST /api/risk/blacklist/create
+      await api.post(`${BASE_URL}/create`, formData)
+      message.success('新增成功')
+    } else {
+      // 對應 POST /api/risk/blacklist/{type}/{value}/update
+      await api.post(`${BASE_URL}/${formData.listType}/${formData.listValue}/update`, formData)
+      message.success('更新成功')
+    }
+
+    modalVisible.value = false
+    resetForm()
+    fetchList()
+  } catch (error) {
+    if (!error.errorFields) {
+      message.error(error.response?.data?.message || '伺服器錯誤')
+    }
+  } finally {
+    submitting.value = false
+  }
+}
+
+// ── 事件處理 ─────────────────────────────────────────
+
+function handleTableChange(pag) {
+  pagination.current = pag.current
+  pagination.pageSize = pag.pageSize
+  fetchList()
+}
+
+function handleFilterChange() {
+  pagination.current = 1
+  fetchList()
+}
+
+function openModal(type, record = null) {
   modalType.value = type
   if (type === 'edit' && record) {
-    Object.assign(formData, record)
+    Object.assign(formData, {
+      listType: record.listType,
+      listValue: record.listValue,
+      reason: record.reason,
+      expireAt: record.expireAt ?? null,
+      status: record.status,
+    })
   } else {
-    Object.assign(formData, { listType: 'ID_CARD', listValue: '', reason: '', status: true })
+    resetForm()
   }
   modalVisible.value = true
 }
 
-// 提交彈窗表單
-const handleModalOk = async () => {
-  try {
-    if (modalType.value === 'create') {
-      // 對應後端 @PostMapping("/create")
-      await api.post('/api/blacklist/create', formData)
-      message.success('新增成功')
-    } else {
-      // 對應後端 @PostMapping("/{type}/{value}/update")
-      await api.post(`/api/blacklist/${formData.listType}/${formData.listValue}/update`, formData)
-      message.success('更新成功')
-    }
-    modalVisible.value = false
-    fetchList()
-  } catch {
-    message.error('操作失敗')
-  }
+function resetForm() {
+  formData.listType = 'ID_CARD'
+  formData.listValue = ''
+  formData.reason = ''
+  formData.expireAt = null
+  formData.status = true
+  formRef.value?.clearValidate()
 }
 
-// 處理表格換頁
-const handleTableChange = (pag) => {
-  pagination.current = pag.current
-  fetchList()
-}
-
-onMounted(() => {
-  fetchList()
-})
+onMounted(fetchList)
 </script>
