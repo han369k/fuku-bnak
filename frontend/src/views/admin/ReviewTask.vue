@@ -1,7 +1,12 @@
 <template>
-  <div style="padding: 24px">
-    <!-- 統計卡片 -->
-    <a-row :gutter="16" style="margin-bottom: 24px">
+  <div class="page-container">
+    <div class="page-header">
+      <h2 class="page-title">審核任務</h2>
+    </div>
+
+    <div class="action-bar">
+      <!-- 統計卡片 -->
+      <a-row :gutter="16" style="margin-bottom: 24px">
       <a-col :span="6">
         <a-statistic title="待處理" :value="stats.pending" value-style="{color: #faad14}" />
       </a-col>
@@ -56,6 +61,7 @@
         重新整理
       </a-button>
     </a-space>
+    </div>
 
     <!-- 任務列表 -->
     <a-table

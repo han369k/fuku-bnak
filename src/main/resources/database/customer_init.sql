@@ -27,9 +27,9 @@ CREATE TABLE CUSTOMER_APPLICATION (
     CONSTRAINT CHK_App_Gender CHECK (gender IN ('M', 'F'))
 );
 
--- [2] 正式客戶視圖
 CREATE TABLE CUSTOMER_PROFILE (
-    customer_id VARCHAR(20) NOT NULL PRIMARY KEY, -- 預設建立叢集索引 (Clustered Index)
+-- [2] 正式客戶視圖
+                                  customer_id VARCHAR(20) NOT NULL PRIMARY KEY, -- 預設建立叢集索引 (Clustered Index)
     cif VARCHAR(20) NOT NULL UNIQUE,
     id_number VARCHAR(20) NOT NULL UNIQUE,
     name NVARCHAR(50) NOT NULL,
