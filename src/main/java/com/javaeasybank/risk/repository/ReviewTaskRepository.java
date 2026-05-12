@@ -10,7 +10,7 @@ import org.springframework.data.repository.query.Param;
 
 public interface ReviewTaskRepository extends JpaRepository<ReviewTask, Long> {
 
-    @Query("SELECT t FROM ReviewTask t WHERE " +
+    @Query("SELECT t FROM ReviewTask t LEFT JOIN FETCH t.riskEventLog WHERE " +
             "(:status IS NULL OR t.status = :status) AND " +
             "(:scene IS NULL OR t.scene = :scene) AND " +
             "(:priority IS NULL OR t.priority = :priority)")
@@ -19,6 +19,5 @@ public interface ReviewTaskRepository extends JpaRepository<ReviewTask, Long> {
             @Param("scene") BusinessScene scene,
             @Param("priority") Integer priority,
             Pageable pageable);
-
 }
 

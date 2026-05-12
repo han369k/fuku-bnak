@@ -3,13 +3,14 @@ package com.javaeasybank.risk.dto.response;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.javaeasybank.risk.enums.Disposition;
 import com.javaeasybank.risk.enums.RiskLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 @Getter
-@Setter
+@Builder
 public class RiskEventResponse {
 
     private Long logId;

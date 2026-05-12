@@ -128,7 +128,6 @@ public class ReviewTaskService {
 
     private ReviewTaskResponse toResponse(ReviewTask task) {
         RiskEventLog eventLog = task.getRiskEventLog();
-
         ReviewTaskResponse.ReviewTaskResponseBuilder builder = ReviewTaskResponse.builder()
                 .taskId(task.getTaskId())
                 .businessId(task.getBusinessId())
@@ -140,6 +139,13 @@ public class ReviewTaskService {
                 .priority(task.getPriority())
                 .createAt(task.getCreateAt())
                 .processedAt(task.getProcessedAt());
+        if (eventLog != null) {
+            builder.riskLevel(eventLog.getRiskLevel())           // ← 確認有這行
+                    .triggerReason(eventLog.getTriggerReason())   // ← 確認有這行
+                    .transactionAmount(eventLog.getTransactionAmount())
+                    .metaData(eventLog.getMetaData())
+                    .logCreatedAt(eventLog.getCreatedAt());
+        }
         return builder.build();
     }
 }

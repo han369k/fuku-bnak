@@ -104,16 +104,16 @@ public class RiskEventService {
     }
 
     private RiskEventResponse toDto(RiskEventLog rel) {
-        RiskEventResponse response = new RiskEventResponse();
-        response.setLogId(rel.getLogId());
-        response.setEventType(rel.getEventType());
-        response.setRiskLevel(rel.getRiskLevel());
-        response.setTargetIdentifier(rel.getTargetIdentifier());
-        response.setActionTaken(rel.getDisposition());
-        response.setTriggerReason(rel.getTriggerReason());
-        response.setTransactionAmount(rel.getTransactionAmount());
-        response.setCreatedAt(rel.getCreatedAt());
-
-        return response;
+        return RiskEventResponse.builder()
+                .logId(rel.getLogId())
+                .eventType(rel.getEventType())
+                .riskLevel(rel.getRiskLevel())
+                .targetIdentifier(rel.getTargetIdentifier())
+                .actionTaken(rel.getDisposition())
+                .triggerReason(rel.getTriggerReason())
+                .transactionAmount(rel.getTransactionAmount())
+                .createdAt(rel.getCreatedAt())
+                .build();
     }
 }
+

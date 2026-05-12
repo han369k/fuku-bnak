@@ -2,11 +2,14 @@ package com.javaeasybank.risk.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.javaeasybank.risk.enums.BusinessScene;
+import com.javaeasybank.risk.enums.Disposition;
 import com.javaeasybank.risk.enums.ReviewResult;
+import com.javaeasybank.risk.enums.RiskLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 @Getter
 @Builder
@@ -26,4 +29,16 @@ public class ReviewTaskResponse {
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime processedAt;
+
+
+    // ── 來自 RiskEventLog ──────────────────────────
+    private Long logId;
+    private RiskLevel riskLevel;
+    private Disposition disposition;
+    private String triggerReason;
+    private String metaData;
+    private BigDecimal transactionAmount;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    private LocalDateTime logCreatedAt;
 }
