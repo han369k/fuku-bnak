@@ -51,9 +51,10 @@ public class CustomerAccountController {
      */
     @GetMapping("/accounts")
     public ResponseEntity<ApiResponse<List<AccountResponse>>> getMyAccounts(HttpServletRequest request) {
-        String customerId = extractCustomerId(request);
+        String customerId = jwtUtil.resolveCustomerId(request);
         List<Account> accounts = accountRepository.findAllByCustomerId(customerId);
         List<AccountResponse> list = accounts.stream()
+                .filter(a -> a.getAccountType().isCustomerVisible())
                 .map(a -> {
                     String customerName = customerProfileRepository.findById(a.getCustomerId())
                             .map(cp -> cp.getName())
@@ -77,10 +78,11 @@ public class CustomerAccountController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
 
-        String customerId = extractCustomerId(request);
+        String customerId = jwtUtil.resolveCustomerId(request);
         Page<TransLog> result;
 
         List<String> ownedAccounts = accountRepository.findAllByCustomerId(customerId).stream()
+                .filter(a -> a.getAccountType().isCustomerVisible())
                 .map(Account::getAccountNumber).toList();
 
         if (ownedAccounts.isEmpty()) {
@@ -125,12 +127,4 @@ public class CustomerAccountController {
         return ResponseEntity.ok(ApiResponse.success(pageResponse));
     }
 
-    private String extractCustomerId(HttpServletRequest request) {
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring(7);
-            return jwtUtil.getCustomerIdFromToken(token);
-        }
-        throw new BusinessException("無法取得客戶身分資訊");
-    }
 }

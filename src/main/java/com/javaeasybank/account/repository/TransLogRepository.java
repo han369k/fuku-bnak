@@ -119,6 +119,19 @@ public interface TransLogRepository extends JpaRepository<TransLog, String>, Jpa
             @Param("transactionTypes") List<TransactionType> transactionTypes,
             @Param("sinceTime") LocalDateTime sinceTime);
 
+    @Query("SELECT COALESCE(SUM(t.amount), 0) FROM TransLog t " +
+           "WHERE t.accountNumber = :accountNumber " +
+           "AND t.transactionType = :transactionType " +
+           "AND t.entryType = :entryType " +
+           "AND (:startAt IS NULL OR t.createdAt >= :startAt) " +
+           "AND (:endAt IS NULL OR t.createdAt <= :endAt)")
+    BigDecimal sumAmountByAccountAndType(
+            @Param("accountNumber") String accountNumber,
+            @Param("transactionType") TransactionType transactionType,
+            @Param("entryType") EntryType entryType,
+            @Param("startAt") LocalDateTime startAt,
+            @Param("endAt") LocalDateTime endAt);
+
     /**
      * 查詢所有交易紀錄並按建立時間倒序排序，並進行分頁。
      *

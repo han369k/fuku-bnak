@@ -7,9 +7,15 @@ import com.javaeasybank.account.enums.Currency;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import jakarta.persistence.LockModeType;
+import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 帳戶資料庫操作接口。
@@ -26,6 +32,8 @@ public interface AccountRepository extends JpaRepository<Account, String> {
      * @return 包含帳戶實體的分頁列表。
      */
     Page<Account> findByCustomerId(String customerId, Pageable pageable);
+
+    Page<Account> findByCustomerIdAndAccountTypeNotIn(String customerId, Collection<AccountType> accountTypes, Pageable pageable);
 
     /**
      * 根據帳戶狀態篩選帳戶並進行分頁。
@@ -45,6 +53,18 @@ public interface AccountRepository extends JpaRepository<Account, String> {
      * @return 包含帳戶實體的分頁列表。
      */
     Page<Account> findByAccountTypeAndCurrency(AccountType accountType, Currency currency, Pageable pageable);
+
+    boolean existsByCustomerIdAndAccountType(String customerId, AccountType accountType);
+
+    Optional<Account> findFirstByCustomerIdAndAccountType(String customerId, AccountType accountType);
+
+    List<Account> findAllByCustomerIdAndAccountType(String customerId, AccountType accountType);
+
+    List<Account> findAllByCustomerIdAndAccountTypeAndCurrencyAndStatus(
+            String customerId,
+            AccountType accountType,
+            Currency currency,
+            AccountStatus status);
 
     /**
      * 檢查指定客戶是否已擁有特定帳戶類型和貨幣的帳戶。
@@ -82,4 +102,8 @@ public interface AccountRepository extends JpaRepository<Account, String> {
      * @return 帳戶列表。
      */
     List<Account> findAllByCustomerId(String customerId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT a FROM Account a WHERE a.accountNumber IN :accountNumbers ORDER BY a.accountNumber")
+    List<Account> findAllByAccountNumberInForUpdate(@Param("accountNumbers") Collection<String> accountNumbers);
 }

@@ -71,6 +71,9 @@ public class SecurityConfig {
                 .requestMatchers("/uploads/**").permitAll()
                 .requestMatchers("/img/**").permitAll()
 
+                // === 公開 API ===
+                .requestMatchers("/api/public/**").permitAll()
+
                 // === 其餘都要登入 ===
                 .anyRequest().authenticated()
             )
