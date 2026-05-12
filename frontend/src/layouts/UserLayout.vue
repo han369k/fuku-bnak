@@ -163,9 +163,11 @@ const menus = [
     svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>',
     route: null,
     children: [
-      { label: '卡片總覽', desc: '查看持有卡片', route: 'user-card-types' },
+      { label: '卡片總覽', desc: '查看所有信用卡', route: 'user-card-types' },
       { label: '線上申辦', desc: '申請新信用卡', route: 'user-card-applications' },
-      { label: '帳單查詢', desc: '查看信用卡帳單', route: null },
+      {label:'卡片管理', desc:'查看持有信用卡', route:'user-cards'},
+      {label:'交易管理', desc:'查看與刷卡交易', route:'user-card-txns'},
+      { label: '帳單查詢', desc: '查看信用卡帳單', route: 'user-card-bills' },
     ],
   },
   {
@@ -173,9 +175,9 @@ const menus = [
     svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
     route: null,
     children: [
-      { label: '信用貸款', desc: '線上申請信貸', route: null },
-      { label: '房屋貸款', desc: '房貸方案查詢', route: null },
-      { label: '貸款試算', desc: '利率與還款試算', route: null },
+      { label: '快速申請貸款', desc: '線上貸款申請，快速撥款', route: 'user-loan-apply' },
+      { label: '查詢申貸狀態', desc: '查看所有貸款申請進度', route: 'user-loan-status' },
+      { label: '貸款帳戶', desc: '查看核准中的貸款帳戶', route: null },
     ],
   },
   {

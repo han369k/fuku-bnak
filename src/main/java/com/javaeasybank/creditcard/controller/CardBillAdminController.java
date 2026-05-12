@@ -24,7 +24,7 @@ public class CardBillAdminController {
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<CardBillResponseDto>>> getAllBills(
             Pageable pageable) {
-        Page<CardBillResponseDto> page = billService.findAll(pageable);
+        Page<CardBillResponseDto> page = billService.getBills(pageable);
         PageResponse<CardBillResponseDto> response = PageResponse.of(
                 page.getContent(),
                 page.getNumber(),

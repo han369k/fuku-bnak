@@ -6,4 +6,5 @@ import lombok.Data;
 public class CardApplicationRequestDto {
 	private String customerId;
     private String remark;
+    private Integer cardTypeId;
 }

@@ -1,25 +1,28 @@
 package com.javaeasybank.loan.service;
 
 import com.javaeasybank.common.exception.BusinessException;
-import com.javaeasybank.loan.dto.requests.LoanMemberRequestDTO;
+import com.javaeasybank.customer.repository.CustomerProfileRepository;
+import com.javaeasybank.loan.client.LoanRiskClient;
+import com.javaeasybank.loan.dto.requests.*;
 import com.javaeasybank.loan.dto.response.LoanApplicationResponseDTO;
-import com.javaeasybank.loan.dto.requests.LoanContactLogRequestDTO;
 import com.javaeasybank.loan.dto.response.LoanContactLogResponseDTO;
-import com.javaeasybank.loan.dto.requests.LoanNonMemberRequestDTO;
-import com.javaeasybank.loan.dto.requests.LoanReviewDetailRequestDTO;
 import com.javaeasybank.loan.dto.response.LoanReviewDetailResponseDTO;
 import com.javaeasybank.loan.entity.LoanApplication;
 import com.javaeasybank.loan.entity.LoanContactLog;
 import com.javaeasybank.loan.entity.LoanReviewDetail;
 import com.javaeasybank.loan.enums.LoanApplicationStatus;
+import com.javaeasybank.loan.enums.LoanContactChannel;
 import com.javaeasybank.loan.enums.LoanContactStatus;
 import com.javaeasybank.loan.enums.LoanReviewStatus;
 import com.javaeasybank.loan.repository.LoanApplicationRepository;
 import com.javaeasybank.loan.repository.LoanContactLogRepository;
 import com.javaeasybank.loan.repository.LoanReviewDetailRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -36,7 +39,7 @@ import java.util.stream.Collectors;
  *   - 二次填單草稿儲存與送審（同步更新主表狀態）
  *   - 利率規則回傳 (前端根據規則自行計算)
  */
-
+@Slf4j
 @Service
 @Transactional
 public class LoanApplicationService {
@@ -50,6 +53,12 @@ public class LoanApplicationService {
     @Autowired
     private LoanReviewDetailRepository reviewDetailRepo;
 
+    @Autowired
+    private LoanRiskClient loanRiskClient;
+
+    @Autowired
+    private CustomerProfileRepository customerProfileRepository;
+
     // ===查詢功能===
     // 依狀態顯示
     public List<LoanApplicationResponseDTO> getByStatus(LoanApplicationStatus status) {
@@ -59,35 +68,37 @@ public class LoanApplicationService {
                 .collect(Collectors.toList());
     }
 
+    // 查詢當前登入客戶所有申請
+    public List<LoanApplicationResponseDTO> getMyApplications(String customerId) {
+        return laRepo.findByCustomerIdOrderByCreateTimeDesc(customerId)
+                .stream()
+                .map(this::toResponseDTO)
+                .collect(Collectors.toList());
+    }
+
     // ===新增功能===
+
     /// 會員申請
-    public String insertMember(LoanMemberRequestDTO dto) {
+    public String insertMember(String customerId, LoanMemberRequestDTO dto) {
         LoanApplication loan = buildBaseLoan();
-        loan.setCustomerId(dto.getCustomerId());
+        loan.setCustomerId(customerId);
         fillLoanContent(loan, dto.getApplyType(), dto.getApplyAmount(),
                 dto.getApplyPeriod(), dto.getRate());
         laRepo.save(loan);
         return loan.getApplicationId();
     }
 
-    // 非會員申請
-    public String insertNonMember(LoanNonMemberRequestDTO dto) {
-        LoanApplication loan = buildBaseLoan();
-        loan.setApplicantName(dto.getApplicantName());
-        loan.setApplicantPhone(dto.getApplicantPhone());
-        loan.setApplicantEmail(dto.getApplicantEmail());
-        fillLoanContent(loan, dto.getApplyType(), dto.getApplyAmount(),
-                dto.getApplyPeriod(), dto.getRate());
-        laRepo.save(loan);
-        return loan.getApplicationId();
-    }
-
-    // 共用：產生 ID + 預設狀態
-    private LoanApplication buildBaseLoan() {
-        LoanApplication loan = new LoanApplication();
+    // 共用：產生格式化 ID（前綴 + yyyyMMddHHmmss + 4 位亂數）
+    private String generateId(String prefix) {
         String timeStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
         String randomSuffix = String.format("%04d", (int) (Math.random() * 10000));
-        loan.setApplicationId("LA" + timeStr + randomSuffix);
+        return prefix + timeStr + randomSuffix;
+    }
+
+    // 產生貸款申請物件 + 預設狀態
+    private LoanApplication buildBaseLoan() {
+        LoanApplication loan = new LoanApplication();
+        loan.setApplicationId(generateId("LA"));
         loan.setApplicationStatus(LoanApplicationStatus.PENDING_CONTACT);
         loan.setCreateTime(LocalDateTime.now());
         return loan;
@@ -95,8 +106,8 @@ public class LoanApplicationService {
 
     // 共用：填申請內容
     private void fillLoanContent(LoanApplication loan, String applyType,
-                                 Long applyAmount, Integer applyPeriod,
-                                 BigDecimal rate) {
+            BigDecimal applyAmount, Integer applyPeriod,
+            BigDecimal rate) {
         loan.setApplyType(applyType);
         loan.setApplyAmount(applyAmount);
         loan.setApplyPeriod(applyPeriod);
@@ -109,22 +120,22 @@ public class LoanApplicationService {
 
         LoanApplication loan = laRepo.findById(applicationId)
                 .orElseThrow(() -> new BusinessException("找不到申請編號：" + applicationId));
+        LoanContactStatus contactStatus = LoanContactStatus.valueOf(dto.getContactStatus());
+        LoanContactChannel contactChannel = LoanContactChannel.valueOf(dto.getContactChannel());
 
         // 寫入聯繫紀錄
         LoanContactLog log = new LoanContactLog();
-        String timeStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
-        String randomSuffix = String.format("%04d", (int) (Math.random() * 10000));
-        log.setLogId("CL" + timeStr + randomSuffix);
+        log.setLogId(generateId("CL"));
         log.setApplicationId(applicationId);
         log.setEmpId(dto.getEmpId());
-        log.setContactStatus(dto.getContactStatus());
-        log.setContactChannel(dto.getContactChannel());
+        log.setContactStatus(contactStatus);
+        log.setContactChannel(contactChannel);
         log.setContactTime(LocalDateTime.now());
         log.setNote(dto.getNote());
         contactLogRepo.save(log);
 
         // 同步更新主表最新聯繫狀態
-        loan.setLatestContactStatus(dto.getContactStatus());
+        loan.setLatestContactStatus(contactStatus);
         loan.setLatestContactTime(log.getContactTime());
 
         // 若主表仍是 PENDING_CONTACT，推進為 IN_CONTACT
@@ -132,13 +143,12 @@ public class LoanApplicationService {
             loan.setApplicationStatus(LoanApplicationStatus.IN_CONTACT);
         }
         // 客戶放棄時，主表推進為 CANCELLED
-        if (dto.getContactStatus() == LoanContactStatus.DECLINED) {
+        if (contactStatus == LoanContactStatus.DECLINED) {
             loan.setApplicationStatus(LoanApplicationStatus.CANCELLED);
         }
 
         laRepo.save(loan);
     }
-
 
     // 查某申請的所有聯繫紀錄
     public List<LoanContactLogResponseDTO> getContactLogs(String applicationId) {
@@ -169,9 +179,7 @@ public class LoanApplicationService {
 
         // 若是全新的，產生 PK 並綁定 applicationId
         if (detail.getReviewId() == null) {
-            String timeStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
-            String randomSuffix = String.format("%04d", (int) (Math.random() * 10000));
-            detail.setReviewId("RD" + timeStr + randomSuffix);
+            detail.setReviewId(generateId("RD"));
             detail.setApplicationId(applicationId);
         }
 
@@ -189,6 +197,7 @@ public class LoanApplicationService {
 
     // 送審：草稿 → SUBMITTED，主表推進為 PENDING_REVIEW
     // 申請狀態必須是 IN_CONTACT
+    @Transactional
     public void submitReview(String applicationId) {
 
         LoanApplication loan = laRepo.findById(applicationId)
@@ -210,10 +219,82 @@ public class LoanApplicationService {
         // 更新填單狀態
         detail.setReviewStatus(LoanReviewStatus.SUBMITTED);
         detail.setSubmittedTime(LocalDateTime.now());
-        reviewDetailRepo.save(detail);
 
         // 同步更新主表狀態
         loan.setApplicationStatus(LoanApplicationStatus.PENDING_REVIEW);
+
+        // 準備送出的 DTO
+        LoanRiskRequestDTO riskDto = buildRiskRequest(loan, detail);
+
+        // 註冊事務提交後的執行邏輯。
+        // 注意：若要在生產環境確保可靠性，建議改用 ApplicationEventPublisher 並搭配
+        // @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                log.info("[SubmitReview] 事務提交，發送風控請求: {}", applicationId);
+                try {
+                    loanRiskClient.submitForReview(riskDto);
+                } catch (Exception e) {
+                    log.error("[SubmitReview] 風控請求發送失敗，appId={}, error={}", applicationId, e.getMessage());
+                    // TODO: 考慮加入補償機制（如寫入補傳表）
+                }
+            }
+        });
+    }
+
+    // 送風控的DTO (申請資料+二次填單)
+    private LoanRiskRequestDTO buildRiskRequest(LoanApplication loan, LoanReviewDetail detail) {
+        LoanRiskRequestDTO dto = new LoanRiskRequestDTO();
+        dto.setApplicationId(loan.getApplicationId());
+        dto.setCustomerId(loan.getCustomerId());
+        // 補入 cif 供風控模組對照顯示用
+        String cif = customerProfileRepository.findById(loan.getCustomerId())
+                .map(p -> p.getCif())
+                .orElse(null);
+
+        // 風控必填
+        dto.setScene("LOAN_APPLY");
+        dto.setBusinessId(loan.getApplicationId()); // ← businessId
+        dto.setAmount(detail.getConfirmedAmount()); // ← amount
+
+        dto.setCif(cif);
+        dto.setApplyType(loan.getApplyType());
+        dto.setConfirmedAmount(detail.getConfirmedAmount());
+        dto.setConfirmedPeriod(detail.getConfirmedPeriod());
+        dto.setConfirmedRate(detail.getConfirmedRate());
+        dto.setCollateralNote(detail.getCollateralNote());
+        dto.setEmpId(detail.getEmpId());
+        dto.setSubmittedTime(detail.getSubmittedTime());
+        return dto;
+    }
+
+    // 風控審核完成後傳回，更新主表狀態為 APPROVED 或 REJECTED
+    // callerModule 必須是 "RISK"；可接受的目標狀態只有 APPROVED / REJECTED
+    public void handleStatusCallback(String applicationId, LoanStatusCallbackRequestDTO dto) {
+
+        LoanApplication loan = laRepo.findById(applicationId)
+                .orElseThrow(() -> new BusinessException("找不到申請編號：" + applicationId));
+
+        // 來源模組驗證
+        if (!"RISK".equals(dto.getCallerModule())) {
+            throw new BusinessException("此 callback 僅接受 RISK 模組呼叫");
+        }
+
+        // 狀態合法性驗證：當前必須是 PENDING_REVIEW
+        if (loan.getApplicationStatus() != LoanApplicationStatus.PENDING_REVIEW) {
+            throw new BusinessException(
+                    "申請目前狀態為 " + loan.getApplicationStatus() + "，無法套用風控回調");
+        }
+
+        // 目標狀態只允許 APPROVED / REJECTED
+        if (dto.getNewStatus() != LoanApplicationStatus.APPROVED
+                && dto.getNewStatus() != LoanApplicationStatus.REJECTED) {
+            throw new BusinessException("風控回調目標狀態不合法：" + dto.getNewStatus());
+        }
+
+        loan.setApplicationStatus(dto.getNewStatus());
+        loan.setUpdateTime(LocalDateTime.now());
         laRepo.save(loan);
     }
 
@@ -224,12 +305,20 @@ public class LoanApplicationService {
         return toReviewDetailResponseDTO(detail);
     }
 
+    // 置頂查詢：曾被外部模組（風控、帳戶）異動過狀態的申請，依更新時間降序
+    public List<LoanApplicationResponseDTO> getRecentlyUpdated() {
+        return laRepo.findByUpdateTimeIsNotNullOrderByUpdateTimeDesc()
+                .stream()
+                .map(this::toResponseDTO)
+                .collect(Collectors.toList());
+    }
+
     // ===利率規則===
     // 回傳利率規則表，供前端頁面載入時抓取
     // 前端依此規則：
-    //   1. 根據貸款種類顯示合法期數下拉選單
-    //   2. 選完期數自動計算並顯示利率
-    //   3. 送出時將算好的利率一併傳入後端
+    // 1. 根據貸款種類顯示合法期數下拉選單
+    // 2. 選完期數自動計算並顯示利率
+    // 3. 送出時將算好的利率一併傳入後端
 
     public Map<String, Object> getRateRules() {
 
@@ -237,33 +326,27 @@ public class LoanApplicationService {
         Map<String, Object> types = new LinkedHashMap<>();
         types.put("PERSONAL", Map.of(
                 "baseRate", new BigDecimal("0.04"),
-                "periods", List.of(12, 24, 36, 48, 60)
-        ));
+                "periods", List.of(12, 24, 36, 48, 60)));
         types.put("CAR", Map.of(
                 "baseRate", new BigDecimal("0.025"),
-                "periods", List.of(12, 24, 36, 48, 60)
-        ));
+                "periods", List.of(12, 24, 36, 48, 60)));
         types.put("MOTOR", Map.of(
                 "baseRate", new BigDecimal("0.045"),
-                "periods", List.of(12, 24, 36)
-        ));
+                "periods", List.of(12, 24, 36)));
         types.put("STUDENT", Map.of(
                 "baseRate", new BigDecimal("0.015"),
                 "periods", List.of(60, 84, 120),
-                "fixedRate", true   // 固定利率，不加 termRate
+                "fixedRate", true // 固定利率，不加 termRate
         ));
         types.put("BUSINESS", Map.of(
                 "baseRate", new BigDecimal("0.02"),
-                "periods", List.of(36, 60, 84)
-        ));
+                "periods", List.of(36, 60, 84)));
         types.put("HOUSE", Map.of(
                 "baseRate", new BigDecimal("0.018"),
-                "periods", List.of(120, 240, 360, 480)
-        ));
+                "periods", List.of(120, 240, 360, 480)));
         types.put("LAND", Map.of(
                 "baseRate", new BigDecimal("0.028"),
-                "periods", List.of(120, 180, 240)
-        ));
+                "periods", List.of(120, 180, 240)));
 
         // 期數加碼對照表
         Map<String, BigDecimal> termRates = new LinkedHashMap<>();
@@ -292,9 +375,11 @@ public class LoanApplicationService {
         LoanApplicationResponseDTO dto = new LoanApplicationResponseDTO();
         dto.setApplicationId(loan.getApplicationId());
         dto.setCustomerId(loan.getCustomerId());
-        dto.setApplicantName(loan.getApplicantName());
-        dto.setApplicantPhone(loan.getApplicantPhone());
-        dto.setApplicantEmail(loan.getApplicantEmail());
+        // 用 customerId 查出 cif 供前端顯示（Primary Key 查詢，效能无淣）
+        String cif = customerProfileRepository.findById(loan.getCustomerId())
+                .map(p -> p.getCif())
+                .orElse(null);
+        dto.setCif(cif);
         dto.setApplyType(loan.getApplyType());
         dto.setApplyAmount(loan.getApplyAmount());
         dto.setApplyPeriod(loan.getApplyPeriod());

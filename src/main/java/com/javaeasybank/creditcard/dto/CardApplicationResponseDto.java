@@ -11,6 +11,8 @@ public class CardApplicationResponseDto {
 	private Integer applicationId;
     private String customerId;
     private String customerName;
+    private Integer cardTypeId;
+    private String cardTypeName;
     private LocalDateTime applyDate;
     private CardApplicationStatus status;
     private String remark;

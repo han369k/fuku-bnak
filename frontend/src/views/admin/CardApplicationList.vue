@@ -136,6 +136,7 @@ const handleUpdate = async (id, status) => {
 //分頁
 const handlePageChange = (page) => {
   pagination.value.current = page.current
+  pagination.value.pageSize = page.pageSize
   fetchData()
 }
 
@@ -177,7 +178,7 @@ onMounted(() => {
           class="rounded-btn"
           @click="
             () => {
-              pagination.current = 1
+              pagination.value.current = 1
               fetchData()
             }
           "
@@ -198,6 +199,7 @@ onMounted(() => {
       row-key="applicationId"
       class="custom-table"
       :scroll="{ x: 800 }"
+      @change="handlePageChange"
     >
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'customerName'">

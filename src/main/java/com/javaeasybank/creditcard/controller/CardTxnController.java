@@ -7,11 +7,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.javaeasybank.common.dto.response.ApiResponse;
 import com.javaeasybank.common.dto.response.PageResponse;
+import com.javaeasybank.common.util.SecurityUtil;
 import com.javaeasybank.creditcard.dto.CardTxnRequestDto;
 import com.javaeasybank.creditcard.dto.CardTxnResponseDto;
 import com.javaeasybank.creditcard.service.CardTxnService;
@@ -24,13 +26,17 @@ import lombok.RequiredArgsConstructor;
 public class CardTxnController {
 
     private final CardTxnService cardTxnService;
+    private final SecurityUtil securityUtil;
 
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<CardTxnResponseDto>>> getAllTransactions(
-        Pageable pageable
+        Pageable pageable,
+        @RequestHeader("Authorization")
+        String authHeader
 ) {
 
-    Page<CardTxnResponseDto> page = cardTxnService.findAll(pageable);
+    String customerId = securityUtil.getCustomerIdFromHeader(authHeader);
+    Page<CardTxnResponseDto> page = cardTxnService.findByCustomerId(customerId, pageable);
 
     PageResponse<CardTxnResponseDto> response =
             PageResponse.of(

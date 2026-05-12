@@ -12,5 +12,5 @@ public interface CreditCardRepository extends JpaRepository<CreditCard, Integer>
 
     boolean existsByCardNumber(String cardNumber);
 
-    List<CreditCard> findByCustomerCustomerId(Integer customerId);
+    List<CreditCard> findByCustomerCustomerId(String customerId);
 }

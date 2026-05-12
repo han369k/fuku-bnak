@@ -4,7 +4,7 @@ import com.javaeasybank.common.exception.BusinessException;
 import com.javaeasybank.customer.repository.CustomerRespository;
 import com.javaeasybank.customer.entity.CustomerProfile;
 import com.javaeasybank.customer.repository.CustomerProfileRepository;
-import com.javaeasybank.risk.core.enums.BlacklistType;
+import com.javaeasybank.risk.enums.BlacklistType;
 import com.javaeasybank.risk.service.BlackListService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.jdbc.core.JdbcTemplate;

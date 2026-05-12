@@ -7,7 +7,7 @@
         </div>
 
         <a-menu v-model:selectedKeys="selectedKeys" mode="inline">
-          
+
           <a-menu-item key="admin-home" @click="$router.push({ name: 'admin-home' })">
             <template #icon><HomeOutlined /></template>
             <span>首頁</span>
@@ -38,10 +38,7 @@
             </a-menu-item-group>
 
             <a-menu-item-group title="消金貸款業務">
-              <a-menu-item key="loan-apply" @click="$router.push({ name: 'loan-apply' })">
-                <template #icon><FileAddOutlined /></template>
-                <span>貸款進件申請</span>
-              </a-menu-item>
+
               <a-menu-item key="loan-applications" @click="$router.push({ name: 'loan-applications' })">
                 <template #icon><AuditOutlined /></template>
                 <span>貸款申請管理</span>
@@ -81,6 +78,13 @@
                 <template #icon><StopOutlined /></template>
                 <span>黑名單</span>
               </a-menu-item>
+              <a-menu-item
+                key="admin-review-task"
+                @click="$router.push({ name: 'admin-review-task' })"
+              >
+                <template #icon><CheckCircleOutlined /></template>
+                <span>人工審核</span>
+              </a-menu-item>
             </a-menu-item-group>
           </template>
 
@@ -106,7 +110,7 @@
       <a-layout-header class="custom-header">
         <div class="header-search">
         </div>
-        
+
         <div class="header-right">
           <div class="admin-timer">
             <span class="timer-text">剩餘登出時間: {{ formatTime(countdown) }}</span>
@@ -139,9 +143,9 @@ import { useAuthStore } from '@/stores/auth'
 import { logout } from '@/api/auth'
 import { Modal } from 'ant-design-vue'
 import { onMounted, onUnmounted } from 'vue'
-import { 
+import {
   HomeOutlined, TeamOutlined, UserOutlined, SettingOutlined, LogoutOutlined,
-  BankOutlined, ProfileOutlined, FileAddOutlined, AuditOutlined,
+  BankOutlined, ProfileOutlined, AuditOutlined,
   AppstoreAddOutlined, SolutionOutlined, CreditCardOutlined, AlertOutlined, StopOutlined
 } from '@ant-design/icons-vue'
 
@@ -200,7 +204,7 @@ onMounted(() => {
   // 每 1 秒更新倒數
   idleTimer = setInterval(() => {
     if (isTimerPaused.value) return
-    
+
     if (countdown.value > 0) {
       countdown.value--
     } else {
@@ -318,7 +322,7 @@ onUnmounted(() => {
 }
 
 .custom-header {
-  height: 80px !important; 
+  height: 80px !important;
   line-height: 80px !important;
   padding: 0 32px !important;
   background: transparent !important;
@@ -394,10 +398,10 @@ onUnmounted(() => {
   overflow-y: auto;
 }
 
-.fade-enter-active, .fade-leave-active { 
-  transition: opacity 0.2s ease; 
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.2s ease;
 }
-.fade-enter-from, .fade-leave-to { 
-  opacity: 0; 
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
 }
 </style>

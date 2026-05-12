@@ -1,31 +1,42 @@
 package com.javaeasybank.risk.service;
 
-import com.javaeasybank.risk.core.enums.BlacklistType;
-import com.javaeasybank.risk.dto.BlackListRequest;
-import com.javaeasybank.risk.dto.BlackListResponse;
+import com.javaeasybank.risk.enums.BlacklistType;
+import com.javaeasybank.risk.dto.request.BlackListRequest;
+import com.javaeasybank.risk.dto.response.BlackListResponse;
 import com.javaeasybank.risk.entity.Blacklist;
 import com.javaeasybank.risk.repository.BlackListRepository;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional(readOnly = true)
 public class BlackListService {
 
     private final BlackListRepository blRepos;
 
-    public Page<BlackListResponse> findAll(Pageable pageable) {
-        return blRepos.findAll(pageable)
+    public Page<BlackListResponse> getBlackLists(Boolean activated, Pageable pageable) {
+        return blRepos.findByFilter(activated, pageable)
                 .map(this::toResponse);
     }
 
+    //行員手動建檔
+    @Transactional
     public BlackListRequest create(BlackListRequest request) {
         Blacklist entity = toEntity(request);
+        // 如果你有整合 Spring Security，可以動態取得登入者 ID
+        String operator = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName();
+        entity.setSource("行員手動建檔 - 操作員: " + operator);
         Blacklist saved = blRepos.save(entity);
         return toRequest(saved);
     }
@@ -40,21 +51,24 @@ public class BlackListService {
     /**
      * 更新：同樣透過業務主鍵定位
      */
+    @Transactional
     public BlackListResponse updateByBusinessKey(BlacklistType type, String value, BlackListRequest request) {
         Blacklist entity = blRepos.findByBusinessKey(type, value)
                 .orElseThrow(() -> new EntityNotFoundException("找不到欲更新的有效紀錄"));
 
         // 更新內容 (例如修改原因或過期時間)
         entity.setReason(request.getReason());
+        // 設定解封時間
+        // 如果 request.getExpireAt() 為 null，代表該黑名單恢復為「永久有效」
         entity.setExpireAt(request.getExpireAt());
         entity.setSource(request.getSource());
-
         return toResponse(blRepos.save(entity));
     }
 
     /**
      * 停用：透過業務主鍵將狀態設為 false
      */
+    @Transactional
     public void updateStatusByBusinessKey(BlacklistType type, String value, Boolean status) {
         Blacklist entity = blRepos.findByBusinessKey(type, value)
                 .orElseThrow(() -> new EntityNotFoundException("找不到對應的黑名單紀錄"));
@@ -71,6 +85,16 @@ public class BlackListService {
         return blRepos.findActiveBlacklist(type, value).isPresent();
     }
 
+    //批次檢查所有資料
+    public List<BlacklistType> checkAll(Map<BlacklistType, String> map) {
+        return blRepos.findHitTypes(
+                map.get(BlacklistType.ID_CARD),
+                map.get(BlacklistType.PHONE),
+                map.get(BlacklistType.EMAIL)
+        );
+    }
+
+
     private BlackListResponse toResponse(Blacklist bl) {
         BlackListResponse response = new BlackListResponse();
         response.setListType(bl.getListType());
@@ -80,7 +104,7 @@ public class BlackListService {
         response.setStatus(bl.getStatus());
         response.setExpireAt(bl.getExpireAt());
         response.setCreatedAt(bl.getCreatedAt());
-        // response.setUpdatedAt(bl.getUpdatedAt());complie有問題
+        response.setUpdatedAt(bl.getUpdatedAt());
 
         return response;
     }
@@ -94,8 +118,7 @@ public class BlackListService {
         request.setStatus(bl.getStatus());
         request.setExpireAt(bl.getExpireAt());
         request.setCreatedAt(bl.getCreatedAt());
-        // request.setUpdatedAt(bl.getUpdatedAt());complie有問題
-
+        request.setUpdatedAt(bl.getUpdatedAt());
         return request;
     }
 

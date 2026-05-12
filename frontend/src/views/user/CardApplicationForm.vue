@@ -1,12 +1,15 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
-import { createApplication, getMyApplications } from '@/api/cardApplication'
+import { createCardApplication,getMyApplications } from '@/api/userCardApplication'
+import { getUserCardTypes } from '@/api/cardtype'
 
 const listLoading = ref(false)
 const submitting = ref(false)
 const applications = ref([])
+const cardTypes = ref([])
 const form = ref({
+  cardTypeId: '',
   remark: '',
 })
 
@@ -18,6 +21,10 @@ const columns = [
   {
     key: 'applyDate',
     label: '申請時間'
+  },
+  {
+    key: 'cardTypeName',
+    label: '卡別'
   },
   {
     key: 'status',
@@ -52,6 +59,15 @@ const getStatusText = (status) => {
   }
 }
 
+const fetchCardTypes = async () => {
+  try {
+    cardTypes.value = await getUserCardTypes()
+  } catch (error) {
+    console.error(error)
+    message.error(error.response?.data?.message || '無法取得卡別資料')
+  }
+}
+
 const fetchApplications = async () => {
   listLoading.value = true
 
@@ -67,13 +83,20 @@ const fetchApplications = async () => {
 }
 
 const submitApplication = async () => {
+  if (!form.value.cardTypeId) {
+    message.warning('請先選擇卡別')
+    return
+  }
+
   submitting.value = true
 
   try {
-    await createApplication({
+    await createCardApplication({
+      cardTypeId: Number(form.value.cardTypeId),
       remark: form.value.remark,
     })
     message.success('信用卡申請已送出')
+    form.value.cardTypeId = ''
     form.value.remark = ''
     await fetchApplications()
   } catch (error) {
@@ -84,7 +107,10 @@ const submitApplication = async () => {
   }
 }
 
-onMounted(fetchApplications)
+onMounted(()=>{
+  fetchCardTypes()
+  fetchApplications()
+})
 </script>
 
 <template>
@@ -98,6 +124,20 @@ onMounted(fetchApplications)
       </div>
 
       <form class="application-form" @submit.prevent="submitApplication">
+        <label class="field">
+          <span>卡別</span>
+          <select v-model="form.cardTypeId" required>
+            <option value="" disabled>請選擇卡別</option>
+            <option
+              v-for="cardType in cardTypes"
+              :key="cardType.cardTypeId"
+              :value="cardType.cardTypeId"
+            >
+              {{ cardType.cardTypeName }}
+            </option>
+          </select>
+        </label>
+
         <label class="field">
           <span>備註</span>
           <textarea
@@ -208,9 +248,9 @@ onMounted(fetchApplications)
   font-weight: 600;
 }
 
+.field select,
 .field textarea {
   width: 100%;
-  resize: vertical;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: var(--space-3);
@@ -218,6 +258,14 @@ onMounted(fetchApplications)
   color: var(--text-primary);
   font: inherit;
   font-weight: 400;
+}
+
+.field select {
+  min-height: 44px;
+}
+
+.field textarea {
+  resize: vertical;
 }
 
 .field textarea:focus {

@@ -1,58 +1,30 @@
 package com.javaeasybank.creditcard.mapper;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.Named;
+import org.mapstruct.ReportingPolicy;
 
 import com.javaeasybank.creditcard.dto.CardTxnResponseDto;
 import com.javaeasybank.creditcard.entity.CardTransaction;
 
-@Component
-public class CardTxnMapper {
+@Mapper(componentModel = "spring", config = CentralMapperConfig.class, unmappedTargetPolicy = ReportingPolicy.IGNORE)
+public interface CardTxnMapper {
 
-    public CardTxnResponseDto toDto(CardTransaction txn) {
-        if (txn == null) {
-            return null;
-        }
+    @Mapping(source = "merchant.merchantName", target = "merchantName")
+    @Mapping(source = "card.customer.name", target = "customerName")
+    @Mapping(source = "card.cardNumber", target = "cardNumber", qualifiedByName = "maskCard")
+    @Mapping(source = "refTxn.txnId", target = "refTxnId")
+    @Mapping(source = "cashbackRate", target = "cashbackRate")
+    @Mapping(source = "cashbackAmount", target = "cashbackAmount")
+    CardTxnResponseDto toDto(CardTransaction txn);
 
-        CardTxnResponseDto dto = new CardTxnResponseDto();
-        dto.setTxnId(txn.getTxnId());
-        dto.setTxnAmount(txn.getTxnAmount());
-        dto.setTxnType(txn.getTxnType());
-        dto.setTxnDate(txn.getTxnDate());
-        dto.setDescription(txn.getDescription());
-        dto.setCashbackRate(txn.getCashbackRate());
-        dto.setCashbackAmount(txn.getCashbackAmount());
+    List<CardTxnResponseDto> toDtoList(List<CardTransaction> list);
 
-        if (txn.getMerchant() != null) {
-            dto.setMerchantName(txn.getMerchant().getMerchantName());
-        }
-
-        if (txn.getCard() != null) {
-            dto.setCardNumber(maskCard(txn.getCard().getCardNumber()));
-            if (txn.getCard().getCustomer() != null) {
-                dto.setCustomerName(txn.getCard().getCustomer().getName());
-            }
-        }
-
-        if (txn.getRefTxn() != null) {
-            dto.setRefTxnId(txn.getRefTxn().getTxnId());
-        }
-
-        return dto;
-    }
-
-    public List<CardTxnResponseDto> toDtoList(List<CardTransaction> list) {
-        if (list == null) {
-            return null;
-        }
-        return list.stream()
-                .map(this::toDto)
-                .collect(Collectors.toList());
-    }
-
-    public String maskCard(String cardNumber) {
+    @Named("maskCard")
+    default String maskCard(String cardNumber) {
         if (cardNumber == null || cardNumber.length() < 4) {
             return cardNumber;
         }
