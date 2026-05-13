@@ -1,6 +1,8 @@
 package com.javaeasybank.creditcard.service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -102,6 +104,13 @@ public class CreditCardService {
         card.setCustomer(item.getApplication().getCustomer());
         card.setCardType(item.getCardType());
         card.setCreditLimit(item.getApprovedLimit());
+
+        // 初始消費額度為0
+        card.setCurrentBalance(BigDecimal.ZERO);
+
+        //開卡時間
+        card.setCreateDate(LocalDateTime.now());
+
 
         card.setCardNumber(generateCardNumber());
         card.setExpiryDate(LocalDate.now().plusYears(5));

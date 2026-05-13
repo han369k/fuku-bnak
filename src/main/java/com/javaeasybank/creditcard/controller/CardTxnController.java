@@ -1,5 +1,7 @@
 package com.javaeasybank.creditcard.controller;
 
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +18,9 @@ import com.javaeasybank.common.dto.response.PageResponse;
 import com.javaeasybank.common.util.SecurityUtil;
 import com.javaeasybank.creditcard.dto.CardTxnRequestDto;
 import com.javaeasybank.creditcard.dto.CardTxnResponseDto;
+import com.javaeasybank.creditcard.dto.MerchantResponseDto;
 import com.javaeasybank.creditcard.service.CardTxnService;
+import com.javaeasybank.creditcard.service.MerchantService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -27,6 +31,8 @@ public class CardTxnController {
 
     private final CardTxnService cardTxnService;
     private final SecurityUtil securityUtil;
+    private final MerchantService merchantService;
+
 
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<CardTxnResponseDto>>> getAllTransactions(
@@ -57,5 +63,9 @@ public class CardTxnController {
     @PostMapping
     public ResponseEntity<ApiResponse<CardTxnResponseDto>> create(@RequestBody CardTxnRequestDto dto) {
         return ResponseEntity.ok(ApiResponse.success("Transaction created successfully", cardTxnService.create(dto)));
+    }
+    @GetMapping("/merchants")
+    public ResponseEntity<ApiResponse<List<MerchantResponseDto>>> getAllMerchants() {
+        return ResponseEntity.ok(ApiResponse.success(merchantService.getAllMerchants()));
     }
 }

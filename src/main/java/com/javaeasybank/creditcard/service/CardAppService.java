@@ -91,21 +91,28 @@ public class CardAppService {
         item.setApplication(saved);
         item.setCardType(cardType);
         item.setResult(CardApplicationItemResult.PENDING);
+
+        //預設額度
+        item.setApprovedLimit(cardType.getDefaultLimit());
+
+        // 預設年費
+        item.setAnnualFee(cardType.getAnnualFee());
+
         cardAppItemRepository.save(item);
 
         return toDtoWithItem(saved);
     }
 
-    // 更新狀態
-    public CardApplicationResponseDto updateStatus(Integer id, CardApplicationStatus status) {
-        CardApplication app = getEntityById(id);
+    // // 更新狀態 已註解 透過Item的Result來判斷狀態
+    // public CardApplicationResponseDto updateStatus(Integer id, CardApplicationStatus status) {
+    //     CardApplication app = getEntityById(id);
 
-        app.setStatus(status);
+    //     app.setStatus(status);
 
-        CardApplication saved = cardAppRepository.save(app);
+    //     CardApplication saved = cardAppRepository.save(app);
 
-        return toDtoWithItem(saved);
-    }
+    //     return toDtoWithItem(saved);
+    // }
 
     public CardApplicationResponseDto updateRemark(Integer id, String remark) {
         CardApplication app = cardAppRepository.findById(id)

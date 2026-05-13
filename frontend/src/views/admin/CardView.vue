@@ -60,6 +60,7 @@ const handleDelete = async (record) => {
 
 const columns = [
   { title: 'ID', dataIndex: 'cardId', width: 80 },
+  { title: '持卡人', dataIndex: 'customerName', width: 150 },
   { title: '卡號', dataIndex: 'cardNumber', width: 180 },
   { title: '卡片名稱', key: 'cardTypeName', width: 150 },
   { title: '卡片圖片', key: 'image', width: 120, align: 'center' },

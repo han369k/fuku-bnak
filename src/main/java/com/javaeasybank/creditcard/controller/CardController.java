@@ -2,8 +2,8 @@ package com.javaeasybank.creditcard.controller;
 
 import java.util.List;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.parameters.P;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,9 +24,6 @@ public class CardController {
 	private final CreditCardService creditCardService;
 	private final SecurityUtil securityUtil;
 
-
-	
-	
 	@GetMapping("/{id}")
 	public ResponseEntity<ApiResponse<CreditCardResponseDto>> getCard(@PathVariable Integer id) {
 	    return ResponseEntity.ok(ApiResponse.success(creditCardService.findById(id)));
@@ -40,6 +37,7 @@ public class CardController {
 		return ResponseEntity.ok(ApiResponse.success(creditCardService.findByCustomerId(customerId)));
 	}
 	//開卡API
+	@PatchMapping("/{id}/activate")
 	public ResponseEntity<ApiResponse<CreditCardResponseDto>> activeCard(@PathVariable Integer id) {
 	    return ResponseEntity.ok(ApiResponse.success(creditCardService.activeCard(id)));
 		
