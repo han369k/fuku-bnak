@@ -10,7 +10,8 @@ CREATE TABLE [CARD_TYPE] (
     brand NVARCHAR(20) NOT NULL,
     annual_fee DECIMAL(10,2),
     cashback_rate DECIMAL(5,2),
-    card_image_url VARCHAR(255)
+    card_image_url VARCHAR(255),
+    default_limit DECIMAL(15,2)
 );
 
 -- 商家資料表

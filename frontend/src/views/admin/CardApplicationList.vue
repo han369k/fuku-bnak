@@ -9,7 +9,7 @@ import {
 } from '@/api/cardApplication'
 import { useRouter } from 'vue-router'
 import dayjs from 'dayjs'
-import { DownOutlined, SearchOutlined } from '@ant-design/icons-vue'
+import { DownOutlined, SearchOutlined,SyncOutlined } from '@ant-design/icons-vue'
 
 const router = useRouter()
 
@@ -61,7 +61,7 @@ const handleUpdateRemark = async () => {
 // 表格欄位
 const columns = [
   { title: 'ID', dataIndex: 'applicationId', key: 'applicationId', width: 80 },
-  { title: '使用者', dataIndex: 'customerName', key: 'customerName', width: 150 },
+  { title: '客戶姓名', dataIndex: 'customerName', key: 'customerName', width: 150 },
   {
     title: '申請日期',
     dataIndex: 'applyDate',
@@ -72,8 +72,8 @@ const columns = [
     },
   },
   { title: '狀態', dataIndex: 'status', key: 'status', width: 120 },
-  { title: '備註', dataIndex: 'remark', key: 'remark' },
-  { title: '明細', key: 'detail', width: 120 },
+  { title: '備註', dataIndex: 'remark', key: 'remark' , width: 120},
+  { title: '審核', key: 'detail', width: 120 },
   { title: '修改備註', key: 'editRemark', width: 120 },
   { title: '刪除', key: 'delete', width: 120 },
 ]
@@ -186,6 +186,10 @@ onMounted(() => {
           <template #icon><SearchOutlined /></template>
           搜尋
         </a-button>
+        <a-button class="rounded-btn" @click="fetchData()">
+          <template #icon><SyncOutlined /></template>
+          重新整理
+        </a-button>
       </div>
     </div>
 
@@ -204,7 +208,7 @@ onMounted(() => {
       <template #bodyCell="{ column, record }">
         <!-- 查看明細 -->
         <template v-if="column.key === 'detail'">
-          <a-button type="link" @click="goDetail(record)"> 查看明細 </a-button>
+          <a-button type="link" @click="goDetail(record)"> 審核明細 </a-button>
         </template>
 
         <!-- 修改備註 -->
@@ -317,4 +321,8 @@ onMounted(() => {
 .status-completed .status-dot {
   background-color: #52c41a;
 }
+:deep(.ant-btn-link) {
+  padding-inline: 0 !important;
+}
+
 </style>

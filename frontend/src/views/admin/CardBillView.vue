@@ -29,7 +29,7 @@ const columns = [
     key: 'billId',
   },
   {
-    title: '持卡人',
+    title: '客戶姓名',
     dataIndex: 'customerName',
     key: 'customerName',
   },
@@ -52,6 +52,11 @@ const columns = [
     title: '已繳金額',
     dataIndex: 'paidAmount',
     key: 'paidAmount',
+  },
+  {
+    title: '剩餘應繳',
+    dataIndex: 'remainingAmount',
+    key: 'remainingAmount',
   },
   {
     title: '繳費截止日',
@@ -83,6 +88,7 @@ const fetchBills = async (page = 1) => {
     bills.value = response.content.map(item => ({
       ...item,
       dueDate: dayjs(item.dueDate).format('YYYY-MM-DD'),
+      remainingAmount: item.totalAmount - item.paidAmount,
     }))
 
     pagination.value.total = response.totalElements
@@ -170,10 +176,16 @@ onMounted(() => {
 
           <a-tag
             color="orange"
-            v-else-if="record.billStatus === 'PENDING'"
+            v-else-if="record.billStatus === 'UNPAID'"
           >
             未繳費
           </a-tag>
+            <a-tag
+              color="blue"
+              v-else-if="record.billStatus === 'PARTIAL'"
+            >
+              部分繳款
+            </a-tag>
 
           <a-tag color="red" v-else>
             逾期
