@@ -10,14 +10,13 @@ import com.javaeasybank.loan.enums.LoanAccountStatus;
 import com.javaeasybank.loan.repository.LoanAccountRepository;
 import com.javaeasybank.loan.repository.LoanApplicationRepository;
 import com.javaeasybank.loan.repository.LoanReviewDetailRepository;
+import com.javaeasybank.loan.utils.AmortizationCalculator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.math.MathContext;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -46,6 +45,9 @@ public class LoanAccountService {
     @Autowired
     private CustomerProfileRepository customerProfileRepository;
 
+    @Autowired
+    private LoanRepaymentService loanRepaymentService;
+
     // ===撥款協調===
 
     /**
@@ -70,7 +72,8 @@ public class LoanAccountService {
         BigDecimal principal    = detail.getConfirmedAmount();
         Integer    periods      = detail.getConfirmedPeriod();
         BigDecimal annualRate   = detail.getConfirmedRate();
-        BigDecimal monthlyPmt   = calcMonthlyPayment(principal, annualRate, periods);
+        // 改用 AmortizationCalculator，移除內嵌公式
+        BigDecimal monthlyPmt   = AmortizationCalculator.calcMonthlyPayment(principal, annualRate, periods);
 
         LocalDate startDate = LocalDate.now();
 
@@ -93,6 +96,9 @@ public class LoanAccountService {
         loanAccountRepo.save(account);
         log.info("[Disbursement] 帳戶建立完成 accountId={} applicationId={}",
                 account.getAccountId(), applicationId);
+
+        // 預排 N 期還款明細
+        loanRepaymentService.createSchedule(account);
     }
 
     // ===客戶查詢===
@@ -115,22 +121,6 @@ public class LoanAccountService {
     }
 
     // ===工具方法===
-
-    /**
-     * 等額本息公式：M = P × r × (1+r)^n / ((1+r)^n − 1)
-     * 若利率為 0（學生貸款等），改用平均攤還：M = ceil(P / n)
-     */
-    private BigDecimal calcMonthlyPayment(BigDecimal principal, BigDecimal annualRate, int periods) {
-        if (annualRate.compareTo(BigDecimal.ZERO) == 0) {
-            return principal.divide(BigDecimal.valueOf(periods), 0, RoundingMode.CEILING);
-        }
-        BigDecimal r            = annualRate.divide(BigDecimal.valueOf(12), 10, RoundingMode.HALF_UP);
-        BigDecimal onePlusR     = BigDecimal.ONE.add(r);
-        BigDecimal onePlusRPowN = onePlusR.pow(periods, new MathContext(20, RoundingMode.HALF_UP));
-        BigDecimal numerator    = principal.multiply(r).multiply(onePlusRPowN);
-        BigDecimal denominator  = onePlusRPowN.subtract(BigDecimal.ONE);
-        return numerator.divide(denominator, 0, RoundingMode.CEILING);
-    }
 
     // 產生格式化 ID（前綴 + yyyyMMddHHmmss + 4 位亂數），與 LoanApplicationService 同規格
     private String generateId(String prefix) {
