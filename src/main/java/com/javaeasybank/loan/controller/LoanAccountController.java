@@ -4,7 +4,9 @@ import com.javaeasybank.common.dto.response.ApiResponse;
 import com.javaeasybank.common.exception.BusinessException;
 import com.javaeasybank.common.util.JwtUtil;
 import com.javaeasybank.loan.dto.response.LoanAccountResponseDTO;
+import com.javaeasybank.loan.dto.response.LoanRepaymentResponseDTO;
 import com.javaeasybank.loan.service.LoanAccountService;
+import com.javaeasybank.loan.service.LoanRepaymentService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -15,15 +17,17 @@ import java.util.List;
 
 /*
  * 客戶端：貸款帳戶查詢入口
- *   GET /api/loan-accounts/my                       - 查自己所有帳戶
- *   GET /api/loan-accounts/application/{id}         - 依申請編號查單筆帳戶
+ *   GET /api/loan-accounts/my                           - 查自己所有帳戶
+ *   GET /api/loan-accounts/application/{id}             - 依申請編號查單筆帳戶（含所有權驗證）
+ *   GET /api/loan-accounts/{accountId}/repayments       - 查還款時間表（含所有權驗證）
  */
 @RestController
 @RequestMapping("/api/loan-accounts")
 @RequiredArgsConstructor
 public class LoanAccountController {
 
-    private final LoanAccountService loanAccountService;
+    private final LoanAccountService   loanAccountService;
+    private final LoanRepaymentService loanRepaymentService;
     private final JwtUtil jwtUtil;
 
     // 查詢自己的所有貸款帳戶
@@ -36,14 +40,34 @@ public class LoanAccountController {
     }
 
     // 依申請編號查單筆帳戶（客戶確認撥款結果時使用）
+    // 驗證帳戶的 customerId 必須與 JWT 一致，防止越權查詢
     @PreAuthorize("hasRole('CUSTOMER')")
     @GetMapping("/application/{applicationId}")
     public ResponseEntity<ApiResponse<LoanAccountResponseDTO>> getByApplicationId(
             @PathVariable String applicationId,
             HttpServletRequest request) {
-        extractCustomerId(request); // 確保是已登入的客戶才能呼叫
+        String customerId = extractCustomerId(request);
+        LoanAccountResponseDTO dto = loanAccountService.getByApplicationId(applicationId);
+        if (!customerId.equals(dto.getCustomerId())) {
+            throw new BusinessException("無權存取此帳戶");
+        }
+        return ResponseEntity.ok(ApiResponse.success(dto));
+    }
+
+    // 查詢指定帳戶的還款時間表
+    // 驗證帳戶所有權後，委派 LoanRepaymentService 取得明細
+    @PreAuthorize("hasRole('CUSTOMER')")
+    @GetMapping("/{accountId}/repayments")
+    public ResponseEntity<ApiResponse<List<LoanRepaymentResponseDTO>>> getRepayments(
+            @PathVariable String accountId,
+            HttpServletRequest request) {
+        String customerId = extractCustomerId(request);
+        LoanAccountResponseDTO account = loanAccountService.getAccountById(accountId);
+        if (!customerId.equals(account.getCustomerId())) {
+            throw new BusinessException("無權存取此帳戶");
+        }
         return ResponseEntity.ok(ApiResponse.success(
-                loanAccountService.getByApplicationId(applicationId)));
+                loanRepaymentService.getByAccountId(accountId)));
     }
 
     // Helper：從 Authorization Header 解析 customerId，與 LoanApplicationController 同規格

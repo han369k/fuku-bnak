@@ -23,6 +23,7 @@ drop table if exists
                                   CONSTRAINT PK_LOAN_APPLICATION PRIMARY KEY (application_id)
 );
 
+
 -- ══════════════════════════════════════════
 --  2. loan_contact_log  聯繫紀錄子表（只寫不改）
 -- ══════════════════════════════════════════

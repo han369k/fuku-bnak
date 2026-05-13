@@ -75,4 +75,11 @@ public class LoanAdminController {
         return ResponseEntity.ok(ApiResponse.success(
                 loanApplicationService.getRecentlyUpdated()));
     }
+
+    // 風控送審補償：手動重送（僅 PENDING_REVIEW 可操作）
+    @PatchMapping("/{id}/risk/retry")
+    public ResponseEntity<ApiResponse<Void>> retryRiskSubmit(@PathVariable String id) {
+        loanApplicationService.retryRiskSubmit(id);
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
 }

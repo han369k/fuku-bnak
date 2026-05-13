@@ -7,6 +7,7 @@ import com.javaeasybank.loan.entity.LoanAccount;
 import com.javaeasybank.loan.entity.LoanApplication;
 import com.javaeasybank.loan.entity.LoanReviewDetail;
 import com.javaeasybank.loan.enums.LoanAccountStatus;
+import com.javaeasybank.loan.enums.LoanApplicationStatus;
 import com.javaeasybank.loan.repository.LoanAccountRepository;
 import com.javaeasybank.loan.repository.LoanApplicationRepository;
 import com.javaeasybank.loan.repository.LoanReviewDetailRepository;
@@ -112,11 +113,28 @@ public class LoanAccountService {
                 .collect(Collectors.toList());
     }
 
+    // 行員端：查全部帳戶（可依 accountStatus 篩選；null 表示不篩選）
+    @Transactional(readOnly = true)
+    public List<LoanAccountResponseDTO> getAllAccounts(LoanAccountStatus status) {
+        List<LoanAccount> accounts = (status != null)
+                ? loanAccountRepo.findByAccountStatusOrderByCreateTimeDesc(status)
+                : loanAccountRepo.findAll();
+        return accounts.stream().map(this::toResponseDTO).collect(Collectors.toList());
+    }
+
     // 依申請編號查單筆帳戶（客戶確認撥款結果用）
     @Transactional(readOnly = true)
     public LoanAccountResponseDTO getByApplicationId(String applicationId) {
         LoanAccount account = loanAccountRepo.findByApplicationId(applicationId)
                 .orElseThrow(() -> new BusinessException("此申請尚未建立貸款帳戶：" + applicationId));
+        return toResponseDTO(account);
+    }
+
+    // 依帳戶 ID 查單筆（客戶端還款時間表的所有權驗證用）
+    @Transactional(readOnly = true)
+    public LoanAccountResponseDTO getAccountById(String accountId) {
+        LoanAccount account = loanAccountRepo.findById(accountId)
+                .orElseThrow(() -> new BusinessException("找不到貸款帳戶：" + accountId));
         return toResponseDTO(account);
     }
 
@@ -139,6 +157,7 @@ public class LoanAccountService {
                 .map(p -> p.getCif())
                 .orElse(null);
         dto.setCif(cif);
+        dto.setApplyType(account.getApplyType());
         dto.setPrincipalAmount(account.getPrincipalAmount());
         dto.setConfirmedPeriod(account.getConfirmedPeriod());
         dto.setRate(account.getRate());

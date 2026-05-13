@@ -32,6 +32,7 @@ import com.javaeasybank.customer.repository.CustomerProfileRepository;
 import com.javaeasybank.loan.dto.requests.LoanStatusCallbackRequestDTO;
 import com.javaeasybank.loan.enums.LoanApplicationStatus;
 import com.javaeasybank.loan.service.LoanApplicationService;
+import com.javaeasybank.loan.service.LoanRepaymentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -81,6 +82,10 @@ public class AccountIntegrationService {
     @Lazy
     @Autowired
     private LoanApplicationService loanApplicationService;
+
+    @Lazy
+    @Autowired
+    private LoanRepaymentService loanRepaymentService;
 
     @Transactional
     public LoanAccountResponse createLoanAccount(LoanAccountCreateRequest request) {
@@ -281,6 +286,24 @@ public class AccountIntegrationService {
         transLogRepository.save(buildTransLog(referenceId, bankCollection, sourceAccount.getAccountNumber(),
                 EntryType.CREDIT, TransactionType.LOAN_REPAYMENT, amount,
                 collectionBefore, bankCollection.getBalance(), note));
+
+        // 還款帳務完成後，通知 Loan 模組更新還款進度與帳戶狀態
+        if (request.getApplicationId() != null && !request.getApplicationId().isBlank()) {
+            String appId = request.getApplicationId();
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    log.info("[Repayment] 帳務事務提交，通知 Loan 模組 applicationId={}", appId);
+                    try {
+                        loanRepaymentService.processRepayment(appId);
+                    } catch (Exception e) {
+                        log.error("[Repayment] Loan 還款進度更新失敗 applicationId={} error={}",
+                                appId, e.getMessage());
+                        // TODO（第五部）：寫入補傳表，搭配排程重試
+                    }
+                }
+            });
+        }
 
         return toLoanTransactionResponse(
                 referenceId,
