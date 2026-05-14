@@ -27,15 +27,26 @@ import com.javaeasybank.account.exception.AccountException;
 import com.javaeasybank.account.repository.AccountRepository;
 import com.javaeasybank.account.repository.TransLogRepository;
 import com.javaeasybank.account.utils.ReferenceIdGenerator;
+import com.javaeasybank.creditcard.entity.CardBill;
+import com.javaeasybank.creditcard.enums.BillStatus;
+import com.javaeasybank.creditcard.repository.CardBillRepository;
 import com.javaeasybank.customer.entity.CustomerProfile;
 import com.javaeasybank.customer.repository.CustomerProfileRepository;
+import com.javaeasybank.loan.dto.requests.LoanStatusCallbackRequestDTO;
+import com.javaeasybank.loan.enums.LoanApplicationStatus;
+import com.javaeasybank.loan.service.LoanApplicationService;
+import com.javaeasybank.loan.service.LoanRepaymentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import jakarta.persistence.criteria.Predicate;
 import java.math.BigDecimal;
@@ -45,7 +56,6 @@ import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -69,6 +79,16 @@ public class AccountIntegrationService {
     private final AccountRepository accountRepository;
     private final TransLogRepository transLogRepository;
     private final CustomerProfileRepository customerProfileRepository;
+    private final CardBillRepository cardBillRepository;
+
+    // @Lazy 避免 account ↔ loan 模組啟動順序問題；無實際循環依賴
+    @Lazy
+    @Autowired
+    private LoanApplicationService loanApplicationService;
+
+    @Lazy
+    @Autowired
+    private LoanRepaymentService loanRepaymentService;
 
     @Transactional
     public LoanAccountResponse createLoanAccount(LoanAccountCreateRequest request) {
@@ -146,6 +166,28 @@ public class AccountIntegrationService {
                 targetAccount.getBalance(),
                 note));
 
+        // 撥款帳務完成後，通知 Loan 模組更新申請狀態並建立還款時間表
+        // 使用 afterCommit 確保帳務事務先行提交，再開啟 Loan 側獨立事務
+        if (request.getApplicationId() != null && !request.getApplicationId().isBlank()) {
+            String appId = request.getApplicationId();
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    log.info("[Disbursement] 帳務事務提交，通知 Loan 模組 applicationId={}", appId);
+                    try {
+                        LoanStatusCallbackRequestDTO callbackDto = new LoanStatusCallbackRequestDTO();
+                        callbackDto.setCallerModule("ACCOUNT");
+                        callbackDto.setNewStatus(LoanApplicationStatus.DISBURSED);
+                        loanApplicationService.handleStatusCallback(appId, callbackDto);
+                    } catch (Exception e) {
+                        log.error("[Disbursement] Loan 回調失敗 applicationId={} error={}",
+                                appId, e.getMessage());
+                        // TODO（第五部）：寫入補傳表，搭配排程重試
+                    }
+                }
+            });
+        }
+
         return toLoanTransactionResponse(
                 referenceId,
                 loanAccount.getAccountNumber(),
@@ -194,10 +236,10 @@ public class AccountIntegrationService {
     public List<AccountResponse> getActiveTwdCheckingAccounts(String customerId) {
         findCustomer(customerId);
         return accountRepository.findAllByCustomerIdAndAccountTypeAndCurrencyAndStatus(
-                        customerId,
-                        AccountType.CHECKING,
-                        Currency.TWD,
-                        AccountStatus.ACTIVE)
+                customerId,
+                AccountType.CHECKING,
+                Currency.TWD,
+                AccountStatus.ACTIVE)
                 .stream()
                 .map(AccountResponse::fromEntity)
                 .toList();
@@ -247,6 +289,24 @@ public class AccountIntegrationService {
         transLogRepository.save(buildTransLog(referenceId, bankCollection, sourceAccount.getAccountNumber(),
                 EntryType.CREDIT, TransactionType.LOAN_REPAYMENT, amount,
                 collectionBefore, bankCollection.getBalance(), note));
+
+        // 還款帳務完成後，通知 Loan 模組更新還款進度與帳戶狀態
+        if (request.getApplicationId() != null && !request.getApplicationId().isBlank()) {
+            String appId = request.getApplicationId();
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    log.info("[Repayment] 帳務事務提交，通知 Loan 模組 applicationId={}", appId);
+                    try {
+                        loanRepaymentService.processRepayment(appId);
+                    } catch (Exception e) {
+                        log.error("[Repayment] Loan 還款進度更新失敗 applicationId={} error={}",
+                                appId, e.getMessage());
+                        // TODO（第五部）：寫入補傳表，搭配排程重試
+                    }
+                }
+            });
+        }
 
         return toLoanTransactionResponse(
                 referenceId,
@@ -356,6 +416,29 @@ public class AccountIntegrationService {
         BigDecimal cardBefore = zeroIfNull(creditCardAccount.getBalance());
         sourceAccount.setBalance(sourceBefore.subtract(amount));
         creditCardAccount.setBalance(cardBefore.add(amount));
+
+        // 取得最早未繳帳單，更新繳款金額與狀態
+        CardBill bill = cardBillRepository
+                .findTopByCardCustomerCustomerIdAndBillStatusInOrderByDueDateAsc(customerId,
+                        List.of(BillStatus.UNPAID, BillStatus.PARTIAL))
+                .orElseThrow(() -> new AccountException("BILL_NOT_FOUND", "找不到未繳帳單"));
+        // 更新帳單繳款金額與狀態
+        bill.setPaidAmount(
+                bill.getPaidAmount().add(amount));
+
+        // 已繳清
+        if (bill.getPaidAmount().compareTo(bill.getTotalAmount()) >= 0) {
+
+            bill.setBillStatus(BillStatus.PAID);
+
+        }
+        // 部分繳款
+        else if (bill.getPaidAmount().compareTo(BigDecimal.ZERO) > 0) {
+
+            bill.setBillStatus(BillStatus.PARTIAL);
+        }
+
+        cardBillRepository.save(bill);
 
         String referenceId = ReferenceIdGenerator.generate();
         String note = joinNote("信用卡繳款", request.getNote());
@@ -609,14 +692,14 @@ public class AccountIntegrationService {
     }
 
     private TransLog buildTransLog(String referenceId,
-                                   Account account,
-                                   String counterpartAccount,
-                                   EntryType entryType,
-                                   TransactionType transactionType,
-                                   BigDecimal amount,
-                                   BigDecimal balanceBefore,
-                                   BigDecimal balanceAfter,
-                                   String note) {
+            Account account,
+            String counterpartAccount,
+            EntryType entryType,
+            TransactionType transactionType,
+            BigDecimal amount,
+            BigDecimal balanceBefore,
+            BigDecimal balanceAfter,
+            String note) {
         TransLog transLog = new TransLog();
         transLog.setReferenceId(referenceId);
         transLog.setAccountNumber(account.getAccountNumber());
@@ -665,13 +748,13 @@ public class AccountIntegrationService {
     }
 
     private LoanAccountTransactionResponse toLoanTransactionResponse(String referenceId,
-                                                                     String loanAccountNumber,
-                                                                     String fromAccountNumber,
-                                                                     String toAccountNumber,
-                                                                     BigDecimal amount,
-                                                                     BigDecimal remainingLiability,
-                                                                     BigDecimal sourceAccountBalance,
-                                                                     BigDecimal targetAccountBalance) {
+            String loanAccountNumber,
+            String fromAccountNumber,
+            String toAccountNumber,
+            BigDecimal amount,
+            BigDecimal remainingLiability,
+            BigDecimal sourceAccountBalance,
+            BigDecimal targetAccountBalance) {
         LoanAccountTransactionResponse response = new LoanAccountTransactionResponse();
         response.setReferenceId(referenceId);
         response.setLoanAccountNumber(loanAccountNumber);

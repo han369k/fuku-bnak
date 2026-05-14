@@ -30,6 +30,8 @@ public class LoanApplication {
     private BigDecimal applyAmount;         // 金額
     private Integer applyPeriod;            // 期數
     private BigDecimal rate;                // 系統計算利率
+    private String disbursementAccount;     // 客戶選擇的撥款入帳帳號（台幣活存）
+    // ⚠ DB migration 需補: ALTER TABLE LOAN_APPLICATION ADD disbursement_account VARCHAR(14)
 
     @Enumerated(EnumType.STRING)
     private LoanApplicationStatus applicationStatus;    // 申請狀態

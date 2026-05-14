@@ -17,3 +17,7 @@ export const getTransactions = (page=0, size=10) => {
 export const createTransaction = (data) => {
     return api.post(BASE_URL, data).then(unwrap);
 }
+//取得商店名稱
+export const getMerchantNames = () => {
+    return api.get(`${BASE_URL}/merchants`).then(unwrap);
+}

@@ -39,10 +39,8 @@ const columns = [
 
 const getStatusType = (status) => {
   switch (status) {
-    case 'APPROVED':
+    case 'COMPLETED':
       return 'success'
-    case 'REJECTED':
-      return 'danger'
     default:
       return 'warning'
   }
@@ -50,8 +48,8 @@ const getStatusType = (status) => {
 
 const getStatusText = (status) => {
   switch (status) {
-    case 'APPROVED':
-      return '核准'
+    case 'COMPLETED':
+      return '已完成'
     case 'REJECTED':
       return '拒絕'
     default:

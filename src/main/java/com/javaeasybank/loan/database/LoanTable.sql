@@ -3,7 +3,8 @@ drop table if exists
     loan_contact_log,
     loan_review_detail,
     loan_account,
-    loan_repayment;
+    loan_repayment,
+    loan_document;
 
 -- ══════════════════════════════════════════
 --  1. loan_application  貸款申請主表
@@ -15,6 +16,7 @@ drop table if exists
                                   apply_amount          DECIMAL(18, 2)  NULL,
                                   apply_period          INT             NULL,
                                   rate                  DECIMAL(10, 6)  NULL,
+                                  disbursement_account  NVARCHAR(14)    NULL,       -- 客戶選擇的撥款入帳帳號（核准後撥款使用）
                                   application_status    NVARCHAR(30)    NOT NULL,   -- LoanApplicationStatus enum
                                   create_time           DATETIME2       NOT NULL,
                                   latest_contact_status NVARCHAR(30)    NULL,       -- LoanContactStatus enum
@@ -22,6 +24,7 @@ drop table if exists
                                   update_time           DATETIME2       NULL,
                                   CONSTRAINT PK_LOAN_APPLICATION PRIMARY KEY (application_id)
 );
+
 
 -- ══════════════════════════════════════════
 --  2. loan_contact_log  聯繫紀錄子表（只寫不改）
@@ -108,3 +111,19 @@ CREATE TABLE loan_repayment (
                                         REFERENCES loan_account (account_id)
 );
 
+-- ══════════════════════════════════════════
+--  6. loan_document  補件文件表
+-- ══════════════════════════════════════════
+CREATE TABLE loan_document (
+    document_id      NVARCHAR(50)    NOT NULL,
+    application_id   NVARCHAR(50)    NOT NULL,
+    document_type    NVARCHAR(30)    NOT NULL,   -- LoanDocumentType enum: PROPERTY_CERT / TITLE_DEED / OTHER
+    file_url         NVARCHAR(500)   NOT NULL,   -- FileStorageService 回傳路徑
+    original_name    NVARCHAR(255)   NULL,        -- 原始檔名（前端顯示用）
+    uploaded_by      NVARCHAR(50)    NOT NULL,   -- customerId
+    upload_time      DATETIME2       NOT NULL,
+    -- 審核由風控負責，貸款模組僅負責儲存與傳遞
+    CONSTRAINT PK_LOAN_DOCUMENT PRIMARY KEY (document_id),
+    CONSTRAINT FK_DOCUMENT_APPLICATION
+        FOREIGN KEY (application_id) REFERENCES loan_application (application_id)
+);

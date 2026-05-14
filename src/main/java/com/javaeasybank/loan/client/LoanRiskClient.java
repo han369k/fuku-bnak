@@ -24,7 +24,7 @@ public class LoanRiskClient {
     @Value("${risk.api.base-url}")
     private String riskBaseUrl;
 
-    @Value("http://localhost:8080/api/loan-callbacks")
+    @Value("${risk.api.callback-url}")
     private String callbackBaseUrl;
 
     private final RestTemplate restTemplate;

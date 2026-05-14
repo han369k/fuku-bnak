@@ -1,6 +1,7 @@
 package com.javaeasybank.loan.repository;
 
 import com.javaeasybank.loan.entity.LoanAccount;
+import com.javaeasybank.loan.enums.LoanAccountStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -13,4 +14,7 @@ public interface LoanAccountRepository extends JpaRepository<LoanAccount, String
 
     // 依 customerId 查該客戶所有貸款帳戶，按建立時間降序
     List<LoanAccount> findByCustomerIdOrderByCreateTimeDesc(String customerId);
+
+    // 行員端：依帳戶狀態查詢，按建立時間降序
+    List<LoanAccount> findByAccountStatusOrderByCreateTimeDesc(LoanAccountStatus accountStatus);
 }
