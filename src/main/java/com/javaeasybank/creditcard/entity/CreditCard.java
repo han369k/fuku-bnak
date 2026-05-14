@@ -48,7 +48,7 @@ public class CreditCard {
     @Column(name = "credit_limit", precision = 15, scale = 2)
     private BigDecimal creditLimit;
     @Column(name = "current_balance", precision = 15, scale = 2)
-    private BigDecimal currentBalance;
+    private BigDecimal currentDebt;
     private LocalDateTime createDate;
     @Enumerated(EnumType.STRING)
     private CardStatus status;
@@ -58,5 +58,8 @@ public class CreditCard {
     @ManyToOne
     @JoinColumn(name = "application_item_id")
     private CardApplicationItem applicationItem;
+
+    @Column(name = "credit_card_account_number", length = 20)
+    private String creditCardAccountNumber;//新增信用卡帳號欄位
 
 }
