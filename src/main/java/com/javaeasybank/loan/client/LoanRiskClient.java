@@ -21,7 +21,7 @@ public class LoanRiskClient {
     // application.properties:
     //   risk.api.base-url=http://localhost:8080/api/risk/reviews
     //   risk.api.callback-url=http://localhost:8080/api/loan-callbacks
-    @Value("http://localhost:8080/api/risk/reviews")
+    @Value("${risk.api.base-url}")
     private String riskBaseUrl;
 
     @Value("http://localhost:8080/api/loan-callbacks")
@@ -38,7 +38,7 @@ public class LoanRiskClient {
 
         dto.setCallbackUrl(callbackBaseUrl + "/" + dto.getApplicationId() + "/status");
 
-        String url = riskBaseUrl;
+        String url = riskBaseUrl + "reviews";
         log.info("[RiskClient] 送審 applicationId={} → {}", dto.getApplicationId(), url);
 
         try {
