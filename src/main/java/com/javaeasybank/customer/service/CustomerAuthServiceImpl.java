@@ -12,6 +12,7 @@ import com.javaeasybank.customer.repository.CustomerDeviceRepository;
 import com.javaeasybank.customer.repository.CustomerLoginLogRepository;
 import com.javaeasybank.customer.repository.CustomerProfileRepository;
 import com.javaeasybank.common.service.EmailService;
+import com.javaeasybank.customer.util.TaiwanIdValidator;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -46,6 +47,9 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
     @Value("${app.frontend-url:http://localhost:5173}")
     private String frontendUrl;
 
+    @Value("${app.demo.password-reset-email:nnor.0023067@gmail.com}")
+    private String demoPasswordResetEmail;
+
     // 用於產生隨機英數
     private static final String ALPHANUMERIC_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
     private final SecureRandom secureRandom = new SecureRandom();
@@ -75,7 +79,11 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
         String username = request.getUsername() == null ? null : request.getUsername().trim();
         String email = request.getEmail() == null ? null : request.getEmail().trim();
         String phone = request.getPhone() == null ? null : request.getPhone().trim();
-        String idNumber = request.getIdNumber() == null ? null : request.getIdNumber().trim();
+        String idNumber = TaiwanIdValidator.normalize(request.getIdNumber());
+
+        if (!TaiwanIdValidator.isValid(idNumber)) {
+            throw new BusinessException("身分證字號格式不正確");
+        }
 
         // 1. 檢查帳號是否重複
         if (customerAuthRepository.existsByUsername(username)) {
@@ -163,7 +171,9 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
             recordLogin(auth.getCustomerId(), auth.getUsername(), "失敗", "帳號尚未驗證", ipAddress, userAgent, deviceName);
             throw new BusinessException("帳號尚未驗證，請先至信箱收取驗證信");
         }
-        if (!"ACTIVE".equals(auth.getStatus())) {
+        if (!"ACTIVE".equals(auth.getStatus())
+                || profile == null
+                || !"ACTIVE".equals(profile.getStatus())) {
             recordLogin(auth.getCustomerId(), auth.getUsername(), "失敗", "帳號已被停用", ipAddress, userAgent, deviceName);
             throw new BusinessException("此帳號已被停用");
         }
@@ -179,7 +189,8 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
 
         // 4. 驗證身分證字號
         if (request.getIdNumber() != null && !request.getIdNumber().isEmpty()) {
-            if (profile == null || !profile.getIdNumber().equals(request.getIdNumber())) {
+            String loginIdNumber = TaiwanIdValidator.normalize(request.getIdNumber());
+            if (profile == null || !profile.getIdNumber().equals(loginIdNumber)) {
                 recordLogin(auth.getCustomerId(), auth.getUsername(), "失敗", "身分證字號不正確", ipAddress, userAgent, deviceName);
                 if (email != null) {
                     emailService.sendLoginNotification(email, auth.getUsername(), false, location);
@@ -319,7 +330,7 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
         // 組成重設連結
         String resetLink = frontendUrl + "/reset-password?token=" + resetToken;
 
-        emailService.sendPasswordResetEmail(request.getEmail(), resetLink);
+        emailService.sendPasswordResetEmail(demoPasswordResetEmail, resetLink);
     }
 
     // ===========================

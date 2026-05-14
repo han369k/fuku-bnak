@@ -1,5 +1,9 @@
 package com.javaeasybank.auth.controller;
 
+import com.javaeasybank.auth.entity.AuthActionLog;
+import com.javaeasybank.auth.entity.AuthEmp;
+import com.javaeasybank.auth.repository.AuthEmpRepository;
+import com.javaeasybank.auth.service.AuthActionLogService;
 import com.javaeasybank.auth.repository.AuthRespository;
 import com.javaeasybank.auth.service.AuthEmpService;
 import com.javaeasybank.common.dto.response.ApiResponse;
@@ -10,10 +14,12 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -21,11 +27,17 @@ public class AuthController {
 
     private final AuthEmpService authEmpService;
     private final AuthenticationManager authenticationManager;
+    private final AuthEmpRepository authEmpRepository;
+    private final AuthActionLogService actionLogService;
 
     public AuthController(AuthEmpService authEmpService,
-                          AuthenticationManager authenticationManager) {
+                          AuthenticationManager authenticationManager,
+                          AuthEmpRepository authEmpRepository,
+                          AuthActionLogService actionLogService) {
         this.authEmpService = authEmpService;
         this.authenticationManager = authenticationManager;
+        this.authEmpRepository = authEmpRepository;
+        this.actionLogService = actionLogService;
     }
 
     // ===== 登入（所有人都能打）=====
@@ -35,9 +47,15 @@ public class AuthController {
             HttpSession session,
             HttpServletRequest httpRequest) {
 
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-        );
+        Authentication authentication;
+        try {
+            authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+            );
+        } catch (AuthenticationException e) {
+            recordFailedLogin(request.getEmail(), getClientIp(httpRequest));
+            throw e;
+        }
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
         session.setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
@@ -85,9 +103,9 @@ public class AuthController {
             @RequestParam(required = false) String keyword) {
         List<AuthRespository.AuthEmpResponse> result;
         if (keyword != null && !keyword.isEmpty()) {
-            result = authEmpService.searchEmpsByName(keyword);
+            result = authEmpService.searchEmpsByNameExcludingCurrent(keyword);
         } else {
-            result = authEmpService.getAllEmps();
+            result = authEmpService.getAllEmpsExcludingCurrent();
         }
         return ResponseEntity.ok(ApiResponse.success(result));
     }
@@ -143,5 +161,17 @@ public class AuthController {
             return xRealIp;
         }
         return request.getRemoteAddr();
+    }
+
+    private void recordFailedLogin(String email, String ipAddress) {
+        Optional<AuthEmp> optEmp = authEmpRepository.findByEmail(email);
+        AuthActionLog log = new AuthActionLog();
+        log.setEmpId(optEmp.map(AuthEmp::getEmpId).orElse("UNKNOWN"));
+        log.setEmpName(optEmp.map(AuthEmp::getEmpName).orElse("未知員工"));
+        log.setAction("FAILED_LOGIN");
+        log.setTarget(optEmp.map(AuthEmp::getEmpId).orElse(email));
+        log.setDetails("員工登入失敗或帳號狀態異常，系統已記錄此事件");
+        log.setIpAddress(ipAddress);
+        actionLogService.saveLog(log);
     }
 }

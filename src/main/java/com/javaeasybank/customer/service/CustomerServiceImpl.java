@@ -3,7 +3,9 @@ package com.javaeasybank.customer.service;
 import com.javaeasybank.common.exception.BusinessException;
 import com.javaeasybank.customer.repository.CustomerRespository;
 import com.javaeasybank.customer.entity.CustomerProfile;
+import com.javaeasybank.customer.repository.CustomerAuthRepository;
 import com.javaeasybank.customer.repository.CustomerProfileRepository;
+import com.javaeasybank.customer.util.TaiwanIdValidator;
 import com.javaeasybank.risk.enums.BlacklistType;
 import com.javaeasybank.risk.service.BlackListService;
 import org.springframework.beans.BeanUtils;
@@ -22,6 +24,7 @@ import java.util.stream.Collectors;
 public class CustomerServiceImpl implements CustomerService {
 
     private final CustomerProfileRepository customerProfileRepository;
+    private final CustomerAuthRepository customerAuthRepository;
 
     private final BlackListService blackListService;
     // 加入 JdbcTemplate 依賴，用於執行原生 SQL
@@ -32,8 +35,12 @@ public class CustomerServiceImpl implements CustomerService {
     private static final String ALPHANUMERIC_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
     private final SecureRandom secureRandom = new SecureRandom();
 
-    public CustomerServiceImpl(CustomerProfileRepository customerProfileRepository, JdbcTemplate jdbcTemplate, BlackListService blackListService) {
+    public CustomerServiceImpl(CustomerProfileRepository customerProfileRepository,
+                               CustomerAuthRepository customerAuthRepository,
+                               JdbcTemplate jdbcTemplate,
+                               BlackListService blackListService) {
         this.customerProfileRepository = customerProfileRepository;
+        this.customerAuthRepository = customerAuthRepository;
         this.jdbcTemplate = jdbcTemplate;
         this.blackListService = blackListService;
     }
@@ -57,6 +64,10 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     public CustomerRespository.CustomerResponse createCustomer(CustomerRespository.CustomerRequest request) {
+        request.setIdNumber(TaiwanIdValidator.normalize(request.getIdNumber()));
+        if (!TaiwanIdValidator.isValid(request.getIdNumber())) {
+            throw new BusinessException("身分證字號格式不正確");
+        }
         if (customerProfileRepository.findByIdNumber(request.getIdNumber()).isPresent()) {
             throw new BusinessException("身分證字號已存在");
         }
@@ -123,6 +134,11 @@ public class CustomerServiceImpl implements CustomerService {
                 .orElseThrow(() -> new BusinessException("查無此客戶"));
         profile.setStatus("INACTIVE");
         customerProfileRepository.save(profile);
+
+        customerAuthRepository.findByCustomerId(customerId).ifPresent(auth -> {
+            auth.setStatus("SUSPENDED");
+            customerAuthRepository.save(auth);
+        });
     }
 
     @Override
@@ -131,6 +147,11 @@ public class CustomerServiceImpl implements CustomerService {
                 .orElseThrow(() -> new BusinessException("查無此客戶"));
         profile.setStatus("ACTIVE");
         customerProfileRepository.save(profile);
+
+        customerAuthRepository.findByCustomerId(customerId).ifPresent(auth -> {
+            auth.setStatus("ACTIVE");
+            customerAuthRepository.save(auth);
+        });
     }
 
     // ===========================
