@@ -18,7 +18,7 @@ CREATE TABLE LOAN_APPLICATION (
                                   update_time           DATETIME2       NULL,
                                   CONSTRAINT PK_LOAN_APPLICATION PRIMARY KEY (application_id)
 );
-
+ALTER TABLE loan_application ADD disbursement_account NVARCHAR(14) NULL;
 -- ══════════════════════════════════════════
 --  2. LOAN_CONTACT_LOG  聯繫紀錄子表（只寫不改）
 -- ══════════════════════════════════════════

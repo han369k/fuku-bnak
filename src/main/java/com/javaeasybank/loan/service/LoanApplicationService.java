@@ -505,6 +505,12 @@ public class LoanApplicationService {
         dto.setCreateTime(loan.getCreateTime());
         dto.setLatestContactStatus(loan.getLatestContactStatus());
         dto.setLatestContactTime(loan.getLatestContactTime());
+        // 帶入二次填單確認值（有填單才有值，否則 null）
+        reviewDetailRepo.findByApplicationId(loan.getApplicationId()).ifPresent(review -> {
+            dto.setConfirmedAmount(review.getConfirmedAmount());
+            dto.setConfirmedPeriod(review.getConfirmedPeriod());
+            dto.setConfirmedRate(review.getConfirmedRate());
+        });
         return dto;
     }
 

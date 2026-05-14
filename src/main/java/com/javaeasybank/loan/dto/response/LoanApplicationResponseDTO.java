@@ -18,6 +18,10 @@ public class LoanApplicationResponseDTO {
     private Integer applyPeriod;
     private BigDecimal rate;
     private String disbursementAccount;     // 客戶申請時選擇的撥款入帳帳號
+    // 二次填單確認值（PENDING_REVIEW 以後的狀態才有值）
+    private BigDecimal confirmedAmount;
+    private Integer confirmedPeriod;
+    private BigDecimal confirmedRate;
     private LoanApplicationStatus applicationStatus;
     private LocalDateTime createTime;
     private LoanContactStatus latestContactStatus;

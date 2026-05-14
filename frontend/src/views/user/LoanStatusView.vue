@@ -97,11 +97,17 @@
             </span>
           </div>
 
-          <!-- 卡片底部：申請時間 -->
+          <!-- 卡片底部：申請時間 + 補交文件 -->
           <div class="card-footer">
             <span class="footer-item">
               🕐 申請時間：{{ formatTime(app.createTime) }}
             </span>
+            <button
+              class="btn-resubmit"
+              @click="handleResubmit(app)"
+            >
+              📎 補交文件
+            </button>
           </div>
         </div>
       </div>
@@ -210,6 +216,11 @@ async function load() {
   } finally {
     loading.value = false
   }
+}
+
+function handleResubmit(app) {
+  // TODO: 導向補交文件頁面，或開啟上傳 Modal
+  alert(`補交文件功能（申請編號：${app.applicationId}）`)
 }
 
 onMounted(load)
@@ -444,8 +455,27 @@ onMounted(load)
 .card-footer {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding-top: 10px;
   border-top: 1px solid var(--border);
 }
 .footer-item { font-size: 12px; color: var(--muted); }
+
+/* Resubmit button */
+.btn-resubmit {
+  padding: 6px 16px;
+  background: transparent;
+  color: var(--accent);
+  border: 1.5px solid var(--accent);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.btn-resubmit:hover {
+  background: var(--accent);
+  color: #fff;
+}
 </style>

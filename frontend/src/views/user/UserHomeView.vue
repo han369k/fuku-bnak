@@ -155,7 +155,7 @@
               </div>
             </div>
             <div class="asset-subcard-actions">
-              <button class="subcard-primary-btn" @click="comingSoon">申請貸款</button>
+              <button class="subcard-primary-btn" @click="$router.push({ name: 'user-loan-apply' })">申請貸款</button>
             </div>
           </div>
         </div>

@@ -216,14 +216,15 @@
 
             <!-- 金額 -->
             <td>
-              <div class="amount">{{ formatAmount(app.applyAmount) }}</div>
+              <div class="amount">{{ formatAmount(displayAmount(app)) }}</div>
+              <div class="confirmed-hint" v-if="isConfirmedValue(app)">✓ 確認值</div>
             </td>
 
             <!-- 期數 -->
-            <td><span class="meta-tag">{{ app.applyPeriod }} 個月</span></td>
+            <td><span class="meta-tag">{{ displayPeriod(app) }} 個月</span></td>
 
             <!-- 利率 -->
-            <td><span class="meta-rate">{{ formatRate(app.rate) }}</span></td>
+            <td><span class="meta-rate">{{ formatRate(displayRate(app)) }}</span></td>
 
             <!-- 申請狀態 -->
             <td>
@@ -543,6 +544,28 @@ function clearTypes() {
 
 function countByType(key) {
   return applications.value.filter(a => a.applyType === key).length
+}
+
+// ── 顯示值選擇：審核中/已核准/已撥款/已結案 使用確認值，其餘用申請值 ──
+const POST_REVIEW_STATUSES = new Set(['PENDING_REVIEW', 'APPROVED', 'DISBURSED', 'CLOSED'])
+
+function displayAmount(app) {
+  return POST_REVIEW_STATUSES.has(app.applicationStatus) && app.confirmedAmount != null
+    ? app.confirmedAmount
+    : app.applyAmount
+}
+function displayPeriod(app) {
+  return POST_REVIEW_STATUSES.has(app.applicationStatus) && app.confirmedPeriod != null
+    ? app.confirmedPeriod
+    : app.applyPeriod
+}
+function displayRate(app) {
+  return POST_REVIEW_STATUSES.has(app.applicationStatus) && app.confirmedRate != null
+    ? app.confirmedRate
+    : app.rate
+}
+function isConfirmedValue(app) {
+  return POST_REVIEW_STATUSES.has(app.applicationStatus) && app.confirmedAmount != null
 }
 
 // ── Formatters ──
@@ -1437,6 +1460,14 @@ onUnmounted(() => clearInterval(refreshTimer))
   font-size: 14px;
   font-weight: 600;
   color: var(--ink);
+}
+
+.confirmed-hint {
+  font-size: 10px;
+  color: var(--green);
+  font-family: 'IBM Plex Mono', monospace;
+  margin-top: 2px;
+  opacity: 0.8;
 }
 
 .meta-tag {

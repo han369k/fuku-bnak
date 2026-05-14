@@ -95,21 +95,23 @@
                   <div class="info-grid">
                     <div class="info-row">
                       <span class="info-label">確認金額</span>
-                      <span class="info-val amount">{{
-                          formatAmount(review.confirmedAmount)
-                        }}</span>
+                      <span class="info-val amount">{{ formatAmount(form.confirmedAmount) }}</span>
                     </div>
                     <div class="info-row">
                       <span class="info-label">確認期數</span>
-                      <span class="info-val">{{ review.confirmedPeriod }} 個月</span>
+                      <span class="info-val">{{ form.confirmedPeriod ? form.confirmedPeriod + ' 個月' : '—' }}</span>
                     </div>
                     <div class="info-row">
                       <span class="info-label">確認利率</span>
-                      <span class="info-val rate">{{ formatRate(review.confirmedRate) }}</span>
+                      <span class="info-val rate">
+                        {{ form.confirmedRate && !isNaN(parseFloat(form.confirmedRate))
+                          ? parseFloat(form.confirmedRate).toFixed(2) + '%'
+                          : '—' }}
+                      </span>
                     </div>
                     <div class="info-row">
                       <span class="info-label">擔保品備注</span>
-                      <span class="info-val">{{ review.collateralNote || '—' }}</span>
+                      <span class="info-val">{{ form.collateralNote || '—' }}</span>
                     </div>
                     <div class="info-row">
                       <span class="info-label">填單行員</span>
@@ -190,7 +192,7 @@
                         class="field-input"
                         type="number"
                         v-model.number="form.confirmedPeriod"
-                        placeholder="e.g. 36"
+                        placeholder="e.g. 12"
                         :class="{ error: v$.confirmedPeriod }"
                       />
                       <span class="field-hint" v-if="app?.applyPeriod">
@@ -200,19 +202,17 @@
                   </div>
 
                   <div class="field">
-                    <label class="field-label">確認利率（小數）<span class="req">*</span></label>
+                    <label class="field-label">確認利率（%）<span class="req">*</span></label>
                     <div class="rate-input-wrap">
                       <input
                         class="field-input"
-                        type="number"
-                        step="0.001"
-                        v-model.number="form.confirmedRate"
-                        placeholder="e.g. 0.04"
+                        type="text"
+                        inputmode="decimal"
+                        v-model="form.confirmedRate"
+                        placeholder="可填至小數點後兩位"
                         :class="{ error: v$.confirmedRate }"
                       />
-                      <span class="rate-preview" v-if="form.confirmedRate">
-                        = {{ (form.confirmedRate * 100).toFixed(2) }}%
-                      </span>
+                      <span class="rate-unit">%</span>
                     </div>
                     <span class="field-hint" v-if="app?.rate">
                       申請利率：{{ formatRate(app.rate) }}
@@ -230,13 +230,11 @@
                   </div>
 
                   <div class="field">
-                    <label class="field-label">填單行員 ID<span class="req">*</span></label>
-                    <input
-                      class="field-input"
-                      v-model="form.empId"
-                      placeholder="e.g. EMP001"
-                      :class="{ error: v$.empId }"
-                    />
+                    <label class="field-label">填單行員</label>
+                    <div class="emp-id-display">
+                      <span class="emp-id-badge">{{ form.empId || '—' }}</span>
+<!--                      <span class="emp-id-hint">由登入帳號自動帶入</span>-->
+                    </div>
                   </div>
 
                   <!-- 差異提示 -->
@@ -257,7 +255,7 @@
                     <div class="diff-row" v-if="rateDiff !== null">
                       <span class="diff-label">利率</span>
                       <span class="diff-val" :class="rateDiff > 0 ? 'up' : 'down'">
-                        {{ rateDiff > 0 ? '▲' : '▼' }} {{ (Math.abs(rateDiff) * 100).toFixed(3) }}%
+                        {{ rateDiff > 0 ? '▲' : '▼' }} {{ Math.abs(rateDiff).toFixed(2) }}%
                       </span>
                     </div>
                   </div>
@@ -336,7 +334,7 @@ const submitted = ref(false)
 const form = reactive({
   confirmedAmount: null,
   confirmedPeriod: null,
-  confirmedRate: null,
+  confirmedRate: '',   // 文字欄位，空字串為未填
   collateralNote: '',
   empId: '',
 })
@@ -360,8 +358,7 @@ const reviewStatusClass = computed(() => ({
 const v$ = computed(() => ({
   confirmedAmount: submitted.value && !form.confirmedAmount,
   confirmedPeriod: submitted.value && !form.confirmedPeriod,
-  confirmedRate: submitted.value && form.confirmedRate == null,
-  empId: submitted.value && !form.empId,
+  confirmedRate: submitted.value && (!form.confirmedRate || isNaN(parseFloat(form.confirmedRate))),
 }))
 const hasValidateErr = computed(() => Object.values(v$.value).some(Boolean))
 
@@ -377,8 +374,10 @@ const periodDiff = computed(() => {
   return d !== 0 ? d : null
 })
 const rateDiff = computed(() => {
-  if (form.confirmedRate == null || !props.app?.rate) return null
-  const d = parseFloat((form.confirmedRate - parseFloat(props.app.rate)).toFixed(6))
+  if (!form.confirmedRate || !props.app?.rate) return null
+  // form.confirmedRate 為 % 字串（e.g. "3.14"），app.rate 為 decimal（e.g. 0.0314）→ 統一換成 %
+  const applyRatePct = parseFloat(props.app.rate) * 100
+  const d = parseFloat((parseFloat(form.confirmedRate) - applyRatePct).toFixed(4))
   return d !== 0 ? d : null
 })
 const hasDiff = computed(() =>
@@ -416,7 +415,10 @@ async function fetchReview() {
 function prefillForm(r) {
   form.confirmedAmount = r.confirmedAmount ?? null
   form.confirmedPeriod = r.confirmedPeriod ?? null
-  form.confirmedRate = r.confirmedRate != null ? parseFloat(r.confirmedRate) : null
+  // DB 儲存 decimal（0.0314），顯示時轉為百分比字串（"3.14"）
+  form.confirmedRate = r.confirmedRate != null
+    ? String(parseFloat((parseFloat(r.confirmedRate) * 100).toFixed(4)))
+    : ''
   form.collateralNote = r.collateralNote ?? ''
   form.empId = r.empId ?? ''
 }
@@ -429,7 +431,7 @@ function resetForm() {
     Object.assign(form, {
       confirmedAmount: null,
       confirmedPeriod: null,
-      confirmedRate: null,
+      confirmedRate: '',
       collateralNote: '',
       empId: ''
     })
@@ -451,7 +453,10 @@ async function saveDraft() {
       {
         confirmedAmount: form.confirmedAmount,
         confirmedPeriod: form.confirmedPeriod,
-        confirmedRate: form.confirmedRate,
+        // 輸入的是百分比字串，儲存時解析並轉回 decimal
+        confirmedRate: form.confirmedRate
+          ? parseFloat((parseFloat(form.confirmedRate) / 100).toFixed(6))
+          : null,
         collateralNote: form.collateralNote,
         empId: form.empId,
       }
@@ -963,12 +968,34 @@ function formatDateTime(d) {
   flex: 1;
 }
 
-.rate-preview {
+.rate-unit {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 15px;
   font-weight: 600;
   color: var(--green);
   white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Emp ID display */
+.emp-id-display {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.emp-id-badge {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.emp-id-hint {
+  font-size: 11px;
+  color: var(--muted);
 }
 
 /* Diff hints */
