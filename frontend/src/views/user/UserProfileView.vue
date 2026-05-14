@@ -487,7 +487,7 @@ async function handleRequestReset() {
       idNumber: profile.idNumber,
       birthday: profile.birthday
     })
-    showToast('密碼重設連結已發送至您的信箱，請查收', 'success')
+    showToast('密碼重設連結已發送至 demo 信箱 nnor.0023067@gmail.com，請查收', 'success')
   } catch (err) {
     showToast(err.response?.data?.message || '發送失敗', 'error')
   }

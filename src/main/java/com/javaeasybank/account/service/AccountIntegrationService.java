@@ -28,8 +28,10 @@ import com.javaeasybank.account.repository.AccountRepository;
 import com.javaeasybank.account.repository.TransLogRepository;
 import com.javaeasybank.account.utils.ReferenceIdGenerator;
 import com.javaeasybank.creditcard.entity.CardBill;
+import com.javaeasybank.creditcard.entity.CreditCard;
 import com.javaeasybank.creditcard.enums.BillStatus;
 import com.javaeasybank.creditcard.repository.CardBillRepository;
+import com.javaeasybank.creditcard.repository.CreditCardRepository;
 import com.javaeasybank.customer.entity.CustomerProfile;
 import com.javaeasybank.customer.repository.CustomerProfileRepository;
 import com.javaeasybank.loan.dto.requests.LoanStatusCallbackRequestDTO;
@@ -80,6 +82,7 @@ public class AccountIntegrationService {
     private final TransLogRepository transLogRepository;
     private final CustomerProfileRepository customerProfileRepository;
     private final CardBillRepository cardBillRepository;
+    private final CreditCardRepository creditCardRepository;
 
     // @Lazy 避免 account ↔ loan 模組啟動順序問題；無實際循環依賴
     @Lazy
@@ -425,6 +428,10 @@ public class AccountIntegrationService {
         // 更新帳單繳款金額與狀態
         bill.setPaidAmount(
                 bill.getPaidAmount().add(amount));
+        //回補信用卡可用餘額
+        CreditCard card=bill.getCard();
+        card.setCurrentDebt(card.getCurrentDebt().subtract(amount));
+        creditCardRepository.save(card);
 
         // 已繳清
         if (bill.getPaidAmount().compareTo(bill.getTotalAmount()) >= 0) {

@@ -96,6 +96,40 @@
         </div>
       </div>
     </transition>
+
+    <transition name="modal-fade">
+      <div v-if="notificationModal.visible" class="jb-modal-overlay" @click.self="notificationModal.visible = false">
+        <div class="notification-modal jb-card">
+          <div class="notification-header">
+            <div>
+              <p class="notification-eyebrow">Notification Center</p>
+              <h3 class="jb-modal-title">通知中心</h3>
+            </div>
+            <button class="notification-close" aria-label="關閉通知中心" @click="notificationModal.visible = false">×</button>
+          </div>
+
+          <div class="offer-list">
+            <article v-for="offer in offerMessages" :key="offer.title" class="offer-row">
+              <div class="offer-badge">{{ offer.badge }}</div>
+              <div class="offer-body">
+                <h4>{{ offer.title }}</h4>
+                <p>{{ offer.text }}</p>
+              </div>
+            </article>
+          </div>
+
+          <div class="preference-panel">
+            <label v-for="pref in notificationPrefs" :key="pref.key" class="preference-row">
+              <span>
+                <strong>{{ pref.label }}</strong>
+                <small>{{ pref.desc }}</small>
+              </span>
+              <input v-model="pref.enabled" type="checkbox" />
+            </label>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -187,7 +221,7 @@ const menus = [
     route: 'user-profile',
     children: [
       { label: '基本資料', desc: '查看與修改個人資訊', route: 'user-profile' },
-      { label: '通知設定', desc: '管理通知偏好', route: null },
+      { label: '通知設定', desc: '管理通知偏好', action: 'notifications' },
     ],
   },
   {
@@ -203,6 +237,12 @@ const menus = [
 ]
 
 function handleSubClick(sub) {
+  if (sub.action === 'notifications') {
+    notificationModal.visible = true
+    openMenu.value = -1
+    return
+  }
+
   if (sub.route) {
     router.push({ name: sub.route })
     openMenu.value = -1
@@ -210,6 +250,34 @@ function handleSubClick(sub) {
     alert('此功能即將推出，敬請期待！')
   }
 }
+
+const notificationModal = reactive({
+  visible: false,
+})
+
+const offerMessages = [
+  {
+    badge: '信用卡',
+    title: 'JCB 現金回饋升級',
+    text: '本月指定通路最高 5% 回饋，適合展示優惠推播與客戶分眾通知。',
+  },
+  {
+    badge: '貸款',
+    title: '信貸利率限時優惠',
+    text: '優質往來客戶可享前 3 個月優惠利率，線上申請可快速取得試算結果。',
+  },
+  {
+    badge: '安全',
+    title: '新裝置登入提醒',
+    text: '系統偵測到新裝置登入時會即時通知，協助客戶掌握帳戶安全。',
+  },
+]
+
+const notificationPrefs = reactive([
+  { key: 'card', label: '信用卡優惠', desc: '刷卡回饋、通路活動與帳單提醒', enabled: true },
+  { key: 'loan', label: '貸款優惠', desc: '信貸、車貸與房貸方案通知', enabled: true },
+  { key: 'security', label: '安全提醒', desc: '登入、新裝置與密碼異動通知', enabled: true },
+])
 
 function closeOnOutsideClick(e) {
   if (!e.target.closest('.mega-nav-item')) {
@@ -777,4 +845,109 @@ function handleLogout() {
 }
 .modal-fade-enter-active, .modal-fade-leave-active { transition: all 0.4s var(--ease); }
 .modal-fade-enter-from, .modal-fade-leave-to { opacity: 0; transform: scale(0.95); }
+
+.notification-modal {
+  width: min(560px, calc(100vw - 32px));
+  padding: 28px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xl);
+}
+
+.notification-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.notification-eyebrow {
+  margin: 0 0 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.notification-close {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.offer-list,
+.preference-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.offer-row {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 249, 239, 0.72);
+}
+
+.offer-badge {
+  display: grid;
+  place-items: center;
+  min-height: 42px;
+  border-radius: 8px;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.offer-body h4 {
+  margin: 0 0 5px;
+  font-size: 15px;
+}
+
+.offer-body p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.preference-panel {
+  margin-top: 18px;
+}
+
+.preference-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.preference-row span {
+  display: grid;
+  gap: 3px;
+}
+
+.preference-row small {
+  color: var(--text-secondary);
+}
+
+.preference-row input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary);
+}
 </style>
