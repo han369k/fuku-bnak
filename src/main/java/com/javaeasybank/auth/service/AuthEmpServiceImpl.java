@@ -125,8 +125,26 @@ public class AuthEmpServiceImpl implements AuthEmpService {
     }
 
     @Override
+    public List<AuthRespository.AuthEmpResponse> getAllEmpsExcludingCurrent() {
+        String currentEmpId = resolveCurrentEmp()[0];
+        return authEmpRepository.findAll().stream()
+                .filter(emp -> !emp.getEmpId().equals(currentEmpId))
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public List<AuthRespository.AuthEmpResponse> searchEmpsByName(String keyword) {
         return authEmpRepository.findByEmpNameContaining(keyword).stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<AuthRespository.AuthEmpResponse> searchEmpsByNameExcludingCurrent(String keyword) {
+        String currentEmpId = resolveCurrentEmp()[0];
+        return authEmpRepository.findByEmpNameContaining(keyword).stream()
+                .filter(emp -> !emp.getEmpId().equals(currentEmpId))
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
@@ -183,11 +201,14 @@ public class AuthEmpServiceImpl implements AuthEmpService {
 
     @Override
     public void suspendEmp(String empId) {
+        String[] cur = resolveCurrentEmp();
+        if (empId.equals(cur[0])) {
+            throw new BusinessException("不可停用自己的帳號");
+        }
         AuthEmp emp = authEmpRepository.findById(empId)
                 .orElseThrow(() -> new BusinessException("查無此員工"));
         emp.setStatus("SUSPENDED");
         authEmpRepository.save(emp);
-        String[] cur = resolveCurrentEmp();
         recordLog(cur[0], cur[1],
                   "SUSPEND_EMP", empId,
                   "停用員工：" + emp.getEmpName() + "（" + empId + "）",

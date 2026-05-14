@@ -5,7 +5,8 @@
     </div>
 
     <div class="action-bar" style="justify-content: flex-end;">
-      <div class="global-actions">
+      <!-- 僅 CISO (Lvl4+) 才能匯出日誌 -->
+      <div class="global-actions" v-if="isCISO">
         <a-button class="rounded-btn btn-ghost" @click="handleExportCsv">
           <template #icon><DownloadOutlined /></template>
           匯出 CSV
@@ -31,7 +32,18 @@
           <div class="emp-name-cell">
             <div class="emp-avatar">{{ (record.empName && record.empName !== '???') ? record.empName.charAt(0) : '系' }}</div>
             <div class="emp-info">
-              <span class="emp-name-text">{{ (record.empName && record.empName !== '???') ? record.empName : '系統' }}</span>
+              <a-popconfirm
+                v-if="canSuspendFromLog(record)"
+                title="確定要停用此員工帳號？"
+                ok-text="停用"
+                cancel-text="取消"
+                @confirm="handleSuspendFromLog(record)"
+              >
+                <button class="emp-name-link">
+                  {{ (record.empName && record.empName !== '???') ? record.empName : '系統' }}
+                </button>
+              </a-popconfirm>
+              <span v-else class="emp-name-text">{{ (record.empName && record.empName !== '???') ? record.empName : '系統' }}</span>
               <span class="emp-id-text">{{ (record.empId && record.empId !== '???') ? record.empId : 'SYSTEM' }}</span>
             </div>
           </div>
@@ -59,10 +71,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import { DownloadOutlined } from '@ant-design/icons-vue'
-import { getActionLogs, exportLogsCsv, exportLogsPdf } from '@/api/auth'
+import { getActionLogs, exportLogsCsv, exportLogsPdf, suspendEmployee } from '@/api/auth'
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore()
+// 只有 permLevel >= 4 的 CISO 才能匯出
+const permLevel = computed(() => authStore.user?.permLevel ?? 0)
+const isCISO = computed(() => permLevel.value >= 4)
+const currentEmpId = computed(() => authStore.user?.empId)
 
 const logs = ref([])
 const loading = ref(false)
@@ -96,6 +115,24 @@ const actionColorMap = {
 
 function actionColor(action) {
   return actionColorMap[action] || 'default'
+}
+
+function canSuspendFromLog(record) {
+  return isCISO.value
+    && record.empId
+    && record.empId !== 'SYSTEM'
+    && record.empId !== 'UNKNOWN'
+    && record.empId !== currentEmpId.value
+}
+
+async function handleSuspendFromLog(record) {
+  try {
+    await suspendEmployee(record.empId)
+    message.success(`員工「${record.empName}」已停用`)
+    await fetchData()
+  } catch (err) {
+    message.error(err.response?.data?.message || '停用員工失敗')
+  }
 }
 
 function formatTime(value) {
@@ -178,6 +215,20 @@ onMounted(() => {
   font-weight: 600;
   color: #1a1a2e;
   font-size: 13px;
+}
+
+.emp-name-link {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #5C6B5F;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.emp-name-link:hover {
+  text-decoration: underline;
 }
 
 .emp-id-text {

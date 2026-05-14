@@ -251,18 +251,29 @@
               </div>
             </td>
 
-            <!-- 操作 -->
-            <td class="td-action">
-              <div class="action-btns">
-                <button class="btn btn-xs btn-outline" @click="openContactModal(app)"
-                        title="聯繫紀錄">📞
-                </button>
-                <button class="btn btn-xs btn-outline" @click="openReviewModal(app)"
-                        title="審核填單">🗂
-                </button>
-              </div>
-            </td>
-          </tr>
+              <!-- 操作 -->
+              <td class="td-action">
+                <div class="action-btns">
+                  <button
+                    class="btn btn-xs btn-outline"
+                    @click="openContactModal(app)"
+                    title="聯繫紀錄"
+                  >
+                    📞
+                  </button>
+                  <!-- 審核填單：需 permLevel >= 2 (CFDM 主管以上) -->
+                  <button
+                    class="btn btn-xs"
+                    :class="canApprove ? 'btn-outline' : 'btn-disabled'"
+                    @click="canApprove && openReviewModal(app)"
+                    :disabled="!canApprove"
+                    :title="canApprove ? '審核填單' : '權限不足：需主管 (CFDM) 以上才能審核'"
+                  >
+                    🗂
+                  </button>
+                </div>
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -325,6 +336,17 @@ import {ref, computed, onMounted, onUnmounted} from 'vue'
 import api from '@/api/axios'
 import LoanContactLogModal from './LoanContactLogModal.vue'
 import LoanReviewModal from './LoanReviewModal.vue'
+import { useAuthStore } from '@/stores/auth'
+
+// ── 角色權限判斷 ──
+const authStore = useAuthStore()
+// 雙重判斷：permLevel 數字 或 roleCode 字串
+const APPROVER_ROLES = ['CFDM', 'CSDM', 'CRDM', 'CRO', 'COO', 'CISO', 'ISSA']
+const canApprove = computed(() => {
+  const level = parseInt(authStore.user?.permLevel ?? 0)
+  const code = authStore.user?.roleCode ?? ''
+  return level >= 2 || APPROVER_ROLES.includes(code)
+})
 
 // ── Emits ──
 defineEmits([])
@@ -1595,6 +1617,14 @@ onUnmounted(() => clearInterval(refreshTimer))
   border-color: var(--accent);
   color: var(--accent);
   background: var(--accent-dim);
+}
+/* 權限不足時的禁用按鈕樣式 */
+.btn-disabled {
+  background: transparent;
+  color: #ccc;
+  border: 1px solid #e8e8e8;
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 /* ── ③ Pagination Footer ── */

@@ -100,8 +100,10 @@ const form = reactive({
 })
 
 // 快速登入帳號（直接使用完整 email）
+// CISO=資安長(Lvl4) / CFDM=中階主管(Lvl2) / CFSO=一般職員(Lvl0)
 const testAccounts = [
   { name: '鄭文華', role: 'CISO', email: 'wenhua.cheng@javabank.com' },
+  { name: '王淑芬', role: 'CFDM', email: 'shufen.wang@javabank.com' },
   { name: '林家豪', role: 'CFSO', email: 'chiahao.lin@javabank.com' },
 ]
 
@@ -220,7 +222,7 @@ async function handleLogin() {
 
 .quick-btn-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px; /* 增加按鈕之間的空隙 */
 }
 
