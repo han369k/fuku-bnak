@@ -93,7 +93,7 @@ public class TransferService {
             throw new TransferException("INTERBANK_TWD_ONLY", "跨行轉帳僅支援台幣帳戶");
         }
 
-        // ── 黑名單比對 ──────────────────────────────────
+        // ── 風控 ──────────────────────────────────
         RiskCheckResponse riskResult = transferRiskClient.checkTransfer(
                 fromAccount.getCustomerId(),
                 toAccNum,
@@ -111,8 +111,21 @@ public class TransferService {
             }
             case PASS -> { /* 繼續正常轉帳流程 */ }
         }
-        // ────────────────────────────────────────────────
 
+        return executeTransfer(request, referenceId);
+        // ────────────────────────────────────────────────
+    }
+
+    private TransferResponse executeTransfer(TransferRequest request, String referenceId) {
+
+        String fromAccNum = normalizeAccountNumber(request.getFromAccountNumber());
+        String toAccNum = normalizeAccountNumber(request.getToAccountNumber());
+        BigDecimal amount = request.getAmount();
+        TransferBank toBank = TransferBank.fromCode(request.getToBankCode());
+        boolean interbank = !toBank.isJavaBank();
+
+        Account fromAccount = findAccountOrThrow(
+                fromAccNum, "SOURCE_ACCOUNT_NOT_FOUND", "來源帳戶不存在");
 
         BigDecimal feeAmount = interbank ? calculateInterbankFee(amount) : BigDecimal.ZERO;
         BigDecimal totalDebitAmount = amount.add(feeAmount);
@@ -126,50 +139,36 @@ public class TransferService {
         BigDecimal toAccountBalance = null;
 
         if (interbank) {
+
             fromAccount.setBalance(fromBalanceBefore.subtract(totalDebitAmount));
             saveAccounts(fromAccount);
 
             BigDecimal afterTransfer = fromBalanceBefore.subtract(amount);
+
             TransLog transferLog = buildTransLog(
-                    referenceId,
-                    fromAccNum,
-                    toAccNum,
-                    toBank,
-                    EntryType.DEBIT,
-                    TransactionType.TRANSFER,
-                    amount,
-                    fromBalanceBefore,
-                    afterTransfer,
-                    fromAccount.getCurrency(),
-                    request.getNote(),
-                    true,
-                    feeAmount,
-                    totalDebitAmount
-            );
+                    referenceId, fromAccNum, toAccNum, toBank,
+                    EntryType.DEBIT, TransactionType.TRANSFER,
+                    amount, fromBalanceBefore, afterTransfer,
+                    fromAccount.getCurrency(), request.getNote(),
+                    true, feeAmount, totalDebitAmount);
 
             TransLog feeLog = buildTransLog(
-                    referenceId,
-                    fromAccNum,
-                    toAccNum,
-                    toBank,
-                    EntryType.DEBIT,
-                    TransactionType.TRANSFER_FEE,
-                    feeAmount,
-                    afterTransfer,
-                    fromAccount.getBalance(),
-                    fromAccount.getCurrency(),
-                    INTERBANK_FEE_NOTE,
-                    true,
-                    feeAmount,
-                    totalDebitAmount
-            );
+                    referenceId, fromAccNum, toAccNum, toBank,
+                    EntryType.DEBIT, TransactionType.TRANSFER_FEE,
+                    feeAmount, afterTransfer, fromAccount.getBalance(),
+                    fromAccount.getCurrency(), INTERBANK_FEE_NOTE,
+                    true, feeAmount, totalDebitAmount);
 
             saveTransLogs(transferLog, feeLog);
+
         } else {
-            Account toAccount = findAccountOrThrow(toAccNum, "TARGET_ACCOUNT_NOT_FOUND", "目的帳戶不存在");
+
+            Account toAccount = findAccountOrThrow(
+                    toAccNum, "TARGET_ACCOUNT_NOT_FOUND", "目的帳戶不存在");
 
             validateActiveAccount(toAccount, "TARGET_ACCOUNT_INACTIVE", "目的帳戶非 ACTIVE 狀態");
             validateGeneralBalanceAccount(toAccount, "目的帳戶");
+
             if (fromAccount.getCurrency() != toAccount.getCurrency()) {
                 throw new TransferException("CURRENCY_MISMATCH", "來源與目的帳戶幣別不一致");
             }
@@ -177,61 +176,38 @@ public class TransferService {
             BigDecimal toBalanceBefore = toAccount.getBalance();
             fromAccount.setBalance(fromBalanceBefore.subtract(amount));
             toAccount.setBalance(toBalanceBefore.add(amount));
-
             saveAccounts(fromAccount, toAccount);
 
             TransLog fromLog = buildTransLog(
-                    referenceId,
-                    fromAccNum,
-                    toAccNum,
-                    TransferBank.JVB,
-                    EntryType.DEBIT,
-                    TransactionType.TRANSFER,
-                    amount,
-                    fromBalanceBefore,
-                    fromAccount.getBalance(),
-                    fromAccount.getCurrency(),
-                    request.getNote(),
-                    false,
-                    BigDecimal.ZERO,
-                    amount
-            );
+                    referenceId, fromAccNum, toAccNum, TransferBank.JVB,
+                    EntryType.DEBIT, TransactionType.TRANSFER,
+                    amount, fromBalanceBefore, fromAccount.getBalance(),
+                    fromAccount.getCurrency(), request.getNote(),
+                    false, BigDecimal.ZERO, amount);
 
             TransLog toLog = buildTransLog(
-                    referenceId,
-                    toAccNum,
-                    fromAccNum,
-                    TransferBank.JVB,
-                    EntryType.CREDIT,
-                    TransactionType.TRANSFER,
-                    amount,
-                    toBalanceBefore,
-                    toAccount.getBalance(),
-                    toAccount.getCurrency(),
-                    request.getNote(),
-                    false,
-                    BigDecimal.ZERO,
-                    amount
-            );
+                    referenceId, toAccNum, fromAccNum, TransferBank.JVB,
+                    EntryType.CREDIT, TransactionType.TRANSFER,
+                    amount, toBalanceBefore, toAccount.getBalance(),
+                    toAccount.getCurrency(), request.getNote(),
+                    false, BigDecimal.ZERO, amount);
 
             saveTransLogs(fromLog, toLog);
             toAccountBalance = toAccount.getBalance();
         }
 
-        log.info("轉帳成功: refId={}, from={}, toBank={}, to={}, amount={}, fee={}",
+        log.info("轉帳執行完成: refId={}, from={}, toBank={}, to={}, amount={}, fee={}",
                 referenceId, fromAccNum, toBank.getCode(), toAccNum, amount, feeAmount);
 
+        // 寄送通知信
         customerProfileRepository.findById(fromAccount.getCustomerId())
                 .ifPresent(profile -> {
                     if (profile.getEmail() != null) {
                         emailService.sendTransferNotification(
                                 profile.getEmail(),
-                                fromAccNum,
-                                toAccNum,
-                                amount,
+                                fromAccNum, toAccNum, amount,
                                 fromAccount.getCurrency().name(),
-                                referenceId
-                        );
+                                referenceId);
                     }
                 });
 
@@ -248,6 +224,53 @@ public class TransferService {
         response.setTransferredAt(now);
 
         return response;
+    }
+
+    @Transactional
+    public void executePendingTransfer(String referenceId) {
+
+        PendingTransfer pending = pendingTransferRepository
+                .findByReferenceId(referenceId)
+                .orElseThrow(() -> new TransferException(
+                        "PENDING_NOT_FOUND", "找不到暫存交易：" + referenceId));
+
+        if (!"PENDING".equals(pending.getStatus())) {
+            log.warn("[Transfer] 暫存交易狀態異常 referenceId={} status={}",
+                    referenceId, pending.getStatus());
+            return;
+        }
+
+        // 組 TransferRequest
+        TransferRequest request = new TransferRequest();
+        request.setFromAccountNumber(pending.getFromAccountNumber());
+        request.setToAccountNumber(pending.getToAccountNumber());
+        request.setToBankCode(pending.getToBankCode());
+        request.setAmount(pending.getAmount());
+        request.setNote(pending.getNote());
+
+        // 執行轉帳
+        executeTransfer(request, referenceId);
+
+        // 成功後才更新狀態
+        pending.setStatus("EXECUTED");
+        pending.setProcessedAt(LocalDateTime.now());
+        pendingTransferRepository.save(pending);
+
+        log.info("[Transfer] 暫存交易執行完成 referenceId={}", referenceId);
+    }
+
+    @Transactional
+    public void rejectPendingTransfer(String referenceId) {
+        PendingTransfer pending = pendingTransferRepository
+                .findByReferenceId(referenceId)
+                .orElseThrow(() -> new TransferException(
+                        "PENDING_NOT_FOUND", "找不到暫存交易：" + referenceId));
+
+        pending.setStatus("REJECTED");
+        pending.setProcessedAt(LocalDateTime.now());
+        pendingTransferRepository.save(pending);
+
+        log.info("[Transfer] 暫存交易拒絕 referenceId={}", referenceId);
     }
 
     /**
@@ -429,21 +452,20 @@ public class TransferService {
     }
 
 
-
     private TransLog buildTransLog(String referenceId,
-                                  String accountNumber,
-                                  String counterpartAccount,
-                                  TransferBank counterpartBank,
-                                  EntryType entryType,
-                                  TransactionType transactionType,
-                                  BigDecimal amount,
-                                  BigDecimal balanceBefore,
-                                  BigDecimal balanceAfter,
-                                  Currency currency,
-                                  String note,
-                                  boolean interbank,
-                                  BigDecimal feeAmount,
-                                  BigDecimal totalDebitAmount) {
+                                   String accountNumber,
+                                   String counterpartAccount,
+                                   TransferBank counterpartBank,
+                                   EntryType entryType,
+                                   TransactionType transactionType,
+                                   BigDecimal amount,
+                                   BigDecimal balanceBefore,
+                                   BigDecimal balanceAfter,
+                                   Currency currency,
+                                   String note,
+                                   boolean interbank,
+                                   BigDecimal feeAmount,
+                                   BigDecimal totalDebitAmount) {
         TransLog transLog = new TransLog();
         transLog.setReferenceId(referenceId);
         transLog.setAccountNumber(accountNumber);

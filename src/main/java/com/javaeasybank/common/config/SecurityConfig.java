@@ -78,7 +78,7 @@ public class SecurityConfig {
                         //風控測試用
                         .requestMatchers("/api/risk/**").permitAll()
                         .requestMatchers("/api/loan-callbacks/**").permitAll()
-                        // === 其餘都要登入 ===
+                        .requestMatchers("/api/account-callbacks/**").permitAll()                       // === 其餘都要登入 ===
                         .anyRequest().authenticated()
                 )
 
