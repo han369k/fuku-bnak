@@ -1,7 +1,5 @@
 package com.javaeasybank.creditcard.controller;
 
-import java.util.Map;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -37,17 +35,17 @@ public class CardApplicationAdminController {
     public ResponseEntity<ApiResponse<CardApplicationResponseDto>> getById(@PathVariable Integer id) {
         return ResponseEntity.ok(ApiResponse.success(cardAppService.findById(id)));
     }
-    // 更新狀態
-    @PutMapping("/{id}/status")
-    public ResponseEntity<ApiResponse<CardApplicationResponseDto>> updateStatus(
-            @PathVariable Integer id,
-            @RequestBody Map<String, String> body) {
+    // 更新狀態 已註解 透過Item的Result來判斷狀態
+    // @PutMapping("/{id}/status")
+    // public ResponseEntity<ApiResponse<CardApplicationResponseDto>> updateStatus(
+    //         @PathVariable Integer id,
+    //         @RequestBody Map<String, String> body) {
 
-        String status = body.get("status");
-        CardApplicationResponseDto updated = cardAppService.updateStatus(id, CardApplicationStatus.valueOf(status));
+    //     String status = body.get("status");
+    //     CardApplicationResponseDto updated = cardAppService.updateStatus(id, CardApplicationStatus.valueOf(status));
 
-        return ResponseEntity.ok(ApiResponse.success("Status updated", updated));
-    }
+    //     return ResponseEntity.ok(ApiResponse.success("Status updated", updated));
+    // }
     // 刪除申請
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteById(@PathVariable Integer id) {

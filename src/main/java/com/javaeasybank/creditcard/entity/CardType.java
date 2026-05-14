@@ -30,6 +30,10 @@ public class CardType {
     @Column(name = "cashback_rate", precision = 15, scale = 2)
     private BigDecimal cashbackRate;
     private String cardImageUrl;
+
+    // 預設信用額度
+    @Column(name = "default_limit", precision = 15, scale = 2)
+    private BigDecimal defaultLimit;
 	
 
 }

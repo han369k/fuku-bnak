@@ -1,10 +1,13 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { getTransactions, createTransaction } from '@/api/userCardTxn'
+import { getTransactions, createTransaction, getMerchantNames } from '@/api/userCardTxn'
+import { getMyCards } from '@/api/userCard'
 import dayjs from 'dayjs'
 
 const transactions = ref([])
 const loading = ref(false)
+const cards = ref([])
+const merchants = ref([])
 
 const columns = [
   {
@@ -49,6 +52,15 @@ const pageSize = ref(10)
 const totalPages = ref(0)
 const totalElements = ref(0)
 
+const fetchCards = async () => {
+  try {
+    const response = await getMyCards()
+    cards.value = response
+  } catch (error) {
+    console.error('Failed to fetch cards:', error)
+  }
+}
+
 const fetchTransactions = async () => {
   try {
     loading.value = true
@@ -61,6 +73,16 @@ const fetchTransactions = async () => {
     console.error(error)
   } finally {
     loading.value = false
+  }
+}
+
+const fetchMerchantNames = async () => {
+  try {
+    const response = await getMerchantNames()
+    merchants.value = response
+    console.log(response)
+  } catch (error) {
+    console.error('Failed to fetch merchant names:', error)
   }
 }
 
@@ -88,7 +110,7 @@ const handleCreateTransaction = async () => {
     await fetchTransactions()
   } catch (err) {
     console.error(err)
-    alert('Create transaction failed')
+    alert(err.response?.data?.message ||'Create transaction failed')
   }
 }
 
@@ -103,7 +125,9 @@ const prevPage = async () => {
 }
 
 onMounted(async () => {
+  await fetchCards()
   fetchTransactions()
+  fetchMerchantNames()
 })
 </script>
 <template>
@@ -123,26 +147,39 @@ onMounted(async () => {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
           <!-- card id -->
           <div>
-            <label class="block text-stone-600 mb-2"> Card ID </label>
+            <label class="block text-stone-600 mb-2"> Card Number </label>
 
-            <input
+            <select
               v-model="form.cardId"
-              type="text"
-              placeholder="Enter card id"
               class="w-full border border-stone-300 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-stone-400"
-            />
+            >
+              <option disabled value="">Please select card</option>
+
+              <option v-for="card in cards" :key="card.cardId" :value="card.cardId">
+                {{ card.cardTypeName }}
+                - {{ card.cardNumber }}
+              </option>
+            </select>
           </div>
 
           <!-- merchant id -->
           <div>
-            <label class="block text-stone-600 mb-2"> Merchant ID </label>
+            <label class="block text-stone-600 mb-2"> Merchant </label>
 
-            <input
+            <select
               v-model="form.merchantId"
-              type="text"
-              placeholder="Enter merchant id"
               class="w-full border border-stone-300 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-stone-400"
-            />
+            >
+              <option disabled value="">Please select merchant</option>
+
+              <option
+                v-for="merchant in merchants"
+                :key="merchant.merchantId"
+                :value="merchant.merchantId"
+              >
+                {{ merchant.merchantName }}
+              </option>
+            </select>
           </div>
 
           <!-- amount -->

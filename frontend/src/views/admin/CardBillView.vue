@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue'
 import dayjs from 'dayjs'
 import { message } from 'ant-design-vue'
-import { getBills } from '@/api/cardBill'
+import { getBills,generateBills } from '@/api/cardBill'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -29,7 +29,7 @@ const columns = [
     key: 'billId',
   },
   {
-    title: '持卡人',
+    title: '客戶姓名',
     dataIndex: 'customerName',
     key: 'customerName',
   },
@@ -52,6 +52,11 @@ const columns = [
     title: '已繳金額',
     dataIndex: 'paidAmount',
     key: 'paidAmount',
+  },
+  {
+    title: '剩餘應繳',
+    dataIndex: 'remainingAmount',
+    key: 'remainingAmount',
   },
   {
     title: '繳費截止日',
@@ -83,6 +88,7 @@ const fetchBills = async (page = 1) => {
     bills.value = response.content.map(item => ({
       ...item,
       dueDate: dayjs(item.dueDate).format('YYYY-MM-DD'),
+      remainingAmount: item.totalAmount - item.paidAmount,
     }))
 
     pagination.value.total = response.totalElements
@@ -97,6 +103,22 @@ const fetchBills = async (page = 1) => {
   }
 }
 
+const handleGenerateBills = async()=>{
+  try {
+    const response = await generateBills()
+    message.success(response.message)
+    fetchBills()
+  } catch (error) {
+    console.log(error);
+    message.error(
+    error.response?.data?.message || '生成帳單失敗'
+  )
+  }
+}
+
+
+
+
 const handleTableChange = (pager) => {
   fetchBills(pager.current)
 }
@@ -108,10 +130,29 @@ onMounted(() => {
 
 <template>
   <div>
-    <a-typography-title :level="2">
-      帳單管理
-    </a-typography-title>
 
+    <!-- Header -->
+    <div
+      style="
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        margin-bottom:16px;
+      "
+    >
+      <a-typography-title :level="2" style="margin:0">
+        帳單管理
+      </a-typography-title>
+
+      <a-button
+        type="primary"
+        @click="handleGenerateBills"
+      >
+        產生帳單
+      </a-button>
+    </div>
+
+    <!-- Table -->
     <a-table
       :columns="columns"
       :data-source="bills"
@@ -123,6 +164,7 @@ onMounted(() => {
     >
       <template #bodyCell="{ column, record }">
 
+        <!-- 帳單狀態 -->
         <template v-if="column.key === 'billStatus'">
 
           <a-tag
@@ -134,27 +176,38 @@ onMounted(() => {
 
           <a-tag
             color="orange"
-            v-else-if="record.billStatus === 'PENDING'"
+            v-else-if="record.billStatus === 'UNPAID'"
           >
             未繳費
           </a-tag>
+            <a-tag
+              color="blue"
+              v-else-if="record.billStatus === 'PARTIAL'"
+            >
+              部分繳款
+            </a-tag>
 
           <a-tag color="red" v-else>
             逾期
           </a-tag>
 
         </template>
+
+        <!-- 操作 -->
         <template v-else-if="column.key === 'action'">
+
           <a-button
             type="primary"
             size="small"
             @click="goDetail(record.billId)"
-            >
+          >
             查看明細
           </a-button>
 
         </template>
+
       </template>
     </a-table>
+
   </div>
 </template>
