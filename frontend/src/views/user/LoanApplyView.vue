@@ -34,9 +34,8 @@
           <button class="btn btn-action" @click="goStatus">
             查詢申貸狀態
           </button>
-          <button class="btn btn-action" disabled>
+          <button class="btn btn-action" @click="$router.push({ name: 'user-loan-accounts' })">
             貸款帳戶
-            <span class="coming-tag">即將推出</span>
           </button>
         </div>
       </div>

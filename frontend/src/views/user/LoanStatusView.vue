@@ -81,13 +81,26 @@
             </div>
           </div>
 
-          <!-- 卡片底部：申請時間 + 聯繫狀態 -->
+          <!-- ── 聯繫狀態區塊 ── -->
+          <div
+            class="contact-banner"
+            :class="contactBannerClass(app.latestContactStatus)"
+            v-if="app.latestContactStatus"
+          >
+            <span class="contact-banner-icon">{{ contactIcon(app.latestContactStatus) }}</span>
+            <div class="contact-banner-body">
+              <span class="contact-banner-label">{{ contactLabel(app.latestContactStatus) }}</span>
+              <span class="contact-banner-desc">{{ contactDesc(app.latestContactStatus) }}</span>
+            </div>
+            <span class="contact-banner-time" v-if="app.latestContactTime">
+              {{ formatTime(app.latestContactTime) }}
+            </span>
+          </div>
+
+          <!-- 卡片底部：申請時間 -->
           <div class="card-footer">
             <span class="footer-item">
               🕐 申請時間：{{ formatTime(app.createTime) }}
-            </span>
-            <span v-if="app.latestContactStatus" class="contact-tag" :class="contactClass(app.latestContactStatus)">
-              {{ contactLabel(app.latestContactStatus) }}
             </span>
           </div>
         </div>
@@ -116,7 +129,7 @@ const LOAN_TYPE_MAP = {
   LAND:     '土地貸款',
 }
 
-// ── 狀態標籤與樣式 ──
+// ── 申請狀態 ──
 const STATUS_MAP = {
   PENDING_CONTACT: { label: '新申請（待聯繫）', cls: 'st-pending'   },
   IN_CONTACT:      { label: '聯繫中',           cls: 'st-contact'   },
@@ -128,19 +141,47 @@ const STATUS_MAP = {
   CLOSED:          { label: '已結案',            cls: 'st-closed'    },
 }
 
+// ── 聯繫狀態：標籤 / 圖示 / 說明文字 / 顏色 ──
 const CONTACT_MAP = {
-  NOT_CONTACTED: { label: '尚未聯繫', cls: 'ct-none'    },
-  ATTEMPTED:     { label: '嘗試中',   cls: 'ct-try'     },
-  REACHED:       { label: '已接通',   cls: 'ct-ok'      },
-  CONFIRMED:     { label: '已確認',   cls: 'ct-confirm' },
-  DECLINED:      { label: '已放棄',   cls: 'ct-decline' },
+  NOT_CONTACTED: {
+    label:  '尚未聯繫',
+    icon:   '🕐',
+    desc:   '行員將盡快與您聯繫，請保持電話暢通。',
+    banner: 'banner-gray',
+  },
+  ATTEMPTED: {
+    label:  '嘗試聯繫中',
+    icon:   '📲',
+    desc:   '行員已嘗試聯繫您，請確認是否有未接來電或訊息。',
+    banner: 'banner-blue',
+  },
+  REACHED: {
+    label:  '已成功聯繫',
+    icon:   '✅',
+    desc:   '行員已與您取得聯繫，申請正在進行中。',
+    banner: 'banner-green',
+  },
+  CONFIRMED: {
+    label:  '資料已確認',
+    icon:   '📄',
+    desc:   '行員已確認您的申請資料，即將進入審核流程。',
+    banner: 'banner-gold',
+  },
+  DECLINED: {
+    label:  '已放棄申請',
+    icon:   '🚫',
+    desc:   '您已放棄此次申請，如有需要請重新提交。',
+    banner: 'banner-red',
+  },
 }
 
-function loanTypeLabel(type) { return LOAN_TYPE_MAP[type] || type }
-function statusLabel(st)     { return STATUS_MAP[st]?.label || st }
-function statusClass(st)     { return STATUS_MAP[st]?.cls   || '' }
-function contactLabel(ct)    { return CONTACT_MAP[ct]?.label || ct }
-function contactClass(ct)    { return CONTACT_MAP[ct]?.cls   || '' }
+function loanTypeLabel(type)   { return LOAN_TYPE_MAP[type] || type }
+function statusLabel(st)       { return STATUS_MAP[st]?.label || st }
+function statusClass(st)       { return STATUS_MAP[st]?.cls   || '' }
+function contactLabel(ct)      { return CONTACT_MAP[ct]?.label  || ct }
+function contactIcon(ct)       { return CONTACT_MAP[ct]?.icon   || '📋' }
+function contactDesc(ct)       { return CONTACT_MAP[ct]?.desc   || '' }
+function contactBannerClass(ct){ return CONTACT_MAP[ct]?.banner || 'banner-gray' }
 
 function formatAmount(n) {
   return n != null ? Number(n).toLocaleString('zh-TW') : '—'
@@ -214,21 +255,9 @@ onMounted(load)
   align-items: center;
   gap: 14px;
 }
-.page-icon {
-  font-size: 28px;
-  line-height: 1;
-}
-.page-title {
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--ink);
-  margin: 0 0 3px;
-}
-.page-subtitle {
-  font-size: 13px;
-  color: var(--muted-2);
-  margin: 0;
-}
+.page-icon  { font-size: 28px; line-height: 1; }
+.page-title { font-size: 22px; font-weight: 700; color: var(--ink); margin: 0 0 3px; }
+.page-subtitle { font-size: 13px; color: var(--muted-2); margin: 0; }
 
 .btn-apply {
   padding: 10px 22px;
@@ -260,9 +289,8 @@ onMounted(load)
   padding: 64px 0;
   text-align: center;
 }
-.state-icon { font-size: 40px; }
-.state-text { font-size: 15px; color: var(--muted-2); }
-.state-error .state-icon { filter: grayscale(0.2); }
+.state-icon  { font-size: 40px; }
+.state-text  { font-size: 15px; color: var(--muted-2); }
 .btn-retry, .btn-apply-sm {
   margin-top: 4px;
   padding: 9px 22px;
@@ -294,10 +322,7 @@ onMounted(load)
 .sk-tag   { height: 22px; width: 80px;  border-radius: 20px; }
 .sk-line  { height: 14px; width: 100%; }
 .sk-short { height: 12px; width: 55%; }
-@keyframes shimmer {
-  from { opacity: 0.7; }
-  to   { opacity: 0.35; }
-}
+@keyframes shimmer { from { opacity: 0.7; } to { opacity: 0.35; } }
 
 /* ── App Card ── */
 .app-list { display: flex; flex-direction: column; gap: 16px; }
@@ -312,9 +337,7 @@ onMounted(load)
   gap: 14px;
   transition: box-shadow 0.15s;
 }
-.app-card:hover {
-  box-shadow: 0 4px 20px rgba(92, 107, 95, 0.10);
-}
+.app-card:hover { box-shadow: 0 4px 20px rgba(92, 107, 95, 0.10); }
 
 /* Top row */
 .card-top {
@@ -372,40 +395,57 @@ onMounted(load)
   font-family: 'IBM Plex Mono', monospace;
   letter-spacing: 0.05em;
 }
-.info-val {
+.info-val { font-size: 13px; font-weight: 600; color: var(--ink); }
+.info-val.accent { color: var(--primary); font-family: 'IBM Plex Mono', monospace; }
+
+/* ── Contact Banner ── */
+.contact-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid;
+}
+.contact-banner-icon { font-size: 20px; flex-shrink: 0; }
+.contact-banner-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.contact-banner-label {
   font-size: 13px;
-  font-weight: 600;
-  color: var(--ink);
+  font-weight: 700;
+  line-height: 1.3;
 }
-.info-val.accent {
-  color: var(--primary);
+.contact-banner-desc {
+  font-size: 12px;
+  line-height: 1.4;
+  opacity: 0.8;
+}
+.contact-banner-time {
+  font-size: 11px;
   font-family: 'IBM Plex Mono', monospace;
+  white-space: nowrap;
+  opacity: 0.65;
+  flex-shrink: 0;
 }
+
+/* Banner variants */
+.banner-gray  { background: rgba(130,130,130,0.06); border-color: rgba(130,130,130,0.20); color: #555; }
+.banner-blue  { background: rgba(55,100,180,0.07);  border-color: rgba(55,100,180,0.22);  color: #2a5aad; }
+.banner-green { background: rgba(40,150,80,0.07);   border-color: rgba(40,150,80,0.22);   color: #1a7a40; }
+.banner-gold  { background: rgba(140,115,60,0.08);  border-color: rgba(140,115,60,0.22);  color: #7a6000; }
+.banner-red   { background: rgba(166,90,77,0.07);   border-color: rgba(166,90,77,0.22);   color: #A65A4D; }
 
 /* Footer */
 .card-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
   padding-top: 10px;
   border-top: 1px solid var(--border);
 }
-.footer-item {
-  font-size: 12px;
-  color: var(--muted);
-}
-.contact-tag {
-  display: inline-block;
-  padding: 2px 10px;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 600;
-}
-.ct-none     { background: rgba(130,130,130,0.08); color: #888;    }
-.ct-try      { background: rgba(55,100,180,0.10);   color: #2a5aad; }
-.ct-ok       { background: rgba(40,150,80,0.10);    color: #1a7a40; }
-.ct-confirm  { background: rgba(140,115,85,0.12);   color: #7a6040; }
-.ct-decline  { background: rgba(166,90,77,0.10);    color: #A65A4D; }
+.footer-item { font-size: 12px; color: var(--muted); }
 </style>

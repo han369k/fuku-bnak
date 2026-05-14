@@ -135,6 +135,12 @@ const router = createRouter({
           name: 'user-loan-status',
           component: () => import('../views/user/LoanStatusView.vue'),
         },
+        // 貸款帳戶：撥款後查看帳戶明細與每期還款進度
+        {
+          path: 'loan-accounts',
+          name: 'user-loan-accounts',
+          component: () => import('../views/user/LoanAccountView.vue'),
+        },
       ],
     },
 
