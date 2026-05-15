@@ -18,6 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
 
@@ -29,6 +30,7 @@ public class ReviewTaskService {
 
     private final ReviewTaskRepository rtRepos;
     private final CallbackService callbackService;
+    private final ObjectMapper objectMapper;
 
     @Transactional(readOnly = true)
     public Page<ReviewTaskResponse> findAll(
@@ -126,6 +128,22 @@ public class ReviewTaskService {
                 eventLog);
     }
 
+    @Transactional
+    public void attachDocuments(String businessId, Object documents) {
+        ReviewTask task = rtRepos.findFirstByBusinessId(businessId).orElse(null);
+        if (task == null) {
+            log.warn("[ReviewTask] 找不到對應任務，略過補件附件 businessId={}", businessId);
+            return;
+        }
+        try {
+            task.setAttachments(objectMapper.writeValueAsString(documents));
+            rtRepos.save(task);
+            log.info("[ReviewTask] 補件附件已更新 taskId={} businessId={}", task.getTaskId(), businessId);
+        } catch (Exception e) {
+            log.error("[ReviewTask] 補件附件序列化失敗 businessId={}", businessId, e);
+        }
+    }
+
     private ReviewTaskResponse toResponse(ReviewTask task) {
         RiskEventLog eventLog = task.getRiskEventLog();
         ReviewTaskResponse.ReviewTaskResponseBuilder builder = ReviewTaskResponse.builder()
@@ -138,7 +156,8 @@ public class ReviewTaskService {
                 .adminComment(task.getAdminComment())
                 .priority(task.getPriority())
                 .createAt(task.getCreateAt())
-                .processedAt(task.getProcessedAt());
+                .processedAt(task.getProcessedAt())
+                .attachments(task.getAttachments());
         if (eventLog != null) {
             builder.riskLevel(eventLog.getRiskLevel())           // ← 確認有這行
                     .triggerReason(eventLog.getTriggerReason())   // ← 確認有這行

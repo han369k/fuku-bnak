@@ -41,4 +41,7 @@ public class ReviewTaskResponse {
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime logCreatedAt;
+
+    /** 客戶送出的補件文件清單（JSON 陣列字串，null = 尚未收到補件） */
+    private String attachments;
 }

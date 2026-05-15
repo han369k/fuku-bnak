@@ -1,22 +1,28 @@
 <template>
-  <div style="padding: 24px">
-    <!-- 功能列 -->
-    <div
-      style="
-        margin-bottom: 16px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      "
-    >
-      <a-button type="primary" @click="openModal('create')">新增黑名單</a-button>
-      <div style="display: flex; align-items: center">
-        <span style="margin-right: 8px; white-space: nowrap">顯示狀態：</span>
-        <a-radio-group v-model:value="filterStatus" @change="handleFilterChange">
-          <a-radio-button :value="true">已啟用</a-radio-button>
-          <a-radio-button :value="false">已停用</a-radio-button>
-          <a-radio-button :value="null">全部</a-radio-button>
-        </a-radio-group>
+  <div class="page-container">
+    <div class="page-header">
+      <h2 class="page-title">黑名單</h2>
+    </div>
+
+    <div class="action-bar">
+      <!-- 功能列 -->
+      <div
+        style="
+          margin-bottom: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        "
+      >
+        <a-button type="primary" @click="openModal('create')">新增黑名單</a-button>
+        <div style="display: flex; align-items: center">
+          <span style="margin-right: 8px; white-space: nowrap">顯示狀態：</span>
+          <a-radio-group v-model:value="filterStatus" @change="handleFilterChange">
+            <a-radio-button :value="true">已啟用</a-radio-button>
+            <a-radio-button :value="false">已停用</a-radio-button>
+            <a-radio-button :value="null">全部</a-radio-button>
+          </a-radio-group>
+        </div>
       </div>
     </div>
 
@@ -67,6 +73,7 @@
             <a-select-option value="ID_CARD">身份證字號</a-select-option>
             <a-select-option value="EMAIL">電子郵件</a-select-option>
             <a-select-option value="PHONE">電話</a-select-option>
+            <a-select-option value="ACCOUNT_NO">帳戶</a-select-option>
           </a-select>
         </a-form-item>
 
@@ -133,6 +140,7 @@ const typeLabelMap = {
   ID_CARD: '身份證字號',
   EMAIL: '電子郵件',
   PHONE: '電話',
+  ACCOUNT_NO: '帳戶',
 }
 
 // 依類型動態調整 placeholder

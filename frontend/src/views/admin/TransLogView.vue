@@ -236,6 +236,9 @@ const transactionTypeMap = {
   INTEREST: '利息',
   LOAN_DISBURSEMENT: '貸款撥款',
   LOAN_REPAYMENT: '貸款還款',
+  CARD_PAYMENT: '信用卡繳款',
+  CARD_SETTLEMENT: '信用卡結算',
+  CARD_REWARD: '信用卡回饋',
   REVERSAL: '沖正',
 }
 

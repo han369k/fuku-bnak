@@ -1,12 +1,14 @@
 package com.javaeasybank.creditcard.service;
 
+import java.math.BigDecimal;
+
 import java.time.LocalDateTime;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.javaeasybank.common.exception.BusinessException;
-import com.javaeasybank.creditcard.dto.CardApplicationItemRequestDto;
+import com.javaeasybank.creditcard.dto.ApproveCardRequestDto;
 import com.javaeasybank.creditcard.dto.CardApplicationItemResponseDto;
 import com.javaeasybank.creditcard.entity.CardApplication;
 import com.javaeasybank.creditcard.entity.CardApplicationItem;
@@ -23,13 +25,15 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CardReviewService {
 
+    private static final BigDecimal DEFAULT_CREDIT_LIMIT = new BigDecimal("100000");
+
     private final CardAppItemRepository cardAppItemRepository;
     private final CardApplicationItemMapper cardAppItemMapper;
     private final CreditCardService cardService;
     private final CardAppRepository cardAppRepository;
 
     // 審核卡片
-    public CardApplicationItemResponseDto approveItem(Integer id, CardApplicationItemRequestDto request) {
+    public CardApplicationItemResponseDto approveItem(Integer id, ApproveCardRequestDto request) {
         CardApplicationItem item = cardAppItemRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("Card application item not found"));
         // 防止重複審核
@@ -40,7 +44,10 @@ public class CardReviewService {
         item.setResult(CardApplicationItemResult.APPROVED);
 
         // 核准額度
-        item.setApprovedLimit(request.approvedLimit());
+        BigDecimal approvedLimit = request.approvedLimit() == null
+                ? DEFAULT_CREDIT_LIMIT
+                : request.approvedLimit();
+        item.setApprovedLimit(approvedLimit);
 
         item.setReviewDate(LocalDateTime.now());
         // 發卡

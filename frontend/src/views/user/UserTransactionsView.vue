@@ -35,6 +35,9 @@
           <option value="EXCHANGE">換匯</option>
           <option value="REVERSAL">沖正</option>
           <option value="INTEREST">利息</option>
+          <option value="CARD_PAYMENT">信用卡繳款</option>
+          <option value="CARD_SETTLEMENT">信用卡結算</option>
+          <option value="CARD_REWARD">信用卡回饋</option>
         </select>
       </label>
     </div>
@@ -214,7 +217,17 @@ function formatDate(dateStr) {
 }
 
 function txTypeLabel(type) {
-  const map = { TRANSFER: '轉帳', DEPOSIT: '存款', WITHDRAW: '提款', EXCHANGE: '換匯', REVERSAL: '沖正', INTEREST: '利息' }
+  const map = {
+    TRANSFER: '轉帳',
+    DEPOSIT: '存款',
+    WITHDRAW: '提款',
+    EXCHANGE: '換匯',
+    REVERSAL: '沖正',
+    INTEREST: '利息',
+    CARD_PAYMENT: '信用卡繳款',
+    CARD_SETTLEMENT: '信用卡結算',
+    CARD_REWARD: '信用卡回饋',
+  }
   return map[type] || type || '-'
 }
 

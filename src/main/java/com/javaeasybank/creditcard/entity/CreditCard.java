@@ -37,7 +37,6 @@ public class CreditCard {
     @ManyToOne
     @JoinColumn(name = "customer_id")
     private CustomerProfile customer;
-//    private Integer cardTypeId;//FK關聯 不留
     
     @ManyToOne//對應很多cardType
     @JoinColumn(name = "card_type_id")
@@ -45,15 +44,12 @@ public class CreditCard {
     
     private String cardNumber;
     private LocalDate expiryDate;
-    @Column(name = "credit_limit", precision = 15, scale = 2)
-    private BigDecimal creditLimit;
-    @Column(name = "current_balance", precision = 15, scale = 2)
+    @Column(name = "current_debt", precision = 15, scale = 2)
     private BigDecimal currentDebt;
     private LocalDateTime createDate;
     @Enumerated(EnumType.STRING)
     private CardStatus status;
-    
-//    private Integer applicationItemId;//FK關聯不留
+
     
     @ManyToOne
     @JoinColumn(name = "application_item_id")
@@ -62,4 +58,7 @@ public class CreditCard {
     @Column(name = "credit_card_account_number", length = 20)
     private String creditCardAccountNumber;//新增信用卡帳號欄位
 
+    @ManyToOne
+    @JoinColumn(name = "card_account_id")
+    private CardAccount cardAccount;//新增與CardAccount的關聯
 }

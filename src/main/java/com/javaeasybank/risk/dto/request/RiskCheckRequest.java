@@ -9,6 +9,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
 
 @Data
 @Builder
@@ -29,4 +31,13 @@ public class RiskCheckRequest {
     private String targetIdentifier; // 目標標識（如對手方帳號、IP 地址）
 
     private String callbackUrl; // 如果進入人工審核，審核完畢後的回調地址
+
+    /**
+     * 業務上下文，用於存放銀行端偵測到的異常標籤
+     */
+    private Map<String, Object> context = new HashMap<>();
+
+    public void addContext(String key, Object value) {
+        this.context.put(key, value);
+    }
 }

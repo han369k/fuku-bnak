@@ -10,6 +10,10 @@ import java.math.BigDecimal;
 @Data
 public class LoanRepaymentRequest {
 
+    // 對應 Loan 模組的申請編號（選填）
+    // 提供時，還款成功後自動通知 Loan 模組更新還款進度
+    private String applicationId;
+
     @NotBlank
     private String loanAccountNumber;
 

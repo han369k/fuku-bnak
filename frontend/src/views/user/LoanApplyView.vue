@@ -34,9 +34,8 @@
           <button class="btn btn-action" @click="goStatus">
             查詢申貸狀態
           </button>
-          <button class="btn btn-action" disabled>
+          <button class="btn btn-action" @click="$router.push({ name: 'user-loan-accounts' })">
             貸款帳戶
-            <span class="coming-tag">即將推出</span>
           </button>
         </div>
       </div>
@@ -605,6 +604,8 @@ onUnmounted(() => clearInterval(showcaseTimer))
 </script>
 
 <style scoped>
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css');
+
 /* ── Variables ── */
 .apply-page {
   --accent:      #A65A4D;

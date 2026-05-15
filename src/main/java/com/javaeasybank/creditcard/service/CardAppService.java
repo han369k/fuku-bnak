@@ -1,5 +1,7 @@
 package com.javaeasybank.creditcard.service;
 
+import java.math.BigDecimal;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -26,6 +28,8 @@ import lombok.RequiredArgsConstructor;
 @Service
 @Transactional
 public class CardAppService {
+
+    private static final BigDecimal DEFAULT_CREDIT_LIMIT = new BigDecimal("100000");
 
     private final CardAppRepository cardAppRepository;
     private final CardAppItemRepository cardAppItemRepository;
@@ -93,7 +97,7 @@ public class CardAppService {
         item.setResult(CardApplicationItemResult.PENDING);
 
         //預設額度
-        item.setApprovedLimit(cardType.getDefaultLimit());
+        item.setApprovedLimit(DEFAULT_CREDIT_LIMIT);
 
         // 預設年費
         item.setAnnualFee(cardType.getAnnualFee());
