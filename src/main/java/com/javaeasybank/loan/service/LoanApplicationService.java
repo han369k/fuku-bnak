@@ -394,6 +394,23 @@ public class LoanApplicationService {
         log.info("[AutoDisburse] 撥款指令送出 applicationId={}", applicationId);
     }
 
+    // 撥款補償：行員手動重送撥款（狀態必須仍是 APPROVED）
+    // 對應 autoDisburse afterCommit 中失敗時保留 APPROVED 的補救路徑
+    public void retryDisburse(String applicationId) {
+
+        LoanApplication loan = laRepo.findById(applicationId)
+                .orElseThrow(() -> new BusinessException("找不到申請編號：" + applicationId));
+
+        if (loan.getApplicationStatus() != LoanApplicationStatus.APPROVED) {
+            throw new BusinessException(
+                    "此申請狀態為 " + loan.getApplicationStatus() + "，無需重送撥款（僅 APPROVED 可重送）");
+        }
+
+        log.info("[RetryDisburse] 行員手動重送撥款 applicationId={}", applicationId);
+        // 透過 self proxy 確保 autoDisburse 的 @Transactional 被 Spring AOP 攔截
+        self.autoDisburse(applicationId);
+    }
+
     // 風控送審補償：行員手動重送（狀態必須仍是 PENDING_REVIEW）
     // 對應 submitReview afterCommit 中 loanRiskClient 失敗的補救路徑
     public void retryRiskSubmit(String applicationId) {

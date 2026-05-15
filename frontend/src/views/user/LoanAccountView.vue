@@ -60,6 +60,15 @@
               <span class="status-badge" :class="statusClass(acc.accountStatus)">
                 {{ statusLabel(acc.accountStatus) }}
               </span>
+              <!-- 立即繳款按鈕（僅 ACTIVE 帳戶顯示） -->
+              <button
+                v-if="acc.accountStatus === 'ACTIVE'"
+                class="repay-btn"
+                @click="$router.push({ name: 'user-loan-repayment', query: { accountId: acc.accountId } })"
+                title="前往繳款"
+              >
+                立即繳款
+              </button>
               <!-- 展開還款時間表按鈕 -->
               <button
                 class="expand-btn"
@@ -446,6 +455,25 @@ onMounted(loadAccounts)
 .st-active  { background: rgba(74,140,92,0.12);   color: #1a7a40; }
 .st-overdue { background: rgba(166,90,77,0.12);   color: var(--red); }
 .st-paidoff { background: rgba(80,80,80,0.08);    color: #555; }
+
+/* 立即繳款按鈕 */
+.repay-btn {
+  font-size: 12px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--primary);
+  background: var(--primary);
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  font-weight: 600;
+}
+.repay-btn:hover {
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
+  transform: translateY(-1px);
+}
 
 /* 展開按鈕 */
 .expand-btn {
