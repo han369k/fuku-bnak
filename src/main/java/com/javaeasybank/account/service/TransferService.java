@@ -137,11 +137,6 @@ public class TransferService {
                 log.warn("[Transfer] 單日累計超限 fromAcc={} dailyOutflow={} amount={}",
                         fromAccNum, dailyOutflow, amount);
                 internalWarning = "今日累計轉出金額即將超過 " + dailyLimit + " 元，需人工審核";
-            } else if (amount.compareTo(new BigDecimal("45000")) >= 0
-                    && amount.compareTo(new BigDecimal("50000")) < 0) {
-                // 疑似拆單（金額接近限額 90%）
-                log.warn("[Transfer] 疑似拆單 fromAcc={} amount={}", fromAccNum, amount);
-                internalWarning = "交易金額接近限額，疑似拆單行為，需人工審核";
             }
         }
 
@@ -149,7 +144,7 @@ public class TransferService {
                 fromAccount.getCustomerId(),
                 toAccNum,
                 amount,
-                referenceId,internalWarning);
+                referenceId, internalWarning);
 
         // 外部風控直接拒絕 (最高優先級)
         if (riskResult.getDisposition() == Disposition.REJECT) {

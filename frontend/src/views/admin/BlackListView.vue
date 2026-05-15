@@ -140,6 +140,7 @@ const typeLabelMap = {
   ID_CARD: '身份證字號',
   EMAIL: '電子郵件',
   PHONE: '電話',
+  ACCOUNT_NO: '帳戶',
 }
 
 // 依類型動態調整 placeholder

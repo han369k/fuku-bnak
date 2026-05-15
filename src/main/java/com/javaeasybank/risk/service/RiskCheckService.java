@@ -36,19 +36,15 @@ public class RiskCheckService {
         if (blacklistResult != null)
             return blacklistResult; // 命中就提早結束
 
-        if (request.getContext() != null
-                && request.getContext().containsKey("internalWarning")) {
-
+        // 處理來自 Account 模組的預判警告 (如：頻率過高、日限額接近)
+        if (request.getContext() != null && request.getContext().containsKey("internalWarning")) {
             String warning = String.valueOf(request.getContext().get("internalWarning"));
-            log.warn("[RiskCheck] 帳戶模組內部警告 customerId={} warning={}",
-                    request.getCustomerId(), warning);
+            log.warn("[RiskCheck] 收到業務模組預警: {}", warning);
 
             RiskEventLog eventLog = buildAndSaveLog(
                     request, RiskLevel.MEDIUM, Disposition.MANUAL_REVIEW, warning);
-
             return buildManualReviewResponse(eventLog, request);
         }
-
         // 2. 金額閾值判斷
         if (request.getAmount() != null) {
             if (request.getAmount().compareTo(SINGLE_LIMIT) >= 0) {
