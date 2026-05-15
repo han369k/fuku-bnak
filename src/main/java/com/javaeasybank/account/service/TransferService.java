@@ -583,6 +583,18 @@ public class TransferService {
         return cashTransaction(request, EntryType.CREDIT, TransactionType.DEPOSIT, "存款");
     }
 
+    /**
+     * 執行信用卡回饋入帳。
+     * 驗證帳戶存在且為 ACTIVE 狀態，將回饋金額加入一般餘額帳戶，並寫入一筆 CREDIT + CARD_REWARD 交易紀錄。
+     *
+     * @param request 信用卡回饋請求（帳號、金額、備註）。
+     * @return 入帳響應，包含交易編號、帳號、交易後餘額及交易時間。
+     */
+    @Transactional
+    public CashResponse creditCardReward(CashRequest request) {
+        return cashTransaction(request, EntryType.CREDIT, TransactionType.CARD_REWARD, "信用卡回饋");
+    }
+
     // ==========================================
     // 提款
     // ==========================================
