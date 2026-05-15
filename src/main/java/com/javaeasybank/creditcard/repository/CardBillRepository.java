@@ -12,9 +12,16 @@ import com.javaeasybank.creditcard.enums.BillStatus;
 
 public interface CardBillRepository extends JpaRepository<CardBill, Integer> {
 
-    Page<CardBill> findByCardCustomerCustomerId(String customerId, Pageable pageable);
+    Page<CardBill> findByCardAccountCustomerCustomerId(String customerId, Pageable pageable);
 
     boolean existsByBillingMonth(String billingMonth);
 
-    Optional<CardBill> findTopByCardCustomerCustomerIdAndBillStatusInOrderByDueDateAsc(String customerId, List<BillStatus> statuses);
+    Optional<CardBill> findTopByCardAccountCustomerCustomerIdAndBillStatusInOrderByDueDateAsc(
+            String customerId,
+            List<BillStatus> statuses);
+
+    boolean existsByCardAccountIdAndBillingMonth(
+            Integer cardAccountId,
+            String billingMonth);
+
 }
