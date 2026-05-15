@@ -129,7 +129,7 @@
                     :key="d.documentId"
                     class="doc-item"
                   >
-                    <span class="doc-icon">{{ docIcon(d.originalName) }}</span>
+                    <span class="doc-icon" v-html="docIcon(d.originalName)"></span>
                     <div class="doc-info">
                       <a :href="d.fileUrl" target="_blank" class="doc-name">
                         {{ d.originalName || '（未命名）' }}
@@ -139,41 +139,83 @@
                         · {{ formatTime(d.uploadTime) }}
                       </span>
                     </div>
+                    <button
+                      class="doc-del-btn"
+                      :disabled="deletingId === d.documentId"
+                      @click="deleteDoc(d.documentId, app.applicationId)"
+                      title="刪除此文件"
+                    >
+                      <i v-if="deletingId === d.documentId" class="fa-solid fa-spinner fa-spin"></i>
+                      <i v-else class="fa-solid fa-trash"></i>
+                    </button>
                   </div>
                 </div>
                 <div v-else class="doc-empty">尚未上傳任何文件</div>
               </div>
 
               <!-- 上傳新文件 -->
-              <div class="doc-panel-section">
-                <div class="doc-section-title">上傳新文件</div>
-                <div class="doc-upload-form">
-                  <select v-model="uploadForm.documentType" class="doc-select">
-                    <option value="" disabled>選擇文件類型</option>
-                    <option v-for="(label, key) in DOC_TYPE_MAP" :key="key" :value="key">
-                      {{ label }}
-                    </option>
-                  </select>
-                  <label class="doc-file-btn">
-                    {{ uploadForm.file ? uploadForm.file.name : '選擇檔案（JPG / PNG / PDF）' }}
-                    <input
-                      type="file"
-                      accept=".jpg,.jpeg,.png,.pdf"
-                      style="display:none"
-                      @change="onFileChange"
-                    />
-                  </label>
-                  <button
-                    class="doc-submit-btn"
-                    :disabled="!uploadForm.documentType || !uploadForm.file || uploading"
-                    @click="submitUpload(app.applicationId)"
-                  >
-                    {{ uploading ? '上傳中…' : '確認上傳' }}
-                  </button>
+              <div class="doc-panel-section" v-if="!app.documentsSubmittedAt">
+                <div class="doc-section-title">
+                  上傳新文件
+                  <span class="doc-quota">
+                    {{ docCount(app.applicationId) }} / 5
+                  </span>
                 </div>
-                <p v-if="uploadError" class="doc-upload-error">{{ uploadError }}</p>
-                <p v-if="uploadSuccess" class="doc-upload-success">✅ 上傳成功！</p>
+
+                <!-- 已達上限 -->
+                <div v-if="docCount(app.applicationId) >= 5" class="doc-quota-full">
+                  已達每筆申請最多 5 份文件上限，如需更換請聯繫行員。
+                </div>
+
+                <!-- 上傳表單 -->
+                <template v-else>
+                  <div class="doc-upload-form">
+                    <select v-model="uploadForm.documentType" class="doc-select">
+                      <option value="" disabled>選擇文件類型</option>
+                      <option v-for="(label, key) in DOC_TYPE_MAP" :key="key" :value="key">
+                        {{ label }}
+                      </option>
+                    </select>
+                    <label class="doc-file-btn">
+                      {{ uploadForm.file ? uploadForm.file.name : '選擇檔案（JPG / PNG / PDF，最大 10 MB）' }}
+                      <input
+                        type="file"
+                        accept=".jpg,.jpeg,.png,.pdf"
+                        style="display:none"
+                        @change="onFileChange"
+                      />
+                    </label>
+                    <button
+                      class="doc-submit-btn"
+                      :disabled="!uploadForm.documentType || !uploadForm.file || uploading"
+                      @click="submitUpload(app.applicationId)"
+                    >
+                      {{ uploading ? '上傳中…' : '確認上傳' }}
+                    </button>
+                  </div>
+                  <p v-if="uploadError" class="doc-upload-error">{{ uploadError }}</p>
+                  <p v-if="uploadSuccess" class="doc-upload-success">✅ 上傳成功！</p>
+                </template>
               </div>
+
+              <!-- 送出補件（右下角） -->
+              <div class="doc-panel-footer" v-if="docs[app.applicationId]?.length > 0">
+                <span v-if="app.documentsSubmittedAt" class="doc-submitted-hint">
+                  <i class="fa-solid fa-circle-check"></i>
+                  已於 {{ formatTime(app.documentsSubmittedAt) }} 送出
+                </span>
+                <button
+                  v-else
+                  class="doc-submit-final-btn"
+                  :disabled="submittingAppId === app.applicationId"
+                  @click="submitDocuments(app.applicationId)"
+                >
+                  <i v-if="submittingAppId === app.applicationId" class="fa-solid fa-spinner fa-spin"></i>
+                  <i v-else class="fa-solid fa-paper-plane"></i>
+                  {{ submittingAppId === app.applicationId ? '送出中…' : '送出補件' }}
+                </button>
+              </div>
+
             </div>
           </transition>
         </div>
@@ -200,6 +242,8 @@ const uploadForm   = ref({ documentType: '', file: null })
 const uploading    = ref(false)
 const uploadError  = ref('')
 const uploadSuccess = ref(false)
+const deletingId      = ref(null)
+const submittingAppId = ref(null)
 
 // ── 文件類型對照 ──
 const DOC_TYPE_MAP = {
@@ -312,11 +356,11 @@ function docCount(appId) {
 }
 
 function docIcon(name) {
-  if (!name) return '📄'
+  if (!name) return '<i class="fa-solid fa-file doc-type-icon"></i>'
   const ext = name.split('.').pop()?.toLowerCase()
-  if (ext === 'pdf') return '📕'
-  if (['jpg', 'jpeg', 'png'].includes(ext)) return '🖼️'
-  return '📄'
+  if (ext === 'pdf') return '<i class="fa-solid fa-file-pdf doc-type-icon"></i>'
+  if (['jpg', 'jpeg', 'png'].includes(ext)) return '<i class="fa-solid fa-file-image doc-type-icon"></i>'
+  return '<i class="fa-solid fa-file doc-type-icon"></i>'
 }
 
 async function toggleDocPanel(app) {
@@ -341,7 +385,10 @@ async function loadDocs(appId) {
     })
     docs.value = { ...docs.value, [appId]: res.data.data || [] }
   } catch {
-    docs.value = { ...docs.value, [appId]: [] }
+    // 載入失敗時保留原有資料，避免送出按鈕因此消失
+    if (!docs.value[appId]) {
+      docs.value = { ...docs.value, [appId]: [] }
+    }
   } finally {
     docLoading.value = false
   }
@@ -349,6 +396,38 @@ async function loadDocs(appId) {
 
 function onFileChange(e) {
   uploadForm.value.file = e.target.files[0] || null
+}
+
+async function submitDocuments(appId) {
+  submittingAppId.value = appId
+  try {
+    const token = localStorage.getItem('customer_token')
+    await api.post(`/api/loan-documents/${appId}/submit`, null, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    // 重新載入申請清單以取得最新 documentsSubmittedAt
+    await load()
+  } catch (e) {
+    alert(e.response?.data?.message || '送出失敗，請稍後再試')
+  } finally {
+    submittingAppId.value = null
+  }
+}
+
+async function deleteDoc(documentId, appId) {
+  if (!confirm('確定要刪除此文件嗎？此操作無法復原。')) return
+  deletingId.value = documentId
+  try {
+    const token = localStorage.getItem('customer_token')
+    await api.delete(`/api/loan-documents/${documentId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    await loadDocs(appId)
+  } catch (e) {
+    alert(e.response?.data?.message || '刪除失敗，請稍後再試')
+  } finally {
+    deletingId.value = null
+  }
 }
 
 async function submitUpload(appId) {
@@ -361,7 +440,7 @@ async function submitUpload(appId) {
     const fd = new FormData()
     fd.append('documentType', uploadForm.value.documentType)
     fd.append('file', uploadForm.value.file)
-    await api.post(`/api/loan-documents/${appId}/upload`, fd, {
+    const res = await api.post(`/api/loan-documents/${appId}/upload`, fd, {
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'multipart/form-data',
@@ -369,7 +448,17 @@ async function submitUpload(appId) {
     })
     uploadSuccess.value = true
     uploadForm.value    = { documentType: '', file: null }
-    await loadDocs(appId)   // 重整清單
+
+    // 樂觀更新：上傳成功後立刻把新文件加進 docs，確保送出按鈕不消失
+    const newDoc = res.data?.data
+    if (newDoc) {
+      docs.value = {
+        ...docs.value,
+        [appId]: [...(docs.value[appId] || []), newDoc],
+      }
+    }
+
+    await loadDocs(appId)   // 重整清單（同步伺服器狀態）
   } catch (e) {
     uploadError.value = e.response?.data?.message || '上傳失敗，請稍後再試'
   } finally {
@@ -381,6 +470,8 @@ onMounted(load)
 </script>
 
 <style scoped>
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css');
+
 /* ── Variables ── */
 .loan-status-page {
   --accent:    #A65A4D;
@@ -669,6 +760,25 @@ onMounted(load)
   font-weight: 700;
   color: var(--ink);
   letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.doc-quota {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface-2);
+  padding: 1px 7px;
+  border-radius: 10px;
+}
+.doc-quota-full {
+  font-size: 12px;
+  color: #c0392b;
+  background: #fdf0ee;
+  border: 1px solid #f5c6c0;
+  border-radius: 8px;
+  padding: 10px 14px;
 }
 .doc-loading { font-size: 13px; color: var(--muted); }
 .doc-empty   { font-size: 13px; color: var(--muted); font-style: italic; }
@@ -684,6 +794,7 @@ onMounted(load)
   border-radius: 10px;
 }
 .doc-icon { font-size: 20px; flex-shrink: 0; line-height: 1.4; }
+:deep(.doc-type-icon) { color: #7B4F2E; font-size: 20px; }
 .doc-info  { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .doc-name {
   font-size: 13px;
@@ -696,6 +807,59 @@ onMounted(load)
 }
 .doc-name:hover { text-decoration: underline; }
 .doc-meta { font-size: 11px; color: var(--muted); }
+.doc-panel-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding-top: 4px;
+}
+.doc-submit-final-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: #f5ede6;
+  color: #7B4F2E;
+  border: 1.5px solid #c8a98a;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.doc-submit-final-btn:hover:not(:disabled) {
+  background: #7B4F2E;
+  color: #fff;
+  border-color: #7B4F2E;
+}
+.doc-submit-final-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.doc-submitted-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: #1a7a40;
+  font-weight: 600;
+}
+
+.doc-del-btn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fdf0ee;
+  color: #c0392b;
+  border: 1px solid #f5c6c0;
+  border-radius: 7px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  margin-left: auto;
+}
+.doc-del-btn:hover:not(:disabled) { background: #c0392b; color: #fff; border-color: #c0392b; }
+.doc-del-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* 上傳表單 */
 .doc-upload-form {

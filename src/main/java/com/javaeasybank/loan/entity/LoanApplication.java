@@ -44,4 +44,7 @@ public class LoanApplication {
     private LocalDateTime latestContactTime;            // 最後聯絡時間
 
     private LocalDateTime updateTime;                   // 外部模組更新狀態時間
+
+    private LocalDateTime documentsSubmittedAt;          // 客戶送出補件的時間（null = 尚未送出）
+    // ⚠ DB migration: ALTER TABLE LOAN_APPLICATION ADD documents_submitted_at DATETIME NULL
 }

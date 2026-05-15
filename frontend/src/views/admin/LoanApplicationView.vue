@@ -628,6 +628,8 @@ onUnmounted(() => clearInterval(refreshTimer))
 </script>
 
 <style scoped>
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css');
+
 .loan-admin {
   /* ── 配色依據 ── */
   --accent: #A65A4D;

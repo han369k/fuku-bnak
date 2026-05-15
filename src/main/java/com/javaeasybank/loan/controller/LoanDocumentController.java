@@ -56,6 +56,36 @@ public class LoanDocumentController {
     }
 
     /**
+     * 送出補件（客戶端）
+     * 標記該申請的補件已全數備妥，後台才可查看文件清單
+     */
+    @PreAuthorize("hasRole('CUSTOMER')")
+    @PostMapping("/api/loan-documents/{applicationId}/submit")
+    public ResponseEntity<ApiResponse<Void>> submitDocs(
+            @PathVariable String applicationId,
+            HttpServletRequest request) {
+
+        String customerId = extractCustomerId(request);
+        loanDocumentService.submitDocuments(applicationId, customerId);
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    /**
+     * 刪除補件（客戶端）
+     * 只能刪除自己上傳的文件
+     */
+    @PreAuthorize("hasRole('CUSTOMER')")
+    @DeleteMapping("/api/loan-documents/{documentId}")
+    public ResponseEntity<ApiResponse<Void>> deleteDoc(
+            @PathVariable String documentId,
+            HttpServletRequest request) {
+
+        String customerId = extractCustomerId(request);
+        loanDocumentService.delete(documentId, customerId);
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    /**
      * 查詢補件清單（客戶端）
      * 只能查看自己申請的文件
      */

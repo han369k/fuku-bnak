@@ -26,4 +26,5 @@ public class LoanApplicationResponseDTO {
     private LocalDateTime createTime;
     private LoanContactStatus latestContactStatus;
     private LocalDateTime latestContactTime;
+    private LocalDateTime documentsSubmittedAt;  // 客戶送出補件時間，null = 尚未送出
 }

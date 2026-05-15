@@ -3,12 +3,15 @@ package com.javaeasybank.risk.controller;
 import com.javaeasybank.common.dto.response.ApiResponse;
 import com.javaeasybank.risk.dto.request.RiskReviewRequest;
 import com.javaeasybank.risk.dto.response.RiskReviewResponse;
+import com.javaeasybank.risk.service.ReviewTaskService;
 import com.javaeasybank.risk.service.RiskReviewService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -17,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 public class RiskReviewController {
 
     private final RiskReviewService riskReviewService;
+    private final ReviewTaskService reviewTaskService;
 
     /**
      * 統一送審入口
@@ -26,6 +30,20 @@ public class RiskReviewController {
      * <p>
      * POST /api/risk/reviews
      */
+    /**
+     * 補件附件接收
+     * 貸款模組在客戶送出補件後呼叫，將文件清單附加到對應的 ReviewTask
+     * PATCH /api/risk/reviews/{businessId}/attachments
+     */
+    @PatchMapping("/{businessId}/attachments")
+    public ResponseEntity<ApiResponse<Void>> attachDocuments(
+            @PathVariable String businessId,
+            @RequestBody Map<String, Object> body) {
+
+        reviewTaskService.attachDocuments(businessId, body.get("documents"));
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
     @PostMapping
     public ResponseEntity<ApiResponse<RiskReviewResponse>> submitReview(
             @RequestBody @Valid RiskReviewRequest dto) {

@@ -1,13 +1,19 @@
 package com.javaeasybank.loan.client;
 
 import com.javaeasybank.common.exception.BusinessException;
+import com.javaeasybank.loan.dto.requests.LoanDocumentInfoDTO;
 import com.javaeasybank.loan.dto.requests.LoanRiskRequestDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+
+import java.util.List;
+import java.util.Map;
 
 /*
  * 負責將送審資料傳給風控模組。
@@ -31,6 +37,19 @@ public class LoanRiskClient {
 
     public LoanRiskClient(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
+    }
+
+    // 補件通知：把文件清單推給風控，更新對應的 ReviewTask
+    public void attachDocuments(String businessId, List<LoanDocumentInfoDTO> documents) {
+        String url = riskBaseUrl + "reviews/" + businessId + "/attachments";
+        log.info("[RiskClient] 補件通知 businessId={} count={} → {}", businessId, documents.size(), url);
+        try {
+            Map<String, Object> body = Map.of("documents", documents);
+            restTemplate.exchange(url, HttpMethod.PATCH, new HttpEntity<>(body), Void.class);
+        } catch (RestClientException e) {
+            // 補件通知失敗不影響主流程，僅記錄警告
+            log.warn("[RiskClient] 補件通知風控失敗 businessId={} err={}", businessId, e.getMessage());
+        }
     }
 
     // 送審：把 DTO 打到風控的 /risk/review 入口

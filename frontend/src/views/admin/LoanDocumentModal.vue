@@ -34,8 +34,8 @@
 
             <!-- Empty -->
             <div v-else-if="docs.length === 0" class="doc-empty">
-              <div class="empty-icon">📭</div>
-              <p>此申請尚未上傳任何補件文件</p>
+              <div class="empty-icon">📬</div>
+              <p>客戶尚未送出補件</p>
             </div>
 
             <!-- Document list -->
@@ -45,7 +45,7 @@
                 :key="d.documentId"
                 class="doc-item"
               >
-                <span class="doc-icon">{{ fileIcon(d.originalName) }}</span>
+                <span class="doc-icon" v-html="fileIcon(d.originalName)"></span>
                 <div class="doc-info">
                   <a :href="d.fileUrl" target="_blank" class="doc-name">
                     {{ d.originalName || '（未命名）' }}
@@ -62,9 +62,19 @@
                     </span>
                   </div>
                 </div>
-                <a :href="d.fileUrl" target="_blank" class="doc-view-btn" title="開啟檔案">
-                  ↗
-                </a>
+                <div class="doc-actions">
+                  <a :href="d.fileUrl" target="_blank" class="doc-action-btn doc-view-btn" title="開啟檔案">
+                    <i class="fa-solid fa-eye"></i>
+                  </a>
+                  <a
+                    :href="d.fileUrl"
+                    :download="d.originalName || d.documentId"
+                    class="doc-action-btn doc-dl-btn"
+                    title="下載檔案"
+                  >
+                    <i class="fa-solid fa-file-arrow-down"></i>
+                  </a>
+                </div>
               </div>
             </div>
 
@@ -106,11 +116,11 @@ const DOC_TYPE_MAP = {
 }
 
 function fileIcon(name) {
-  if (!name) return '📄'
+  if (!name) return '<i class="fa-solid fa-file doc-type-icon"></i>'
   const ext = name.split('.').pop()?.toLowerCase()
-  if (ext === 'pdf') return '📕'
-  if (['jpg', 'jpeg', 'png'].includes(ext)) return '🖼️'
-  return '📄'
+  if (ext === 'pdf') return '<i class="fa-solid fa-file-pdf doc-type-icon"></i>'
+  if (['jpg', 'jpeg', 'png'].includes(ext)) return '<i class="fa-solid fa-file-image doc-type-icon"></i>'
+  return '<i class="fa-solid fa-file doc-type-icon"></i>'
 }
 
 function formatDateTime(t) {
@@ -156,6 +166,8 @@ function close() {
 </script>
 
 <style scoped>
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css');
+
 /* ── Overlay ── */
 .modal-overlay {
   position: fixed;
@@ -255,6 +267,7 @@ function close() {
 }
 .doc-item:hover { background: #f3f6ff; }
 .doc-icon { font-size: 22px; flex-shrink: 0; }
+:deep(.doc-type-icon) { color: #7B4F2E; font-size: 22px; }
 .doc-info { flex: 1; min-width: 0; }
 .doc-name {
   display: block;
@@ -279,22 +292,33 @@ function close() {
   white-space: nowrap;
 }
 .doc-meta { font-size: 11px; color: #aaa; white-space: nowrap; }
-.doc-view-btn {
+.doc-actions {
   flex-shrink: 0;
+  display: flex;
+  gap: 6px;
+}
+.doc-action-btn {
   width: 30px;
   height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #eef2ff;
-  color: #3a5bd9;
   border-radius: 8px;
   text-decoration: none;
   font-size: 14px;
   font-weight: 700;
   transition: background 0.15s;
 }
-.doc-view-btn:hover { background: #d4dcff; }
+.doc-view-btn {
+  background: #f5ede6;
+  color: #7B4F2E;
+}
+.doc-view-btn:hover { background: #e8d8c8; }
+.doc-dl-btn {
+  background: #f5ede6;
+  color: #7B4F2E;
+}
+.doc-dl-btn:hover { background: #e8d8c8; }
 
 /* ── Footer ── */
 .modal-footer {

@@ -11,4 +11,7 @@ public interface LoanDocumentRepository extends JpaRepository<LoanDocument, Stri
 
     // 查某申請的所有文件（依上傳時間升序）
     List<LoanDocument> findByApplicationIdOrderByUploadTimeAsc(String applicationId);
+
+    // 計算某申請已上傳的文件數量（用於數量上限檢查）
+    long countByApplicationId(String applicationId);
 }
