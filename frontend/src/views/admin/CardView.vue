@@ -42,7 +42,7 @@ const fetchData = async () => {
     })
     cards.value = response.data.data.content
     pagination.value.total = response.data.data.totalElements
-    console.log(response.data)
+    console.log(response.data.data.content)
   } catch (error) {
     console.log(error)
   } finally {
@@ -107,7 +107,7 @@ const columns = [
   { title: '卡片名稱', key: 'cardTypeName', width: 150 },
   { title: '卡片圖片', key: 'image', width: 120, align: 'center' },
   { title: '額度', dataIndex: 'creditLimit', width: 100 },
-  { title: '已用額度', dataIndex: 'currentBalance', width: 100 },
+  { title: '已用額度', dataIndex: 'currentDebt', width: 100 },
   { title: '狀態', dataIndex: 'status', width: 100 },
   { title: '編輯額度', key: 'edit', width: 80 },
   { title: '卡片狀態操作', key: 'statusAction', width: 120 },
@@ -222,6 +222,17 @@ onMounted(() => {
             :src="`${api.defaults.baseURL}/${record.cardType?.cardImageUrl}`"
             style="height: 40px; border-radius: 4px"
           />
+        </template>
+        <!-- 信用額度 -->
+        <template v-else-if="column.dataIndex === 'creditLimit'">
+          NT$
+          {{ Number(record.creditLimit).toLocaleString() }}
+        </template>
+
+        <!-- 已用額度 -->
+        <template v-else-if="column.dataIndex === 'currentDebt'">
+          NT$
+          {{ Number(record.currentDebt).toLocaleString() }}
         </template>
 
         <template v-else-if="column.key === 'status'">

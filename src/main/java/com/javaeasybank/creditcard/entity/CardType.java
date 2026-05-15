@@ -19,21 +19,20 @@ import lombok.Setter;
 @AllArgsConstructor
 public class CardType {
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "card_type_id")
-	private Integer cardTypeId;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "card_type_id")
+    private Integer cardTypeId;
+
     private String cardTypeName;
+
     private String brand;
+
     @Column(name = "annual_fee", precision = 15, scale = 2)
     private BigDecimal annualFee;
+
     @Column(name = "cashback_rate", precision = 15, scale = 2)
     private BigDecimal cashbackRate;
+
     private String cardImageUrl;
-
-    // 預設信用額度
-    @Column(name = "default_limit", precision = 15, scale = 2)
-    private BigDecimal defaultLimit;
-	
-
 }
