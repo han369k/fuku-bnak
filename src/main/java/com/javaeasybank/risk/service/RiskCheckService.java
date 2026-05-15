@@ -21,38 +21,32 @@ import java.math.BigDecimal;
 @Slf4j
 public class RiskCheckService {
 
-
     private final BlackListService blackListService;
     private final RiskEventLogRepository relRepos;
     private final ReviewTaskService reviewTaskService;
 
-    // 單筆閾值：5萬 → MANUAL_REVIEW
-    private static final BigDecimal SINGLE_LIMIT = new BigDecimal("50000");
+    private static final BigDecimal SINGLE_LIMIT = new BigDecimal("50000"); // 單筆大額
+    private static final BigDecimal STRUCTURING_THRESHOLD = new BigDecimal("45000"); // 拆單偵測 (90%)
 
     @Transactional
     public RiskCheckResponse check(RiskCheckRequest request) {
 
-        // 1. 黑名單比對（targetIdentifier 就是收款帳號）
-        if (request.getTargetIdentifier() != null) {
-            boolean hit = blackListService.isBlacklisted(
-                    BlacklistType.ACCOUNT_NO,
-                    request.getTargetIdentifier());
+        // 1. 黑名單檢查
+        RiskCheckResponse blacklistResult = checkBlacklist(request);
+        if (blacklistResult != null)
+            return blacklistResult; // 命中就提早結束
 
-            if (hit) {
-                log.warn("[RiskCheck] 命中黑名單 customerId={} target={}",
-                        request.getCustomerId(), request.getTargetIdentifier());
+        if (request.getContext() != null
+                && request.getContext().containsKey("internalWarning")) {
 
-                RiskEventLog eventLog = buildAndSaveLog(
-                        request, RiskLevel.HIGH, Disposition.REJECT,
-                        "收款帳號命中黑名單：" + request.getTargetIdentifier());
+            String warning = String.valueOf(request.getContext().get("internalWarning"));
+            log.warn("[RiskCheck] 帳戶模組內部警告 customerId={} warning={}",
+                    request.getCustomerId(), warning);
 
-                return RiskCheckResponse.builder()
-                        .disposition(Disposition.REJECT)
-                        .riskLevel(RiskLevel.HIGH)
-                        .reason("收款帳號已列入黑名單，交易終止")
-                        .logId(eventLog.getLogId())
-                        .build();
-            }
+            RiskEventLog eventLog = buildAndSaveLog(
+                    request, RiskLevel.MEDIUM, Disposition.MANUAL_REVIEW, warning);
+
+            return buildManualReviewResponse(eventLog, request);
         }
 
         // 2. 金額閾值判斷
@@ -67,7 +61,8 @@ public class RiskCheckService {
                 // 建立 ReviewTask
                 Long reviewTaskId = null;
                 if (request.getCallbackUrl() != null) {
-                    ReviewTask task = reviewTaskService.createTask(eventLog, toReviewRequest(request));
+                    ReviewTask task = reviewTaskService.createTask(eventLog,
+                            toReviewRequest(request));
                     reviewTaskId = task.getTaskId();
                 }
 
@@ -79,6 +74,21 @@ public class RiskCheckService {
                         .reviewTaskId(reviewTaskId)
                         .build();
             }
+        }
+
+        // 3. 金額接近限額（Structuring）
+        if (request.getAmount() != null
+                && request.getAmount().compareTo(STRUCTURING_THRESHOLD) >= 0
+                && request.getAmount().compareTo(SINGLE_LIMIT) < 0) {
+
+            log.warn("[RiskCheck] 疑似拆單 customerId={} amount={}",
+                    request.getCustomerId(), request.getAmount());
+
+            RiskEventLog eventLog = buildAndSaveLog(
+                    request, RiskLevel.MEDIUM, Disposition.MANUAL_REVIEW,
+                    "交易金額接近限額（" + request.getAmount() + "），疑似拆單行為");
+
+            return buildManualReviewResponse(eventLog, request);
         }
 
         // 3. 全部通過
@@ -93,7 +103,39 @@ public class RiskCheckService {
                 .build();
     }
 
-    // ── 私有方法 ──────────────────────────────────────
+    private RiskCheckResponse checkBlacklist(RiskCheckRequest request) {
+        if (request.getTargetIdentifier() == null) {
+            return null;
+        }
+        boolean hit = blackListService.isBlacklisted(
+                BlacklistType.ACCOUNT_NO,
+                request.getTargetIdentifier());
+        if (hit) {
+            // 1. 準備內部理由（存資料庫用）
+            String internalDetail = "收款帳號命中黑名單：" + request.getTargetIdentifier();
+
+            // 2. 準備外部理由（回傳給帳戶模組用）
+            String displayReason = "此轉入帳號已被通報為異常帳戶或列入警示名單";
+
+            log.warn("[RiskCheck] 命中黑名單 customerId={} target={} reason={}",
+                    request.getCustomerId(), request.getTargetIdentifier(), internalDetail);
+
+            // 存入 RiskEventLog (存 internalDetail)
+            RiskEventLog eventLog = buildAndSaveLog(
+                    request, RiskLevel.HIGH, Disposition.REJECT, internalDetail);
+
+            // 回傳 Response (回傳 displayReason)
+            return RiskCheckResponse.builder()
+                    .disposition(Disposition.REJECT)
+                    .riskLevel(RiskLevel.HIGH)
+                    .reason(displayReason) // 不要直接把黑名單編號噴給用戶
+                    .logId(eventLog.getLogId())
+                    .build();
+
+        }
+        return null;
+    }
+
 
     private RiskEventLog buildAndSaveLog(
             RiskCheckRequest request,
@@ -101,17 +143,18 @@ public class RiskCheckService {
             Disposition disposition,
             String reason) {
 
-        RiskEventLog log = new RiskEventLog();
-        log.setEventType(request.getScene().name());
-        log.setBusinessId(request.getBusinessId() != null
-                ? request.getBusinessId() : "UNKNOWN");
-        log.setTargetIdentifier(request.getTargetIdentifier());
-        log.setRiskLevel(riskLevel);
-        log.setDisposition(disposition);
-        log.setTriggerReason(reason);
-        log.setTransactionAmount(request.getAmount());
-        log.setCallbackUrl(request.getCallbackUrl());
-        return relRepos.save(log);
+        RiskEventLog eventlog = new RiskEventLog();
+        eventlog.setEventType(request.getScene().name());
+        eventlog.setBusinessId(request.getBusinessId() != null
+                ? request.getBusinessId()
+                : "UNKNOWN");
+        eventlog.setTargetIdentifier(request.getTargetIdentifier());
+        eventlog.setRiskLevel(riskLevel);
+        eventlog.setDisposition(disposition);
+        eventlog.setTriggerReason(reason);
+        eventlog.setTransactionAmount(request.getAmount());
+        eventlog.setCallbackUrl(request.getCallbackUrl());
+        return relRepos.save(eventlog);
     }
 
     /**
@@ -126,5 +169,24 @@ public class RiskCheckService {
         r.setCallbackUrl(request.getCallbackUrl());
         r.setAmount(request.getAmount());
         return r;
+    }
+
+    private RiskCheckResponse buildManualReviewResponse(
+            RiskEventLog eventLog, RiskCheckRequest request) {
+
+        Long reviewTaskId = null;
+        if (request.getCallbackUrl() != null) {
+            ReviewTask task = reviewTaskService.createTask(
+                    eventLog, toReviewRequest(request));
+            reviewTaskId = task.getTaskId();
+        }
+
+        return RiskCheckResponse.builder()
+                .disposition(Disposition.MANUAL_REVIEW)
+                .riskLevel(eventLog.getRiskLevel())
+                .reason(eventLog.getTriggerReason())
+                .logId(eventLog.getLogId())
+                .reviewTaskId(reviewTaskId)
+                .build();
     }
 }

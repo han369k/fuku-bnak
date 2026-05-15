@@ -1,5 +1,6 @@
 package com.javaeasybank.account.repository;
 
+import com.javaeasybank.account.dto.request.AccountStats;
 import com.javaeasybank.account.entity.TransLog;
 import com.javaeasybank.account.enums.EntryType;
 import com.javaeasybank.account.enums.TransactionType;
@@ -70,7 +71,7 @@ public interface TransLogRepository extends JpaRepository<TransLog, String>, Jpa
      * @return 包含交易日誌實體的分頁列表。
      */
     @Query("SELECT t FROM TransLog t JOIN Account a ON t.accountNumber = a.accountNumber " +
-           "WHERE a.customerId = :customerId AND t.createdAt >= :startDate AND t.createdAt <= :endDate")
+            "WHERE a.customerId = :customerId AND t.createdAt >= :startDate AND t.createdAt <= :endDate")
     Page<TransLog> findByCustomerIdAndDateRange(
             @Param("customerId") String customerId,
             @Param("startDate") LocalDateTime startDate,
@@ -88,10 +89,10 @@ public interface TransLogRepository extends JpaRepository<TransLog, String>, Jpa
      * @return 匹配的交易次數。
      */
     @Query("SELECT COUNT(t) FROM TransLog t " +
-           "WHERE t.accountNumber = :accountNumber " +
-           "AND t.entryType = :entryType " +
-           "AND t.transactionType = :transactionType " +
-           "AND t.createdAt > :sinceTime")
+            "WHERE t.accountNumber = :accountNumber " +
+            "AND t.entryType = :entryType " +
+            "AND t.transactionType = :transactionType " +
+            "AND t.createdAt > :sinceTime")
     int countRecentTransactions(
             @Param("accountNumber") String accountNumber,
             @Param("entryType") EntryType entryType,
@@ -102,17 +103,17 @@ public interface TransLogRepository extends JpaRepository<TransLog, String>, Jpa
      * [風險監控 B2] 24 小時累積金額偵測。
      * 統計指定時間後，某帳戶作為「轉出方」(轉帳或提款)的累積金額。
      *
-     * @param accountNumber   要統計的帳號。
-     * @param entryType       記帳類型 (例如 DEBIT)。
+     * @param accountNumber    要統計的帳號。
+     * @param entryType        記帳類型 (例如 DEBIT)。
      * @param transactionTypes 交易類型列表 (例如 TRANSFER, WITHDRAW)。
-     * @param sinceTime       起始時間點。
+     * @param sinceTime        起始時間點。
      * @return 匹配的累積金額，如果沒有交易則返回 0。
      */
     @Query("SELECT COALESCE(SUM(t.amount), 0) FROM TransLog t " +
-           "WHERE t.accountNumber = :accountNumber " +
-           "AND t.entryType = :entryType " +
-           "AND t.transactionType IN :transactionTypes " +
-           "AND t.createdAt > :sinceTime")
+            "WHERE t.accountNumber = :accountNumber " +
+            "AND t.entryType = :entryType " +
+            "AND t.transactionType IN :transactionTypes " +
+            "AND t.createdAt > :sinceTime")
     BigDecimal sumRecentOutflow(
             @Param("accountNumber") String accountNumber,
             @Param("entryType") EntryType entryType,
@@ -120,11 +121,11 @@ public interface TransLogRepository extends JpaRepository<TransLog, String>, Jpa
             @Param("sinceTime") LocalDateTime sinceTime);
 
     @Query("SELECT COALESCE(SUM(t.amount), 0) FROM TransLog t " +
-           "WHERE t.accountNumber = :accountNumber " +
-           "AND t.transactionType = :transactionType " +
-           "AND t.entryType = :entryType " +
-           "AND (:startAt IS NULL OR t.createdAt >= :startAt) " +
-           "AND (:endAt IS NULL OR t.createdAt <= :endAt)")
+            "WHERE t.accountNumber = :accountNumber " +
+            "AND t.transactionType = :transactionType " +
+            "AND t.entryType = :entryType " +
+            "AND (:startAt IS NULL OR t.createdAt >= :startAt) " +
+            "AND (:endAt IS NULL OR t.createdAt <= :endAt)")
     BigDecimal sumAmountByAccountAndType(
             @Param("accountNumber") String accountNumber,
             @Param("transactionType") TransactionType transactionType,
@@ -139,4 +140,19 @@ public interface TransLogRepository extends JpaRepository<TransLog, String>, Jpa
      * @return 包含交易日誌實體的分頁列表。
      */
     Page<TransLog> findAllByOrderByCreatedAtDesc(Pageable pageable);
+
+    /**
+     * 一次性取得指定時間內的交易次數與總額
+     */
+    @Query("SELECT new com.javaeasybank.account.dto.request.AccountStats(COUNT(t), SUM(t.amount)) " +
+            "FROM TransLog t " +
+            "WHERE t.accountNumber = :accountNumber " +
+            "AND t.entryType = :entryType " +
+            "AND t.transactionType = :transactionType " +
+            "AND t.createdAt > :sinceTime")
+    AccountStats getRecentStats(
+            @Param("accountNumber") String accountNumber,
+            @Param("entryType") EntryType entryType,
+            @Param("transactionType") TransactionType transactionType,
+            @Param("sinceTime") LocalDateTime sinceTime);
 }

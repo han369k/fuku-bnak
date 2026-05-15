@@ -34,7 +34,7 @@ public class TransferRiskClient {
 
     public RiskCheckResponse checkTransfer(
             String customerId, String toAccNum,
-            BigDecimal amount, String referenceId) {
+            BigDecimal amount, String referenceId,String internalWarning) {
 
         RiskCheckRequest req = new RiskCheckRequest();
         req.setCustomerId(customerId);
@@ -43,6 +43,9 @@ public class TransferRiskClient {
         req.setAmount(amount);
         req.setTargetIdentifier(toAccNum);
         req.setCallbackUrl(callbackBaseUrl + "/" + referenceId + "/status");
+        if (internalWarning != null) {
+            req.addContext("internalWarning", internalWarning);
+        }
 
         String url = riskBaseUrl + "check";
         try {

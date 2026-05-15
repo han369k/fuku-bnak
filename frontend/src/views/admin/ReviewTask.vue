@@ -7,60 +7,68 @@
     <div class="action-bar">
       <!-- 統計卡片 -->
       <a-row :gutter="16" style="margin-bottom: 24px">
-      <a-col :span="6">
-        <a-statistic title="待處理" :value="stats.pending" value-style="{color: #faad14}" />
-      </a-col>
-      <a-col :span="6">
-        <a-statistic title="處理中" :value="stats.processing" value-style="{color: #1890ff}" />
-      </a-col>
-      <a-col :span="6">
-        <a-statistic title="已結案" :value="stats.completed" value-style="{color: #52c41a}" />
-      </a-col>
-      <a-col :span="6">
-        <a-statistic title="總計" :value="stats.total" />
-      </a-col>
-    </a-row>
+        <a-col :span="6">
+          <a-statistic title="待處理" :value="stats.pending" :value-style="{ color: '#faad14' }" />
+        </a-col>
+        <a-col :span="6">
+          <a-statistic
+            title="處理中"
+            :value="stats.processing"
+            :value-style="{ color: '#1890ff' }"
+          />
+        </a-col>
+        <a-col :span="6">
+          <a-statistic
+            title="已結案"
+            :value="stats.completed"
+            :value-style="{ color: '#52c41a' }"
+          />
+        </a-col>
+        <a-col :span="6">
+          <a-statistic title="總計" :value="stats.total" />
+        </a-col>
+      </a-row>
 
-    <!-- 篩選列 -->
-    <a-space style="margin-bottom: 16px" wrap>
-      <a-select
-        v-model:value="filters.status"
-        placeholder="全部狀態"
-        allow-clear
-        style="width: 130px"
-        @change="fetchTasks"
-      >
-        <a-select-option value="PENDING">待處理</a-select-option>
-        <a-select-option value="PROCESSING">處理中</a-select-option>
-        <a-select-option value="COMPLETED">已結案</a-select-option>
-      </a-select>
-      <a-select
-        v-model:value="filters.scene"
-        placeholder="全部場景"
-        allow-clear
-        style="width: 140px"
-        @change="fetchTasks"
-      >
-        <a-select-option value="LOAN_APPLY">貸款申請</a-select-option>
-        <a-select-option value="ACCOUNT_OPEN">帳戶開戶</a-select-option>
-        <a-select-option value="CARD_APPLY">信用卡申請</a-select-option>
-      </a-select>
-      <a-select
-        v-model:value="filters.priority"
-        placeholder="全部優先度"
-        allow-clear
-        style="width: 130px"
-        @change="fetchTasks"
-      >
-        <a-select-option :value="1">高（P1）</a-select-option>
-        <a-select-option :value="5">中（P5）</a-select-option>
-        <a-select-option :value="10">低（P10）</a-select-option>
-      </a-select>
-      <a-button @click="fetchTasks">
-        <template #icon><ReloadOutlined /></template>
-        重新整理
-      </a-button>
-    </a-space>
+      <!-- 篩選列 -->
+      <a-space style="margin-bottom: 16px" wrap>
+        <a-select
+          v-model:value="filters.status"
+          placeholder="全部狀態"
+          allow-clear
+          style="width: 130px"
+          @change="fetchTasks"
+        >
+          <a-select-option value="PENDING">待處理</a-select-option>
+          <a-select-option value="PROCESSING">處理中</a-select-option>
+          <a-select-option value="COMPLETED">已結案</a-select-option>
+        </a-select>
+        <a-select
+          v-model:value="filters.scene"
+          placeholder="全部場景"
+          allow-clear
+          style="width: 140px"
+          @change="fetchTasks"
+        >
+          <a-select-option value="LOAN_APPLY">貸款申請</a-select-option>
+          <a-select-option value="ACCOUNT_OPEN">帳戶開戶</a-select-option>
+          <a-select-option value="CARD_APPLY">信用卡申請</a-select-option>
+        </a-select>
+        <a-select
+          v-model:value="filters.priority"
+          placeholder="全部優先度"
+          allow-clear
+          style="width: 130px"
+          @change="fetchTasks"
+        >
+          <a-select-option :value="1">高（P1）</a-select-option>
+          <a-select-option :value="5">中（P5）</a-select-option>
+          <a-select-option :value="10">低（P10）</a-select-option>
+        </a-select>
+        <a-button @click="fetchTasks">
+          <template #icon><ReloadOutlined /></template>
+          重新整理
+        </a-button>
+      </a-space>
     </div>
 
     <!-- 任務列表 -->

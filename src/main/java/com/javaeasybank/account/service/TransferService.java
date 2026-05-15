@@ -1,10 +1,7 @@
 package com.javaeasybank.account.service;
 
 import com.javaeasybank.account.TransferRiskClient;
-import com.javaeasybank.account.dto.request.CashRequest;
-import com.javaeasybank.account.dto.request.ExchangeRequest;
-import com.javaeasybank.account.dto.request.ReversalRequest;
-import com.javaeasybank.account.dto.request.TransferRequest;
+import com.javaeasybank.account.dto.request.*;
 import com.javaeasybank.account.dto.response.CashResponse;
 import com.javaeasybank.account.dto.response.ExchangeResponse;
 import com.javaeasybank.account.dto.response.ReversalResponse;
@@ -27,6 +24,8 @@ import com.javaeasybank.common.service.EmailService;
 import com.javaeasybank.common.service.ExchangeRateService;
 import com.javaeasybank.customer.repository.CustomerProfileRepository;
 import com.javaeasybank.risk.dto.response.RiskCheckResponse;
+import com.javaeasybank.risk.enums.Disposition;
+import com.javaeasybank.risk.enums.RiskLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -34,6 +33,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Clock;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -58,8 +59,11 @@ public class TransferService {
     private final CustomerProfileRepository customerProfileRepository;
     private final EmailService emailService;
     private final ExchangeRateService exchangeRateService;
-    private final TransferRiskClient transferRiskClient;
+
     private final PendingTransferRepository pendingTransferRepository;
+
+    private final TransferRiskClient transferRiskClient;
+    private final Clock clock;
 
     /**
      * 執行國內轉帳。
@@ -94,26 +98,85 @@ public class TransferService {
         }
 
         // ── 風控 ──────────────────────────────────
+
+        // 建立一個暫存變數
+        LocalDateTime now = LocalDateTime.now(clock);
+
+        AccountStats velocityStats = transLogRepository.getRecentStats(
+                fromAccNum,
+                EntryType.DEBIT,
+                TransactionType.TRANSFER,
+                now.minusMinutes(10));
+
+        long velocityCount = velocityStats.count();
+        BigDecimal velocitySum = velocityStats.sum();
+        if (velocityCount >= 3) {
+            log.warn("[Transfer] 高頻轉帳 fromAcc={} count={}", fromAccNum, velocityCount);
+            throw new TransferException("HIGH_FREQUENCY",
+                    "短時間內轉帳次數過多，請稍後再試");
+        }
+
+        String internalWarning = null;
+        // 定義拆單偵測閾值
+        int countThreshold = 2;
+        BigDecimal velocityAmountThreshold = new BigDecimal("40000");
+
+        if (velocityCount >= countThreshold && velocitySum.compareTo(velocityAmountThreshold) >= 0) {
+            log.warn("[Transfer] 疑似拆單 fromAcc={} count={} sum={}", fromAccNum, velocityCount, velocitySum);
+            internalWarning = "短時間內頻繁小額轉帳，疑似規避限額，需人工審核";
+        } else {
+            // 單日累計金額檢查
+            BigDecimal dailyLimit = new BigDecimal("100000");
+            BigDecimal dailyOutflow = transLogRepository.sumRecentOutflow(
+                    fromAccNum,
+                    EntryType.DEBIT,
+                    List.of(TransactionType.TRANSFER),
+                    LocalDate.now(clock).atStartOfDay());
+
+            if (dailyOutflow.add(amount).compareTo(dailyLimit) >= 0) {
+                log.warn("[Transfer] 單日累計超限 fromAcc={} dailyOutflow={} amount={}",
+                        fromAccNum, dailyOutflow, amount);
+                internalWarning = "今日累計轉出金額即將超過 " + dailyLimit + " 元，需人工審核";
+            } else if (amount.compareTo(new BigDecimal("45000")) >= 0
+                    && amount.compareTo(new BigDecimal("50000")) < 0) {
+                // 疑似拆單（金額接近限額 90%）
+                log.warn("[Transfer] 疑似拆單 fromAcc={} amount={}", fromAccNum, amount);
+                internalWarning = "交易金額接近限額，疑似拆單行為，需人工審核";
+            }
+        }
+
         RiskCheckResponse riskResult = transferRiskClient.checkTransfer(
                 fromAccount.getCustomerId(),
                 toAccNum,
                 amount,
-                referenceId);
+                referenceId,internalWarning);
 
-        switch (riskResult.getDisposition()) {
-            case REJECT -> throw new TransferException(
-                    "RISK_REJECTED", riskResult.getReason());
-            case MANUAL_REVIEW -> {
-                // 暫存交易，等人工審核
-                savePendingTransfer(request, riskResult, referenceId);
-                return TransferResponse.pending(
-                        riskResult.getReason());
-            }
-            case PASS -> { /* 繼續正常轉帳流程 */ }
+        // 外部風控直接拒絕 (最高優先級)
+        if (riskResult.getDisposition() == Disposition.REJECT) {
+            throw new TransferException("RISK_REJECTED", riskResult.getReason());
+        }
+        String finalReason = internalWarning != null
+                ? internalWarning
+                : (riskResult.getDisposition() == Disposition.MANUAL_REVIEW
+                   ? riskResult.getReason() : null);
+
+        if (finalReason != null) {
+            // 內部有警告時，強制設為 MANUAL_REVIEW
+            RiskCheckResponse pendingResult = RiskCheckResponse.builder()
+                    .disposition(Disposition.MANUAL_REVIEW)
+                    .riskLevel(internalWarning != null ? RiskLevel.MEDIUM : riskResult.getRiskLevel())
+                    .reason(finalReason)
+                    .logId(riskResult.getLogId())
+                    .reviewTaskId(riskResult.getReviewTaskId())
+                    .build();
+
+            savePendingTransfer(request, pendingResult, referenceId);
+            return TransferResponse.pending(finalReason);
         }
 
-        return executeTransfer(request, referenceId);
         // ────────────────────────────────────────────────
+
+        return executeTransfer(request, referenceId);
     }
 
     private TransferResponse executeTransfer(TransferRequest request, String referenceId) {
@@ -401,7 +464,8 @@ public class TransferService {
         }
     }
 
-    private String buildExchangeNote(String requestNote, BigDecimal exchangeRate, Currency fromCurrency, Currency toCurrency) {
+    private String buildExchangeNote(String requestNote, BigDecimal exchangeRate, Currency fromCurrency, Currency
+            toCurrency) {
         String note = "換匯 " + fromCurrency.name() + "->" + toCurrency.name() + " 匯率 " + exchangeRate.toPlainString();
         if (requestNote != null && !requestNote.isBlank()) {
             note += " | " + requestNote.trim();

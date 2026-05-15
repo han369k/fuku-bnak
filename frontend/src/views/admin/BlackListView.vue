@@ -8,11 +8,11 @@
       <!-- 功能列 -->
       <div
         style="
-        margin-bottom: 16px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      "
+          margin-bottom: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        "
       >
         <a-button type="primary" @click="openModal('create')">新增黑名單</a-button>
         <div style="display: flex; align-items: center">
@@ -73,6 +73,7 @@
             <a-select-option value="ID_CARD">身份證字號</a-select-option>
             <a-select-option value="EMAIL">電子郵件</a-select-option>
             <a-select-option value="PHONE">電話</a-select-option>
+            <a-select-option value="ACCOUNT_NO">帳戶</a-select-option>
           </a-select>
         </a-form-item>
 
