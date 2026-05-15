@@ -57,7 +57,7 @@
                     <span class="info-label">申請人</span>
                     <span class="info-val">
                       {{
-                        app?.applicantName || (app?.cif ? `CIF: ${app.cif}` : (app?.customerId ? `#${app.customerId}` : '—'))
+                        app?.applicantName || (app?.cif ? `${app.cif}` : (app?.customerId ? `#${app.customerId}` : '—'))
                       }}
                     </span>
                   </div>

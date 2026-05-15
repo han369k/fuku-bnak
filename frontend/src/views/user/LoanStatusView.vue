@@ -104,11 +104,78 @@
             </span>
             <button
               class="btn-resubmit"
-              @click="handleResubmit(app)"
+              :class="{ active: docPanelId === app.applicationId }"
+              @click="toggleDocPanel(app)"
             >
               📎 補交文件
+              <span v-if="docCount(app.applicationId) > 0" class="doc-badge">
+                {{ docCount(app.applicationId) }}
+              </span>
             </button>
           </div>
+
+          <!-- ── 補件面板（展開） ── -->
+          <transition name="slide-down">
+            <div v-if="docPanelId === app.applicationId" class="doc-panel">
+
+              <!-- 已上傳清單 -->
+              <div class="doc-panel-section">
+                <div class="doc-section-title">已上傳文件</div>
+                <div v-if="docLoading" class="doc-loading">載入中…</div>
+                <div v-else-if="docs[app.applicationId] && docs[app.applicationId].length > 0"
+                     class="doc-list">
+                  <div
+                    v-for="d in docs[app.applicationId]"
+                    :key="d.documentId"
+                    class="doc-item"
+                  >
+                    <span class="doc-icon">{{ docIcon(d.originalName) }}</span>
+                    <div class="doc-info">
+                      <a :href="d.fileUrl" target="_blank" class="doc-name">
+                        {{ d.originalName || '（未命名）' }}
+                      </a>
+                      <span class="doc-meta">
+                        {{ DOC_TYPE_MAP[d.documentType] || d.documentType }}
+                        · {{ formatTime(d.uploadTime) }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div v-else class="doc-empty">尚未上傳任何文件</div>
+              </div>
+
+              <!-- 上傳新文件 -->
+              <div class="doc-panel-section">
+                <div class="doc-section-title">上傳新文件</div>
+                <div class="doc-upload-form">
+                  <select v-model="uploadForm.documentType" class="doc-select">
+                    <option value="" disabled>選擇文件類型</option>
+                    <option v-for="(label, key) in DOC_TYPE_MAP" :key="key" :value="key">
+                      {{ label }}
+                    </option>
+                  </select>
+                  <label class="doc-file-btn">
+                    {{ uploadForm.file ? uploadForm.file.name : '選擇檔案（JPG / PNG / PDF）' }}
+                    <input
+                      type="file"
+                      accept=".jpg,.jpeg,.png,.pdf"
+                      style="display:none"
+                      @change="onFileChange"
+                    />
+                  </label>
+                  <button
+                    class="doc-submit-btn"
+                    :disabled="!uploadForm.documentType || !uploadForm.file || uploading"
+                    @click="submitUpload(app.applicationId)"
+                  >
+                    {{ uploading ? '上傳中…' : '確認上傳' }}
+                  </button>
+                </div>
+                <p v-if="uploadError" class="doc-upload-error">{{ uploadError }}</p>
+                <p v-if="uploadSuccess" class="doc-upload-success">✅ 上傳成功！</p>
+              </div>
+            </div>
+          </transition>
         </div>
       </div>
 
@@ -123,6 +190,27 @@ import api from '@/api/axios'
 const applications = ref([])
 const loading = ref(false)
 const error = ref('')
+
+// ── 補件面板狀態 ──
+const docPanelId   = ref(null)   // 目前展開的申請 ID
+const docs         = ref({})     // { [applicationId]: LoanDocumentResponseDTO[] }
+const docLoading   = ref(false)
+
+const uploadForm   = ref({ documentType: '', file: null })
+const uploading    = ref(false)
+const uploadError  = ref('')
+const uploadSuccess = ref(false)
+
+// ── 文件類型對照 ──
+const DOC_TYPE_MAP = {
+  ID_CARD:         '身分證',
+  INCOME_CERT:     '收入證明',
+  EMPLOYMENT_CERT: '在職證明',
+  BANK_STATEMENT:  '銀行存摺',
+  PROPERTY_CERT:   '不動產謄本',
+  TITLE_DEED:      '所有權狀',
+  OTHER:           '其他',
+}
 
 // ── 貸款類型 ──
 const LOAN_TYPE_MAP = {
@@ -218,9 +306,75 @@ async function load() {
   }
 }
 
-function handleResubmit(app) {
-  // TODO: 導向補交文件頁面，或開啟上傳 Modal
-  alert(`補交文件功能（申請編號：${app.applicationId}）`)
+// ── 補件面板邏輯 ──
+function docCount(appId) {
+  return docs.value[appId]?.length || 0
+}
+
+function docIcon(name) {
+  if (!name) return '📄'
+  const ext = name.split('.').pop()?.toLowerCase()
+  if (ext === 'pdf') return '📕'
+  if (['jpg', 'jpeg', 'png'].includes(ext)) return '🖼️'
+  return '📄'
+}
+
+async function toggleDocPanel(app) {
+  const id = app.applicationId
+  if (docPanelId.value === id) {
+    docPanelId.value = null
+    return
+  }
+  docPanelId.value = id
+  uploadForm.value  = { documentType: '', file: null }
+  uploadError.value  = ''
+  uploadSuccess.value = false
+  await loadDocs(id)
+}
+
+async function loadDocs(appId) {
+  docLoading.value = true
+  try {
+    const token = localStorage.getItem('customer_token')
+    const res = await api.get(`/api/loan-documents/${appId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    docs.value = { ...docs.value, [appId]: res.data.data || [] }
+  } catch {
+    docs.value = { ...docs.value, [appId]: [] }
+  } finally {
+    docLoading.value = false
+  }
+}
+
+function onFileChange(e) {
+  uploadForm.value.file = e.target.files[0] || null
+}
+
+async function submitUpload(appId) {
+  if (!uploadForm.value.documentType || !uploadForm.value.file) return
+  uploading.value    = true
+  uploadError.value  = ''
+  uploadSuccess.value = false
+  try {
+    const token = localStorage.getItem('customer_token')
+    const fd = new FormData()
+    fd.append('documentType', uploadForm.value.documentType)
+    fd.append('file', uploadForm.value.file)
+    await api.post(`/api/loan-documents/${appId}/upload`, fd, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+    uploadSuccess.value = true
+    uploadForm.value    = { documentType: '', file: null }
+    await loadDocs(appId)   // 重整清單
+  } catch (e) {
+    uploadError.value = e.response?.data?.message || '上傳失敗，請稍後再試'
+  } finally {
+    uploading.value = false
+  }
 }
 
 onMounted(load)
@@ -477,5 +631,135 @@ onMounted(load)
 .btn-resubmit:hover {
   background: var(--accent);
   color: #fff;
+}
+.btn-resubmit.active {
+  background: var(--accent);
+  color: #fff;
+}
+.doc-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background: #fff;
+  color: var(--accent);
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  margin-left: 4px;
+}
+.btn-resubmit.active .doc-badge {
+  background: rgba(255,255,255,0.25);
+  color: #fff;
+}
+
+/* ── 補件面板 ── */
+.doc-panel {
+  margin-top: 12px;
+  border-top: 1px dashed var(--border);
+  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.doc-panel-section { display: flex; flex-direction: column; gap: 10px; }
+.doc-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 0.5px;
+}
+.doc-loading { font-size: 13px; color: var(--muted); }
+.doc-empty   { font-size: 13px; color: var(--muted); font-style: italic; }
+
+.doc-list { display: flex; flex-direction: column; gap: 8px; }
+.doc-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(245,241,234,0.7);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.doc-icon { font-size: 20px; flex-shrink: 0; line-height: 1.4; }
+.doc-info  { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.doc-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.doc-name:hover { text-decoration: underline; }
+.doc-meta { font-size: 11px; color: var(--muted); }
+
+/* 上傳表單 */
+.doc-upload-form {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.doc-select {
+  flex: 0 0 160px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+}
+.doc-file-btn {
+  flex: 1;
+  min-width: 160px;
+  padding: 8px 12px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--muted-2);
+  background: rgba(255,255,255,0.7);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: border-color 0.15s;
+}
+.doc-file-btn:hover { border-color: var(--primary); color: var(--primary); }
+.doc-submit-btn {
+  flex: 0 0 auto;
+  padding: 8px 18px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.doc-submit-btn:hover:not(:disabled) { background: var(--pk); }
+.doc-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.doc-upload-error   { font-size: 12px; color: #c0392b; margin: 2px 0 0; }
+.doc-upload-success { font-size: 12px; color: #27ae60; margin: 2px 0 0; font-weight: 600; }
+
+/* slide-down transition */
+.slide-down-enter-active, .slide-down-leave-active {
+  transition: all 0.25s ease;
+  overflow: hidden;
+}
+.slide-down-enter-from, .slide-down-leave-to {
+  opacity: 0;
+  max-height: 0;
+  padding-top: 0;
+}
+.slide-down-enter-to, .slide-down-leave-from {
+  opacity: 1;
+  max-height: 600px;
 }
 </style>

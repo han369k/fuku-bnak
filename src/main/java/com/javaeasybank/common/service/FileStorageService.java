@@ -47,10 +47,11 @@ public class FileStorageService {
             ext = originalName.substring(originalName.lastIndexOf("."));
         }
 
-        // 只允許圖片格式
+        // 只允許圖片與 PDF 格式
         String lower = ext.toLowerCase();
-        if (!lower.equals(".jpg") && !lower.equals(".jpeg") && !lower.equals(".png")) {
-            throw new IllegalArgumentException("僅支援 JPG / PNG 格式");
+        if (!lower.equals(".jpg") && !lower.equals(".jpeg")
+                && !lower.equals(".png") && !lower.equals(".pdf")) {
+            throw new IllegalArgumentException("僅支援 JPG / PNG / PDF 格式");
         }
 
         // 檔案大小限制 5MB

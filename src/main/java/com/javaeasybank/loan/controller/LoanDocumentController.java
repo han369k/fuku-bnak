@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 /*
  * 補件文件入口
@@ -52,6 +53,50 @@ public class LoanDocumentController {
         LoanDocumentResponseDTO dto =
                 loanDocumentService.upload(applicationId, customerId, documentType, file);
         return ResponseEntity.ok(ApiResponse.success(dto));
+    }
+
+    /**
+     * 查詢補件清單（客戶端）
+     * 只能查看自己申請的文件
+     */
+    @PreAuthorize("hasRole('CUSTOMER')")
+    @GetMapping("/api/loan-documents/{applicationId}")
+    public ResponseEntity<ApiResponse<List<LoanDocumentResponseDTO>>> getMyDocs(
+            @PathVariable String applicationId,
+            HttpServletRequest request) {
+
+        String customerId = extractCustomerId(request);
+        return ResponseEntity.ok(ApiResponse.success(
+                loanDocumentService.getByApplicationId(applicationId, customerId)));
+    }
+
+    /**
+     * 查詢補件清單（行員端）
+     * 可查任意申請的文件
+     */
+    @GetMapping("/api/admin/loan-documents/{applicationId}")
+    public ResponseEntity<ApiResponse<List<LoanDocumentResponseDTO>>> getAdminDocs(
+            @PathVariable String applicationId) {
+
+        return ResponseEntity.ok(ApiResponse.success(
+                loanDocumentService.getByApplicationId(applicationId)));
+    }
+
+    /**
+     * 查詢可用的文件類型清單（客戶端 / 行員端共用）
+     * 前端用來產生下拉選單，避免寫死
+     */
+    @GetMapping("/api/loan-documents/types")
+    public ResponseEntity<ApiResponse<Map<String, String>>> getDocumentTypes() {
+        Map<String, String> types = new java.util.LinkedHashMap<>();
+        types.put("ID_CARD",         "身分證");
+        types.put("INCOME_CERT",     "收入證明");
+        types.put("EMPLOYMENT_CERT", "在職證明");
+        types.put("BANK_STATEMENT",  "銀行存摺");
+        types.put("PROPERTY_CERT",   "不動產謄本");
+        types.put("TITLE_DEED",      "所有權狀");
+        types.put("OTHER",           "其他");
+        return ResponseEntity.ok(ApiResponse.success(types));
     }
 
     // Helper：從 Authorization Header 解析 customerId

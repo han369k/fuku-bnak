@@ -3,6 +3,7 @@ package com.javaeasybank.loan.service;
 import com.javaeasybank.common.exception.BusinessException;
 import com.javaeasybank.common.service.FileStorageService;
 import com.javaeasybank.loan.dto.response.LoanDocumentResponseDTO;
+import com.javaeasybank.loan.entity.LoanApplication;
 import com.javaeasybank.loan.entity.LoanDocument;
 import com.javaeasybank.loan.enums.LoanDocumentType;
 import com.javaeasybank.loan.repository.LoanApplicationRepository;
@@ -44,8 +45,13 @@ public class LoanDocumentService {
                                           String documentType,
                                           MultipartFile file) {
 
-        loanApplicationRepo.findById(applicationId)
+        LoanApplication loan = loanApplicationRepo.findById(applicationId)
                 .orElseThrow(() -> new BusinessException("找不到申請編號：" + applicationId));
+
+        // 所有權驗證：只能上傳自己申請的補件
+        if (!loan.getCustomerId().equals(customerId)) {
+            throw new BusinessException("無權操作此申請的文件");
+        }
 
         LoanDocumentType type;
         try {
@@ -72,6 +78,21 @@ public class LoanDocumentService {
 
     // ===查詢===
 
+    // 客戶端：驗證申請屬於該客戶才可查
+    @Transactional(readOnly = true)
+    public List<LoanDocumentResponseDTO> getByApplicationId(String applicationId, String customerId) {
+        LoanApplication loan = loanApplicationRepo.findById(applicationId)
+                .orElseThrow(() -> new BusinessException("找不到申請編號：" + applicationId));
+        if (!loan.getCustomerId().equals(customerId)) {
+            throw new BusinessException("無權存取此申請的文件");
+        }
+        return documentRepo.findByApplicationIdOrderByUploadTimeAsc(applicationId)
+                .stream()
+                .map(this::toResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    // 行員端：不限所有權，直接查
     @Transactional(readOnly = true)
     public List<LoanDocumentResponseDTO> getByApplicationId(String applicationId) {
         return documentRepo.findByApplicationIdOrderByUploadTimeAsc(applicationId)
