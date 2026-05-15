@@ -8,13 +8,21 @@
       <!-- 統計卡片 -->
       <a-row :gutter="16" style="margin-bottom: 24px">
         <a-col :span="6">
-          <a-statistic title="待處理" :value="stats.pending" value-style="{color: #faad14}" />
+          <a-statistic title="待處理" :value="stats.pending" :value-style="{ color: '#faad14' }" />
         </a-col>
         <a-col :span="6">
-          <a-statistic title="處理中" :value="stats.processing" value-style="{color: #1890ff}" />
+          <a-statistic
+            title="處理中"
+            :value="stats.processing"
+            :value-style="{ color: '#1890ff' }"
+          />
         </a-col>
         <a-col :span="6">
-          <a-statistic title="已結案" :value="stats.completed" value-style="{color: #52c41a}" />
+          <a-statistic
+            title="已結案"
+            :value="stats.completed"
+            :value-style="{ color: '#52c41a' }"
+          />
         </a-col>
         <a-col :span="6">
           <a-statistic title="總計" :value="stats.total" />
@@ -420,5 +428,12 @@ onMounted(fetchTasks)
 }
 :deep(.clickable-row:hover td) {
   background: #fafafa;
+}
+:deep(.ant-statistic-title) {
+  white-space: nowrap;
+  text-align: center;
+}
+:deep(.ant-statistic-content) {
+  text-align: center;
 }
 </style>
