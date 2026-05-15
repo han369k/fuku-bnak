@@ -146,7 +146,7 @@ import { onMounted, onUnmounted } from 'vue'
 import {
   HomeOutlined, TeamOutlined, UserOutlined, SettingOutlined, LogoutOutlined,
   BankOutlined, ProfileOutlined, AuditOutlined,
-  AppstoreAddOutlined, SolutionOutlined, CreditCardOutlined, AlertOutlined, StopOutlined
+  AppstoreAddOutlined, SolutionOutlined, CreditCardOutlined, AlertOutlined, StopOutlined, CheckCircleOutlined
 } from '@ant-design/icons-vue'
 
 const route = useRoute()

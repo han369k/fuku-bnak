@@ -141,6 +141,12 @@ const router = createRouter({
           name: 'user-loan-accounts',
           component: () => import('../views/user/LoanAccountView.vue'),
         },
+        // 貸款還款：執行繳款與查詢繳款紀錄
+        {
+          path: 'loan-repayment',
+          name: 'user-loan-repayment',
+          component: () => import('../views/user/LoanRepaymentView.vue'),
+        },
       ],
     },
 

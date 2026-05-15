@@ -604,6 +604,8 @@ onUnmounted(() => clearInterval(showcaseTimer))
 </script>
 
 <style scoped>
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css');
+
 /* ── Variables ── */
 .apply-page {
   --accent:      #A65A4D;

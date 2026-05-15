@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.javaeasybank.common.exception.BusinessException;
 import com.javaeasybank.creditcard.dto.CardTxnRequestDto;
 import com.javaeasybank.creditcard.dto.CardTxnResponseDto;
+import com.javaeasybank.creditcard.entity.CardAccount;
 import com.javaeasybank.creditcard.entity.CardTransaction;
 import com.javaeasybank.creditcard.entity.CreditCard;
 import com.javaeasybank.creditcard.enums.CardStatus;
@@ -49,8 +50,13 @@ public class CardTxnService {
                 .orElseThrow(() -> new BusinessException("Merchant not found"));
 
         // ===== 額度檢查 =====
-        BigDecimal availableCredit = card.getCreditLimit()
-                .subtract(card.getCurrentDebt());
+        CardAccount cardAccount = card.getCardAccount();
+        if (cardAccount == null || cardAccount.getCreditLimit() == null) {
+            throw new BusinessException("Credit card account limit is not configured");
+        }
+
+        BigDecimal availableCredit = cardAccount.getCreditLimit()
+                .subtract(calculateCurrentDebt(cardAccount));
 
         if (dto.getTxnAmount().compareTo(availableCredit) > 0) {
             throw new BusinessException("信用額度不足");
@@ -72,9 +78,7 @@ public class CardTxnService {
         txn.setMerchant(merchant);
 
         // ===== 更新已使用額度 =====
-        card.setCurrentDebt(
-                card.getCurrentDebt()
-                        .add(dto.getTxnAmount()));
+        card.setCurrentDebt(zeroIfNull(card.getCurrentDebt()).add(dto.getTxnAmount()));
         // 計算回饋
         //初始值為0，避免為null
         BigDecimal cashbackRate = BigDecimal.ZERO;
@@ -181,9 +185,7 @@ public class CardTxnService {
 
         // ===== 更新信用卡已使用額度 =====
         CreditCard card = originalTxn.getCard();
-        card.setCurrentDebt(
-                card.getCurrentDebt()
-                        .subtract(originalTxn.getTxnAmount()));
+        card.setCurrentDebt(zeroIfNull(card.getCurrentDebt()).subtract(originalTxn.getTxnAmount()));
         // 計算回饋
         refundTxn.setCashbackRate(originalTxn.getCashbackRate());
         if (originalTxn.getCashbackAmount() != null) {
@@ -249,8 +251,28 @@ public class CardTxnService {
         return BigDecimal.ZERO;
     }
 
+    private BigDecimal calculateCurrentDebt(CardAccount cardAccount) {
+        if (cardAccount.getCards() == null) {
+            return BigDecimal.ZERO;
+        }
+
+        return cardAccount.getCards().stream()
+                .map(CreditCard::getCurrentDebt)
+                .map(this::zeroIfNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private BigDecimal zeroIfNull(BigDecimal amount) {
+        return amount == null ? BigDecimal.ZERO : amount;
+    }
+
     public Page<CardTxnResponseDto> findByCustomerId(String customerId, Pageable pageable) {
         return cardTxnRepository.findByCard_Customer_CustomerId(customerId, pageable)
+                .map(mapper::toDto);
+    }
+
+    public Page<CardTxnResponseDto> getUnbilledBillsByCustomerId(String customerId, Pageable pageable) {
+        return cardTxnRepository.findByCard_Customer_CustomerIdAndBillIsNull(customerId, pageable)
                 .map(mapper::toDto);
     }
 

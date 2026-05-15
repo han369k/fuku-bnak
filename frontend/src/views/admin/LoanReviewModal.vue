@@ -57,7 +57,7 @@
                     <span class="info-label">申請人</span>
                     <span class="info-val">
                       {{
-                        app?.applicantName || (app?.cif ? `CIF: ${app.cif}` : (app?.customerId ? `#${app.customerId}` : '—'))
+                        app?.applicantName || (app?.cif ? `${app.cif}` : (app?.customerId ? `#${app.customerId}` : '—'))
                       }}
                     </span>
                   </div>
@@ -516,6 +516,8 @@ function formatDateTime(d) {
 </script>
 
 <style scoped>
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css');
+
 /* ── Variables ── */
 .modal-overlay {
   --accent: #A65A4D;

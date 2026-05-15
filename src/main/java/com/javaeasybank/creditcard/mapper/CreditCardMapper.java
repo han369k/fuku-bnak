@@ -24,6 +24,7 @@ public interface CreditCardMapper {
     // 查詢用
     @Mapping(target = "cardNumber", qualifiedByName = "maskCard")
     @Mapping(source = "customer.name", target = "customerName")
+    @Mapping(source = "cardAccount.creditLimit", target = "creditLimit")
     CreditCardResponseDto toDto(CreditCard entity);
 
     // 更新用

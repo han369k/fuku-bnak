@@ -30,6 +30,29 @@ public class FileStorageService {
     }
 
     /**
+     * 刪除檔案
+     *
+     * @param fileUrl store() 回傳的 URL 路徑（如 /uploads/loan-documents/APP123/uuid.pdf）
+     */
+    public void delete(String fileUrl) {
+        if (fileUrl == null || fileUrl.isBlank()) return;
+        // /uploads/ 前綴去除，換算回實體路徑
+        String relativePath = fileUrl.startsWith("/uploads/")
+                ? fileUrl.substring("/uploads/".length())
+                : fileUrl;
+        Path target = uploadDir.resolve(relativePath).normalize();
+        // 防止 path traversal
+        if (!target.startsWith(uploadDir)) {
+            throw new IllegalArgumentException("非法的檔案路徑");
+        }
+        try {
+            Files.deleteIfExists(target);
+        } catch (IOException e) {
+            throw new RuntimeException("檔案刪除失敗: " + target, e);
+        }
+    }
+
+    /**
      * 儲存檔案，回傳相對路徑（如 /uploads/abc123.jpg）
      *
      * @param file     上傳的檔案
@@ -47,15 +70,16 @@ public class FileStorageService {
             ext = originalName.substring(originalName.lastIndexOf("."));
         }
 
-        // 只允許圖片格式
+        // 只允許圖片與 PDF 格式
         String lower = ext.toLowerCase();
-        if (!lower.equals(".jpg") && !lower.equals(".jpeg") && !lower.equals(".png")) {
-            throw new IllegalArgumentException("僅支援 JPG / PNG 格式");
+        if (!lower.equals(".jpg") && !lower.equals(".jpeg")
+                && !lower.equals(".png") && !lower.equals(".pdf")) {
+            throw new IllegalArgumentException("僅支援 JPG / PNG / PDF 格式");
         }
 
-        // 檔案大小限制 5MB
-        if (file.getSize() > 5 * 1024 * 1024) {
-            throw new IllegalArgumentException("檔案大小不可超過 5MB");
+        // 檔案大小限制 10MB
+        if (file.getSize() > 10 * 1024 * 1024) {
+            throw new IllegalArgumentException("檔案大小不可超過 10MB");
         }
 
         String fileName = UUID.randomUUID() + ext;

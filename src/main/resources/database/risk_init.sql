@@ -48,7 +48,8 @@ CREATE TABLE REVIEW_TASK
     priority      INT      DEFAULT 0,
     create_at     DATETIME DEFAULT GETDATE(), -- 自動記錄建立時間
     processed_at  DATETIME NULL,
-    version       BIGINT   DEFAULT 0,
+    version       BIGINT       DEFAULT 0,
+    attachments   NVARCHAR(MAX) NULL,             -- 補件文件清單（JSON 陣列，null = 尚未收到補件）
     CONSTRAINT pk_review_task PRIMARY KEY (task_id)
 )
     GO

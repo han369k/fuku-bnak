@@ -82,4 +82,12 @@ public class LoanAdminController {
         loanApplicationService.retryRiskSubmit(id);
         return ResponseEntity.ok(ApiResponse.success(null));
     }
+
+    // 撥款補償：手動重送撥款（僅 APPROVED 可操作）
+    // 用於 autoDisburse afterCommit 失敗、申請卡在 APPROVED 時的人工補救
+    @PatchMapping("/{id}/disburse/retry")
+    public ResponseEntity<ApiResponse<Void>> retryDisburse(@PathVariable String id) {
+        loanApplicationService.retryDisburse(id);
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
 }

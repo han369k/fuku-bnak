@@ -2,7 +2,10 @@ package com.javaeasybank.loan.service;
 
 import com.javaeasybank.common.exception.BusinessException;
 import com.javaeasybank.common.service.FileStorageService;
+import com.javaeasybank.loan.client.LoanRiskClient;
+import com.javaeasybank.loan.dto.requests.LoanDocumentInfoDTO;
 import com.javaeasybank.loan.dto.response.LoanDocumentResponseDTO;
+import com.javaeasybank.loan.entity.LoanApplication;
 import com.javaeasybank.loan.entity.LoanDocument;
 import com.javaeasybank.loan.enums.LoanDocumentType;
 import com.javaeasybank.loan.repository.LoanApplicationRepository;
@@ -37,6 +40,9 @@ public class LoanDocumentService {
     @Autowired
     private FileStorageService fileStorageService;
 
+    @Autowired
+    private LoanRiskClient loanRiskClient;
+
     // ===客戶上傳補件===
 
     public LoanDocumentResponseDTO upload(String applicationId,
@@ -44,8 +50,24 @@ public class LoanDocumentService {
                                           String documentType,
                                           MultipartFile file) {
 
-        loanApplicationRepo.findById(applicationId)
+        LoanApplication loan = loanApplicationRepo.findById(applicationId)
                 .orElseThrow(() -> new BusinessException("找不到申請編號：" + applicationId));
+
+        // 所有權驗證：只能上傳自己申請的補件
+        if (!loan.getCustomerId().equals(customerId)) {
+            throw new BusinessException("無權操作此申請的文件");
+        }
+
+        // 已送出補件後不可再上傳
+        if (loan.getDocumentsSubmittedAt() != null) {
+            throw new BusinessException("補件已送出，如需補充請聯繫行員");
+        }
+
+        // 數量上限：每筆申請最多 5 份文件
+        long existingCount = documentRepo.countByApplicationId(applicationId);
+        if (existingCount >= 5) {
+            throw new BusinessException("每筆申請最多上傳 5 份文件，目前已達上限");
+        }
 
         LoanDocumentType type;
         try {
@@ -70,10 +92,97 @@ public class LoanDocumentService {
         return toResponseDTO(doc);
     }
 
+    // ===客戶送出補件===
+
+    public void submitDocuments(String applicationId, String customerId) {
+        LoanApplication loan = loanApplicationRepo.findById(applicationId)
+                .orElseThrow(() -> new BusinessException("找不到申請編號：" + applicationId));
+
+        if (!loan.getCustomerId().equals(customerId)) {
+            throw new BusinessException("無權操作此申請");
+        }
+        if (documentRepo.countByApplicationId(applicationId) == 0) {
+            throw new BusinessException("尚未上傳任何文件，無法送出");
+        }
+        if (loan.getDocumentsSubmittedAt() != null) {
+            throw new BusinessException("補件已送出，如需補充請聯繫行員");
+        }
+
+        loan.setDocumentsSubmittedAt(LocalDateTime.now());
+        loanApplicationRepo.save(loan);
+        log.info("[Document] 補件送出 applicationId={} customerId={}", applicationId, customerId);
+
+        // 非同步通知風控模組（失敗不影響送出結果）
+        try {
+            List<LoanDocumentInfoDTO> docInfos = documentRepo
+                    .findByApplicationIdOrderByUploadTimeAsc(applicationId)
+                    .stream()
+                    .map(d -> new LoanDocumentInfoDTO(
+                            d.getDocumentId(),
+                            d.getDocumentType().name(),
+                            d.getFileUrl(),
+                            d.getOriginalName()))
+                    .collect(Collectors.toList());
+            loanRiskClient.attachDocuments(applicationId, docInfos);
+        } catch (Exception e) {
+            log.warn("[Document] 補件通知風控失敗（不影響送出） applicationId={} err={}", applicationId, e.getMessage());
+        }
+    }
+
+    // ===客戶刪除補件===
+
+    public void delete(String documentId, String customerId) {
+        LoanDocument doc = documentRepo.findById(documentId)
+                .orElseThrow(() -> new BusinessException("找不到文件：" + documentId));
+
+        // 所有權驗證：只能刪除自己上傳的文件
+        if (!doc.getUploadedBy().equals(customerId)) {
+            throw new BusinessException("無權刪除此文件");
+        }
+
+        // 已送出補件後不可再刪除
+        LoanApplication loan = loanApplicationRepo.findById(doc.getApplicationId())
+                .orElseThrow(() -> new BusinessException("找不到對應的申請"));
+        if (loan.getDocumentsSubmittedAt() != null) {
+            throw new BusinessException("補件已送出，如需變更請聯繫行員");
+        }
+
+        // 刪除實體檔案（失敗不中斷，僅記錄）
+        try {
+            fileStorageService.delete(doc.getFileUrl());
+        } catch (Exception e) {
+            log.warn("[Document] 實體檔案刪除失敗，繼續移除 DB 記錄 documentId={} err={}", documentId, e.getMessage());
+        }
+
+        documentRepo.deleteById(documentId);
+        log.info("[Document] 刪除完成 documentId={}", documentId);
+    }
+
     // ===查詢===
 
+    // 客戶端：驗證申請屬於該客戶才可查
+    @Transactional(readOnly = true)
+    public List<LoanDocumentResponseDTO> getByApplicationId(String applicationId, String customerId) {
+        LoanApplication loan = loanApplicationRepo.findById(applicationId)
+                .orElseThrow(() -> new BusinessException("找不到申請編號：" + applicationId));
+        if (!loan.getCustomerId().equals(customerId)) {
+            throw new BusinessException("無權存取此申請的文件");
+        }
+        return documentRepo.findByApplicationIdOrderByUploadTimeAsc(applicationId)
+                .stream()
+                .map(this::toResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    // 行員端：客戶送出後才顯示文件
     @Transactional(readOnly = true)
     public List<LoanDocumentResponseDTO> getByApplicationId(String applicationId) {
+        LoanApplication loan = loanApplicationRepo.findById(applicationId)
+                .orElseThrow(() -> new BusinessException("找不到申請編號：" + applicationId));
+        // 尚未送出 → 回傳空列表，前端顯示「客戶尚未送出補件」
+        if (loan.getDocumentsSubmittedAt() == null) {
+            return java.util.Collections.emptyList();
+        }
         return documentRepo.findByApplicationIdOrderByUploadTimeAsc(applicationId)
                 .stream()
                 .map(this::toResponseDTO)

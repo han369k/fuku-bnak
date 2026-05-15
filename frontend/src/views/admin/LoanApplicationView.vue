@@ -272,6 +272,14 @@
                   >
                     🗂
                   </button>
+                  <!-- 補件文件 -->
+                  <button
+                    class="btn btn-xs btn-outline"
+                    @click="openDocModal(app)"
+                    title="補件文件"
+                  >
+                    📎
+                  </button>
                 </div>
               </td>
             </tr>
@@ -330,6 +338,12 @@
     :app="reviewModalApp"
     @review-updated="onReviewUpdated"
   />
+
+  <!-- ── 補件文件 Modal ── -->
+  <LoanDocumentModal
+    v-model="docModalOpen"
+    :app="docModalApp"
+  />
 </template>
 
 <script setup>
@@ -337,6 +351,7 @@ import {ref, computed, onMounted, onUnmounted} from 'vue'
 import api from '@/api/axios'
 import LoanContactLogModal from './LoanContactLogModal.vue'
 import LoanReviewModal from './LoanReviewModal.vue'
+import LoanDocumentModal from './LoanDocumentModal.vue'
 import { useAuthStore } from '@/stores/auth'
 
 // ── 角色權限判斷 ──
@@ -382,6 +397,15 @@ function openReviewModal(app) {
 
 function onReviewUpdated() {
   fetchApplications()
+}
+
+// ── Document Modal state ──
+const docModalOpen = ref(false)
+const docModalApp  = ref(null)
+
+function openDocModal(app) {
+  docModalApp.value  = app
+  docModalOpen.value = true
 }
 
 const STATUS_OPTIONS = [
@@ -604,6 +628,8 @@ onUnmounted(() => clearInterval(refreshTimer))
 </script>
 
 <style scoped>
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css');
+
 .loan-admin {
   /* ── 配色依據 ── */
   --accent: #A65A4D;
