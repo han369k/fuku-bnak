@@ -71,6 +71,10 @@ const router = createRouter({
           component: () => import('../views/user/CardTxnView.vue'),
         },
         {
+          path:'linepay/confirm',
+          component: () => import('../views/user/LinePayConfirmView.vue'),
+        },
+        {
           path: 'card-bills',
           name: 'user-card-bills',
           component: () => import('../views/user/CardBillView.vue'),
