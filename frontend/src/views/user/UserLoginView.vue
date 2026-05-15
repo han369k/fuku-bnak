@@ -137,6 +137,10 @@ import { useRouter } from 'vue-router'
 import { customerLogin } from '@/api/customerAuth'
 import { useCustomerAuthStore } from '@/stores/customerAuth'
 import JbLogo from '@/components/JbLogo.vue'
+import {
+  CUSTOMER_DEMO_ACCOUNTS,
+  LAST_REGISTERED_DEMO_ACCOUNT_KEY,
+} from '@/data/customerDemoAccounts'
 
 const router = useRouter()
 const customerAuthStore = useCustomerAuthStore()
@@ -174,11 +178,23 @@ const form = reactive({
 })
 
 function fillTestAccount() {
-  form.idNumber = 'A123456789'
-  form.username = 'mingwang85'
-  form.password = '123456'
+  const account = getLastRegisteredDemoAccount()
+  form.idNumber = account.idNumber
+  form.username = account.username
+  form.password = account.password
   form.captcha = generatedCaptcha.value // auto correct
-  handleLogin(true)
+}
+
+function getLastRegisteredDemoAccount() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(LAST_REGISTERED_DEMO_ACCOUNT_KEY))
+    if (saved?.idNumber && saved?.username && saved?.password) {
+      return saved
+    }
+  } catch (err) {
+    localStorage.removeItem(LAST_REGISTERED_DEMO_ACCOUNT_KEY)
+  }
+  return CUSTOMER_DEMO_ACCOUNTS[0]
 }
 
 async function handleLogin(bypass = false) {

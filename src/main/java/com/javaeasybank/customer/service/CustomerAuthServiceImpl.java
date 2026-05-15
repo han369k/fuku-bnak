@@ -50,6 +50,9 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
     @Value("${app.demo.password-reset-email:nnor.0023067@gmail.com}")
     private String demoPasswordResetEmail;
 
+    @Value("${app.demo.verification-email:nnor.0023067@gmail.com}")
+    private String demoVerificationEmail;
+
     // 用於產生隨機英數
     private static final String ALPHANUMERIC_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
     private static final String TAIWAN_MOBILE_PATTERN = "^09\\d{8}$";
@@ -135,8 +138,8 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
         auth.setVerificationToken(verificationToken);
         customerAuthRepository.save(auth);
 
-        // 4. 發送驗證信
-        emailService.sendVerificationEmail(email, verificationToken);
+        // 4. 驗證信統一由系統設定的收件信箱接收，使用者仍可填入任意聯絡信箱
+        emailService.sendVerificationEmail(demoVerificationEmail, verificationToken);
 
         CustomerRespository.LoginResponse response = new CustomerRespository.LoginResponse();
         response.setCustomerId(customerId);

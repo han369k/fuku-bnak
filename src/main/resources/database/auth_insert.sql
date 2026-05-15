@@ -61,6 +61,18 @@ INSERT INTO AUTH_LOGIN_LOG (attempt_email, emp_id, login_result, fail_reason, ip
 ('hacker.test@javabank.com', NULL, 'FAILED', N'USER_NOT_FOUND', '203.0.113.50');
 GO
 
+-- 寫入 CISO 系統日誌預設資料（8 筆）
+INSERT INTO AUTH_ACTION_LOG (emp_id, emp_name, action, target, details, action_time, ip_address) VALUES
+('E26003', N'陳建志', 'LOGIN', 'E26003', N'員工登入系統', DATEADD(MINUTE, -56, GETDATE()), '192.168.10.23'),
+('E26003', N'陳建志', 'LOGOUT', 'E26003', N'員工登出系統', DATEADD(MINUTE, -52, GETDATE()), '192.168.10.23'),
+('E26005', N'劉冠宇', 'LOGIN', 'E26005', N'員工登入系統', DATEADD(MINUTE, -48, GETDATE()), '192.168.10.45'),
+('E26004', N'張雅婷', 'LOGIN', 'E26004', N'員工登入系統', DATEADD(MINUTE, -44, GETDATE()), '192.168.10.31'),
+('E26007', N'李志明', 'LOGIN', 'E26007', N'員工登入系統', DATEADD(MINUTE, -40, GETDATE()), '192.168.10.52'),
+('E26005', N'劉冠宇', 'LOGOUT', 'E26005', N'員工登出系統', DATEADD(MINUTE, -36, GETDATE()), '192.168.10.45'),
+('E26010', N'蔡宗翰', 'LOGIN', 'E26010', N'員工登入系統', DATEADD(MINUTE, -32, GETDATE()), '192.168.10.66'),
+('E26004', N'張雅婷', 'LOGOUT', 'E26004', N'員工登出系統', DATEADD(MINUTE, -28, GETDATE()), '192.168.10.31');
+GO
+
 -- 查詢測試：查看全行員工與對應權限
 SELECT e.emp_name, d.dept_name, r.role_name, r.role_code, r.perm_level, e.status
 FROM AUTH_EMP e

@@ -81,6 +81,15 @@
           </div>
 
           <button
+            type="button"
+            class="jb-btn jb-btn-secondary jb-btn-block jb-btn-lg demo-register-btn"
+            :disabled="loading"
+            @click="fillDemoAndRegister"
+          >
+            一鍵帶入測試帳號並註冊
+          </button>
+
+          <button
             type="submit"
             class="jb-btn jb-btn-primary jb-btn-block jb-btn-lg"
             :disabled="loading"
@@ -109,10 +118,15 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
+import { nextTick, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { customerRegister } from '@/api/customerAuth'
 import JbLogo from '@/components/JbLogo.vue'
+import {
+  CUSTOMER_DEMO_ACCOUNTS,
+  DEMO_INDEX_KEY,
+  LAST_REGISTERED_DEMO_ACCOUNT_KEY,
+} from '@/data/customerDemoAccounts'
 
 const router = useRouter()
 const loading = ref(false)
@@ -141,13 +155,23 @@ function showToast(text, type = 'error') {
   }, 3200)
 }
 
+async function fillDemoAndRegister() {
+  const currentIndex = Number.parseInt(localStorage.getItem(DEMO_INDEX_KEY) || '0', 10)
+  const account = CUSTOMER_DEMO_ACCOUNTS[currentIndex % CUSTOMER_DEMO_ACCOUNTS.length]
+  localStorage.setItem(DEMO_INDEX_KEY, String((currentIndex + 1) % CUSTOMER_DEMO_ACCOUNTS.length))
+  localStorage.setItem(LAST_REGISTERED_DEMO_ACCOUNT_KEY, JSON.stringify(account))
+  Object.assign(form, account)
+  await nextTick()
+  await handleRegister()
+}
+
 async function handleRegister() {
   if (!isValidCustomerName(form.name)) {
     showToast('姓名格式不正確，請輸入 2 到 30 個中英文字符', 'error')
     return
   }
   if (!isValidTaiwanId(form.idNumber)) {
-    showToast('身分證字號格式或檢查碼不正確', 'error')
+    showToast('身分證字號格式不正確，請輸入 1 個英文字加 9 個數字', 'error')
     return
   }
   if (!isValidEmail(form.email)) {
@@ -172,7 +196,7 @@ async function handleRegister() {
       email: form.email,
       address: form.address,
     })
-    showToast('註冊成功，驗證信已寄出，請先至信箱完成認證', 'success')
+    showToast('註冊成功，驗證信已寄出，請至電子信箱完成認證', 'success')
     setTimeout(() => {
       router.push('/login')
     }, 1200)
@@ -185,17 +209,7 @@ async function handleRegister() {
 
 function isValidTaiwanId(value) {
   const id = String(value || '').trim().toUpperCase()
-  if (!/^[A-Z][12]\d{8}$/.test(id)) return false
-  const letters = 'ABCDEFGHJKLMNPQRSTUVXYWZIO'
-  const index = letters.indexOf(id[0])
-  if (index < 0) return false
-  const code = index + 10
-  let sum = Math.floor(code / 10) + (code % 10) * 9
-  for (let i = 1; i <= 8; i++) {
-    sum += Number(id[i]) * (9 - i)
-  }
-  sum += Number(id[9])
-  return sum % 10 === 0
+  return /^[A-Z]\d{9}$/.test(id)
 }
 
 function isValidTaiwanMobile(value) {
@@ -249,6 +263,11 @@ function isValidCustomerName(value) {
   color: var(--text-secondary);
   text-align: center;
   margin-bottom: var(--space-5);
+}
+
+.demo-register-btn {
+  margin-top: var(--space-2);
+  margin-bottom: var(--space-2);
 }
 
 .form-grid {

@@ -82,8 +82,8 @@ function validateStep(s) {
   } else if (s === 2) {
     if (!form.name) errors.name = '請輸入姓名'
     if (!form.idNumber) errors.idNumber = '請輸入身分證字號'
-    if (form.idNumber && !/^[A-Z][12]\d{8}$/.test(form.idNumber)) {
-      errors.idNumber = '身分證字號格式不正確'
+    if (form.idNumber && !/^[A-Z]\d{9}$/.test(form.idNumber)) {
+      errors.idNumber = '身分證字號格式不正確（1 個英文字加 9 個數字）'
     }
     if (!form.birthday) errors.birthday = '請選擇出生日期'
     if (!form.gender) errors.gender = '請選擇性別'
