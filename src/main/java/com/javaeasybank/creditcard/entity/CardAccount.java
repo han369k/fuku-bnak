@@ -3,10 +3,9 @@ package com.javaeasybank.creditcard.entity;
 import java.math.BigDecimal;
 import java.util.List;
 
-
-
 import com.javaeasybank.customer.entity.CustomerProfile;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -31,14 +30,14 @@ public class CardAccount {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
-    // 帳號
+
     private String accountNumber;
-    // 總信用額度
+
+    @Column(name = "credit_limit", precision = 15, scale = 2)
     private BigDecimal creditLimit;
-    // 已使用額度
-    // 結帳日
+
     private Integer statementDay;
-    // 繳款截止日
+
     private Integer dueDays;
 
     @ManyToOne

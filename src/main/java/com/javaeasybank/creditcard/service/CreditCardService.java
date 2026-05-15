@@ -39,6 +39,7 @@ public class CreditCardService {
 
     private static final int DEFAULT_STATEMENT_DAY = 5;
     private static final int DEFAULT_DUE_DAYS = 14;
+    private static final BigDecimal DEFAULT_CREDIT_LIMIT = new BigDecimal("100000");
 
     private final CreditCardRepository cardRepository;
     private final CardTypeRepository cardTypeRepository;
@@ -63,8 +64,7 @@ public class CreditCardService {
     public CreditCardResponseDto create(CreditCardRequestDto dto) {
         CustomerProfile customer = customerProfileRepository.findById(dto.getCustomerId())
                 .orElseThrow(() -> new BusinessException("Customer not found: " + dto.getCustomerId()));
-        BigDecimal creditLimit = zeroIfNull(dto.getCreditLimit());
-        CardAccount cardAccount = resolveCardAccount(customer, creditLimit);
+        CardAccount cardAccount = resolveCardAccount(customer);
 
         CreditCard entity = mapper.toEntity(dto);
         entity.setCustomer(customer);
@@ -72,8 +72,7 @@ public class CreditCardService {
                 cardTypeRepository.findById(dto.getCardTypeId())
                         .orElseThrow(() -> new BusinessException("CardType not found")));
         entity.setApplicationItem(resolveApplicationItem(dto.getApplicationItemId()));
-        entity.setCreditLimit(creditLimit);
-        entity.setCurrentDebt(zeroIfNull(dto.getCurrentDebt()));
+        entity.setCurrentDebt(BigDecimal.ZERO);
         entity.setCreateDate(LocalDateTime.now());
         entity.setCardNumber(generateCardNumber());
         entity.setExpiryDate(LocalDate.now().plusYears(5));
@@ -87,11 +86,6 @@ public class CreditCardService {
     public CreditCardResponseDto update(Integer id, CreditCardRequestDto dto) {
         CreditCard entity = cardRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("CreditCard not found"));
-
-        if (dto.getCreditLimit() != null) {
-            adjustCardAccountLimit(entity, dto.getCreditLimit());
-            entity.setCreditLimit(dto.getCreditLimit());
-        }
 
         return mapper.toDto(cardRepository.save(entity));
     }
@@ -108,10 +102,6 @@ public class CreditCardService {
         if (Boolean.TRUE.equals(item.getCreateCardFlag())) {
             throw new BusinessException("Credit card has already been created for this application item");
         }
-        if (item.getApprovedLimit() == null) {
-            throw new BusinessException("Approved limit is required before creating a credit card");
-        }
-
         CustomerProfile customer = item.getApplication().getCustomer();
         CardAccount cardAccount = resolveCardAccount(customer, item.getApprovedLimit());
 
@@ -119,7 +109,6 @@ public class CreditCardService {
         card.setCustomer(customer);
         card.setCardType(item.getCardType());
         card.setApplicationItem(item);
-        card.setCreditLimit(item.getApprovedLimit());
         card.setCurrentDebt(BigDecimal.ZERO);
         card.setCreateDate(LocalDateTime.now());
         card.setCardNumber(generateCardNumber());
@@ -179,10 +168,14 @@ public class CreditCardService {
                 .orElseThrow(() -> new BusinessException("ApplicationItem not found"));
     }
 
-    private CardAccount resolveCardAccount(CustomerProfile customer, BigDecimal addedCreditLimit) {
+    private CardAccount resolveCardAccount(CustomerProfile customer) {
+        return resolveCardAccount(customer, null);
+    }
+
+    private CardAccount resolveCardAccount(CustomerProfile customer, BigDecimal approvedLimit) {
         CardAccount cardAccount = cardAccountRepository.findByCustomer_CustomerId(customer.getCustomerId())
-                .map(account -> updateExistingCardAccount(account, addedCreditLimit))
-                .orElseGet(() -> createCardAccount(customer, addedCreditLimit));
+                .map(account -> updateExistingCardAccount(account, approvedLimit))
+                .orElseGet(() -> createCardAccount(customer, approvedLimit));
 
         if (cardAccount.getAccountNumber() == null || cardAccount.getAccountNumber().isBlank()) {
             cardAccount.setAccountNumber(resolveCreditCardAccountNumber(customer.getCustomerId()));
@@ -192,18 +185,20 @@ public class CreditCardService {
         return cardAccount;
     }
 
-    private CardAccount createCardAccount(CustomerProfile customer, BigDecimal creditLimit) {
+    private CardAccount createCardAccount(CustomerProfile customer, BigDecimal approvedLimit) {
         CardAccount account = new CardAccount();
         account.setCustomer(customer);
         account.setAccountNumber(resolveCreditCardAccountNumber(customer.getCustomerId()));
-        account.setCreditLimit(zeroIfNull(creditLimit));
+        account.setCreditLimit(resolveCreditLimit(approvedLimit));
         account.setStatementDay(DEFAULT_STATEMENT_DAY);
         account.setDueDays(DEFAULT_DUE_DAYS);
         return cardAccountRepository.save(account);
     }
 
-    private CardAccount updateExistingCardAccount(CardAccount account, BigDecimal addedCreditLimit) {
-        account.setCreditLimit(zeroIfNull(account.getCreditLimit()).add(zeroIfNull(addedCreditLimit)));
+    private CardAccount updateExistingCardAccount(CardAccount account, BigDecimal approvedLimit) {
+        if (approvedLimit != null || account.getCreditLimit() == null) {
+            account.setCreditLimit(resolveCreditLimit(approvedLimit));
+        }
         if (account.getStatementDay() == null) {
             account.setStatementDay(DEFAULT_STATEMENT_DAY);
         }
@@ -213,16 +208,8 @@ public class CreditCardService {
         return cardAccountRepository.save(account);
     }
 
-    private void adjustCardAccountLimit(CreditCard card, BigDecimal newCreditLimit) {
-        CardAccount cardAccount = card.getCardAccount();
-        if (cardAccount == null) {
-            return;
-        }
-
-        BigDecimal oldCreditLimit = zeroIfNull(card.getCreditLimit());
-        BigDecimal limitDifference = newCreditLimit.subtract(oldCreditLimit);
-        cardAccount.setCreditLimit(zeroIfNull(cardAccount.getCreditLimit()).add(limitDifference));
-        cardAccountRepository.save(cardAccount);
+    private BigDecimal resolveCreditLimit(BigDecimal approvedLimit) {
+        return approvedLimit == null ? DEFAULT_CREDIT_LIMIT : approvedLimit;
     }
     
     private String resolveCreditCardAccountNumber(String customerId) {
@@ -248,8 +235,5 @@ public class CreditCardService {
 
         throw new BusinessException("Unable to generate unique card number");
     }
-    //回傳0，如果為Null
-    private BigDecimal zeroIfNull(BigDecimal amount) {
-        return amount == null ? BigDecimal.ZERO : amount;
-    }
+    
 }

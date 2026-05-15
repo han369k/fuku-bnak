@@ -50,6 +50,11 @@ const columns = [
     key: 'dueDate',
   },
 ]
+
+const formatMoney = (value) => {
+  return Number(value || 0).toLocaleString()
+}
+
 const fetchBills = async () => {
   loading.value = true
   try {
@@ -96,6 +101,7 @@ const handlePayment = async (bill) => {
     })
     message.success('繳費成功')
     fetchBills()
+    fetchAccounts()
   } catch (error) {
     console.error('Payment failed:', error)
     message.error(error.response?.data?.message || '繳費失敗')
@@ -172,38 +178,39 @@ onMounted(() => {
                 ? '已繳費'
                 : bill.billStatus === 'UNPAID'
                   ? '未繳費'
-                  : '逾期'
+                  : bill.billStatus === 'PARTIAL'
+                    ? '部分繳款'
+                    : '逾期'
             }}
           </div>
         </div>
 
         <div class="bill-body">
           <div class="info-row">
+            <span>信用卡帳戶</span>
+            <strong>{{ bill.creditCardAccountNumber }}</strong>
+          </div>
+          <div class="info-row">
             <span>帳單金額</span>
-            <strong> NT$ {{ bill.totalAmount }} </strong>
+            <strong> NT$ {{ formatMoney(bill.totalAmount) }} </strong>
           </div>
 
           <div class="info-row">
             <span>最低應繳</span>
-            <strong> NT$ {{ bill.minimumPayment }} </strong>
+            <strong> NT$ {{ formatMoney(bill.minimumPayment) }} </strong>
           </div>
 
           <div class="info-row">
             <span>已繳金額</span>
-            <strong> NT$ {{ bill.paidAmount }} </strong>
+            <strong> NT$ {{ formatMoney(bill.paidAmount) }} </strong>
+          </div>
+          <div class="info-row">
+            <span>信用額度</span>
+            <strong> NT$ {{ formatMoney(bill.creditLimit) }} </strong>
           </div>
           <div class="info-row">
             <span>可用額度</span>
-            <strong> NT$ {{ bill.availableCredit }} </strong>
-          </div>
-          <div class="info-row">
-            <span>信用卡帳戶</span>
-            <strong>{{ bill.creditCardAccountNumber }}</strong>
-          </div>
-
-          <div class="info-row">
-            <span>信用額度</span>
-            <strong> NT$ {{ bill.creditLimit }} </strong>
+            <strong> NT$ {{ formatMoney(bill.availableCredit) }} </strong>
           </div>
 
           <div class="info-row">
@@ -265,7 +272,7 @@ onMounted(() => {
 
           <div class="info-row">
             <span>金額</span>
-            <strong> NT$ {{ txn.txnAmount }} </strong>
+            <strong> NT$ {{ formatMoney(txn.txnAmount) }} </strong>
           </div>
 
           <div class="info-row">

@@ -42,7 +42,7 @@ const fetchData = async () => {
     })
     cards.value = response.data.data.content
     pagination.value.total = response.data.data.totalElements
-    console.log(response.data)
+    console.log(response.data.data.content)
   } catch (error) {
     console.log(error)
   } finally {
@@ -222,6 +222,17 @@ onMounted(() => {
             :src="`${api.defaults.baseURL}/${record.cardType?.cardImageUrl}`"
             style="height: 40px; border-radius: 4px"
           />
+        </template>
+        <!-- 信用額度 -->
+        <template v-else-if="column.dataIndex === 'creditLimit'">
+          NT$
+          {{ Number(record.creditLimit).toLocaleString() }}
+        </template>
+
+        <!-- 已用額度 -->
+        <template v-else-if="column.dataIndex === 'currentDebt'">
+          NT$
+          {{ Number(record.currentDebt).toLocaleString() }}
         </template>
 
         <template v-else-if="column.key === 'status'">

@@ -37,7 +37,6 @@ public class CreditCard {
     @ManyToOne
     @JoinColumn(name = "customer_id")
     private CustomerProfile customer;
-//    private Integer cardTypeId;//FK關聯 不留
     
     @ManyToOne//對應很多cardType
     @JoinColumn(name = "card_type_id")
@@ -45,8 +44,6 @@ public class CreditCard {
     
     private String cardNumber;
     private LocalDate expiryDate;
-    @Column(name = "credit_limit", precision = 15, scale = 2)
-    private BigDecimal creditLimit;
     @Column(name = "current_debt", precision = 15, scale = 2)
     private BigDecimal currentDebt;
     private LocalDateTime createDate;

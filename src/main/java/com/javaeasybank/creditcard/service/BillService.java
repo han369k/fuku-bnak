@@ -42,12 +42,19 @@ public class BillService {
     public Integer generateBills() {
         int count = 0;
         String billingMonth = YearMonth.now().toString();
-        if (cardBillRepository.existsByBillingMonth(billingMonth)) {
-            throw new BusinessException("Bills for this month have already been generated");
-        }
+        
+        // if (cardBillRepository.existsByBillingMonth(billingMonth)) {
+        //     throw new BusinessException("Bills for this month have already been generated");
+        // }
 
         List<CardAccount> cardAccounts = cardAccountRepository.findAll();
         for (CardAccount cardAccount : cardAccounts) {
+
+            // 已存在本月帳單則跳過
+            if (cardBillRepository.existsByCardAccountIdAndBillingMonth(cardAccount.getId(), billingMonth)) {
+                continue;
+            }
+
             List<CardTransaction> txns = cardTransactionRepository
                     .findByCard_CardAccount_IdAndBillIsNull(cardAccount.getId());
             if (txns.isEmpty()) {

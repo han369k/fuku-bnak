@@ -19,4 +19,9 @@ public interface CardBillRepository extends JpaRepository<CardBill, Integer> {
     Optional<CardBill> findTopByCardAccountCustomerCustomerIdAndBillStatusInOrderByDueDateAsc(
             String customerId,
             List<BillStatus> statuses);
+
+    boolean existsByCardAccountIdAndBillingMonth(
+            Integer cardAccountId,
+            String billingMonth);
+
 }

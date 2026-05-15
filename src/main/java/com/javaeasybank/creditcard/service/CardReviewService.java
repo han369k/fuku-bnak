@@ -1,5 +1,7 @@
 package com.javaeasybank.creditcard.service;
 
+import java.math.BigDecimal;
+
 import java.time.LocalDateTime;
 
 import org.springframework.stereotype.Service;
@@ -23,6 +25,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CardReviewService {
 
+    private static final BigDecimal DEFAULT_CREDIT_LIMIT = new BigDecimal("100000");
+
     private final CardAppItemRepository cardAppItemRepository;
     private final CardApplicationItemMapper cardAppItemMapper;
     private final CreditCardService cardService;
@@ -40,7 +44,10 @@ public class CardReviewService {
         item.setResult(CardApplicationItemResult.APPROVED);
 
         // 核准額度
-        item.setApprovedLimit(request.approvedLimit());
+        BigDecimal approvedLimit = request.approvedLimit() == null
+                ? DEFAULT_CREDIT_LIMIT
+                : request.approvedLimit();
+        item.setApprovedLimit(approvedLimit);
 
         item.setReviewDate(LocalDateTime.now());
         // 發卡
