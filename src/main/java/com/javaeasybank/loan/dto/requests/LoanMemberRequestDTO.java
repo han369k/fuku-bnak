@@ -13,4 +13,7 @@ public class LoanMemberRequestDTO {
     private BigDecimal applyAmount;
     private Integer applyPeriod;
     private BigDecimal rate;
+    // 客戶選擇的撥款入帳帳號（台幣活存），核准後撥款時使用
+    // 對應 GET /api/customer/loan-repayments/debit-accounts 回傳的帳號
+    private String disbursementAccount;
 }

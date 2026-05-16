@@ -30,6 +30,8 @@ public class LoanApplication {
     private BigDecimal applyAmount;         // 金額
     private Integer applyPeriod;            // 期數
     private BigDecimal rate;                // 系統計算利率
+    private String disbursementAccount;     // 客戶選擇的撥款入帳帳號（台幣活存）
+    // ⚠ DB migration 需補: ALTER TABLE LOAN_APPLICATION ADD disbursement_account VARCHAR(14)
 
     @Enumerated(EnumType.STRING)
     private LoanApplicationStatus applicationStatus;    // 申請狀態
@@ -42,4 +44,7 @@ public class LoanApplication {
     private LocalDateTime latestContactTime;            // 最後聯絡時間
 
     private LocalDateTime updateTime;                   // 外部模組更新狀態時間
+
+    private LocalDateTime documentsSubmittedAt;          // 客戶送出補件的時間（null = 尚未送出）
+    // ⚠ DB migration: ALTER TABLE LOAN_APPLICATION ADD documents_submitted_at DATETIME NULL
 }

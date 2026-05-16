@@ -216,14 +216,15 @@
 
             <!-- 金額 -->
             <td>
-              <div class="amount">{{ formatAmount(app.applyAmount) }}</div>
+              <div class="amount">{{ formatAmount(displayAmount(app)) }}</div>
+              <div class="confirmed-hint" v-if="isConfirmedValue(app)">✓ 確認值</div>
             </td>
 
             <!-- 期數 -->
-            <td><span class="meta-tag">{{ app.applyPeriod }} 個月</span></td>
+            <td><span class="meta-tag">{{ displayPeriod(app) }} 個月</span></td>
 
             <!-- 利率 -->
-            <td><span class="meta-rate">{{ formatRate(app.rate) }}</span></td>
+            <td><span class="meta-rate">{{ formatRate(displayRate(app)) }}</span></td>
 
             <!-- 申請狀態 -->
             <td>
@@ -251,18 +252,37 @@
               </div>
             </td>
 
-            <!-- 操作 -->
-            <td class="td-action">
-              <div class="action-btns">
-                <button class="btn btn-xs btn-outline" @click="openContactModal(app)"
-                        title="聯繫紀錄">📞
-                </button>
-                <button class="btn btn-xs btn-outline" @click="openReviewModal(app)"
-                        title="審核填單">🗂
-                </button>
-              </div>
-            </td>
-          </tr>
+              <!-- 操作 -->
+              <td class="td-action">
+                <div class="action-btns">
+                  <button
+                    class="btn btn-xs btn-outline"
+                    @click="openContactModal(app)"
+                    title="聯繫紀錄"
+                  >
+                    📞
+                  </button>
+                  <!-- 審核填單：需 permLevel >= 2 (CFDM 主管以上) -->
+                  <button
+                    class="btn btn-xs"
+                    :class="canApprove ? 'btn-outline' : 'btn-disabled'"
+                    @click="canApprove && openReviewModal(app)"
+                    :disabled="!canApprove"
+                    :title="canApprove ? '審核填單' : '權限不足：需主管 (CFDM) 以上才能審核'"
+                  >
+                    🗂
+                  </button>
+                  <!-- 補件文件 -->
+                  <button
+                    class="btn btn-xs btn-outline"
+                    @click="openDocModal(app)"
+                    title="補件文件"
+                  >
+                    📎
+                  </button>
+                </div>
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -318,6 +338,12 @@
     :app="reviewModalApp"
     @review-updated="onReviewUpdated"
   />
+
+  <!-- ── 補件文件 Modal ── -->
+  <LoanDocumentModal
+    v-model="docModalOpen"
+    :app="docModalApp"
+  />
 </template>
 
 <script setup>
@@ -325,6 +351,18 @@ import {ref, computed, onMounted, onUnmounted} from 'vue'
 import api from '@/api/axios'
 import LoanContactLogModal from './LoanContactLogModal.vue'
 import LoanReviewModal from './LoanReviewModal.vue'
+import LoanDocumentModal from './LoanDocumentModal.vue'
+import { useAuthStore } from '@/stores/auth'
+
+// ── 角色權限判斷 ──
+const authStore = useAuthStore()
+// 雙重判斷：permLevel 數字 或 roleCode 字串
+const APPROVER_ROLES = ['CFDM', 'CSDM', 'CRDM', 'CRO', 'COO', 'CISO', 'ISSA']
+const canApprove = computed(() => {
+  const level = parseInt(authStore.user?.permLevel ?? 0)
+  const code = authStore.user?.roleCode ?? ''
+  return level >= 2 || APPROVER_ROLES.includes(code)
+})
 
 // ── Emits ──
 defineEmits([])
@@ -359,6 +397,15 @@ function openReviewModal(app) {
 
 function onReviewUpdated() {
   fetchApplications()
+}
+
+// ── Document Modal state ──
+const docModalOpen = ref(false)
+const docModalApp  = ref(null)
+
+function openDocModal(app) {
+  docModalApp.value  = app
+  docModalOpen.value = true
 }
 
 const STATUS_OPTIONS = [
@@ -523,6 +570,28 @@ function countByType(key) {
   return applications.value.filter(a => a.applyType === key).length
 }
 
+// ── 顯示值選擇：審核中/已核准/已撥款/已結案 使用確認值，其餘用申請值 ──
+const POST_REVIEW_STATUSES = new Set(['PENDING_REVIEW', 'APPROVED', 'DISBURSED', 'CLOSED'])
+
+function displayAmount(app) {
+  return POST_REVIEW_STATUSES.has(app.applicationStatus) && app.confirmedAmount != null
+    ? app.confirmedAmount
+    : app.applyAmount
+}
+function displayPeriod(app) {
+  return POST_REVIEW_STATUSES.has(app.applicationStatus) && app.confirmedPeriod != null
+    ? app.confirmedPeriod
+    : app.applyPeriod
+}
+function displayRate(app) {
+  return POST_REVIEW_STATUSES.has(app.applicationStatus) && app.confirmedRate != null
+    ? app.confirmedRate
+    : app.rate
+}
+function isConfirmedValue(app) {
+  return POST_REVIEW_STATUSES.has(app.applicationStatus) && app.confirmedAmount != null
+}
+
 // ── Formatters ──
 function formatAmount(n) {
   return n ? '$ ' + Number(n).toLocaleString('zh-TW') : '—'
@@ -559,6 +628,8 @@ onUnmounted(() => clearInterval(refreshTimer))
 </script>
 
 <style scoped>
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css');
+
 .loan-admin {
   /* ── 配色依據 ── */
   --accent: #A65A4D;
@@ -1417,6 +1488,14 @@ onUnmounted(() => clearInterval(refreshTimer))
   color: var(--ink);
 }
 
+.confirmed-hint {
+  font-size: 10px;
+  color: var(--green);
+  font-family: 'IBM Plex Mono', monospace;
+  margin-top: 2px;
+  opacity: 0.8;
+}
+
 .meta-tag {
   font-size: 12px;
   color: var(--muted-2);
@@ -1595,6 +1674,14 @@ onUnmounted(() => clearInterval(refreshTimer))
   border-color: var(--accent);
   color: var(--accent);
   background: var(--accent-dim);
+}
+/* 權限不足時的禁用按鈕樣式 */
+.btn-disabled {
+  background: transparent;
+  color: #ccc;
+  border: 1px solid #e8e8e8;
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 /* ── ③ Pagination Footer ── */

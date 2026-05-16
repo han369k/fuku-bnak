@@ -34,13 +34,21 @@ import com.javaeasybank.creditcard.repository.CardBillRepository;
 import com.javaeasybank.creditcard.repository.CreditCardRepository;
 import com.javaeasybank.customer.entity.CustomerProfile;
 import com.javaeasybank.customer.repository.CustomerProfileRepository;
+import com.javaeasybank.loan.dto.requests.LoanStatusCallbackRequestDTO;
+import com.javaeasybank.loan.enums.LoanApplicationStatus;
+import com.javaeasybank.loan.service.LoanApplicationService;
+import com.javaeasybank.loan.service.LoanRepaymentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import jakarta.persistence.criteria.Predicate;
 import java.math.BigDecimal;
@@ -75,6 +83,15 @@ public class AccountIntegrationService {
     private final CustomerProfileRepository customerProfileRepository;
     private final CardBillRepository cardBillRepository;
     private final CreditCardRepository creditCardRepository;
+
+    // @Lazy 避免 account ↔ loan 模組啟動順序問題；無實際循環依賴
+    @Lazy
+    @Autowired
+    private LoanApplicationService loanApplicationService;
+
+    @Lazy
+    @Autowired
+    private LoanRepaymentService loanRepaymentService;
 
     @Transactional
     public LoanAccountResponse createLoanAccount(LoanAccountCreateRequest request) {
@@ -151,6 +168,28 @@ public class AccountIntegrationService {
                 targetBefore,
                 targetAccount.getBalance(),
                 note));
+
+        // 撥款帳務完成後，通知 Loan 模組更新申請狀態並建立還款時間表
+        // 使用 afterCommit 確保帳務事務先行提交，再開啟 Loan 側獨立事務
+        if (request.getApplicationId() != null && !request.getApplicationId().isBlank()) {
+            String appId = request.getApplicationId();
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    log.info("[Disbursement] 帳務事務提交，通知 Loan 模組 applicationId={}", appId);
+                    try {
+                        LoanStatusCallbackRequestDTO callbackDto = new LoanStatusCallbackRequestDTO();
+                        callbackDto.setCallerModule("ACCOUNT");
+                        callbackDto.setNewStatus(LoanApplicationStatus.DISBURSED);
+                        loanApplicationService.handleStatusCallback(appId, callbackDto);
+                    } catch (Exception e) {
+                        log.error("[Disbursement] Loan 回調失敗 applicationId={} error={}",
+                                appId, e.getMessage());
+                        // TODO（第五部）：寫入補傳表，搭配排程重試
+                    }
+                }
+            });
+        }
 
         return toLoanTransactionResponse(
                 referenceId,
@@ -253,6 +292,24 @@ public class AccountIntegrationService {
         transLogRepository.save(buildTransLog(referenceId, bankCollection, sourceAccount.getAccountNumber(),
                 EntryType.CREDIT, TransactionType.LOAN_REPAYMENT, amount,
                 collectionBefore, bankCollection.getBalance(), note));
+
+        // 還款帳務完成後，通知 Loan 模組更新還款進度與帳戶狀態
+        if (request.getApplicationId() != null && !request.getApplicationId().isBlank()) {
+            String appId = request.getApplicationId();
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    log.info("[Repayment] 帳務事務提交，通知 Loan 模組 applicationId={}", appId);
+                    try {
+                        loanRepaymentService.processRepayment(appId);
+                    } catch (Exception e) {
+                        log.error("[Repayment] Loan 還款進度更新失敗 applicationId={} error={}",
+                                appId, e.getMessage());
+                        // TODO（第五部）：寫入補傳表，搭配排程重試
+                    }
+                }
+            });
+        }
 
         return toLoanTransactionResponse(
                 referenceId,

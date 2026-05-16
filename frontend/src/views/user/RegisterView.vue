@@ -33,7 +33,7 @@
 
             <div class="jb-form-item">
               <label for="reg-id" class="jb-label">身分證字號 <span class="jb-required">*</span></label>
-              <input id="reg-id" v-model="form.idNumber" type="text" class="jb-input" placeholder="例如：A123456789" required />
+              <input id="reg-id" v-model="form.idNumber" type="text" class="jb-input" placeholder="例如：A123456789" maxlength="10" required @input="form.idNumber = form.idNumber.toUpperCase()" />
             </div>
 
             <div class="jb-form-item">
@@ -142,6 +142,11 @@ function showToast(text, type = 'error') {
 }
 
 async function handleRegister() {
+  if (!isValidTaiwanId(form.idNumber)) {
+    showToast('身分證字號格式或檢查碼不正確', 'error')
+    return
+  }
+
   loading.value = true
   try {
     await customerRegister({
@@ -164,6 +169,21 @@ async function handleRegister() {
   } finally {
     loading.value = false
   }
+}
+
+function isValidTaiwanId(value) {
+  const id = String(value || '').trim().toUpperCase()
+  if (!/^[A-Z][12]\d{8}$/.test(id)) return false
+  const letters = 'ABCDEFGHJKLMNPQRSTUVXYWZIO'
+  const index = letters.indexOf(id[0])
+  if (index < 0) return false
+  const code = index + 10
+  let sum = Math.floor(code / 10) + (code % 10) * 9
+  for (let i = 1; i <= 8; i++) {
+    sum += Number(id[i]) * (9 - i)
+  }
+  sum += Number(id[9])
+  return sum % 10 === 0
 }
 </script>
 

@@ -18,7 +18,7 @@ OBJECT_ID('customer_credit_info', 'U') IS NOT NULL
 DROP TABLE customer_credit_info;
 GO
 
-CREATE TABLE risk_event_log
+CREATE TABLE RISK_EVENT_LOG
 (
     log_id             bigint IDENTITY (1, 1) NOT NULL,
     event_type         varchar(50)  NOT NULL,
@@ -35,7 +35,7 @@ CREATE TABLE risk_event_log
 )
     GO
 
-CREATE TABLE review_task
+CREATE TABLE REVIEW_TASK
 (
     task_id       BIGINT IDENTITY(1,1),
     log_id        BIGINT      NOT NULL,
@@ -46,18 +46,20 @@ CREATE TABLE review_task
     assignee      VARCHAR(255) NULL,
     admin_comment VARCHAR(255) NULL,
     priority      INT      DEFAULT 0,
+    attachments   NVARCHAR(MAX) NULL,
     create_at     DATETIME DEFAULT GETDATE(), -- 自動記錄建立時間
     processed_at  DATETIME NULL,
-    version       BIGINT   DEFAULT 0,
+    version       BIGINT       DEFAULT 0,
+    attachments   NVARCHAR(MAX) NULL,             -- 補件文件清單（JSON 陣列，null = 尚未收到補件）
     CONSTRAINT pk_review_task PRIMARY KEY (task_id)
 )
     GO
 
-ALTER TABLE review_task
-    ADD CONSTRAINT FK_REVIEW_TASK_ON_LOG FOREIGN KEY (log_id) REFERENCES risk_event_log (log_id);
+ALTER TABLE REVIEW_TASK
+    ADD CONSTRAINT FK_REVIEW_TASK_ON_LOG FOREIGN KEY (log_id) REFERENCES RISK_EVENT_LOG (log_id);
 GO
 
-CREATE TABLE black_list
+CREATE TABLE BLACK_LIST
 (
     id         bigint IDENTITY (1, 1) NOT NULL,
     list_type  varchar(20)  NOT NULL,
@@ -73,10 +75,10 @@ CREATE TABLE black_list
     GO
 
 CREATE
-NONCLUSTERED INDEX idx_bl_lookup ON black_list (list_type, list_value)
+NONCLUSTERED INDEX idx_bl_lookup ON BLACK_LIST (list_type, list_value)
 GO
 
-CREATE TABLE customer_credit_info
+CREATE TABLE CUSTOMER_CREDIT_INFO
 (
     customer_id     varchar(20) NOT NULL,
     annual_income   decimal(15, 2),

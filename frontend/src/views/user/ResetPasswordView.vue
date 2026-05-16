@@ -89,7 +89,7 @@
               </svg>
             </div>
             <h2 class="success-title">驗證信已發送</h2>
-            <p class="success-sub">請前往您的信箱點擊密碼重設連結。（※ 連結有效期限為 30 分鐘）</p>
+            <p class="success-sub">請前往 demo 信箱 nnor.0023067@gmail.com 點擊密碼重設連結。（※ 連結有效期限為 30 分鐘）</p>
             <button class="jb-btn jb-btn-primary jb-btn-lg" @click="$router.push('/login')">
               返回登入
             </button>

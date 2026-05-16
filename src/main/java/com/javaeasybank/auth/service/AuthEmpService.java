@@ -12,7 +12,9 @@ public interface AuthEmpService {
     // === 員工 CRUD ===
     Long getEmpCount();
     List<AuthRespository.AuthEmpResponse> getAllEmps();
+    List<AuthRespository.AuthEmpResponse> getAllEmpsExcludingCurrent();
     List<AuthRespository.AuthEmpResponse> searchEmpsByName(String keyword);
+    List<AuthRespository.AuthEmpResponse> searchEmpsByNameExcludingCurrent(String keyword);
     AuthRespository.AuthEmpResponse createEmp(AuthRespository.AuthEmpRequest request);
     AuthRespository.AuthEmpResponse updateEmp(String empId, AuthRespository.AuthEmpRequest request);
     void suspendEmp(String empId);

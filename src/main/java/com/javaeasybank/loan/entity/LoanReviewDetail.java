@@ -21,8 +21,10 @@ public class LoanReviewDetail {
 
     private String applicationId;          // application_id (FK)
 
+    @Column(precision = 18, scale = 2)
     private BigDecimal confirmedAmount;
     private Integer confirmedPeriod;
+    @Column(precision = 10, scale = 6)
     private BigDecimal confirmedRate;
     private String collateralNote;         // 擔保品資料
 

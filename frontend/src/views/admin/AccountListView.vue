@@ -70,7 +70,7 @@
 
       <!-- 右側全域操作區 -->
       <div class="global-actions">
-        <a-button type="primary" class="rounded-btn" @click="showCreateModal = true">
+        <a-button v-if="canOperateAccounts" type="primary" class="rounded-btn" @click="showCreateModal = true">
           <template #icon><PlusOutlined /></template>
           建立帳戶
         </a-button>
@@ -121,7 +121,7 @@
         </template>
 
         <!-- F 終點：行動按鈕 -->
-        <template v-else-if="column.key === 'action'">
+        <template v-else-if="column.key === 'action' && canOperateAccounts">
           <div class="action-cell">
             <a-button 
               v-if="record.status !== 'CLOSED'"
@@ -254,10 +254,11 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { message } from 'ant-design-vue'
 import { SearchOutlined, PlusOutlined } from '@ant-design/icons-vue'
 import { getErrorMessage } from '@/utils/errorMessages'
+import { useAuthStore } from '@/stores/auth'
 import {
   getAccountsByCustomerId,
   getAccountsByStatus,
@@ -267,6 +268,9 @@ import {
   updateAccountStatus,
   getAccount, // Added getAccount
 } from '@/api/account'
+
+const authStore = useAuthStore()
+const canOperateAccounts = computed(() => authStore.user?.roleCode === 'CFDM')
 
 // === 狀態/型別 中文對照 ===
 const statusMap = {
@@ -312,7 +316,7 @@ const lastSearchType = ref('')
 
 onMounted(fetchData)
 
-const columns = ref([
+const baseColumns = [
   { title: '客戶資訊', dataIndex: 'customerName', key: 'customer', width: 160, fixed: 'left', resizable: true, sorter: (a, b) => (a.customerName || '').localeCompare(b.customerName || '') },
   { title: '帳號', dataIndex: 'accountNumber', key: 'accountNumber', width: 150, resizable: true, sorter: (a, b) => (a.accountNumber || '').localeCompare(b.accountNumber || '') },
   {
@@ -345,8 +349,14 @@ const columns = ref([
     sorter: (a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''),
     customRender: ({ text }) => formatTime(text),
   },
-  { title: '操作', key: 'action', width: 120, fixed: 'right' },
-])
+]
+
+const columns = computed(() => {
+  if (!canOperateAccounts.value) {
+    return baseColumns
+  }
+  return [...baseColumns, { title: '操作', key: 'action', width: 120, fixed: 'right' }]
+})
 
 function handleResizeColumn(w, col) {
   col.width = w

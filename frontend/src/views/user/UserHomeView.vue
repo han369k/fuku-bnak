@@ -154,8 +154,11 @@
                 <span>—</span>
               </div>
             </div>
-            <div class="asset-subcard-actions">
-              <button class="subcard-primary-btn" @click="comingSoon">申請貸款</button>
+            <div class="asset-subcard-actions loan-subcard-actions">
+              <button class="subcard-primary-btn" @click="$router.push({ name: 'user-loan-apply' })">申請貸款</button>
+              <button class="subcard-secondary-btn" @click="$router.push({ name: 'user-loan-status' })">查看申請</button>
+              <button class="subcard-secondary-btn" @click="$router.push({ name: 'user-loan-accounts' })">查看帳戶</button>
+              <button class="subcard-secondary-btn" @click="$router.push({ name: 'user-loan-repayment' })">立即還款</button>
             </div>
           </div>
         </div>
@@ -966,6 +969,13 @@ onMounted(async () => {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+}
+
+/* 貸款子卡：2×2 按鈕排列 */
+.loan-subcard-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
 }
 
 /* === 下方佈局 === */

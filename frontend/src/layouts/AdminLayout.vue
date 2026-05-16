@@ -13,7 +13,8 @@
             <span>首頁</span>
           </a-menu-item>
 
-          <template v-if="!isCISO">
+          <!-- 業務模組：僅顯示給 Lvl0(職員) 與 Lvl2(主管)，資安長(Lvl4)不可見 -->
+          <template v-if="isBusinessStaff">
             <a-menu-item-group title="客戶管理">
               <a-menu-item key="admin-customers" @click="$router.push({ name: 'admin-customers' })">
                 <template #icon><UserOutlined /></template>
@@ -87,7 +88,8 @@
             </a-menu-item-group>
           </template>
 
-          <template v-if="isAdmin || isCISO">
+          <!-- 系統管理：僅顯示給 Lvl4(資安長) -->
+          <template v-if="isCISO">
             <a-menu-item-group title="系統管理">
               <a-menu-item key="admin-employees" @click="$router.push({ name: 'admin-employees' })">
                 <template #icon><TeamOutlined /></template>
@@ -151,12 +153,12 @@ const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 
-const isCISO = computed(() => authStore.user?.roleCode === 'CISO')
-// 排除 CISO 讓其走獨立邏輯，其他需看到系統管理的管理員可在此定義
-const isAdmin = computed(() => {
-  const adminRoles = ['ISSA', 'SYS_SUPER', 'SYS_STAFF']
-  return adminRoles.includes(authStore.user?.roleCode) && !isCISO.value
-})
+// === 角色判斷：統一以 permLevel 數字為準 ===
+// Lvl 0 = 職員(CFSO)  |  Lvl 2 = 主管(CFDM)  |  Lvl 4 = 資安長(CISO)
+const permLevel = computed(() => authStore.user?.permLevel ?? 0)
+const isCISO = computed(() => permLevel.value >= 4)           // 資安長及以上
+const isManager = computed(() => permLevel.value >= 2)        // 主管及以上（包含 CISO）
+const isBusinessStaff = computed(() => permLevel.value < 4)   // 業務人員（職員 + 主管）
 
 const selectedKeys = ref([route.name])
 const countdown = ref(300)

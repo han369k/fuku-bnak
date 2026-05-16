@@ -1,61 +1,75 @@
 <template>
-  <div style="padding: 24px">
-    <!-- 統計卡片 -->
-    <a-row :gutter="16" style="margin-bottom: 24px">
-      <a-col :span="6">
-        <a-statistic title="待處理" :value="stats.pending" value-style="{color: #faad14}" />
-      </a-col>
-      <a-col :span="6">
-        <a-statistic title="處理中" :value="stats.processing" value-style="{color: #1890ff}" />
-      </a-col>
-      <a-col :span="6">
-        <a-statistic title="已結案" :value="stats.completed" value-style="{color: #52c41a}" />
-      </a-col>
-      <a-col :span="6">
-        <a-statistic title="總計" :value="stats.total" />
-      </a-col>
-    </a-row>
+  <div class="page-container">
+    <div class="page-header">
+      <h2 class="page-title">審核任務</h2>
+    </div>
 
-    <!-- 篩選列 -->
-    <a-space style="margin-bottom: 16px" wrap>
-      <a-select
-        v-model:value="filters.status"
-        placeholder="全部狀態"
-        allow-clear
-        style="width: 130px"
-        @change="fetchTasks"
-      >
-        <a-select-option value="PENDING">待處理</a-select-option>
-        <a-select-option value="PROCESSING">處理中</a-select-option>
-        <a-select-option value="COMPLETED">已結案</a-select-option>
-      </a-select>
-      <a-select
-        v-model:value="filters.scene"
-        placeholder="全部場景"
-        allow-clear
-        style="width: 140px"
-        @change="fetchTasks"
-      >
-        <a-select-option value="LOAN_APPLY">貸款申請</a-select-option>
-        <a-select-option value="ACCOUNT_OPEN">帳戶開戶</a-select-option>
-        <a-select-option value="CARD_APPLY">信用卡申請</a-select-option>
-      </a-select>
-      <a-select
-        v-model:value="filters.priority"
-        placeholder="全部優先度"
-        allow-clear
-        style="width: 130px"
-        @change="fetchTasks"
-      >
-        <a-select-option :value="1">高（P1）</a-select-option>
-        <a-select-option :value="5">中（P5）</a-select-option>
-        <a-select-option :value="10">低（P10）</a-select-option>
-      </a-select>
-      <a-button @click="fetchTasks">
-        <template #icon><ReloadOutlined /></template>
-        重新整理
-      </a-button>
-    </a-space>
+    <div class="action-bar">
+      <!-- 統計卡片 -->
+      <a-row :gutter="16" style="margin-bottom: 24px">
+        <a-col :span="6">
+          <a-statistic title="待處理" :value="stats.pending" :value-style="{ color: '#faad14' }" />
+        </a-col>
+        <a-col :span="6">
+          <a-statistic
+            title="處理中"
+            :value="stats.processing"
+            :value-style="{ color: '#1890ff' }"
+          />
+        </a-col>
+        <a-col :span="6">
+          <a-statistic
+            title="已結案"
+            :value="stats.completed"
+            :value-style="{ color: '#52c41a' }"
+          />
+        </a-col>
+        <a-col :span="6">
+          <a-statistic title="總計" :value="stats.total" />
+        </a-col>
+      </a-row>
+
+      <!-- 篩選列 -->
+      <a-space style="margin-bottom: 16px" wrap>
+        <a-select
+          v-model:value="filters.status"
+          placeholder="全部狀態"
+          allow-clear
+          style="width: 130px"
+          @change="fetchTasks"
+        >
+          <a-select-option value="PENDING">待處理</a-select-option>
+          <a-select-option value="PROCESSING">處理中</a-select-option>
+          <a-select-option value="COMPLETED">已結案</a-select-option>
+        </a-select>
+        <a-select
+          v-model:value="filters.scene"
+          placeholder="全部場景"
+          allow-clear
+          style="width: 140px"
+          @change="fetchTasks"
+        >
+          <a-select-option value="LOAN_APPLY">貸款申請</a-select-option>
+          <a-select-option value="ACCOUNT_OPEN">帳戶開戶</a-select-option>
+          <a-select-option value="CARD_APPLY">信用卡申請</a-select-option>
+        </a-select>
+        <a-select
+          v-model:value="filters.priority"
+          placeholder="全部優先度"
+          allow-clear
+          style="width: 130px"
+          @change="fetchTasks"
+        >
+          <a-select-option :value="1">高（P1）</a-select-option>
+          <a-select-option :value="5">中（P5）</a-select-option>
+          <a-select-option :value="10">低（P10）</a-select-option>
+        </a-select>
+        <a-button @click="fetchTasks">
+          <template #icon><ReloadOutlined /></template>
+          重新整理
+        </a-button>
+      </a-space>
+    </div>
 
     <!-- 任務列表 -->
     <a-table
@@ -314,8 +328,10 @@ async function fetchTasks() {
     const res = await axios.get(BASE_URL, { params, withCredentials: true })
     const page = res.data.data
     tasks.value = page.content
-    pagination.total = page.totalElements
-    pagination.current = page.number + 1
+    // 確保 page.number 是有效數字，若為 undefined/null 則預設為 0
+    const backendPageNumber = Number(page.number || 0)
+    pagination.total = page.totalElements // 後端返回的總元素數量
+    pagination.current = Math.max(1, backendPageNumber + 1) // 確保當前頁碼至少為 1
   } catch (e) {
     message.error('載入失敗：' + (e.response?.data?.message || e.message))
   } finally {
@@ -348,8 +364,9 @@ async function submitDecision() {
 }
 
 function handleTableChange(pag) {
-  pagination.current = pag.current
-  pagination.pageSize = pag.pageSize
+  // 確保 pag.current 是有效數字，若為 undefined/null/0 則預設為 1
+  pagination.current = Math.max(1, Number(pag.current || 1)) // 確保當前頁碼至少為 1
+  pagination.pageSize = pag.pageSize // 更新每頁顯示數量
   fetchTasks()
 }
 
@@ -411,5 +428,12 @@ onMounted(fetchTasks)
 }
 :deep(.clickable-row:hover td) {
   background: #fafafa;
+}
+:deep(.ant-statistic-title) {
+  white-space: nowrap;
+  text-align: center;
+}
+:deep(.ant-statistic-content) {
+  text-align: center;
 }
 </style>

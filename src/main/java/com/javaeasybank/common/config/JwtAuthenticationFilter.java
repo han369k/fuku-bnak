@@ -69,6 +69,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private boolean isCustomerApi(String requestPath) {
         return requestPath.startsWith("/api/customer/")
                 || requestPath.startsWith("/user/")
-                || requestPath.startsWith("/api/loan-applications/");
+                || requestPath.startsWith("/api/loan-applications/")
+                || requestPath.startsWith("/api/loan-documents/");
     }
 }

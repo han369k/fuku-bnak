@@ -139,6 +139,18 @@ const router = createRouter({
           name: 'user-loan-status',
           component: () => import('../views/user/LoanStatusView.vue'),
         },
+        // 貸款帳戶：撥款後查看帳戶明細與每期還款進度
+        {
+          path: 'loan-accounts',
+          name: 'user-loan-accounts',
+          component: () => import('../views/user/LoanAccountView.vue'),
+        },
+        // 貸款還款：執行繳款與查詢繳款紀錄
+        {
+          path: 'loan-repayment',
+          name: 'user-loan-repayment',
+          component: () => import('../views/user/LoanRepaymentView.vue'),
+        },
       ],
     },
 
@@ -163,16 +175,19 @@ const router = createRouter({
         {
           path: 'accounts',
           name: 'admin-accounts',
+          meta: { requiresBusiness: true },
           component: () => import('../views/admin/AccountListView.vue'),
         },
         {
           path: 'account-applications',
           name: 'admin-account-applications',
+          meta: { requiresBusiness: true },
           component: () => import('../views/admin/AccountApplicationListView.vue'),
         },
         {
           path: 'trans-logs',
           name: 'admin-trans-logs',
+          meta: { requiresBusiness: true },
           component: () => import('../views/admin/TransLogView.vue'),
         },
         {
@@ -190,53 +205,63 @@ const router = createRouter({
         {
           path: 'customers',
           name: 'admin-customers',
+          meta: { requiresBusiness: true },
           component: () => import('../views/admin/CustomerListView.vue'),
         },
         {
           path: 'customers/create',
           name: 'admin-customers-create',
+          meta: { requiresBusiness: true },
           component: () => import('../views/admin/CustomerCreateView.vue'),
         },
         {
           path: 'card-types',
           name: 'admin-card-types',
+          meta: { requiresBusiness: true },
           component: () => import('../views/admin/CardTypeListView.vue'),
         },
         {
           path: 'card-applications',
           name: 'admin-card-applications',
+          meta: { requiresBusiness: true },
           component: () => import('../views/admin/CardApplicationList.vue'),
         },
         {
           path: 'card-txns',
           name: 'admin-card-txns',
+          meta: { requiresBusiness: true },
           //http://localhost:5173/admin/card-txns
           component: () => import('../views/admin/CardTxnView.vue'),
         },
         {
           path: 'card-bills',
           name: 'admin-card-bills',
+          meta: { requiresBusiness: true },
           //http://localhost:5173/admin/card-bills
           component: () => import('../views/admin/CardBillView.vue'),
         },
         {
           path: 'risk-events',
           name: 'admin-risk-events',
+          meta: { requiresBusiness: true },
           component: () => import('../views/admin/RiskEventView.vue'),
         },
         {
           path: 'review-task',
           name: 'admin-review-task',
+          meta: { requiresBusiness: true },
           component: () => import('../views/admin/ReviewTask.vue'),
         },
         {
           name: 'admin-card-application-detail',
           path: '/admin/card-applications/:id',
+          meta: { requiresBusiness: true },
           component: () => import('../views/admin/CardApplicationDetailView.vue'),
         },
         {
           path: 'cards',
           name: 'admin-cards',
+          meta: { requiresBusiness: true },
           component: () => import('../views/admin/CardView.vue'),
         },
         // 貸款功能相關
@@ -248,11 +273,13 @@ const router = createRouter({
         {
           path: 'loan-applications',
           name: 'loan-applications',
+          meta: { requiresBusiness: true },
           component: () => import('../views/admin/LoanApplicationView.vue'),
         },
         {
           path: 'blacklist',
           name: 'admin-blacklist',
+          meta: { requiresBusiness: true },
           component: () => import('../views/admin/BlackListView.vue'),
         },
         {
@@ -313,6 +340,13 @@ router.beforeEach(async (to) => {
       }
     } catch {
       // ignore parse error
+    }
+
+    // --- 檢查系統管理員權限 (僅系統與日誌需要) ---
+    if (to.matched.some((record) => record.meta.requiresBusiness)) {
+      if (parsedUser?.permLevel >= 4 || parsedUser?.roleCode === 'CISO') {
+        return { name: 'forbidden' }
+      }
     }
 
     // --- 檢查系統管理員權限 (僅系統與日誌需要) ---

@@ -1,5 +1,9 @@
 package com.javaeasybank.loan.service;
 
+import com.javaeasybank.account.dto.request.LoanAccountCreateRequest;
+import com.javaeasybank.account.dto.request.LoanDisbursementRequest;
+import com.javaeasybank.account.dto.response.LoanAccountResponse;
+import com.javaeasybank.account.service.AccountIntegrationService;
 import com.javaeasybank.common.exception.BusinessException;
 import com.javaeasybank.customer.repository.CustomerProfileRepository;
 import com.javaeasybank.loan.client.LoanRiskClient;
@@ -19,6 +23,7 @@ import com.javaeasybank.loan.repository.LoanContactLogRepository;
 import com.javaeasybank.loan.repository.LoanReviewDetailRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -59,6 +64,17 @@ public class LoanApplicationService {
     @Autowired
     private CustomerProfileRepository customerProfileRepository;
 
+    @Autowired
+    private LoanAccountService loanAccountService;
+
+    @Autowired
+    private AccountIntegrationService accountIntegrationService;
+
+    // 自身 proxy 注入：讓 autoDisburse() 的 @Transactional 能被 Spring AOP 攔截
+    @Lazy
+    @Autowired
+    private LoanApplicationService self;
+
     // ===查詢功能===
     // 依狀態顯示
     public List<LoanApplicationResponseDTO> getByStatus(LoanApplicationStatus status) {
@@ -84,6 +100,7 @@ public class LoanApplicationService {
         loan.setCustomerId(customerId);
         fillLoanContent(loan, dto.getApplyType(), dto.getApplyAmount(),
                 dto.getApplyPeriod(), dto.getRate());
+        loan.setDisbursementAccount(dto.getDisbursementAccount()); // 儲存撥款入帳帳號
         laRepo.save(loan);
         return loan.getApplicationId();
     }
@@ -237,7 +254,8 @@ public class LoanApplicationService {
                     loanRiskClient.submitForReview(riskDto);
                 } catch (Exception e) {
                     log.error("[SubmitReview] 風控請求發送失敗，appId={}, error={}", applicationId, e.getMessage());
-                    // TODO: 考慮加入補償機制（如寫入補傳表）
+                    // 補償路徑：行員可呼叫 PATCH /api/admin/loan-applications/{id}/risk/retry 手動重送
+                    // 生產環境建議改為寫入補傳表 + 定時排程重試
                 }
             }
         });
@@ -269,33 +287,148 @@ public class LoanApplicationService {
         return dto;
     }
 
-    // 風控審核完成後傳回，更新主表狀態為 APPROVED 或 REJECTED
-    // callerModule 必須是 "RISK"；可接受的目標狀態只有 APPROVED / REJECTED
+    // 外部模組回調，更新主表狀態
+    // RISK   模組：PENDING_REVIEW → APPROVED / REJECTED
+    // ACCOUNT 模組：APPROVED      → DISBURSED
     public void handleStatusCallback(String applicationId, LoanStatusCallbackRequestDTO dto) {
 
         LoanApplication loan = laRepo.findById(applicationId)
                 .orElseThrow(() -> new BusinessException("找不到申請編號：" + applicationId));
 
-        // 來源模組驗證
-        if (!"RISK".equals(dto.getCallerModule())) {
-            throw new BusinessException("此 callback 僅接受 RISK 模組呼叫");
-        }
+        String caller = dto.getCallerModule();
 
-        // 狀態合法性驗證：當前必須是 PENDING_REVIEW
-        if (loan.getApplicationStatus() != LoanApplicationStatus.PENDING_REVIEW) {
-            throw new BusinessException(
-                    "申請目前狀態為 " + loan.getApplicationStatus() + "，無法套用風控回調");
-        }
+        if ("RISK".equals(caller)) {
 
-        // 目標狀態只允許 APPROVED / REJECTED
-        if (dto.getNewStatus() != LoanApplicationStatus.APPROVED
-                && dto.getNewStatus() != LoanApplicationStatus.REJECTED) {
-            throw new BusinessException("風控回調目標狀態不合法：" + dto.getNewStatus());
+            // 前置狀態：必須是 PENDING_REVIEW
+            if (loan.getApplicationStatus() != LoanApplicationStatus.PENDING_REVIEW) {
+                throw new BusinessException(
+                        "申請目前狀態為 " + loan.getApplicationStatus() + "，無法套用風控回調");
+            }
+            // 目標狀態只允許 APPROVED / REJECTED
+            if (dto.getNewStatus() != LoanApplicationStatus.APPROVED
+                    && dto.getNewStatus() != LoanApplicationStatus.REJECTED) {
+                throw new BusinessException("風控回調目標狀態不合法：" + dto.getNewStatus());
+            }
+            // 核准後觸發自動建帳與撥款（afterCommit 確保主表先寫入再執行）
+            if (dto.getNewStatus() == LoanApplicationStatus.APPROVED) {
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        log.info("[AutoDisburse] 風控核准，觸發自動撥款 applicationId={}", applicationId);
+                        try {
+                            self.autoDisburse(applicationId);
+                        } catch (Exception e) {
+                            log.error("[AutoDisburse] 自動撥款失敗，申請保留 APPROVED 供重試 applicationId={} error={}",
+                                    applicationId, e.getMessage());
+                        }
+                    }
+                });
+            }
+
+        } else if ("ACCOUNT".equals(caller)) {
+
+            // 前置狀態：必須是 APPROVED
+            if (loan.getApplicationStatus() != LoanApplicationStatus.APPROVED) {
+                throw new BusinessException(
+                        "申請目前狀態為 " + loan.getApplicationStatus() + "，無法套用帳戶撥款回調");
+            }
+            // 目標狀態只允許 DISBURSED
+            if (dto.getNewStatus() != LoanApplicationStatus.DISBURSED) {
+                throw new BusinessException("帳戶回調目標狀態不合法：" + dto.getNewStatus());
+            }
+
+        } else {
+            throw new BusinessException("不認識的 callerModule：" + caller);
         }
 
         loan.setApplicationStatus(dto.getNewStatus());
         loan.setUpdateTime(LocalDateTime.now());
         laRepo.save(loan);
+
+        // ACCOUNT 模組撥款確認後，同步建立貸款帳戶
+        if ("ACCOUNT".equals(caller)) {
+            loanAccountService.createOnDisbursement(applicationId);
+        }
+    }
+
+    // 風控核准後自動建帳與撥款（由 handleStatusCallback APPROVED afterCommit 呼叫）
+    // @Transactional 確保 createLoanAccount + disburseLoan 在同一事務內；
+    // disburseLoan 的 afterCommit 會再觸發 ACCOUNT callback → DISBURSED + 建 LoanAccount 紀錄
+    @Transactional
+    public void autoDisburse(String applicationId) {
+
+        LoanApplication loan = laRepo.findById(applicationId)
+                .orElseThrow(() -> new BusinessException("找不到申請編號：" + applicationId));
+
+        // 冪等保護：若已不是 APPROVED（例如重複觸發），直接略過
+        if (loan.getApplicationStatus() != LoanApplicationStatus.APPROVED) {
+            log.warn("[AutoDisburse] 狀態非 APPROVED，略過 applicationId={} status={}",
+                    applicationId, loan.getApplicationStatus());
+            return;
+        }
+
+        if (loan.getDisbursementAccount() == null || loan.getDisbursementAccount().isBlank()) {
+            throw new BusinessException("申請未儲存撥款帳號，無法自動撥款：" + applicationId);
+        }
+
+        LoanReviewDetail detail = reviewDetailRepo.findByApplicationId(applicationId)
+                .orElseThrow(() -> new BusinessException("找不到二次填單，無法自動撥款：" + applicationId));
+
+        // 步驟一：在 Account 模組建立貸款負債帳戶
+        LoanAccountCreateRequest createReq = new LoanAccountCreateRequest();
+        createReq.setCustomerId(loan.getCustomerId());
+        createReq.setLiability(detail.getConfirmedAmount());
+        createReq.setRate(detail.getConfirmedRate());
+        LoanAccountResponse accountResp = accountIntegrationService.createLoanAccount(createReq);
+        String loanAccountNumber = accountResp.getLoanAccountNumber();
+        log.info("[AutoDisburse] 貸款帳戶建立完成 loanAccountNumber={}", loanAccountNumber);
+
+        // 步驟二：撥款（disburseLoan 的 afterCommit 會呼叫 handleStatusCallback ACCOUNT/DISBURSED）
+        LoanDisbursementRequest disburseReq = new LoanDisbursementRequest();
+        disburseReq.setApplicationId(applicationId);
+        disburseReq.setLoanAccountNumber(loanAccountNumber);
+        disburseReq.setToAccountNumber(loan.getDisbursementAccount());
+        disburseReq.setAmount(detail.getConfirmedAmount());
+        disburseReq.setNote("貸款核准自動撥款 applicationId=" + applicationId);
+        accountIntegrationService.disburseLoan(disburseReq);
+        log.info("[AutoDisburse] 撥款指令送出 applicationId={}", applicationId);
+    }
+
+    // 撥款補償：行員手動重送撥款（狀態必須仍是 APPROVED）
+    // 對應 autoDisburse afterCommit 中失敗時保留 APPROVED 的補救路徑
+    public void retryDisburse(String applicationId) {
+
+        LoanApplication loan = laRepo.findById(applicationId)
+                .orElseThrow(() -> new BusinessException("找不到申請編號：" + applicationId));
+
+        if (loan.getApplicationStatus() != LoanApplicationStatus.APPROVED) {
+            throw new BusinessException(
+                    "此申請狀態為 " + loan.getApplicationStatus() + "，無需重送撥款（僅 APPROVED 可重送）");
+        }
+
+        log.info("[RetryDisburse] 行員手動重送撥款 applicationId={}", applicationId);
+        // 透過 self proxy 確保 autoDisburse 的 @Transactional 被 Spring AOP 攔截
+        self.autoDisburse(applicationId);
+    }
+
+    // 風控送審補償：行員手動重送（狀態必須仍是 PENDING_REVIEW）
+    // 對應 submitReview afterCommit 中 loanRiskClient 失敗的補救路徑
+    public void retryRiskSubmit(String applicationId) {
+
+        LoanApplication loan = laRepo.findById(applicationId)
+                .orElseThrow(() -> new BusinessException("找不到申請編號：" + applicationId));
+
+        if (loan.getApplicationStatus() != LoanApplicationStatus.PENDING_REVIEW) {
+            throw new BusinessException(
+                    "此申請狀態為 " + loan.getApplicationStatus() + "，無需重送（僅 PENDING_REVIEW 可重送）");
+        }
+
+        LoanReviewDetail detail = reviewDetailRepo.findByApplicationId(applicationId)
+                .orElseThrow(() -> new BusinessException("找不到二次填單，無法重送"));
+
+        LoanRiskRequestDTO riskDto = buildRiskRequest(loan, detail);
+        log.info("[RetryRisk] 行員手動重送風控 applicationId={}", applicationId);
+        loanRiskClient.submitForReview(riskDto);
     }
 
     // 查填單內容
@@ -384,10 +517,18 @@ public class LoanApplicationService {
         dto.setApplyAmount(loan.getApplyAmount());
         dto.setApplyPeriod(loan.getApplyPeriod());
         dto.setRate(loan.getRate());
+        dto.setDisbursementAccount(loan.getDisbursementAccount());
         dto.setApplicationStatus(loan.getApplicationStatus());
         dto.setCreateTime(loan.getCreateTime());
         dto.setLatestContactStatus(loan.getLatestContactStatus());
         dto.setLatestContactTime(loan.getLatestContactTime());
+        dto.setDocumentsSubmittedAt(loan.getDocumentsSubmittedAt());
+        // 帶入二次填單確認值（有填單才有值，否則 null）
+        reviewDetailRepo.findByApplicationId(loan.getApplicationId()).ifPresent(review -> {
+            dto.setConfirmedAmount(review.getConfirmedAmount());
+            dto.setConfirmedPeriod(review.getConfirmedPeriod());
+            dto.setConfirmedRate(review.getConfirmedRate());
+        });
         return dto;
     }
 
