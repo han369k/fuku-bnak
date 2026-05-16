@@ -2,8 +2,8 @@
 ===============================================================================
 Java Easy Bank Customer Mock Data
 - 50 realistic customer profiles
-- Includes auth, KYC, risk tags, login logs, and authorized devices
-- Keep this file customer-only. Account mock data lives in account_mockdata.sql.
+- Includes auth, login logs, and authorized devices
+- Keep this file customer-only. Account application mock data lives in account_mockdata.sql.
 ===============================================================================
 */
 
@@ -13,9 +13,6 @@ SET NOCOUNT ON;
 IF OBJECT_ID('CUSTOMER_DEVICE', 'U') IS NOT NULL DELETE FROM CUSTOMER_DEVICE;
 IF OBJECT_ID('CUSTOMER_LOGIN_LOG', 'U') IS NOT NULL DELETE FROM CUSTOMER_LOGIN_LOG;
 IF OBJECT_ID('CUSTOMER_AUTH', 'U') IS NOT NULL DELETE FROM CUSTOMER_AUTH;
-IF OBJECT_ID('CUSTOMER_RISK_TAG', 'U') IS NOT NULL DELETE FROM CUSTOMER_RISK_TAG;
-IF OBJECT_ID('CUSTOMER_KYC', 'U') IS NOT NULL DELETE FROM CUSTOMER_KYC;
-IF OBJECT_ID('CUSTOMER_APPLICATION', 'U') IS NOT NULL DELETE FROM CUSTOMER_APPLICATION;
 IF OBJECT_ID('CUSTOMER_PROFILE', 'U') IS NOT NULL DELETE FROM CUSTOMER_PROFILE;
 GO
 
@@ -122,16 +119,6 @@ INSERT INTO @customers (
     (49, 'W6M2C8D5', '2605-J7A3W9Q5', 'AUTH26050049', 'CASE26050049', N'簡宏達', '1998-01-22', 'M', 'A100260549', 'customer049@java-bank.demo', '0913000049', N'新竹縣竹北市縣政九路146號', 'cust0049', 'ACTIVE', 'ACTIVE', 'APPROVED', 'TW', N'新竹縣竹北市縣政九路146號', N'新竹縣竹北市縣政九路146號', N'資訊科技業', N'台積電', 100, 'SALARY', 'SALARY', 'TW', 0, '/uploads/mock/customer/W6M2C8D5-front.jpg', '/uploads/mock/customer/W6M2C8D5-back.jpg', '/uploads/mock/customer/W6M2C8D5-second.jpg', '/avatars/mock/W6M2C8D5.png', N'資訊科技業', 1140000, 'LOW', N'新竹縣', N'高中', 'M', N'初發', N'薪資收入', '2026-04-02 12:36:00', '2026-04-02 12:36:00'),
     (50, 'X9N5T3Q7', '2605-K4D6M2V8', 'AUTH26050050', 'CASE26050050', N'尤芷晴', '1971-02-23', 'F', 'B200260550', 'customer050@java-bank.demo', '0913000050', N'苗栗縣苗栗市縣府路100號', 'cust0050', 'ACTIVE', 'ACTIVE', 'APPROVED', 'TW', N'苗栗縣苗栗市縣府路100號', N'苗栗縣苗栗市縣府路100號', N'金融保險業', N'國泰金控', 5, 'INVESTMENT', 'SALARY', 'TW', 0, '/uploads/mock/customer/X9N5T3Q7-front.jpg', '/uploads/mock/customer/X9N5T3Q7-back.jpg', '/uploads/mock/customer/X9N5T3Q7-second.jpg', '/avatars/mock/X9N5T3Q7.png', N'金融保險業', 1320000, 'LOW', N'苗栗縣', N'大學', 'S', N'換發', N'薪資收入', '2026-05-03 13:43:00', '2026-05-03 13:43:00');
 
--- Customer registration/application records.
-INSERT INTO CUSTOMER_APPLICATION (
-    case_id, customer_id, cif, name, birthday, gender, id_number,
-    email, phone, address, username, avatar_url, status, created_at, updated_at
-)
-SELECT
-    case_id, customer_id, cif, name, birthday, gender, id_number,
-    email, phone, address, username, avatar_url, application_status, created_at, updated_at
-FROM @customers;
-
 -- Formal customer profiles.
 INSERT INTO CUSTOMER_PROFILE (
     customer_id, cif, id_number, name, birthday, gender, email, phone, address,
@@ -163,46 +150,6 @@ SELECT
     DATEADD(DAY, -1 * (seq % 12), CAST('2026-05-13 09:00:00' AS DATETIME2)),
     NULL,
     created_at,
-    updated_at
-FROM @customers;
-
-INSERT INTO CUSTOMER_KYC (
-    customer_id, id_issue_date, id_issue_location, id_issue_type,
-    tax_residency, marital_status, education_level, occupation_category,
-    company_name, annual_income, source_of_wealth, updated_at
-)
-SELECT
-    customer_id,
-    DATEFROMPARTS(YEAR(birthday) + 20, ((seq - 1) % 12) + 1, ((seq - 1) % 27) + 1),
-    issue_location,
-    id_issue_type,
-    tax_residency,
-    marital_status,
-    education_level,
-    occupation,
-    employer,
-    annual_income,
-    source_of_wealth,
-    updated_at
-FROM @customers;
-
-INSERT INTO CUSTOMER_RISK_TAG (
-    customer_id, aml_risk_level, pep_status, is_fraud_suspect,
-    block_reason, kyc_last_review_date, kyc_next_review_date, updated_by, updated_at
-)
-SELECT
-    customer_id,
-    CASE risk_level WHEN 'HIGH' THEN 'HIGH' WHEN 'MEDIUM' THEN 'MEDIUM' ELSE 'LOW' END,
-    CASE WHEN is_pep = 1 THEN 'Y' ELSE 'N' END,
-    CASE WHEN profile_status = 'FROZEN' THEN 'Y' ELSE 'N' END,
-    CASE
-        WHEN is_pep = 1 THEN N'重要政治性職務人士，需加強審查'
-        WHEN profile_status = 'FROZEN' THEN N'帳戶異常活動暫停服務'
-        ELSE NULL
-    END,
-    CAST('2026-05-13' AS DATE),
-    DATEADD(YEAR, CASE risk_level WHEN 'HIGH' THEN 1 WHEN 'MEDIUM' THEN 2 ELSE 3 END, CAST('2026-05-13' AS DATE)),
-    'mock-seed',
     updated_at
 FROM @customers;
 
