@@ -6,6 +6,7 @@ import java.util.List;
 
 import com.javaeasybank.creditcard.enums.BillStatus;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -45,6 +46,14 @@ public class CardBill {
 
     @Enumerated(EnumType.STRING)
     private BillStatus billStatus;
+
+    @Column(precision = 15, scale = 2)
+    private BigDecimal cashbackAmount =BigDecimal.ZERO;
+
+    //回饋金是否已入帳
+    private Boolean rewardPosted=false;
+
+    private String rewardReferenceId;
 
     @ManyToOne
     @JoinColumn(name = "card_id")

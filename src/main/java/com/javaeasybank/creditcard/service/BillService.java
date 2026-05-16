@@ -11,6 +11,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.javaeasybank.account.dto.request.AccountResponse;
+import com.javaeasybank.account.dto.request.CashRequest;
+import com.javaeasybank.account.dto.response.CashResponse;
+import com.javaeasybank.account.service.AccountIntegrationService;
+import com.javaeasybank.account.service.TransferService;
+import com.javaeasybank.common.exception.BusinessException;
 import com.javaeasybank.creditcard.dto.CardBillResponseDto;
 import com.javaeasybank.creditcard.entity.CardAccount;
 import com.javaeasybank.creditcard.entity.CardBill;
@@ -32,18 +38,23 @@ public class BillService {
     private final CardBillMapper cardBillMapper;
     private final CardAccountRepository cardAccountRepository;
     private final CardTxnRepository cardTransactionRepository;
+    private final TransferService transferService;
+    private final AccountIntegrationService accountIntegrationService;
+
+    // 查帳單
 
     public Page<CardBillResponseDto> getBills(Pageable pageable) {
         return cardBillRepository.findAll(pageable).map(cardBillMapper::toDto);
     }
 
-    //產生帳單
+    // 產生帳單
     public Integer generateBills() {
         int count = 0;
         String billingMonth = YearMonth.now().toString();
-        
+
         // if (cardBillRepository.existsByBillingMonth(billingMonth)) {
-        //     throw new BusinessException("Bills for this month have already been generated");
+        // throw new BusinessException("Bills for this month have already been
+        // generated");
         // }
 
         List<CardAccount> cardAccounts = cardAccountRepository.findAll();
@@ -64,17 +75,54 @@ public class BillService {
                     .map(CardTransaction::getTxnAmount)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+            BigDecimal cashbackAmount = txns.stream()
+                    .map(CardTransaction::getCashbackAmount)
+                    .filter(cashback -> cashback != null)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
             CardBill bill = new CardBill();
             bill.setCardAccount(cardAccount);
             bill.setBillingMonth(billingMonth);
             bill.setBillDate(LocalDate.now());
             bill.setDueDate(LocalDate.now().plusDays(resolveDueDays(cardAccount)));
             bill.setTotalAmount(total);
-            bill.setMinimumPayment(total.multiply(BigDecimal.valueOf(0.1)).setScale(0,RoundingMode.UP));
+            BigDecimal minimumPayment = total.compareTo(BigDecimal.ZERO) <= 0
+                    ? BigDecimal.ZERO
+                    : total.multiply(BigDecimal.valueOf(0.1)).setScale(0, RoundingMode.UP);
+
+            bill.setMinimumPayment(minimumPayment);
             bill.setPaidAmount(BigDecimal.ZERO);
             bill.setBillStatus(BillStatus.UNPAID);
 
+            bill.setCashbackAmount(cashbackAmount);
+            bill.setRewardPosted(false);
+
             CardBill savedBill = cardBillRepository.save(bill);
+
+            if (cashbackAmount.compareTo(BigDecimal.ZERO) > 0) {
+
+                String customerId = cardAccount.getCustomer().getCustomerId();
+
+                AccountResponse rewardAccount = accountIntegrationService
+                        .getActiveTwdCheckingAccounts(customerId)
+                        .stream()
+                        .findFirst()
+                        .orElseThrow(() -> new BusinessException("找不到可入帳的台幣活存帳戶"));
+                CashRequest rewardRequest = new CashRequest();
+                rewardRequest.setAccountNumber(rewardAccount.getAccountNumber());
+                rewardRequest.setAmount(cashbackAmount);
+                rewardRequest.setNote("CARD_REWARD " + billingMonth);
+
+                CashResponse rewardResponse = transferService.creditCardReward(rewardRequest);
+
+                savedBill.setRewardReferenceId(
+                        rewardResponse.getReferenceId());
+
+                savedBill.setRewardPosted(true);
+
+                cardBillRepository.save(savedBill);
+            }
+
             txns.forEach(txn -> txn.setBill(savedBill));
             cardTransactionRepository.saveAll(txns);
             count++;
