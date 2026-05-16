@@ -65,7 +65,7 @@ public class CustomerProfile {
     @Column(name = "account_purpose", length = 30)
     private String accountPurpose;
 
-    @Column(name = "fund_source", length = 30)
+    @Column(name = "fund_source", length = 50)
     private String fundSource;
 
     @Column(name = "tax_residency", length = 10)
