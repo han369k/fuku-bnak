@@ -72,8 +72,9 @@ public class SecurityConfig {
                         .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers("/img/**").permitAll()
 
-                        // === 公開 API ===
+                        // === 公開 API & 付款API===
                         .requestMatchers("/api/public/**").permitAll()
+                        .requestMatchers("/api/linepay/**").permitAll()
 
                         //風控測試用
                         .requestMatchers("/api/risk/**").permitAll()

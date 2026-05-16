@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { getTransactions, createTransaction, getMerchantNames } from '@/api/userCardTxn'
 import { getMyCards } from '@/api/userCard'
+import { requestLinePay } from '@/api/userCardTxn'
 import dayjs from 'dayjs'
 
 const transactions = ref([])
@@ -44,7 +45,7 @@ const form = ref({
   cardId: '',
   merchantId: '',
   txnAmount: '',
-  txnType: 'PAYMENT',
+  txnType: 'PURCHASE',
   description: '',
 })
 const currentPage = ref(0)
@@ -102,7 +103,7 @@ const handleCreateTransaction = async () => {
       cardId: '',
       merchantId: '',
       txnAmount: '',
-      txnType: 'PAYMENT',
+      txnType: 'PURCHASE',
       description: '',
     }
 
@@ -110,7 +111,39 @@ const handleCreateTransaction = async () => {
     await fetchTransactions()
   } catch (err) {
     console.error(err)
-    alert(err.response?.data?.message ||'Create transaction failed')
+    alert(err.response?.data?.message || 'Create transaction failed')
+  }
+}
+
+const handleLinePay = async () => {
+  try {
+    if (!form.value.cardId || !form.value.merchantId || !form.value.txnAmount || !form.value.description.trim()) {
+      alert('Please fill all required fields')
+      return
+    }
+
+    const response = await requestLinePay({
+      cardId: form.value.cardId,
+      merchantId: form.value.merchantId,
+      amount: form.value.txnAmount,
+      description: form.value.description,
+    })
+
+    console.log(response)
+
+    const paymentUrl = response.info?.paymentUrl?.web || response.paymentUrl
+    if (response.orderId) {
+      sessionStorage.setItem('linepay_order_id', response.orderId)
+    }
+    if (!paymentUrl) {
+      throw new Error('LINE Pay payment URL not found')
+    }
+
+    // 跳轉 LINE Pay
+    window.location.href = paymentUrl
+  } catch (err) {
+    console.error(err)
+    alert(err.response?.data?.message || 'LINE Pay request failed')
   }
 }
 
@@ -202,9 +235,9 @@ onMounted(async () => {
               v-model="form.txnType"
               class="w-full border border-stone-300 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-stone-400"
             >
-              <option value="PAYMENT">PAYMENT</option>
+              <option value="PURCHASE">PURCHASE</option>
 
-              <option value="REFUND">REFUND</option>
+              <!-- <option value="REFUND">REFUND</option> -->
             </select>
           </div>
 
@@ -222,12 +255,20 @@ onMounted(async () => {
         </div>
 
         <!-- button -->
-        <div class="mt-8">
+        <div class="mt-8 flex gap-4">
+          <!--normal transaction-->
           <button
             @click="handleCreateTransaction"
-            class="bg-stone-700 hover:bg-stone-800 text-white px-8 py-3 rounded-2xl transition duration-200"
+            class="min-w-[190px] rounded-2xl bg-stone-400 px-8 py-3 text-base font-medium text-white transition duration-200 hover:bg-stone-500"
           >
             Create Transaction
+          </button>
+          <!--line pay-->
+          <button
+            @click="handleLinePay"
+            class="min-w-[190px] rounded-2xl bg-[#06C755] px-8 py-3 text-base font-medium text-white transition duration-200 hover:bg-[#05b34c]"
+          >
+            Pay With LINE Pay
           </button>
         </div>
       </div>
@@ -302,33 +343,24 @@ onMounted(async () => {
                 </td>
 
                 <!-- type -->
+                <!-- type -->
                 <td class="py-5">
                   <span
-                    v-if="txn.txnType === 'PAYMENT'"
+                    v-if="txn.txnType === 'PURCHASE'"
                     class="bg-stone-200 text-stone-700 px-4 py-1 rounded-full text-sm"
                   >
-                    PAYMENT
+                    PURCHASE
                   </span>
 
-                  <span v-else class="bg-red-100 text-red-700 px-4 py-1 rounded-full text-sm">
-                    REFUND
-                  </span>
-                </td>
-
-                <!-- refunded -->
-                <td class="py-5">
                   <span
-                    v-if="txn.refunded"
+                    v-else-if="txn.txnType === 'REFUND'"
                     class="bg-red-100 text-red-700 px-4 py-1 rounded-full text-sm"
                   >
-                    Refunded
+                    REFUND
                   </span>
 
-                  <span
-                    v-else
-                    class="bg-emerald-100 text-emerald-700 px-4 py-1 rounded-full text-sm"
-                  >
-                    Active
+                  <span v-else class="bg-slate-100 text-slate-600 px-4 py-1 rounded-full text-sm">
+                    {{ txn.txnType }}
                   </span>
                 </td>
               </tr>

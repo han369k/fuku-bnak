@@ -21,3 +21,15 @@ export const createTransaction = (data) => {
 export const getMerchantNames = () => {
     return api.get(`${BASE_URL}/merchants`).then(unwrap);
 }
+
+export const requestLinePay = (data) => {
+    return api.post('/api/linepay/request', data).then(unwrap);
+}
+export const confirmLinePay = (transactionId,orderId) => {
+    return api.get('/api/linepay/confirm', {
+        params: {
+            transactionId,
+            orderId
+        }
+    }).then(unwrap);
+}
