@@ -28,10 +28,12 @@ import com.javaeasybank.creditcard.repository.CardBillRepository;
 import com.javaeasybank.creditcard.repository.CardTxnRepository;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Transactional
 @RequiredArgsConstructor
+@Slf4j
 public class BillService {
 
     private final CardBillRepository cardBillRepository;
@@ -99,29 +101,7 @@ public class BillService {
 
             CardBill savedBill = cardBillRepository.save(bill);
 
-            if (cashbackAmount.compareTo(BigDecimal.ZERO) > 0) {
-
-                String customerId = cardAccount.getCustomer().getCustomerId();
-
-                AccountResponse rewardAccount = accountIntegrationService
-                        .getActiveTwdCheckingAccounts(customerId)
-                        .stream()
-                        .findFirst()
-                        .orElseThrow(() -> new BusinessException("找不到可入帳的台幣活存帳戶"));
-                CashRequest rewardRequest = new CashRequest();
-                rewardRequest.setAccountNumber(rewardAccount.getAccountNumber());
-                rewardRequest.setAmount(cashbackAmount);
-                rewardRequest.setNote("CARD_REWARD " + billingMonth);
-
-                CashResponse rewardResponse = transferService.creditCardReward(rewardRequest);
-
-                savedBill.setRewardReferenceId(
-                        rewardResponse.getReferenceId());
-
-                savedBill.setRewardPosted(true);
-
-                cardBillRepository.save(savedBill);
-            }
+            postCashbackReward(savedBill, cardAccount, cashbackAmount, billingMonth);
 
             txns.forEach(txn -> txn.setBill(savedBill));
             cardTransactionRepository.saveAll(txns);
@@ -138,5 +118,46 @@ public class BillService {
 
     private long resolveDueDays(CardAccount cardAccount) {
         return cardAccount.getDueDays() == null ? 14L : cardAccount.getDueDays().longValue();
+    }
+
+    private void postCashbackReward(
+            CardBill savedBill,
+            CardAccount cardAccount,
+            BigDecimal cashbackAmount,
+            String billingMonth) {
+        if (cashbackAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            return;
+        }
+
+        try {
+            String customerId = cardAccount.getCustomer().getCustomerId();
+
+            AccountResponse rewardAccount = accountIntegrationService
+                    .getActiveTwdCheckingAccounts(customerId)
+                    .stream()
+                    .findFirst()
+                    .orElseThrow(() -> new BusinessException("找不到可入帳的台幣活存帳戶"));
+
+            CashRequest rewardRequest = new CashRequest();
+            rewardRequest.setAccountNumber(rewardAccount.getAccountNumber());
+            rewardRequest.setAmount(cashbackAmount);
+            rewardRequest.setNote("CARD_REWARD " + billingMonth);
+
+            CashResponse rewardResponse = transferService.creditCardReward(rewardRequest);
+
+            savedBill.setRewardReferenceId(rewardResponse.getReferenceId());
+            savedBill.setRewardPosted(true);
+            cardBillRepository.save(savedBill);
+        } catch (BusinessException e) {
+            savedBill.setRewardPosted(false);
+            cardBillRepository.save(savedBill);
+            log.warn(
+                    "Failed to post card reward. billId={}, cardAccountId={}, billingMonth={}, amount={}, reason={}",
+                    savedBill.getBillId(),
+                    cardAccount.getId(),
+                    billingMonth,
+                    cashbackAmount,
+                    e.getMessage());
+        }
     }
 }

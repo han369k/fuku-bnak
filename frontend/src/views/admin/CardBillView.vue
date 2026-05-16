@@ -109,8 +109,8 @@ const fetchBills = async (page = 1) => {
 
 const handleGenerateBills = async () => {
   try {
-    const response = await generateBills()
-    message.success(response.message)
+    const count = await generateBills()
+    message.success(`成功產生 ${count} 筆帳單`)
     await fetchBills()
   } catch (error) {
     console.log(error)
