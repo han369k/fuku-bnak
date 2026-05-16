@@ -117,7 +117,7 @@ public class CustomerAuthController {
     public ResponseEntity<ApiResponse<String>> requestPasswordReset(
             @RequestBody CustomerRespository.PasswordResetEmailRequest request) {
         customerAuthService.requestPasswordReset(request);
-        return ResponseEntity.ok(ApiResponse.success("密碼重設連結已發送至您的信箱"));
+        return ResponseEntity.ok(ApiResponse.success("密碼重設連結已發送至您的電子信箱"));
     }
 
     // ===== 執行密碼重設 =====

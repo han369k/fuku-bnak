@@ -49,7 +49,7 @@
           </div>
         </template>
         <template v-else-if="column.key === 'action'">
-          <a-tag :color="actionColor(record.action)">{{ record.action }}</a-tag>
+          <a-tag class="action-tag" :color="actionColor(record.action)">{{ record.action }}</a-tag>
         </template>
         <template v-else-if="column.key === 'target'">
           <span class="mono-text">{{ record.target || '-' }}</span>
@@ -89,8 +89,8 @@ const loading = ref(false)
 const columns = [
   { title: 'ID',    dataIndex: 'id',         key: 'id',         width: 60 },
   { title: '操作人員', dataIndex: 'empName',  key: 'emp',        width: 160 },
-  { title: '動作',  dataIndex: 'action',     key: 'action',     width: 130 },
-  { title: '目標',  dataIndex: 'target',     key: 'target',     width: 100 },
+  { title: '動作',  dataIndex: 'action',     key: 'action',     width: 150 },
+  { title: '目標',  dataIndex: 'target',     key: 'target',     width: 120 },
   {
     title: '詳情',
     dataIndex: 'details',
@@ -108,12 +108,24 @@ const actionColorMap = {
   CREATE_EMP: 'blue',
   UPDATE_EMP: 'orange',
   SUSPEND_EMP: 'red',
+  FAILED_LOGIN: 'red',
+  UNAUTHORIZED_UPDATE_ACCOUNT_STATUS: 'volcano',
+  UNAUTHORIZED_DEACTIVATE_CUSTOMER: 'volcano',
+  DEACTIVATE_CUSTOMER: 'red',
+  ACTIVATE_CUSTOMER: 'green',
+  UPLOAD_CUSTOMER_DOCUMENT: 'blue',
+  SEED_CUSTOMER_DATA: 'purple',
   SEED_DATA:  'purple',
   CREATE_CUSTOMER: 'cyan',
   UPDATE_CUSTOMER: 'geekblue',
+  EXPORT_CUSTOMER: 'blue',
+  REVIEW_CREDIT: 'gold',
+  READ_CONFIG: 'default',
 }
 
 function actionColor(action) {
+  if (String(action || '').startsWith('UNAUTHORIZED_')) return 'volcano'
+  if (String(action || '').startsWith('FAILED_')) return 'red'
   return actionColorMap[action] || 'default'
 }
 
@@ -235,6 +247,15 @@ onMounted(() => {
   font-size: 11px;
   color: #8c8c8c;
   margin-top: 1px;
+}
+
+.action-tag {
+  max-width: 128px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.35;
+  padding: 3px 7px;
 }
 
 /* 詳情欄位：截斷 + hover 顯示全文 */
