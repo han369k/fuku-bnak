@@ -6,9 +6,8 @@ import com.javaeasybank.customer.entity.CustomerProfile;
 import com.javaeasybank.customer.repository.CustomerAuthRepository;
 import com.javaeasybank.customer.repository.CustomerProfileRepository;
 import com.javaeasybank.customer.util.TaiwanIdValidator;
-import com.javaeasybank.risk.enums.BlacklistType;
 import com.javaeasybank.risk.service.BlackListService;
-import com.javaeasybank.risk.service.CreditSCoreService;
+import com.javaeasybank.risk.service.CreditScoreService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -27,7 +26,7 @@ public class CustomerServiceImpl implements CustomerService {
     private final CustomerProfileRepository customerProfileRepository;
     private final CustomerAuthRepository customerAuthRepository;
     //風控暫時用
-    private final CreditSCoreService  creditSCoreService;
+    private final CreditScoreService creditSCoreService;
 
     // 加入 JdbcTemplate 依賴，用於執行原生 SQL
     private final JdbcTemplate jdbcTemplate;
@@ -38,7 +37,7 @@ public class CustomerServiceImpl implements CustomerService {
     private final SecureRandom secureRandom = new SecureRandom();
 
     public CustomerServiceImpl(CustomerProfileRepository customerProfileRepository,
-                               CustomerAuthRepository customerAuthRepository, CreditSCoreService creditSCoreService,
+                               CustomerAuthRepository customerAuthRepository, CreditScoreService creditSCoreService,
                                JdbcTemplate jdbcTemplate,
                                BlackListService blackListService) {
         this.customerProfileRepository = customerProfileRepository;
@@ -97,7 +96,7 @@ public class CustomerServiceImpl implements CustomerService {
         profile.setIsPep(Boolean.TRUE.equals(profile.getIsPep()));
 
         CustomerProfile saved = customerProfileRepository.save(profile);
-        creditSCoreService.initializeCreditInfo(profile.getCustomerId(),profile.getBirthday());
+        //creditSCoreService.initializeCreditInfo(profile.getCustomerId(),profile.getBirthday());
         return convertToResponse(saved);
     }
 
