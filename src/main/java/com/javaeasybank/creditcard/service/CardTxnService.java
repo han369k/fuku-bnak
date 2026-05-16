@@ -15,6 +15,7 @@ import com.javaeasybank.creditcard.entity.CardAccount;
 import com.javaeasybank.creditcard.entity.CardTransaction;
 import com.javaeasybank.creditcard.entity.CreditCard;
 import com.javaeasybank.creditcard.enums.CardStatus;
+import com.javaeasybank.creditcard.enums.TransactionChannel;
 import com.javaeasybank.creditcard.enums.TxnType;
 import com.javaeasybank.creditcard.mapper.CardTxnMapper;
 import com.javaeasybank.creditcard.repository.CardTxnRepository;
@@ -41,7 +42,7 @@ public class CardTxnService {
         CreditCard card = cardRepository.findById(dto.getCardId())
                 .orElseThrow(() -> new BusinessException("Card not found"));
         // 檢查卡片狀態
-        if(card.getStatus() != CardStatus.ACTIVE){
+        if (card.getStatus() != CardStatus.ACTIVE) {
             throw new BusinessException("卡片尚未開通");
         }
 
@@ -77,10 +78,16 @@ public class CardTxnService {
 
         txn.setMerchant(merchant);
 
+        txn.setChannel(
+                dto.getChannel() != null
+                        ? dto.getChannel()
+                        : TransactionChannel.CARD);
+        txn.setExternalTxnId(dto.getExternalTxnId());
+
         // ===== 更新已使用額度 =====
         card.setCurrentDebt(zeroIfNull(card.getCurrentDebt()).add(dto.getTxnAmount()));
         // 計算回饋
-        //初始值為0，避免為null
+        // 初始值為0，避免為null
         BigDecimal cashbackRate = BigDecimal.ZERO;
 
         if (card.getCardType() != null &&
@@ -190,7 +197,7 @@ public class CardTxnService {
         refundTxn.setCashbackRate(originalTxn.getCashbackRate());
         if (originalTxn.getCashbackAmount() != null) {
             refundTxn.setCashbackAmount(originalTxn.getCashbackAmount().negate());
-        }else {
+        } else {
             refundTxn.setCashbackAmount(BigDecimal.ZERO);
         }
 

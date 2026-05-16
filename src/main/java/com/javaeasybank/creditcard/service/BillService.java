@@ -11,7 +11,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.javaeasybank.common.exception.BusinessException;
 import com.javaeasybank.creditcard.dto.CardBillResponseDto;
 import com.javaeasybank.creditcard.entity.CardAccount;
 import com.javaeasybank.creditcard.entity.CardBill;

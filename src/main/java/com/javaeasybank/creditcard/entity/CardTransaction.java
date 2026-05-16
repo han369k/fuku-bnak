@@ -3,6 +3,7 @@ package com.javaeasybank.creditcard.entity;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import com.javaeasybank.creditcard.enums.TransactionChannel;
 import com.javaeasybank.creditcard.enums.TxnType;
 
 import jakarta.persistence.Column;
@@ -49,6 +50,11 @@ public class CardTransaction {
 
     @Column(length = 200)
     private String description;
+
+    @Enumerated(EnumType.STRING)
+    private TransactionChannel channel;
+
+    private String externalTxnId;
 
     // 退款沖銷用
     @ManyToOne
