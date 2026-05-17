@@ -34,8 +34,6 @@ import com.javaeasybank.creditcard.repository.CardBillRepository;
 import com.javaeasybank.creditcard.repository.CreditCardRepository;
 import com.javaeasybank.customer.entity.CustomerProfile;
 import com.javaeasybank.customer.repository.CustomerProfileRepository;
-import com.javaeasybank.loan.dto.requests.LoanStatusCallbackRequestDTO;
-import com.javaeasybank.loan.enums.LoanApplicationStatus;
 import com.javaeasybank.loan.service.LoanApplicationService;
 import com.javaeasybank.loan.service.LoanRepaymentService;
 import lombok.RequiredArgsConstructor;
@@ -116,7 +114,8 @@ public class AccountIntegrationService {
         account.setChangedBy(SYSTEM_OPERATOR);
         Account saved = accountRepository.save(account);
 
-        log.info("建立貸款帳戶成功: customerId={}, loanAccountNumber={}", customer.getCustomerId(), accountNumber);
+        log.info("[createLoanAccount] 貸款帳戶建立完成: customerId={}, loanAccountNumber={}",
+                customer.getCustomerId(), accountNumber);
         return toLoanAccountResponse(saved);
     }
 
@@ -178,13 +177,9 @@ public class AccountIntegrationService {
                 public void afterCommit() {
                     log.info("[Disbursement] 帳務事務提交，通知 Loan 模組 applicationId={}", appId);
                     try {
-                        LoanStatusCallbackRequestDTO callbackDto = new LoanStatusCallbackRequestDTO();
-                        callbackDto.setCallerModule("ACCOUNT");
-                        callbackDto.setNewStatus(LoanApplicationStatus.DISBURSED);
-                        loanApplicationService.handleStatusCallback(appId, callbackDto);
+                        loanApplicationService.handleAccountDisbursedCallback(appId);
                     } catch (Exception e) {
-                        log.error("[Disbursement] Loan 回調失敗 applicationId={} error={}",
-                                appId, e.getMessage());
+                        log.error("[Disbursement] Loan 回調失敗 applicationId={}", appId, e);
                         // TODO（第五部）：寫入補傳表，搭配排程重試
                     }
                 }
@@ -200,6 +195,16 @@ public class AccountIntegrationService {
                 loanAccount.getLiability(),
                 bankDisbursement.getBalance(),
                 targetAccount.getBalance());
+    }
+
+    @Transactional(readOnly = true)
+    public boolean hasDisbursementRecordByApplicationId(String applicationId) {
+        if (applicationId == null || applicationId.isBlank()) {
+            return false;
+        }
+        return transLogRepository.existsByTransactionTypeAndNoteContaining(
+                TransactionType.LOAN_DISBURSEMENT,
+                "applicationId=" + applicationId);
     }
 
     @Transactional
