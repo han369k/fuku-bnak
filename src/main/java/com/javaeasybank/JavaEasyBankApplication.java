@@ -10,7 +10,8 @@ import java.util.regex.Pattern;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
-
+@EnableRetry
+@EnableAsync
 @EnableJpaAuditing
 @SpringBootApplication
 public class JavaEasyBankApplication {

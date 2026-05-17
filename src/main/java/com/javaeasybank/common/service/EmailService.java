@@ -127,5 +127,7 @@ public class EmailService {
 
         sendEmail(to, "Java Easy Bank - 貸款申請補件通知", html);
     }
+
+    public void sendAccountLockedNotification(String to, String username,String ipAddress) {}
 }
 
