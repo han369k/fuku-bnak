@@ -5,7 +5,10 @@ import com.javaeasybank.account.dto.request.LoanDisbursementRequest;
 import com.javaeasybank.account.dto.response.LoanAccountResponse;
 import com.javaeasybank.account.service.AccountIntegrationService;
 import com.javaeasybank.common.exception.BusinessException;
+import com.javaeasybank.common.service.EmailService;
 import com.javaeasybank.customer.repository.CustomerProfileRepository;
+import com.javaeasybank.customer.service.CustomerService;
+import com.javaeasybank.customer.service.CustomerServiceImpl;
 import com.javaeasybank.loan.client.LoanRiskClient;
 import com.javaeasybank.loan.dto.requests.*;
 import com.javaeasybank.loan.dto.response.LoanApplicationResponseDTO;
@@ -64,6 +67,8 @@ public class LoanApplicationService {
 
     @Autowired
     private CustomerProfileRepository customerProfileRepository;
+    @Autowired
+    private CustomerService customerService;
 
     @Autowired
     private LoanAccountService loanAccountService;
@@ -75,6 +80,9 @@ public class LoanApplicationService {
     @Lazy
     @Autowired
     private LoanApplicationService LAService;
+
+    @Autowired
+    private EmailService emailService;
 
     // ===查詢功能===
     // 依狀態顯示
@@ -124,8 +132,8 @@ public class LoanApplicationService {
 
     // 共用：填申請內容
     private void fillLoanContent(LoanApplication loan, String applyType,
-            BigDecimal applyAmount, Integer applyPeriod,
-            BigDecimal rate) {
+                                 BigDecimal applyAmount, Integer applyPeriod,
+                                 BigDecimal rate) {
         loan.setApplyType(applyType);
         loan.setApplyAmount(applyAmount);
         loan.setApplyPeriod(applyPeriod);
@@ -289,16 +297,39 @@ public class LoanApplicationService {
     }
 
     // 外部模組回調，更新主表狀態
-    // RISK   模組：PENDING_REVIEW → APPROVED / REJECTED
+    // RISK   模組：PENDING_REVIEW → APPROVED / REJECTED / RETURNED
     // ACCOUNT 模組：APPROVED      → DISBURSED
     public void handleStatusCallback(String applicationId, LoanStatusCallbackRequestDTO dto) {
-
+        log.info("[StatusCallback] 收到回調 applicationId={}, caller={}, newStatus={}",
+                applicationId, dto.getCallerModule(), dto.getNewStatus());
         LoanApplication loan = laRepo.findById(applicationId)
                 .orElseThrow(() -> new BusinessException("找不到申請編號：" + applicationId));
 
         String caller = dto.getCallerModule();
 
         if ("RISK".equals(caller)) {
+
+            // 攔截風控傳過來的「退回補件」通知
+            if (dto.getNewStatus() == LoanApplicationStatus.RETURNED) {
+
+                // 狀態不變，依然維持在審核中
+                log.info("[RiskCallback] 收到風控退回補件通知。保持狀態為 PENDING_REVIEW，觸發客戶郵件通知。applicationId={}", applicationId);
+
+                // 清空先前的送出時間，這樣前端網銀的「補件上傳按鈕」才會再度亮起允許客戶操作！
+                loan.setDocumentsSubmittedAt(null);
+                loan.setUpdateTime(LocalDateTime.now());
+                laRepo.save(loan);
+
+                String email = customerService.findEmailByCustomerId(loan.getCustomerId());
+                log.info("[LoanCallback] 準備發送補件通知 email={}, applicationId={}", email, loan.getApplicationId());
+                if (email != null) {
+                    emailService.sendLoanDocumentRequiredNotification(
+                            email, loan.getApplicationId(), loan.getApplyType(), loan.getApplyAmount());
+                } else {
+                    log.warn("[LoanCallback] 客戶無 email，略過通知。customerId={}", loan.getCustomerId());
+                }
+                return; //處理完補件通知，直接結束方法
+            }
 
             // 前置狀態：必須是 PENDING_REVIEW
             if (loan.getApplicationStatus() != LoanApplicationStatus.PENDING_REVIEW) {

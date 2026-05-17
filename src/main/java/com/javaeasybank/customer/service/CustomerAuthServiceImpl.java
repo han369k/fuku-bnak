@@ -47,10 +47,10 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
     @Value("${app.frontend-url:http://localhost:5173}")
     private String frontendUrl;
 
-    @Value("${app.demo.password-reset-email:nnor.0023067@gmail.com}")
+    @Value("${app.demo.password-reset-email:hmi550843@gmail.com}")
     private String demoPasswordResetEmail;
 
-    @Value("${app.demo.verification-email:nnor.0023067@gmail.com}")
+    @Value("${app.demo.verification-email:hmi550843@gmail.com}")
     private String demoVerificationEmail;
 
     // 用於產生隨機英數
