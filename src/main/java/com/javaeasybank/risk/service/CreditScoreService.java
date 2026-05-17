@@ -1,7 +1,7 @@
 package com.javaeasybank.risk.service;
 
+import com.javaeasybank.account.enums.FundSource;
 import com.javaeasybank.risk.dto.request.RiskReviewRequest;
-import com.javaeasybank.risk.enums.FundSource;
 import com.javaeasybank.risk.enums.Occupation;
 import com.javaeasybank.risk.utils.CreditMockUtils;
 import com.javaeasybank.risk.enums.RiskLevel;
@@ -145,8 +145,8 @@ public class CreditScoreService {
         if (fundSource == null) return 0;
         return switch (fundSource) {
             case SALARY -> 5;   // 薪資收入，最穩定
-            case PENSION -> 4;   // 退休金，穩定
-            case BUSINESS -> 3;   // 營業收入，有波動
+            case RETIREMENT -> 4;   // 退休金，穩定
+            case BUSINESS_INCOME -> 3;   // 營業收入，有波動
             case SAVINGS -> 3;   // 儲蓄
             case INVESTMENT -> 2;   // 投資收益，波動大
             case INHERITANCE -> 1;   // 繼承，一次性

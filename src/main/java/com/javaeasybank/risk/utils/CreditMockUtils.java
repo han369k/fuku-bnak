@@ -1,7 +1,7 @@
 package com.javaeasybank.risk.utils;
 
+import com.javaeasybank.account.enums.FundSource;
 import com.javaeasybank.risk.entity.CustomerCreditInfo;
-import com.javaeasybank.risk.enums.FundSource;
 import com.javaeasybank.risk.enums.Occupation;
 
 import java.math.BigDecimal;
@@ -89,8 +89,8 @@ public class CreditMockUtils {
 
         double maxRatio = fundSource == null ? 1.0 : switch (fundSource) {
             case SALARY      -> 0.8;
-            case PENSION     -> 0.3;
-            case BUSINESS    -> 1.5;
+            case RETIREMENT     -> 0.3;
+            case BUSINESS_INCOME    -> 1.5;
             case SAVINGS     -> 0.5;
             case INVESTMENT  -> 1.2;
             case INHERITANCE -> 0.2;
@@ -123,7 +123,7 @@ public class CreditMockUtils {
 
         double sourceBonus = fundSource == null ? 0 : switch (fundSource) {
             case INHERITANCE -> 0.15;
-            case PENSION     -> 0.10;
+            case RETIREMENT     -> 0.10;
             case SAVINGS     -> 0.05;
             default          -> 0;
         };

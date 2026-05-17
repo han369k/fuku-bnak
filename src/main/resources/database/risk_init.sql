@@ -29,8 +29,8 @@ CREATE TABLE REVIEW_TASK
     attachments   NVARCHAR(MAX) NULL,
     create_at     DATETIME DEFAULT GETDATE(), -- 自動記錄建立時間
     processed_at  DATETIME NULL,
-    version       BIGINT       DEFAULT 0,
-    attachments   NVARCHAR(MAX) NULL,             -- 補件文件清單（JSON 陣列，null = 尚未收到補件）
+    version       BIGINT   DEFAULT 0,
+    attachments   NVARCHAR(MAX) NULL,         -- 補件文件清單（JSON 陣列，null = 尚未收到補件）
     CONSTRAINT pk_review_task PRIMARY KEY (task_id)
 )
     GO
@@ -60,7 +60,7 @@ GO
 
 CREATE TABLE customer_credit_info
 (
-    customer_id     varchar(20)                             NOT NULL,
+    customer_id     varchar(20) NOT NULL,
     annual_income   decimal(15, 2),
     occupation      nvarchar(50),
     job             nvarchar(100),
@@ -72,7 +72,7 @@ CREATE TABLE customer_credit_info
         CONSTRAINT DF_customer_credit_info_is_pep DEFAULT 0 NOT NULL,
     final_score     int,
     risk_level      varchar(10),
-    last_updated_at datetime                                NOT NULL,
+    last_updated_at datetime    NOT NULL,
     CONSTRAINT pk_customer_credit_info PRIMARY KEY (customer_id)
 )
     GO

@@ -1,6 +1,6 @@
 package com.javaeasybank.risk.entity;
 
-import com.javaeasybank.risk.enums.FundSource;
+import com.javaeasybank.account.enums.FundSource;
 import com.javaeasybank.risk.enums.Occupation;
 import com.javaeasybank.risk.enums.RiskLevel;
 import jakarta.persistence.*;
