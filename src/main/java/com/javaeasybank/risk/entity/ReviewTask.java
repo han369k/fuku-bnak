@@ -73,4 +73,10 @@ public class ReviewTask {
     private Long version;
 
 
+    @PrePersist
+    protected void onCreate() {
+        if (createAt == null) {
+            createAt = LocalDateTime.now();
+        }
+    }
 }

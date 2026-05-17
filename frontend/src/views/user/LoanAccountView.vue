@@ -81,12 +81,39 @@
             </div>
           </div>
 
-          <!-- 核心資訊格：4欄 × 2列 -->
-          <div class="info-grid">
-            <div class="info-cell">
-              <span class="info-label">貸款本金</span>
-              <span class="info-val accent">$ {{ formatAmount(acc.principalAmount) }}</span>
+          <!-- ── 圓形還款進度圖 ── -->
+          <div class="principal-progress">
+            <div class="circle-chart-wrap">
+              <svg viewBox="0 0 120 120" class="circle-svg">
+                <!-- 軌道 -->
+                <circle cx="60" cy="60" r="48" fill="none" stroke="var(--surface-2)" stroke-width="10"/>
+                <!-- 進度弧（已還款比例） -->
+                <circle
+                  cx="60" cy="60" r="48"
+                  fill="none"
+                  :stroke="progressStroke(acc)"
+                  stroke-width="10"
+                  stroke-linecap="round"
+                  stroke-dasharray="301.59"
+                  :stroke-dashoffset="301.59 * (1 - paidRatio(acc))"
+                  transform="rotate(-90 60 60)"
+                  style="transition: stroke-dashoffset 0.6s ease;"
+                />
+              </svg>
+              <!-- 中心文字 -->
+              <div class="circle-center-text">
+                <span class="cctext-remaining">$ {{ formatDecimal(acc.remainingPrincipal) }}</span>
+                <span class="cctext-sep">/ {{ formatDecimal(acc.principalAmount) }}</span>
+                <span class="cctext-pct" :style="{ color: progressStroke(acc) }">
+                  {{ Math.round(paidRatio(acc) * 100) }}% 已還清
+                </span>
+              </div>
             </div>
+            <div class="circle-label">剩餘本金 / 貸款本金</div>
+          </div>
+
+          <!-- 核心資訊格：3欄 × 2列 -->
+          <div class="info-grid">
             <div class="info-cell">
               <span class="info-label">月繳金額</span>
               <span class="info-val">$ {{ formatDecimal(acc.monthlyPayment) }}</span>
@@ -94,6 +121,9 @@
             <div class="info-cell">
               <span class="info-label">年利率</span>
               <span class="info-val">{{ formatRate(acc.rate) }}</span>
+              <span class="info-sub" v-if="acc.rate != null">
+                月利率 {{ formatMonthlyRate(acc.rate) }}
+              </span>
             </div>
             <div class="info-cell">
               <span class="info-label">貸款期數</span>
@@ -101,7 +131,6 @@
             </div>
             <div class="info-cell">
               <span class="info-label">已繳期數</span>
-              <!-- 進度條：已繳 / 總期數 -->
               <span class="info-val">
                 {{ acc.paidPeriods }} / {{ acc.confirmedPeriod }}
                 <span class="progress-bar-wrap">
@@ -114,16 +143,11 @@
               </span>
             </div>
             <div class="info-cell">
-              <span class="info-label">剩餘本金</span>
-              <span class="info-val">$ {{ formatDecimal(acc.remainingPrincipal) }}</span>
-            </div>
-            <div class="info-cell">
               <span class="info-label">撥款日</span>
               <span class="info-val mono">{{ formatDate(acc.startDate) }}</span>
             </div>
             <div class="info-cell">
               <span class="info-label">下次繳款日</span>
-              <!-- PAID_OFF 時顯示「—」 -->
               <span class="info-val mono" :class="{ 'overdue-text': isOverdue(acc) }">
                 {{ acc.nextPaymentDate ? formatDate(acc.nextPaymentDate) : '—' }}
               </span>
@@ -242,6 +266,18 @@ function progressClass(acc) {
   return 'prog-active'
 }
 
+// ── helper：圓形進度圖 ──
+function paidRatio(acc) {
+  if (!acc.principalAmount || acc.principalAmount === 0) return 0
+  const paid = acc.principalAmount - (acc.remainingPrincipal ?? acc.principalAmount)
+  return Math.min(1, Math.max(0, paid / acc.principalAmount))
+}
+function progressStroke(acc) {
+  if (acc.accountStatus === 'OVERDUE')  return '#A65A4D'
+  if (acc.accountStatus === 'PAID_OFF') return '#4A8C5C'
+  return '#5C6B5F'
+}
+
 // ── helper：逾期判斷（用於下次繳款日變紅）──
 function isOverdue(acc) {
   return acc.accountStatus === 'OVERDUE'
@@ -263,6 +299,9 @@ function formatDecimal(n) {
 }
 function formatRate(r) {
   return r != null ? (r * 100).toFixed(2) + ' %' : '—'
+}
+function formatMonthlyRate(r) {
+  return r != null ? ((r / 12) * 100).toFixed(4) + ' %' : '—'
 }
 function formatDate(d) {
   if (!d) return '—'
@@ -495,10 +534,65 @@ onMounted(loadAccounts)
   background: rgba(92,107,95,0.08);
 }
 
+/* ── 圓形還款進度圖 ── */
+.principal-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 16px 18px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.circle-chart-wrap {
+  position: relative;
+  width: 120px;
+  height: 120px;
+}
+.circle-svg {
+  width: 120px;
+  height: 120px;
+  display: block;
+}
+.circle-center-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.cctext-remaining {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  font-family: 'IBM Plex Mono', monospace;
+}
+.cctext-sep {
+  font-size: 10px;
+  color: var(--muted-2);
+  font-family: 'IBM Plex Mono', monospace;
+}
+.cctext-pct {
+  font-size: 10px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+.circle-label {
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--muted-2);
+  letter-spacing: 0.05em;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
 /* ── 資訊格 ── */
 .info-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 1px;
   background: var(--border);
   border-bottom: 1px solid var(--border);
@@ -535,6 +629,12 @@ onMounted(loadAccounts)
 }
 .info-val.mono { font-family: 'IBM Plex Mono', monospace; font-size: 13px; }
 .overdue-text { color: var(--red) !important; }
+.info-sub {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted-2);
+  font-family: 'IBM Plex Mono', monospace;
+}
 
 /* 進度條 */
 .progress-bar-wrap {

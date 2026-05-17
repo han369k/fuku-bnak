@@ -66,4 +66,11 @@ public class RiskEventLog {
     @CreatedDate
     private LocalDateTime createdAt;
 
+    @PrePersist
+    protected void onCreate() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
+
 }
