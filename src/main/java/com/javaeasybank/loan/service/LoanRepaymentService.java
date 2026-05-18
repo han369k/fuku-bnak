@@ -183,7 +183,7 @@ public class LoanRepaymentService {
                         .orElse(null);
                 emailService.sendLoanRepaymentPaidNotification(
                         email,
-                        account.getAccountNumber(),
+                        account.getAccountId(),
                         last.getPeriodIndex(),
                         account.getConfirmedPeriod(),
                         last.getTotalAmount(),
@@ -244,7 +244,7 @@ public class LoanRepaymentService {
                     emailService.sendLoanPaidOffNotification(
                             email,
                             loan.getApplicationId(),
-                            account.getAccountNumber(),
+                            account.getAccountId(),
                             loan.getApplyType(),
                             account.getConfirmedPeriod());
                 } else {

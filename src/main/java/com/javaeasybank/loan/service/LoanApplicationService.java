@@ -501,8 +501,10 @@ public class LoanApplicationService {
                         .orElse(null);
                 String disbEmail = customerService.findEmailByCustomerId(loan.getCustomerId());
                 if (disbEmail != null && detail != null) {
-                    String firstPaymentDate = loanAccountService
-                            .getByApplicationId(applicationId).getNextPaymentDate().toString();
+                    var loanAccount = loanAccountService.getByApplicationId(applicationId);
+                    String firstPaymentDate = loanAccount.getNextPaymentDate() != null
+                            ? loanAccount.getNextPaymentDate().toString()
+                            : null;
                     emailService.sendLoanApprovedAndDisbursedNotification(
                             disbEmail,
                             applicationId,
@@ -510,7 +512,7 @@ public class LoanApplicationService {
                             detail.getConfirmedAmount(),
                             detail.getConfirmedPeriod(),
                             detail.getConfirmedRate(),
-                            dto.getLoanAccountNumber(),
+                            loanAccount.getAccountId(),
                             loan.getDisbursementAccount(),
                             firstPaymentDate);
                 } else {
