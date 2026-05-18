@@ -1,7 +1,10 @@
 package com.javaeasybank.creditcard.service;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
@@ -29,6 +32,7 @@ import com.javaeasybank.creditcard.repository.CardAccountRepository;
 import com.javaeasybank.creditcard.repository.CardBillRepository;
 import com.javaeasybank.creditcard.repository.CardBillSpecification;
 import com.javaeasybank.creditcard.repository.CardTxnRepository;
+import com.javaeasybank.customer.entity.CustomerProfile;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -51,16 +55,15 @@ public class BillService {
     // 查帳單
 
     public Page<CardBillResponseDto> getBills(String customerName,
-        String billingMonth,
-        BillStatus billStatus,
-        Pageable pageable) {
-        Specification<CardBill> spec =
-            CardBillSpecification.search(customerName, billingMonth, billStatus);
-        return cardBillRepository.findAll(spec,pageable).map(cardBillMapper::toDto);
+            String billingMonth,
+            BillStatus billStatus,
+            Pageable pageable) {
+        Specification<CardBill> spec = CardBillSpecification.search(customerName, billingMonth, billStatus);
+        return cardBillRepository.findAll(spec, pageable).map(cardBillMapper::toDto);
     }
 
     // 產生帳單
-    public Integer generateBills() {
+    public Integer generateBills() throws IOException {
         int count = 0;
         String billingMonth = YearMonth.now().toString();
 
@@ -134,11 +137,26 @@ public class BillService {
                     pdfPassword);
 
             emailService.sendEmailWithAttachment(
-                    cardAccount.getCustomer().getEmail(),
-                    "Java Easy Bank - 信用卡月結帳單",
-                    "您的信用卡月結帳單已產生，PDF 附件請使用身分證字號末 4 碼開啟。",
-                    "card-bill-" + billingMonth + ".pdf",
+            cardAccount.getCustomer().getEmail(),
+            "Java Easy Bank - 信用卡月結帳單",
+            "您的信用卡月結帳單已產生，PDF 附件請使用身分證字號末 4 碼開啟。",
+            "card-bill-" + billingMonth + ".pdf",
+            pdfBytes);
+
+            //寄檔案到本地
+            /*
+            CustomerProfile customer = cardAccount.getCustomer();
+            String last4 = customer.getIdNumber()
+                    .substring(customer.getIdNumber().length() - 4);
+            Files.write(
+                    Paths.get(
+                            "uploads",
+                            customer.getName()
+                                    + "-"
+                                    + last4
+                                    + ".pdf"),
                     pdfBytes);
+             */
 
             postCashbackReward(savedBill, cardAccount, cashbackAmount, billingMonth);
 
