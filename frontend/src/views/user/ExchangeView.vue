@@ -112,10 +112,11 @@
     <!-- 無外幣帳戶提示 modal -->
     <transition name="modal-fade">
       <div v-if="showNoForeignModal" class="jb-modal-overlay">
-        <div class="jb-modal">
+        <div class="jb-modal jb-card">
           <h3 class="jb-modal-title">尚未擁有外幣帳戶</h3>
-          <p class="jb-modal-content">您目前沒有任何外幣存款帳戶，無法使用換匯服務。請先前往開戶申請頁面申請外幣活期存款帳戶。</p>
+          <p class="jb-modal-content">您目前沒有任何外幣存款帳戶，無法使用換匯服務。<br/>請先前往開戶申請頁面申請外幣活期存款帳戶。</p>
           <div class="jb-modal-actions">
+            <button class="jb-btn jb-btn-secondary" @click="goHome">返回首頁</button>
             <button class="jb-btn jb-btn-primary" @click="goToApply">前往申請</button>
           </div>
         </div>
@@ -162,6 +163,7 @@ const showResult = ref(false)
 const resultStatus = ref('success')
 const resultTitle = ref('')
 const resultSub = ref('')
+const showNoForeignModal = ref(false)
 
 const exchangeAccounts = computed(() =>
   accounts.value.filter(a => a.status === 'ACTIVE' && a.accountType !== 'LOAN'),
@@ -235,6 +237,10 @@ onMounted(async () => {
 
 function goToApply() {
   router.push({ name: 'user-account-application' })
+}
+
+function goHome() {
+  router.push({ name: 'user-home' })
 }
 
 async function loadAccounts() {
@@ -578,6 +584,7 @@ h2 {
   }
 }
 
+/* === Modal Styles === */
 .jb-modal-overlay {
   position: fixed;
   inset: 0;
@@ -601,7 +608,8 @@ h2 {
   box-shadow: 0 12px 36px rgba(63, 74, 66, 0.12);
 }
 .jb-modal-title {
-  font-size: 18px;
+  font-family: var(--font-heading);
+  font-size: 20px;
   font-weight: 600;
   color: var(--text-primary);
   margin: 0;
@@ -619,6 +627,30 @@ h2 {
 }
 .modal-fade-enter-active, .modal-fade-leave-active { transition: opacity 0.2s var(--ease); }
 .modal-fade-enter-from, .modal-fade-leave-to { opacity: 0; }
+.jb-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+}
+.jb-btn-primary {
+  background: var(--primary);
+  color: white;
+}
+.jb-btn-primary:hover {
+  background: var(--primary-dark);
+}
+.jb-btn-secondary {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+.jb-btn-secondary:hover {
+  border-color: var(--text-primary);
+  color: var(--text-primary);
+}
 
 @media (max-width: 860px) {
   .exchange-page {
