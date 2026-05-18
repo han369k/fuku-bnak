@@ -115,17 +115,6 @@ public class CreditScoreService {
         return ccRepos.save(ccInfo);
     }
 
-    // 新增一個方法，用於安全地獲取 CustomerCreditInfo，若無則回傳 Optional.empty()
-    public Optional<CustomerCreditInfo> findByCustomerId(String customerId) {
-        return ccRepos.findById(customerId);
-    }
-
-    // 新增一個方法，用於獲取 CustomerCreditInfo
-    public CustomerCreditInfo getCreditInfo(String customerId) {
-        return ccRepos.findById(customerId)
-                .orElseThrow(() -> new BusinessException("查無此客戶信用資料"));
-    }
-
     /**
      * 對已存在的 CustomerCreditInfo 重新評分（例如資料更新後）
      */
@@ -153,6 +142,38 @@ public class CreditScoreService {
         ccInfo.setFinalScore(total);
         ccInfo.setRiskLevel(resolveRiskLevel(ccInfo, total));
         log.info("[CreditScore] === 評分引擎結束 分數: {}, 等級: {} ===", total, ccInfo.getRiskLevel());
+    }
+
+    /**
+     * 將 CustomerProfile 的最新資料同步回 CustomerCreditInfo，再重新評分。
+     * 供 CustomerServiceImpl.updateCustomer 呼叫。
+     */
+    @Transactional
+    public CustomerCreditInfo syncAndRescore(String customerId,
+                                             Occupation occupation,
+                                             BigDecimal annualIncome,
+                                             FundSource fundSource,
+                                             Boolean isPep) {
+        CustomerCreditInfo ccInfo = ccRepos.findById(customerId)
+                .orElseThrow(() -> new IllegalArgumentException("CustomerCreditInfo not found: " + customerId));
+
+        if (occupation != null) {
+            ccInfo.setOccupation(occupation);
+        }
+        if (annualIncome != null) {
+            ccInfo.setAnnualIncome(annualIncome);
+        }
+        if (fundSource != null) {
+            ccInfo.setFundSource(fundSource);
+        }
+        if (isPep != null) {
+            ccInfo.setIsPep(isPep);
+        }
+
+        score(ccInfo); // 用更新後的欄位重算
+        log.info("[CreditScore] syncAndRescore customerId={} finalScore={} riskLevel={}",
+                customerId, ccInfo.getFinalScore(), ccInfo.getRiskLevel());
+        return ccRepos.save(ccInfo);
     }
 
     /**
@@ -246,58 +267,5 @@ public class CreditScoreService {
             case INHERITANCE -> 1; // 繼承，一次性
             case OTHER -> 1;
         };
-    }
-
-    /**
-     * 更新現有的信用資料並重新評分。
-     * 如果 DTO 中的欄位為 null，則保留資料庫原值。
-     */
-    @Transactional
-    public CustomerCreditInfo updateIfPresent(RiskReviewRequest dto) {
-        log.info("[CreditScore] 執行 updateIfPresent, DTO: {}", dto);
-
-        CustomerCreditInfo info = ccRepos.findById(dto.getCustomerId())
-                .orElse(null);
-
-        if (info == null) {
-            log.warn("[CreditScore] 找不到客戶 {} 的信用資料，略過更新", dto.getCustomerId());
-            return null;
-        }
-
-        log.info("[CreditScore] 找到舊信用資料，開始覆蓋欄位...");
-
-        Optional.ofNullable(dto.getAnnualIncome()).ifPresent(v -> {
-            log.info("[CreditScore] 覆蓋年收入: {} -> {}", info.getAnnualIncome(), v);
-            info.setAnnualIncome(v);
-        });
-        Optional.ofNullable(dto.getExternalScore()).ifPresent(v -> {
-            log.info("[CreditScore] 覆蓋聯徵分數: {} -> {}", info.getExternalScore(), v);
-            info.setExternalScore(v);
-        });
-        Optional.ofNullable(dto.getOtherBankDebt()).ifPresent(v -> {
-            info.setOtherBankDebt(v);
-        });
-        Optional.ofNullable(dto.getOccupation()).ifPresent(v -> {
-            log.info("[CreditScore] 覆蓋職業: {} -> {}", info.getOccupation(), v);
-            info.setOccupation(v);
-        });
-        Optional.ofNullable(dto.getHasRealEstate()).ifPresent(v -> {
-            info.setHasRealEstate(v);
-        });
-        Optional.ofNullable(dto.getIsPep()).ifPresent(v -> {
-            if (info.getIsPep() != v)
-                log.info("[CreditScore] 覆蓋 PEP 狀態: {} -> {}", info.getIsPep(), v);
-            info.setIsPep(v);
-        });
-        Optional.ofNullable(dto.getFundSource()).ifPresent(v -> {
-            log.info("[CreditScore] 覆蓋資金來源: {} -> {}", info.getFundSource(), v);
-            info.setFundSource(v);
-        });
-
-        // 只要呼叫此方法，即確保重新評分並儲存
-        score(info);
-        log.info("[CreditScore] 更新評分完成 businessId={}, finalScore={}, riskLevel={}",
-                dto.getBusinessId(), info.getFinalScore(), info.getRiskLevel());
-        return ccRepos.save(info);
     }
 }

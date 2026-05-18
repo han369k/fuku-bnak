@@ -1,5 +1,6 @@
 package com.javaeasybank.customer.service;
 
+import com.javaeasybank.account.enums.FundSource;
 import com.javaeasybank.common.exception.BusinessException;
 import com.javaeasybank.common.util.JwtUtil;
 import com.javaeasybank.customer.entity.CustomerDevice;
@@ -14,11 +15,16 @@ import com.javaeasybank.customer.repository.CustomerLoginLogRepository;
 import com.javaeasybank.customer.repository.CustomerProfileRepository;
 import com.javaeasybank.common.service.EmailService;
 import com.javaeasybank.customer.util.TaiwanIdValidator;
+import com.javaeasybank.risk.enums.Occupation;
+import com.javaeasybank.risk.repository.CustomerCreditRepository;
+import com.javaeasybank.risk.service.CreditScoreService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
@@ -35,6 +41,7 @@ import java.util.UUID;
  * 登入（驗證帳密 + 發放 JWT）、個人資料維護、密碼重設等。
  */
 @Service
+@Slf4j
 public class CustomerAuthServiceImpl implements CustomerAuthService {
 
     private final CustomerAuthRepository customerAuthRepository;
@@ -46,6 +53,8 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
     private final EmailService emailService;
     private final LoginRiskClient loginRiskClient;
     private final LoginAuditService loginAuditService;
+    private final CreditScoreService  creditScoreService;
+    private final CustomerCreditRepository  customerCreditRepository;
 
     @Value("${app.frontend-url:http://localhost:5173}")
     private String frontendUrl;
@@ -59,14 +68,14 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
     private final SecureRandom secureRandom = new SecureRandom();
 
     public CustomerAuthServiceImpl(CustomerAuthRepository customerAuthRepository,
-            CustomerProfileRepository customerProfileRepository,
-            CustomerLoginLogRepository customerLoginLogRepository,
-            CustomerDeviceRepository customerDeviceRepository,
-            PasswordEncoder passwordEncoder,
-            JwtUtil jwtUtil,
-            EmailService emailService,
-            LoginRiskClient loginRiskClient,
-            LoginAuditService loginAuditService) {
+                                   CustomerProfileRepository customerProfileRepository,
+                                   CustomerLoginLogRepository customerLoginLogRepository,
+                                   CustomerDeviceRepository customerDeviceRepository,
+                                   PasswordEncoder passwordEncoder,
+                                   JwtUtil jwtUtil,
+                                   EmailService emailService,
+                                   LoginRiskClient loginRiskClient,
+                                   LoginAuditService loginAuditService, CreditScoreService creditScoreService, CustomerCreditRepository customerCreditRepository) {
         this.customerAuthRepository = customerAuthRepository;
         this.customerProfileRepository = customerProfileRepository;
         this.customerLoginLogRepository = customerLoginLogRepository;
@@ -76,6 +85,8 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
         this.emailService = emailService;
         this.loginRiskClient = loginRiskClient;
         this.loginAuditService = loginAuditService;
+        this.creditScoreService = creditScoreService;
+        this.customerCreditRepository = customerCreditRepository;
     }
 
     // ===========================
@@ -312,9 +323,27 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
         }
 
         customerProfileRepository.save(profile);
-
         CustomerAuth auth = customerAuthRepository.findByCustomerId(customerId)
                 .orElseThrow(() -> new BusinessException("認證資料異常"));
+
+        log.info("[CustomerService] 檢查信用資料是否存在 customerId={} exists={}",
+                customerId, customerCreditRepository.existsById(customerId));
+
+        // 若信用資料已存在，同步觸發重新評分
+        if (customerCreditRepository.existsById(customerId)) {
+            log.info("[CustomerService] 客戶資料已更新，觸發信用評分重算 customerId={}", customerId);
+            creditScoreService.syncAndRescore(
+                    customerId,
+                    Occupation.fromString(profile.getOccupation()),
+                    BigDecimal.valueOf(profile.getAnnualIncome()* 10000L),
+                    profile.getFundSource()!= null ? FundSource.valueOf(profile.getFundSource()): null,
+                    profile.getIsPep()
+            );
+        } else {
+            log.debug("[CustomerService] 客戶 {} 尚無信用資料，跳過重新評分", customerId);
+        }
+
+
         return convertToResponse(profile, auth);
     }
 

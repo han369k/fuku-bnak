@@ -44,10 +44,10 @@ public class CustomerServiceImpl implements CustomerService {
     private final SecureRandom secureRandom = new SecureRandom();
 
     public CustomerServiceImpl(CustomerProfileRepository customerProfileRepository,
-            CustomerAuthRepository customerAuthRepository,
-            CreditScoreService creditScoreService,
-            CustomerCreditRepository customerCreditRepository, // 新增注入
-            JdbcTemplate jdbcTemplate) {
+                               CustomerAuthRepository customerAuthRepository,
+                               CreditScoreService creditScoreService,
+                               CustomerCreditRepository customerCreditRepository, // 新增注入
+                               JdbcTemplate jdbcTemplate) {
         this.customerProfileRepository = customerProfileRepository;
         this.customerAuthRepository = customerAuthRepository;
         this.creditScoreService = creditScoreService;
@@ -111,7 +111,7 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     @Transactional
     public CustomerRespository.CustomerResponse updateCustomer(String customerId,
-            CustomerRespository.CustomerRequest request) {
+                                                               CustomerRespository.CustomerRequest request) {
         log.info("[CustomerService] 開始更新客戶資料 customerId={}", customerId);
 
         CustomerProfile profile = customerProfileRepository.findById(customerId)
@@ -152,113 +152,13 @@ public class CustomerServiceImpl implements CustomerService {
         if (request.getAnnualIncome() != null) {
             profile.setAnnualIncome(request.getAnnualIncome());
         }
-        // 移除直接從 request 設定 riskLevel 的邏輯，風險等級應由信用評分引擎計算並回填
+
         normalizeApplicationDerivedFields(profile);
 
         CustomerProfile saved = customerProfileRepository.save(profile);
 
-        // ── 信用評分連動 ──
-        CustomerCreditInfo updatedCreditInfo;
-
-        // 1. 構建 RiskReviewRequest，包含所有可能影響信評的欄位
-        RiskReviewRequest riskReviewRequest = new RiskReviewRequest();
-        riskReviewRequest.setCustomerId(saved.getCustomerId());
-        riskReviewRequest.setBusinessId("PROFILE_UPDATE_" + saved.getCustomerId());
-
-        // 從 CustomerProfile 獲取最新更新的欄位
-        riskReviewRequest.setAnnualIncome((saved.getAnnualIncome() != null && saved.getAnnualIncome() > 0)
-                ? BigDecimal.valueOf(saved.getAnnualIncome()).multiply(new BigDecimal("10000"))
-                : null);
-        Occupation occ = parseOccupation(saved.getOccupation());
-        FundSource fs = parseFundSource(saved.getFundSource());
-
-        riskReviewRequest.setOccupation(occ);
-        riskReviewRequest.setFundSource(fs);
-        riskReviewRequest.setIsPep(saved.getIsPep());
-
-        // 2. 嘗試獲取現有的 CustomerCreditInfo，以便將 CustomerProfile 中沒有的欄位（但影響評分）也帶入
-        // 如果不存在，則 existingCreditInfoOpt 為 empty
-        customerCreditRepository.findById(saved.getCustomerId()).ifPresent(existingCreditInfo -> {
-            // 只有當 riskReviewRequest 中這些欄位為 null 時才從 existingCreditInfo 填充
-            // 這樣可以確保 CustomerProfile 的更新優先級更高
-            if (riskReviewRequest.getExternalScore() == null)
-                riskReviewRequest.setExternalScore(existingCreditInfo.getExternalScore());
-            if (riskReviewRequest.getOtherBankDebt() == null)
-                riskReviewRequest.setOtherBankDebt(existingCreditInfo.getOtherBankDebt());
-            if (riskReviewRequest.getHasRealEstate() == null)
-                riskReviewRequest.setHasRealEstate(existingCreditInfo.getHasRealEstate());
-        });
-
-        log.debug("[CustomerService] updateCustomer - RiskReviewRequest prepared: {}", riskReviewRequest);
-
-        // 3. 呼叫 CreditScoreService 進行更新或初始化
-        // updateIfPresent 會嘗試更新現有資料，如果不存在則回傳 null
-        updatedCreditInfo = creditScoreService.updateIfPresent(riskReviewRequest); // 這裡會觸發評分
-
-        if (updatedCreditInfo == null) {
-            log.info("[CustomerService] 信用資料不存在，進行初始化 customerId={}", saved.getCustomerId());
-            updatedCreditInfo = creditScoreService.initializeCreditInfo(
-                    saved.getCustomerId(), saved.getBirthday(), riskReviewRequest.getOccupation(),
-                    riskReviewRequest.getAnnualIncome(), riskReviewRequest.getFundSource(), saved.getIsPep());
-        }
-
-        if (updatedCreditInfo != null && updatedCreditInfo.getRiskLevel() != null) {
-            if (!updatedCreditInfo.getRiskLevel().name().equals(saved.getRiskLevel())) {
-                log.info("[CustomerService] 風險等級發生變動: {} -> {}", saved.getRiskLevel(),
-                        updatedCreditInfo.getRiskLevel());
-                saved.setRiskLevel(updatedCreditInfo.getRiskLevel().name());
-                customerProfileRepository.save(saved);
-            }
-        }
-
         return convertToResponse(saved);
-    }
 
-    private Occupation parseOccupation(String occupation) {
-        log.info("[CustomerService] 解析職業字串: '{}'", occupation);
-        if (occupation == null || occupation.isBlank())
-            return null;
-        // 先嘗試直接轉換 (Enum Name)
-        try {
-            return Occupation.valueOf(occupation);
-        } catch (Exception e) {
-            /* ignore */ }
-
-        // 針對 UI 可能傳入的中文標籤或舊資料進行對應 (Mapping)
-        return switch (occupation) {
-            case "民意代表／高階主管", "LEGISLATOR_MANAGER" -> Occupation.LEGISLATOR_MANAGER;
-            case "專業人員", "PROFESSIONAL" -> Occupation.PROFESSIONAL;
-            case "技術員及助理專業人員", "TECHNICIAN" -> Occupation.TECHNICIAN;
-            case "事務支援人員", "CLERICAL" -> Occupation.CLERICAL;
-            case "服務及銷售工作人員", "SERVICE_SALES" -> Occupation.SERVICE_SALES;
-            case "農林漁牧業生產人員", "AGRICULTURAL" -> Occupation.AGRICULTURAL;
-            case "基層技術工及勞力工", "ELEMENTARY" -> Occupation.ELEMENTARY;
-            case "軍人", "MILITARY" -> Occupation.MILITARY;
-            default -> {
-                // 若無法匹配，嘗試使用 fromString 邏輯
-                Occupation result = Occupation.fromString(occupation);
-                yield (result != null) ? result : Occupation.OTHER;
-            }
-        };
-    }
-
-    private FundSource parseFundSource(String source) {
-        log.info("[CustomerService] 解析資金來源字串: '{}'", source);
-        if (source == null || source.isBlank())
-            return null;
-        try {
-            return FundSource.valueOf(source);
-        } catch (Exception e) {
-            /* ignore */ }
-
-        return switch (source) {
-            case "薪資", "SALARY" -> FundSource.SALARY;
-            case "營業收入", "BUSINESS_INCOME" -> FundSource.BUSINESS_INCOME;
-            case "投資收益", "INVESTMENT" -> FundSource.INVESTMENT;
-            case "退休金", "RETIREMENT" -> FundSource.RETIREMENT;
-            case "儲蓄", "SAVINGS", "存款" -> FundSource.SAVINGS;
-            default -> FundSource.OTHER; // 確保總有一個預設值
-        };
     }
 
     @Override
