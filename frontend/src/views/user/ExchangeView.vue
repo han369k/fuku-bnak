@@ -14,16 +14,10 @@
     <section class="exchange-shell">
       <a-form
         class="exchange-form"
-        :class="{ breathing: rateBreathing }"
         :model="form"
         layout="vertical"
         @finish="handleExchange"
       >
-        <div v-if="rateBreathing" class="exchange-loading-breath">
-          <span class="breath-orb" aria-hidden="true"></span>
-          <strong>匯率更新中</strong>
-        </div>
-
         <div class="form-grid">
           <a-form-item label="轉出帳戶" name="fromAccountNumber" :rules="[{ required: true, message: '請選擇轉出帳戶' }]">
             <a-select
@@ -92,8 +86,12 @@
         </a-button>
       </a-form>
 
-      <aside class="rate-panel">
+      <aside class="rate-panel" :class="{ breathing: rateBreathing }">
         <div class="panel-title">常用匯率</div>
+        <div v-if="rateBreathing" class="rate-loading-breath">
+          <span class="breath-orb" aria-hidden="true"></span>
+          <strong>匯率更新中</strong>
+        </div>
         <div v-if="rateRows.length === 0" class="empty-rate">尚無匯率資料</div>
         <div v-for="row in rateRows" :key="row.code" class="rate-row">
           <span>{{ row.name }} {{ row.code }}</span>
@@ -377,41 +375,7 @@ h2 {
 }
 
 .exchange-shell > form {
-  position: relative;
-  overflow: hidden;
   padding: 28px;
-}
-
-.exchange-form.breathing {
-  animation: exchangeBreath 1.55s ease-in-out infinite;
-}
-
-.exchange-loading-breath {
-  position: absolute;
-  inset: 0;
-  z-index: 4;
-  display: grid;
-  place-items: center;
-  gap: 10px;
-  color: var(--primary-dark);
-  text-align: center;
-  background: rgba(255, 249, 239, 0.64);
-  backdrop-filter: blur(1px);
-}
-
-.exchange-loading-breath strong {
-  font-family: var(--font-heading);
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.breath-orb {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  border: 1px solid rgba(92, 107, 95, 0.28);
-  background: radial-gradient(circle, rgba(92, 107, 95, 0.28), rgba(92, 107, 95, 0.06) 64%, transparent 68%);
-  animation: breathOrb 1.55s ease-in-out infinite;
 }
 
 .form-grid {
@@ -471,8 +435,42 @@ h2 {
 }
 
 .rate-panel {
+  position: relative;
+  overflow: hidden;
   align-self: start;
   padding: 22px;
+}
+
+.rate-panel.breathing {
+  animation: exchangeBreath 1.55s ease-in-out infinite;
+}
+
+.rate-loading-breath {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  gap: 10px;
+  color: var(--primary-dark);
+  text-align: center;
+  background: rgba(255, 249, 239, 0.68);
+  backdrop-filter: blur(1px);
+}
+
+.rate-loading-breath strong {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.breath-orb {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 1px solid rgba(92, 107, 95, 0.28);
+  background: radial-gradient(circle, rgba(92, 107, 95, 0.28), rgba(92, 107, 95, 0.06) 64%, transparent 68%);
+  animation: breathOrb 1.55s ease-in-out infinite;
 }
 
 .panel-title {
