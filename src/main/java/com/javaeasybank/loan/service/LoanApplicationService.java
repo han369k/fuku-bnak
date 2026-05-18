@@ -352,6 +352,15 @@ public class LoanApplicationService {
         }
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void handleAccountDisbursedCallback(String applicationId) {
+        LoanStatusCallbackRequestDTO callbackDto = new LoanStatusCallbackRequestDTO();
+        callbackDto.setCallerModule("ACCOUNT");
+        callbackDto.setNewStatus(LoanApplicationStatus.DISBURSED);
+        callbackDto.setNote("account afterCommit: disbursement completed");
+        handleStatusCallback(applicationId, callbackDto);
+    }
+
     // 風控核准後自動建帳與撥款（由 handleStatusCallback APPROVED afterCommit 呼叫）
     // NOT_SUPPORTED：覆蓋 class 層級 @Transactional，使本方法不持有外層事務。
     // 如此 createLoanAccount 和 disburseLoan 各自以 REQUIRED 建立並提交自己的事務，
@@ -413,6 +422,16 @@ public class LoanApplicationService {
         if (loan.getApplicationStatus() != LoanApplicationStatus.APPROVED) {
             throw new BusinessException(
                     "此申請狀態為 " + loan.getApplicationStatus() + "，無需重送撥款（僅 APPROVED 可重送）");
+        }
+
+        if (accountIntegrationService.hasDisbursementRecordByApplicationId(applicationId)) {
+            log.warn("[RetryDisburse] 偵測到既有撥款紀錄，改補送 ACCOUNT 回調 applicationId={}", applicationId);
+            LoanStatusCallbackRequestDTO callbackDto = new LoanStatusCallbackRequestDTO();
+            callbackDto.setCallerModule("ACCOUNT");
+            callbackDto.setNewStatus(LoanApplicationStatus.DISBURSED);
+            callbackDto.setNote("retryDisburse: 補送 ACCOUNT 回調");
+            handleStatusCallback(applicationId, callbackDto);
+            return;
         }
 
         log.info("[RetryDisburse] 行員手動重送撥款 applicationId={}", applicationId);

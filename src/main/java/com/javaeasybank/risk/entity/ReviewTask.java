@@ -72,5 +72,4 @@ public class ReviewTask {
     @Version // 樂觀鎖預防併發衝突
     private Long version;
 
-
 }
