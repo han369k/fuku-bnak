@@ -65,6 +65,23 @@
         <section v-if="selectedLoan" class="section-card">
           <h2 class="section-title">② 填寫還款資訊</h2>
 
+          <div v-if="currentRepayment" class="current-period-panel">
+            <div class="period-info">
+              <span class="period-label">本次繳款期數</span>
+              <strong>第 {{ currentRepayment.periodIndex }} 期</strong>
+            </div>
+            <div class="period-info">
+              <span class="period-label">應繳日</span>
+              <strong>{{ fmtDate(currentRepayment.scheduledDate) }}</strong>
+            </div>
+            <div class="period-info">
+              <span class="period-label">狀態</span>
+              <strong :class="{ overdue: currentRepayment.repaymentStatus === 'OVERDUE' }">
+                {{ repaymentStatusLabel(currentRepayment.repaymentStatus) }}
+              </strong>
+            </div>
+          </div>
+
           <!-- 選扣款帳戶 -->
           <div class="form-group">
             <label class="form-label">扣款帳戶 <span class="req">*</span></label>
@@ -255,6 +272,9 @@ const auth  = () => ({ headers: { Authorization: `Bearer ${token()}` } })
 function statusLabel(st) { return STATUS_MAP[st]?.label || st }
 function statusClass(st) { return STATUS_MAP[st]?.cls   || '' }
 function isOverdue(acc)  { return acc.accountStatus === 'OVERDUE' }
+function repaymentStatusLabel(st) {
+  return { SCHEDULED: '待繳', OVERDUE: '逾期', PAID: '已繳' }[st] || st
+}
 
 function fmt(n) {
   return n != null
@@ -547,6 +567,31 @@ onMounted(async () => {
 .lo-val   { font-size: 13px; font-weight: 600; }
 .lo-val.accent { color: var(--primary); font-family: 'IBM Plex Mono', monospace; }
 .overdue  { color: var(--red); }
+
+.current-period-panel {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 14px 16px;
+  margin-bottom: 18px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-2);
+}
+.period-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.period-label {
+  font-size: 11px;
+  color: var(--muted-2);
+}
+.period-info strong {
+  font-size: 14px;
+  color: var(--ink);
+}
 
 /* ── 表單 ── */
 .form-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
