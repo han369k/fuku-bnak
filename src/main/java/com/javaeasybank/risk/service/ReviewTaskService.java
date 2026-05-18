@@ -98,9 +98,16 @@ public class ReviewTaskService {
         task.setStatus(newStatus);
 
         // RETURNED 不設結案時間
-        if (request.getReviewResult() != ReviewResult.RETURNED) {
+        if (request.getReviewResult() == ReviewResult.RETURNED) {
             task.setSubstatus("WAITING_DOCUMENT");
-            task.setProcessedAt(LocalDateTime.now());
+            if (request.getRequiredDocuments() != null && !request.getRequiredDocuments().isEmpty()) {
+                // 序列化存入，例如 ["INCOME_CERT","PROPERTY_CERT"]
+                task.setRequiredDocumentsJson(objectMapper.writeValueAsString(request.getRequiredDocuments()));
+            }else {
+                // APPROVED / REJECTED：結案，清除 substatus
+                task.setSubstatus(null);
+                task.setProcessedAt(LocalDateTime.now());
+            }
         }
 
         rtRepos.save(task);

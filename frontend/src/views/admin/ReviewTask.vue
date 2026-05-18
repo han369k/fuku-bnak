@@ -360,6 +360,20 @@
 
       <a-form :model="form" layout="vertical">
         <a-form-item label="決策結果" required>
+          <!-- 退回補件：選擇要求文件 -->
+          <a-form-item v-if="form.reviewResult === 'RETURNED'" label="要求補件文件" required>
+            <a-checkbox-group v-model:value="form.requiredDocuments">
+              <div style="display: flex; flex-direction: column; gap: 8px">
+                <a-checkbox value="ID_CARD">身分證</a-checkbox>
+                <a-checkbox value="INCOME_CERT">收入證明</a-checkbox>
+                <a-checkbox value="EMPLOYMENT_CERT">在職證明</a-checkbox>
+                <a-checkbox value="BANK_STATEMENT">銀行存摺</a-checkbox>
+                <a-checkbox value="PROPERTY_CERT">不動產謄本</a-checkbox>
+                <a-checkbox value="TITLE_DEED">所有權狀</a-checkbox>
+                <a-checkbox value="OTHER">其他（見備註）</a-checkbox>
+              </div>
+            </a-checkbox-group>
+          </a-form-item>
           <a-radio-group v-model:value="form.reviewResult">
             <a-radio value="APPROVED">核准</a-radio>
             <a-radio value="REJECTED">拒絕</a-radio>
@@ -407,7 +421,7 @@ const pagination = reactive({
   pageSizeOptions: ['10', '20', '50', '100'],
   showTotal: (total) => `共 ${total} 筆`,
 })
-const form = reactive({ reviewResult: undefined, adminComment: '' })
+const form = reactive({ reviewResult: undefined, adminComment: '', requiredDocuments: [] })
 
 const stats = computed(() => ({
   pending: tasks.value.filter((t) => t.status === 'PENDING').length,
@@ -457,6 +471,10 @@ async function fetchTasks() {
 async function submitDecision() {
   if (!form.reviewResult) {
     message.warning('請選擇決策結果')
+    return
+  } // 退回補件必須至少選一項
+  if (form.reviewResult === 'RETURNED' && form.requiredDocuments.length === 0) {
+    message.warning('請至少選擇一項要求補件的文件類型')
     return
   }
   submitting.value = true
@@ -514,6 +532,7 @@ function openDecisionModal(task) {
 function resetForm() {
   form.reviewResult = undefined
   form.adminComment = ''
+  requiredDocuments: []
   currentTask.value = null
 }
 
