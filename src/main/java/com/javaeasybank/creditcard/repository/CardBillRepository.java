@@ -21,6 +21,10 @@ public interface CardBillRepository extends JpaRepository<CardBill, Integer>,Jpa
             String customerId,
             List<BillStatus> statuses);
 
+    Optional<CardBill> findByBillIdAndCardAccountCustomerCustomerId(
+            Integer billId,
+            String customerId);
+
     boolean existsByCardAccountIdAndBillingMonth(
             Integer cardAccountId,
             String billingMonth);

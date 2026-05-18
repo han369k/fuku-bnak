@@ -63,6 +63,7 @@ DBCC CHECKIDENT ('CARD_BILL', RESEED, 0);
 
 -- ===== 1. CARD_TYPE =====
 SET IDENTITY_INSERT CARD_TYPE ON;
+IF NOT EXISTS (SELECT 1 FROM CARD_TYPE)
 INSERT INTO CARD_TYPE (card_type_id, card_type_name, brand, annual_fee, cashback_rate, card_image_url) VALUES
 (1, N'現金回饋卡', 'VISA', 1000, 1.5, 'img/cashback1.png'),
 (2, N'旅遊卡', 'Master', 2000, 2.0, 'img/travel1.png'),
@@ -77,6 +78,7 @@ INSERT INTO CARD_TYPE (card_type_id, card_type_name, brand, annual_fee, cashback
 SET IDENTITY_INSERT CARD_TYPE OFF;
 
 -- ===== 2. MERCHANT =====
+IF NOT EXISTS (SELECT 1 FROM MERCHANT)
 INSERT INTO MERCHANT (merchant_id, merchant_name, merchant_category) VALUES
 (1, '7-11', 'SHOPPING'),
 (2, 'FamilyMart', 'SHOPPING'),
@@ -91,6 +93,7 @@ INSERT INTO MERCHANT (merchant_id, merchant_name, merchant_category) VALUES
 
 -- ===== 3. CARD_APPLICATION（30 筆）=====
 SET IDENTITY_INSERT CARD_APPLICATION ON;
+IF NOT EXISTS (SELECT 1 FROM CARD_APPLICATION)
 INSERT INTO CARD_APPLICATION (application_id, customer_id, apply_date, status, remark) VALUES
 (1, 'Q8M4T7K2', GETDATE(), 'COMPLETED', N'信用紀錄不良'),
 (2, 'R5N9W3A6', GETDATE(), 'COMPLETED', NULL),
@@ -131,6 +134,7 @@ JOIN #card_mock_customers cmc ON cmc.slot = ca.application_id;
 
 -- ===== 4. CARD_APPLICATION_ITEM =====
 SET IDENTITY_INSERT CARD_APPLICATION_ITEM ON;
+IF NOT EXISTS (SELECT 1 FROM CARD_APPLICATION_ITEM)
 INSERT INTO CARD_APPLICATION_ITEM
 (item_id, application_id, card_type_id, result, approved_limit, annual_fee, create_card_flag, remark) VALUES
 (1, 1, 1, 'REJECTED', NULL, NULL, 0, N'評分不足'),
@@ -167,6 +171,7 @@ SET IDENTITY_INSERT CARD_APPLICATION_ITEM OFF;
 
 -- ===== 5. CREDIT_CARD（50 筆）=====
 SET IDENTITY_INSERT CREDIT_CARD ON;
+IF NOT EXISTS (SELECT 1 FROM CREDIT_CARD)
 INSERT INTO CREDIT_CARD
 (card_id, customer_id, card_type_id, application_item_id, card_number, expiry_date, current_debt, status) VALUES
 (1, 'Q8M4T7K2', 1, 2, '4000000010000001', '2028-01-28', 48399, 'ACTIVE'),
@@ -291,6 +296,7 @@ JOIN CREDIT_CARD c
   ON a.account_number = CONCAT('801', RIGHT(CONCAT('00000000000', CAST(c.card_id AS VARCHAR(11))), 11));
 
 -- One card account per mock card so bill generation keeps its per-card mock shape.
+IF NOT EXISTS (SELECT 1 FROM CARD_ACCOUNT)
 INSERT INTO CARD_ACCOUNT (account_number, credit_limit, statement_day, due_days, customer_id)
 SELECT
     CONCAT('801', RIGHT(CONCAT('00000000000', CAST(card_id AS VARCHAR(11))), 11)),
@@ -348,6 +354,7 @@ WHERE NOT EXISTS (
 
 -- ===== 6. CARD_TRANSACTION（200 筆）=====
 SET IDENTITY_INSERT CARD_TRANSACTION ON;
+IF NOT EXISTS (SELECT 1 FROM CARD_TRANSACTION)
 INSERT INTO CARD_TRANSACTION
 (txn_id, card_id, merchant_id, ref_txn_id, txn_amount, txn_type, txn_date, description) VALUES
 (1, 6, 6, NULL, 50, 'PURCHASE', '2025-11-03 09:01:47', N'計程車'),
@@ -554,6 +561,7 @@ SET IDENTITY_INSERT CARD_TRANSACTION OFF;
 
 -- ===== 7. CARD_BILL（50 筆）=====
 SET IDENTITY_INSERT CARD_BILL ON;
+IF NOT EXISTS (SELECT 1 FROM CARD_BILL)
 INSERT INTO CARD_BILL
 (bill_id, card_id, billing_month, bill_date, due_date, total_amount, minimum_payment, paid_amount, bill_status) VALUES
 (1, 1, '2026-02', '2026-02-25', '2026-03-10', 15000, 1500, 5877, 'PARTIAL'),
