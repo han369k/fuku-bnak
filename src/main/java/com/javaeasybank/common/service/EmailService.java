@@ -128,6 +128,14 @@ public class EmailService {
         sendEmail(to, "Java Easy Bank - 貸款申請補件通知", html);
     }
 
-    public void sendAccountLockedNotification(String to, String username,String ipAddress) {}
+    public void sendAccountLockedNotification(String to, String username,String ipAddress) {
+        String time = LocalDateTime.now().format(formatter);
+        Context context = new Context();
+        context.setVariable("username", username);
+        context.setVariable("time", time);
+        context.setVariable("ipAddress", ipAddress);
+        String html = templateEngine.process("mail/account-locked-notification", context);
+        sendEmail(to, "Java Easy Bank - 登入通知", html);
+    }
 }
 
