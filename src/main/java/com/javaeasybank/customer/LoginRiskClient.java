@@ -30,7 +30,7 @@ public class LoginRiskClient {
         req.setCustomerId(customerId);
         req.setScene(BusinessScene.LOGIN_CHECK);
         req.setBusinessId(customerId);
-        req.setTargetIdentifier(ipAddress);
+        req.setTargetIdentifier(customerId);
         req.addContext("eventType", eventType);
         req.addContext("reason", reason);
 

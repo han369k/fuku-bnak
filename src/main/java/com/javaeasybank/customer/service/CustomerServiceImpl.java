@@ -1,18 +1,24 @@
 package com.javaeasybank.customer.service;
 
+import com.javaeasybank.account.enums.FundSource;
+import com.javaeasybank.risk.repository.CustomerCreditRepository;
+import com.javaeasybank.risk.dto.request.RiskReviewRequest;
 import com.javaeasybank.common.exception.BusinessException;
 import com.javaeasybank.customer.repository.CustomerRespository;
 import com.javaeasybank.customer.entity.CustomerProfile;
 import com.javaeasybank.customer.repository.CustomerAuthRepository;
 import com.javaeasybank.customer.repository.CustomerProfileRepository;
 import com.javaeasybank.customer.util.TaiwanIdValidator;
-import com.javaeasybank.risk.service.BlackListService;
+import com.javaeasybank.risk.entity.CustomerCreditInfo;
+import com.javaeasybank.risk.enums.Occupation;
 import com.javaeasybank.risk.service.CreditScoreService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -21,10 +27,13 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class CustomerServiceImpl implements CustomerService {
 
     private final CustomerProfileRepository customerProfileRepository;
     private final CustomerAuthRepository customerAuthRepository;
+    private final CreditScoreService creditScoreService;
+    private final CustomerCreditRepository customerCreditRepository; // 新增注入
 
     // 加入 JdbcTemplate 依賴，用於執行原生 SQL
     private final JdbcTemplate jdbcTemplate;
@@ -35,10 +44,14 @@ public class CustomerServiceImpl implements CustomerService {
     private final SecureRandom secureRandom = new SecureRandom();
 
     public CustomerServiceImpl(CustomerProfileRepository customerProfileRepository,
-                               CustomerAuthRepository customerAuthRepository, CreditScoreService creditSCoreService,
-                               JdbcTemplate jdbcTemplate) {
+            CustomerAuthRepository customerAuthRepository,
+            CreditScoreService creditScoreService,
+            CustomerCreditRepository customerCreditRepository, // 新增注入
+            JdbcTemplate jdbcTemplate) {
         this.customerProfileRepository = customerProfileRepository;
         this.customerAuthRepository = customerAuthRepository;
+        this.creditScoreService = creditScoreService;
+        this.customerCreditRepository = customerCreditRepository; // 初始化
         this.jdbcTemplate = jdbcTemplate;
     }
 
@@ -96,7 +109,11 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     @Override
-    public CustomerRespository.CustomerResponse updateCustomer(String customerId, CustomerRespository.CustomerRequest request) {
+    @Transactional
+    public CustomerRespository.CustomerResponse updateCustomer(String customerId,
+            CustomerRespository.CustomerRequest request) {
+        log.info("[CustomerService] 開始更新客戶資料 customerId={}", customerId);
+
         CustomerProfile profile = customerProfileRepository.findById(customerId)
                 .orElseThrow(() -> new BusinessException("查無此客戶"));
 
@@ -135,13 +152,113 @@ public class CustomerServiceImpl implements CustomerService {
         if (request.getAnnualIncome() != null) {
             profile.setAnnualIncome(request.getAnnualIncome());
         }
-        if (request.getRiskLevel() != null) {
-            profile.setRiskLevel(request.getRiskLevel());
-        }
+        // 移除直接從 request 設定 riskLevel 的邏輯，風險等級應由信用評分引擎計算並回填
         normalizeApplicationDerivedFields(profile);
 
         CustomerProfile saved = customerProfileRepository.save(profile);
+
+        // ── 信用評分連動 ──
+        CustomerCreditInfo updatedCreditInfo;
+
+        // 1. 構建 RiskReviewRequest，包含所有可能影響信評的欄位
+        RiskReviewRequest riskReviewRequest = new RiskReviewRequest();
+        riskReviewRequest.setCustomerId(saved.getCustomerId());
+        riskReviewRequest.setBusinessId("PROFILE_UPDATE_" + saved.getCustomerId());
+
+        // 從 CustomerProfile 獲取最新更新的欄位
+        riskReviewRequest.setAnnualIncome((saved.getAnnualIncome() != null && saved.getAnnualIncome() > 0)
+                ? BigDecimal.valueOf(saved.getAnnualIncome()).multiply(new BigDecimal("10000"))
+                : null);
+        Occupation occ = parseOccupation(saved.getOccupation());
+        FundSource fs = parseFundSource(saved.getFundSource());
+
+        riskReviewRequest.setOccupation(occ);
+        riskReviewRequest.setFundSource(fs);
+        riskReviewRequest.setIsPep(saved.getIsPep());
+
+        // 2. 嘗試獲取現有的 CustomerCreditInfo，以便將 CustomerProfile 中沒有的欄位（但影響評分）也帶入
+        // 如果不存在，則 existingCreditInfoOpt 為 empty
+        customerCreditRepository.findById(saved.getCustomerId()).ifPresent(existingCreditInfo -> {
+            // 只有當 riskReviewRequest 中這些欄位為 null 時才從 existingCreditInfo 填充
+            // 這樣可以確保 CustomerProfile 的更新優先級更高
+            if (riskReviewRequest.getExternalScore() == null)
+                riskReviewRequest.setExternalScore(existingCreditInfo.getExternalScore());
+            if (riskReviewRequest.getOtherBankDebt() == null)
+                riskReviewRequest.setOtherBankDebt(existingCreditInfo.getOtherBankDebt());
+            if (riskReviewRequest.getHasRealEstate() == null)
+                riskReviewRequest.setHasRealEstate(existingCreditInfo.getHasRealEstate());
+        });
+
+        log.debug("[CustomerService] updateCustomer - RiskReviewRequest prepared: {}", riskReviewRequest);
+
+        // 3. 呼叫 CreditScoreService 進行更新或初始化
+        // updateIfPresent 會嘗試更新現有資料，如果不存在則回傳 null
+        updatedCreditInfo = creditScoreService.updateIfPresent(riskReviewRequest); // 這裡會觸發評分
+
+        if (updatedCreditInfo == null) {
+            log.info("[CustomerService] 信用資料不存在，進行初始化 customerId={}", saved.getCustomerId());
+            updatedCreditInfo = creditScoreService.initializeCreditInfo(
+                    saved.getCustomerId(), saved.getBirthday(), riskReviewRequest.getOccupation(),
+                    riskReviewRequest.getAnnualIncome(), riskReviewRequest.getFundSource(), saved.getIsPep());
+        }
+
+        if (updatedCreditInfo != null && updatedCreditInfo.getRiskLevel() != null) {
+            if (!updatedCreditInfo.getRiskLevel().name().equals(saved.getRiskLevel())) {
+                log.info("[CustomerService] 風險等級發生變動: {} -> {}", saved.getRiskLevel(),
+                        updatedCreditInfo.getRiskLevel());
+                saved.setRiskLevel(updatedCreditInfo.getRiskLevel().name());
+                customerProfileRepository.save(saved);
+            }
+        }
+
         return convertToResponse(saved);
+    }
+
+    private Occupation parseOccupation(String occupation) {
+        log.info("[CustomerService] 解析職業字串: '{}'", occupation);
+        if (occupation == null || occupation.isBlank())
+            return null;
+        // 先嘗試直接轉換 (Enum Name)
+        try {
+            return Occupation.valueOf(occupation);
+        } catch (Exception e) {
+            /* ignore */ }
+
+        // 針對 UI 可能傳入的中文標籤或舊資料進行對應 (Mapping)
+        return switch (occupation) {
+            case "民意代表／高階主管", "LEGISLATOR_MANAGER" -> Occupation.LEGISLATOR_MANAGER;
+            case "專業人員", "PROFESSIONAL" -> Occupation.PROFESSIONAL;
+            case "技術員及助理專業人員", "TECHNICIAN" -> Occupation.TECHNICIAN;
+            case "事務支援人員", "CLERICAL" -> Occupation.CLERICAL;
+            case "服務及銷售工作人員", "SERVICE_SALES" -> Occupation.SERVICE_SALES;
+            case "農林漁牧業生產人員", "AGRICULTURAL" -> Occupation.AGRICULTURAL;
+            case "基層技術工及勞力工", "ELEMENTARY" -> Occupation.ELEMENTARY;
+            case "軍人", "MILITARY" -> Occupation.MILITARY;
+            default -> {
+                // 若無法匹配，嘗試使用 fromString 邏輯
+                Occupation result = Occupation.fromString(occupation);
+                yield (result != null) ? result : Occupation.OTHER;
+            }
+        };
+    }
+
+    private FundSource parseFundSource(String source) {
+        log.info("[CustomerService] 解析資金來源字串: '{}'", source);
+        if (source == null || source.isBlank())
+            return null;
+        try {
+            return FundSource.valueOf(source);
+        } catch (Exception e) {
+            /* ignore */ }
+
+        return switch (source) {
+            case "薪資", "SALARY" -> FundSource.SALARY;
+            case "營業收入", "BUSINESS_INCOME" -> FundSource.BUSINESS_INCOME;
+            case "投資收益", "INVESTMENT" -> FundSource.INVESTMENT;
+            case "退休金", "RETIREMENT" -> FundSource.RETIREMENT;
+            case "儲蓄", "SAVINGS", "存款" -> FundSource.SAVINGS;
+            default -> FundSource.OTHER; // 確保總有一個預設值
+        };
     }
 
     @Override
@@ -329,6 +446,7 @@ public class CustomerServiceImpl implements CustomerService {
                 .orElseThrow(() -> new BusinessException("查無此客戶編號：" + cif));
         return convertToResponse(profile);
     }
+
     @Override
     public String findEmailByCustomerId(String customerId) {
         CustomerProfile profile = customerProfileRepository.findById(customerId)
@@ -371,7 +489,8 @@ public class CustomerServiceImpl implements CustomerService {
         profile.setNationality(request.getNationality());
         profile.setRegisteredAddress(request.getRegisteredAddress());
         profile.setCurrentAddress(request.getCurrentAddress());
-        profile.setAddress(resolveAddress(request.getAddress(), request.getCurrentAddress(), request.getRegisteredAddress(), profile.getAddress()));
+        profile.setAddress(resolveAddress(request.getAddress(), request.getCurrentAddress(),
+                request.getRegisteredAddress(), profile.getAddress()));
         profile.setOccupation(request.getOccupation());
         profile.setJob(request.getOccupation());
         profile.setEmployer(request.getEmployer());
@@ -412,22 +531,34 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     private void applyOptionalApplicationFields(CustomerProfile profile, CustomerRespository.CustomerRequest request) {
-        if (request.getNationality() != null) profile.setNationality(request.getNationality());
-        if (request.getRegisteredAddress() != null) profile.setRegisteredAddress(request.getRegisteredAddress());
-        if (request.getCurrentAddress() != null) profile.setCurrentAddress(request.getCurrentAddress());
+        if (request.getNationality() != null)
+            profile.setNationality(request.getNationality());
+        if (request.getRegisteredAddress() != null)
+            profile.setRegisteredAddress(request.getRegisteredAddress());
+        if (request.getCurrentAddress() != null)
+            profile.setCurrentAddress(request.getCurrentAddress());
         if (request.getOccupation() != null) {
             profile.setOccupation(request.getOccupation());
             profile.setJob(request.getOccupation());
         }
-        if (request.getEmployer() != null) profile.setEmployer(request.getEmployer());
-        if (request.getEstimatedMonthlyTx() != null) profile.setEstimatedMonthlyTx(request.getEstimatedMonthlyTx());
-        if (request.getAccountPurpose() != null) profile.setAccountPurpose(request.getAccountPurpose());
-        if (request.getFundSource() != null) profile.setFundSource(request.getFundSource());
-        if (request.getTaxResidency() != null) profile.setTaxResidency(request.getTaxResidency());
-        if (request.getIsPep() != null) profile.setIsPep(request.getIsPep());
-        if (request.getIdFrontUrl() != null) profile.setIdFrontUrl(request.getIdFrontUrl());
-        if (request.getIdBackUrl() != null) profile.setIdBackUrl(request.getIdBackUrl());
-        if (request.getSecondIdUrl() != null) profile.setSecondIdUrl(request.getSecondIdUrl());
+        if (request.getEmployer() != null)
+            profile.setEmployer(request.getEmployer());
+        if (request.getEstimatedMonthlyTx() != null)
+            profile.setEstimatedMonthlyTx(request.getEstimatedMonthlyTx());
+        if (request.getAccountPurpose() != null)
+            profile.setAccountPurpose(request.getAccountPurpose());
+        if (request.getFundSource() != null)
+            profile.setFundSource(request.getFundSource());
+        if (request.getTaxResidency() != null)
+            profile.setTaxResidency(request.getTaxResidency());
+        if (request.getIsPep() != null)
+            profile.setIsPep(request.getIsPep());
+        if (request.getIdFrontUrl() != null)
+            profile.setIdFrontUrl(request.getIdFrontUrl());
+        if (request.getIdBackUrl() != null)
+            profile.setIdBackUrl(request.getIdBackUrl());
+        if (request.getSecondIdUrl() != null)
+            profile.setSecondIdUrl(request.getSecondIdUrl());
         if (request.getLatestAccountApplicationId() != null)
             profile.setLatestAccountApplicationId(request.getLatestAccountApplicationId());
         if (request.getLatestAccountApplicationNo() != null)

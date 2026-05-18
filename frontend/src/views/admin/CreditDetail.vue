@@ -2,18 +2,17 @@
   <div class="page-container">
     <a-page-header title="客戶信用評分詳情" @back="router.back()">
       <template #extra>
-        <a-tag :color="riskColor(credit?.riskLevel)">
+        <a-tag :color="riskColor(credit?.riskLevel)" class="large-risk-badge">
           {{ riskLabel(credit?.riskLevel) }}
         </a-tag>
       </template>
     </a-page-header>
 
     <a-alert
-      message="資料敏感提醒"
-      description="此頁面顯示客戶完整信用評分，查看行為已記錄。請勿截圖或外流。"
+      message="資料敏感提醒：此頁面顯示客戶完整信用評分，查看行為已記錄。請勿截圖或外流。"
       type="error"
       show-icon
-      style="margin-bottom: 16px"
+      class="large-alert"
     />
 
     <a-spin :spinning="loading">
@@ -21,53 +20,36 @@
         title="基本資訊"
         bordered
         :column="2"
-        size="small"
-        style="margin-bottom: 20px"
+        size="default"
+        style="margin-bottom: 24px"
       >
         <a-descriptions-item label="客戶 ID">{{ credit?.customerId }}</a-descriptions-item>
         <a-descriptions-item label="客戶姓名">{{ credit?.customerName }}</a-descriptions-item>
-        <a-descriptions-item label="風險等級">
-          <a-tag :color="riskColor(credit?.riskLevel)">
-            {{ riskLabel(credit?.riskLevel) }}
-          </a-tag>
-        </a-descriptions-item>
-        <a-descriptions-item label="最後更新">
-          {{ credit?.lastUpdatedAt }}
-        </a-descriptions-item>
+        <a-descriptions-item label="風險等級">{{ riskLabel(credit?.riskLevel) }}</a-descriptions-item>
+        <a-descriptions-item label="最後更新">{{ credit?.lastUpdatedAt }}</a-descriptions-item>
       </a-descriptions>
 
-      <a-descriptions title="評分詳情" bordered :column="2" size="small">
+      <a-descriptions title="評分詳情" bordered :column="2" size="default">
         <a-descriptions-item label="綜合評分">
-          <span style="font-size: 20px; font-weight: bold; color: #1890ff">
-            {{ credit?.finalScore }}
-          </span>
-          分
+          <span class="final-score">{{ credit?.finalScore }}</span> 分
         </a-descriptions-item>
         <a-descriptions-item label="聯徵分數">
-          {{ credit?.externalScore ?? '—' }}
+          <span class="bold-text">{{ credit?.externalScore ?? '—' }}</span>
         </a-descriptions-item>
         <a-descriptions-item label="職業">
           {{ occupationLabel(credit?.occupation) }}
         </a-descriptions-item>
         <a-descriptions-item label="年收入">
-          {{
-            credit?.annualIncome ? '$ ' + Number(credit.annualIncome).toLocaleString('zh-TW') : '—'
-          }}
+          {{ credit?.annualIncome ? '$ ' + Number(credit.annualIncome).toLocaleString('zh-TW') : '—' }}
         </a-descriptions-item>
         <a-descriptions-item label="他行負債">
-          {{
-            credit?.otherBankDebt
-              ? '$ ' + Number(credit.otherBankDebt).toLocaleString('zh-TW')
-              : '—'
-          }}
+          {{ credit?.otherBankDebt ? '$ ' + Number(credit.otherBankDebt).toLocaleString('zh-TW') : '—' }}
         </a-descriptions-item>
         <a-descriptions-item label="有無不動產">
           {{ credit?.hasRealEstate ? '是' : '否' }}
         </a-descriptions-item>
         <a-descriptions-item label="PEP 人士">
-          <a-tag :color="credit?.isPep ? 'red' : 'default'">
-            {{ credit?.isPep ? '是' : '否' }}
-          </a-tag>
+          {{ credit?.isPep ? '是' : '否' }}
         </a-descriptions-item>
       </a-descriptions>
     </a-spin>
@@ -132,9 +114,65 @@ onMounted(fetchDetail)
 </script>
 
 <style scoped>
+/* 補回純白底色與內襯留白，維持 16px 元件間距 */
 .page-container {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  background-color: #ffffff; /* 補回乾淨純白底 */
+  padding: 24px;             /* 補回四周留白襯托空間 */
+  border-radius: 8px;        /* 邊緣細緻圓角 */
+}
+
+/* 放大頁頭標題 */
+:deep(.ant-page-header) {
+  padding: 0 0 12px 0 !important; /* 清除內建左右襯底線，維持與純白外殼貼合 */
+}
+
+:deep(.ant-page-header-heading-title) {
+  font-size: 24px !important;
+  font-weight: 600;
+  color: #262626 !important;
+}
+
+.large-risk-badge {
+  font-size: 16px !important;
+  padding: 4px 14px !important;
+}
+
+.large-alert {
+  font-size: 16px !important;
+}
+
+/* 放大區塊小標題 */
+:deep(.ant-descriptions-title) {
+  font-size: 18px !important;
+  font-weight: 600;
+  color: #262626 !important;
+}
+
+/* 放大表格標籤與內容，並統一字體顏色（#262626） */
+:deep(.ant-descriptions-item-label) {
+  font-size: 16px !important;
+  color: #262626 !important;
+  font-weight: 500;
+  padding: 16px 24px !important;
+}
+
+:deep(.ant-descriptions-item-content) {
+  font-size: 16px !important;
+  color: #262626 !important;
+  padding: 16px 24px !important;
+}
+
+/* 綜合評分大字：僅放大與加粗，不額外上色 */
+.final-score {
+  font-size: 28px;
+  font-weight: 700;
+  color: #262626;
+}
+
+.bold-text {
+  font-weight: 600;
 }
 </style>

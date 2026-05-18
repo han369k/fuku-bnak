@@ -34,7 +34,7 @@
           style="width: 130px"
           @change="fetchTasks"
         >
-          <a-select-option :value="1">高（P1）</a-select-option>
+          <a-select-option :value="2">高（P2）</a-select-option>
           <a-select-option :value="5">中（P5）</a-select-option>
           <a-select-option :value="10">低（P10）</a-select-option>
         </a-select>
@@ -85,6 +85,11 @@
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'priority'">
           <a-tag :color="priorityColor(record.priority)">P{{ record.priority }}</a-tag>
+        </template>
+        <template v-if="column.key === 'businessId'">
+          <a-tooltip :title="record.businessId">
+            <span class="mono-id">{{ record.businessId }}</span>
+          </a-tooltip>
         </template>
         <template v-if="column.key === 'status'">
           <a-badge :status="statusBadge(record)" :text="statusLabel(record)" />
@@ -377,6 +382,9 @@ import axios from 'axios'
 const API_PREFIX = '/api/risk/reviewtask'
 
 const tasks = ref([])
+const sortField = ref('')
+const sortOrder = ref('')
+
 const loading = ref(false)
 const submitting = ref(false)
 const modalVisible = ref(false)
@@ -407,7 +415,7 @@ const stats = computed(() => ({
 
 const columns = [
   { title: '任務 ID', dataIndex: 'taskId', key: 'taskId', width: 90 },
-  { title: '業務編號', dataIndex: 'businessId', key: 'businessId', ellipsis: true },
+  { title: '業務編號', dataIndex: 'businessId', key: 'businessId', width: 160, ellipsis: true },
   { title: '場景', dataIndex: 'scene', key: 'scene', width: 110 },
   { title: '優先度', dataIndex: 'priority', key: 'priority', width: 90, sorter: true },
   { title: '狀態', dataIndex: 'status', key: 'status', width: 100 },
@@ -423,6 +431,11 @@ async function fetchTasks() {
     if (filters.status) params.status = filters.status
     if (filters.scene) params.scene = filters.scene
     if (filters.priority) params.priority = filters.priority
+
+    // 加入排序參數
+    if (sortField.value && sortOrder.value) {
+      params.sort = `${sortField.value},${sortOrder.value}`
+    }
 
     const res = await axios.get(API_PREFIX, { params, withCredentials: true })
     const page = res.data.data
@@ -462,10 +475,20 @@ async function submitDecision() {
   }
 }
 
-function handleTableChange(pag) {
+function handleTableChange(pag, _filters, sorter) {
   // 確保 pag.current 是有效數字，若為 undefined/null/0 則預設為 1
   pagination.current = Math.max(1, Number(pag.current || 1)) // 確保當前頁碼至少為 1
   pagination.pageSize = pag.pageSize // 更新每頁顯示數量
+
+  // 處理排序資訊
+  if (sorter && sorter.field) {
+    sortField.value = sorter.field
+    sortOrder.value = sorter.order === 'ascend' ? 'asc' : 'desc'
+  } else {
+    sortField.value = ''
+    sortOrder.value = ''
+  }
+
   fetchTasks()
 }
 
@@ -725,5 +748,11 @@ function isImage(url) {
 }
 :deep(.clickable-row:hover td) {
   background: #fafafa;
+}
+
+.mono-id {
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 13px;
+  color: #595959;
 }
 </style>

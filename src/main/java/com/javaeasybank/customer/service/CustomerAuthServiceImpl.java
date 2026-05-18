@@ -182,7 +182,11 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
         String email = (profile != null) ? profile.getEmail() : null;
 
         // 2. 檢查狀態
-        if ("LOCKED".equals(auth.getStatus())) {
+        // 只要 Auth 或 Profile 其中一方被標記為 LOCKED，皆視為鎖定狀態
+        boolean isLocked = "LOCKED".equals(auth.getStatus())
+                || (profile != null && "LOCKED".equals(profile.getStatus()));
+
+        if (isLocked) {
             loginAuditService.recordLogin(auth.getCustomerId(), auth.getUsername(),
                     "失敗", "帳號已鎖定", ipAddress, userAgent, deviceName);
             loginRiskClient.recordLoginEvent(auth.getCustomerId(), ipAddress, "FAILURE", "帳號已鎖定");
@@ -205,14 +209,15 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
 
         // 3. 驗密碼
         if (!passwordEncoder.matches(request.getPassword(), auth.getPasswordHash())) {
-            handleLoginFailure(auth, email, location, "帳號或密碼錯誤", ipAddress, userAgent, deviceName, "帳號或密碼錯誤");
+            handleLoginFailure(auth, profile, email, location, "帳號或密碼錯誤", ipAddress, userAgent, deviceName, "帳號或密碼錯誤");
         }
 
         // 4. 驗證身分證字號
         if (request.getIdNumber() != null && !request.getIdNumber().isEmpty()) {
             String loginIdNumber = TaiwanIdValidator.normalize(request.getIdNumber());
             if (!profile.getIdNumber().equals(loginIdNumber)) {
-                handleLoginFailure(auth, email, location, "身分證字號不正確", ipAddress, userAgent, deviceName, "身分證字號不正確");
+                handleLoginFailure(auth, profile, email, location, "身分證字號不正確", ipAddress, userAgent, deviceName,
+                        "身分證字號不正確");
             }
         }
 
@@ -431,7 +436,8 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
     // ===========================
     // 私有方法
     // ===========================
-    private void handleLoginFailure(CustomerAuth auth, String email, String location, String failReason,
+    private void handleLoginFailure(CustomerAuth auth, CustomerProfile profile, String email, String location,
+            String failReason,
             String ipAddress, String userAgent, String deviceName, String userErrorMessage) {
         // 取得最近 30 分鐘內的失敗次數 (不含本次)
         int recentFailures = customerLoginLogRepository.countRecentFailures(
@@ -446,6 +452,13 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
         if (recentFailures >= 4) {
             auth.setStatus("LOCKED");
             customerAuthRepository.save(auth);
+
+            // 同步更新 Profile 狀態，確保管理後台能看到鎖定狀態
+            if (profile != null) {
+                profile.setStatus("LOCKED");
+                customerProfileRepository.save(profile);
+            }
+
             loginRiskClient.recordLoginEvent(auth.getCustomerId(), ipAddress, "LOCK", "觸發多次失敗鎖定");
             if (email != null) {
                 emailService.sendAccountLockedNotification(email, auth.getUsername(), location);

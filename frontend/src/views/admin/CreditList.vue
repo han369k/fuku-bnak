@@ -5,18 +5,18 @@
       <a-input-search
         v-model:value="keyword"
         placeholder="搜尋客戶姓名或 ID"
+        size="large"
         style="width: 300px"
         @search="handleSearch"
       />
     </div>
 
     <a-alert
-      message="資料敏感提醒"
-      description="此頁面顯示客戶信用資料，所有查看行為均已記錄。請勿截圖或外流。"
+      message="資料敏感提醒：此頁面顯示客戶信用資料，所有查看行為均已記錄。請勿截圖或外流。"
       type="warning"
       show-icon
       closable
-      style="margin-bottom: 16px"
+      class="large-alert"
     />
 
     <a-table
@@ -25,16 +25,17 @@
       :loading="loading"
       :pagination="pagination"
       row-key="customerId"
+      class="large-table"
       @change="handleTableChange"
     >
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'riskLevel'">
-          <a-tag :color="riskColor(record.riskLevel)">
+          <a-tag :color="riskColor(record.riskLevel)" class="table-risk-badge">
             {{ riskLabel(record.riskLevel) }}
           </a-tag>
         </template>
         <template v-if="column.key === 'action'">
-          <a-button type="link" size="small" @click="viewDetail(record.customerId)">
+          <a-button type="link" class="action-btn" @click="viewDetail(record.customerId)">
             查看完整評分
           </a-button>
         </template>
@@ -122,6 +123,7 @@ onMounted(fetchCredits)
 </script>
 
 <style scoped>
+/* 完全比照 RiskEventView 的留白，移除任何自訂背景與內襯 padding */
 .page-container {
   display: flex;
   flex-direction: column;
@@ -134,9 +136,48 @@ onMounted(fetchCredits)
   justify-content: space-between;
 }
 
+/* 放大頁面主標題 */
 .page-title {
   margin: 0;
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 600;
+  color: #262626;
+}
+
+.large-alert {
+  font-size: 16px !important;
+}
+
+/* 深度覆蓋 Table：字體全面放大，顏色維持一致，不花俏 */
+.large-table :deep(.ant-table) {
+  font-size: 16px !important;
+}
+
+:deep(.ant-table-thead > tr > th) {
+  font-size: 16px !important;
+  color: #262626 !important;
+  font-weight: 600;
+}
+
+:deep(.ant-table-tbody > tr > td) {
+  font-size: 16px !important;
+  color: #262626 !important;
+}
+
+:deep(.ant-input) {
+  font-size: 16px !important;
+}
+
+:deep(.ant-pagination) {
+  font-size: 15px !important;
+}
+
+.table-risk-badge {
+  font-size: 15px !important;
+}
+
+.action-btn {
+  font-size: 16px !important;
+  padding: 0;
 }
 </style>
