@@ -5,6 +5,7 @@ Java Easy Bank 系統權限模組 (Auth Module)
 */
 
 -- 寫入 5 大實體部門
+IF NOT EXISTS (SELECT 1 FROM AUTH_DEPT)
 INSERT INTO AUTH_DEPT (dept_id, dept_code, dept_name) VALUES
 ('DPT001', 'CF',  N'消費金融部'),
 ('DPT002', 'CS',  N'客戶服務部'),
@@ -14,6 +15,7 @@ INSERT INTO AUTH_DEPT (dept_id, dept_code, dept_name) VALUES
 GO
 
 -- 寫入 13 個標準職務角色
+IF NOT EXISTS (SELECT 1 FROM AUTH_ROLE)
 INSERT INTO AUTH_ROLE (role_id, dept_id, role_code, role_name, perm_level, perm_scope) VALUES
 ('R001', 'DPT001', 'CFSO',   N'消金業務專員',   0, NULL),
 ('R002', 'DPT001', 'CFDM',   N'消金部經理',     2, NULL),
@@ -31,6 +33,7 @@ INSERT INTO AUTH_ROLE (role_id, dept_id, role_code, role_name, perm_level, perm_
 GO
 
 -- 寫入 13 位擬真員工帳號（密碼皆為 123456）
+IF NOT EXISTS (SELECT 1 FROM AUTH_EMP)
 INSERT INTO AUTH_EMP (emp_id, emp_name, dept_id, role_id, email, password_hash, status, contract_end_date, permission_expire) VALUES
 -- 消費金融部
 ('E26001', N'林家豪', 'DPT001', 'R001', 'chiahao.lin@javabank.com',  '$2a$10$1Wa/uOR8VZXCrOwfd9.2ZOtgSeATa0xVvdSsYudUgtCSsQJ0M2cDS', 'ACTIVE', NULL, '2026-12-31'),
@@ -40,19 +43,20 @@ INSERT INTO AUTH_EMP (emp_id, emp_name, dept_id, role_id, email, password_hash, 
 ('E26004', N'張雅婷', 'DPT002', 'R004', 'yating.chang@javabank.com','$2a$10$1Wa/uOR8VZXCrOwfd9.2ZOtgSeATa0xVvdSsYudUgtCSsQJ0M2cDS', 'ACTIVE', NULL, '2026-12-31'),
 -- 授信審查部
 ('E26005', N'劉冠宇', 'DPT003', 'R005', 'kuanyu.liu@javabank.com',  '$2a$10$1Wa/uOR8VZXCrOwfd9.2ZOtgSeATa0xVvdSsYudUgtCSsQJ0M2cDS', 'ACTIVE', NULL, '2026-12-31'),
-('E26006', N'吳建國', 'DPT003', 'R006', 'chienkuo.wu@javabank.com',   '$2a$10$1Wa/uOR8VZXCrOwfd9.2ZOtgSeATa0xVvdSsYudUgtCSsQJ0M2cDS', 'SUSPENDED', NULL, '2024-01-01'), -- 離職停用
+('E26006', N'吳建國', 'DPT003', 'R006', 'chienkuo.wu@javabank.com',   '$2a$10$1Wa/uOR8VZXCrOwfd9.2ZOtgSeATa0xVvdSsYudUgtCSsQJ0M2cDS', 'ACTIVE', NULL, '2026-12-31'),
 ('E26007', N'李志明', 'DPT003', 'R007', 'chihming.lee@javabank.com',   '$2a$10$1Wa/uOR8VZXCrOwfd9.2ZOtgSeATa0xVvdSsYudUgtCSsQJ0M2cDS', 'ACTIVE', NULL, '2026-12-31'),
 -- 營運企劃部
 ('E26008', N'趙宇軒', 'DPT004', 'R008', 'yuhsuan.chao@javabank.com','$2a$10$1Wa/uOR8VZXCrOwfd9.2ZOtgSeATa0xVvdSsYudUgtCSsQJ0M2cDS', 'ACTIVE', '2026-06-30', '2026-06-30'), -- 約聘人員
 ('E26009', N'黃志成', 'DPT004', 'R009', 'chihcheng.huang@javabank.com', '$2a$10$1Wa/uOR8VZXCrOwfd9.2ZOtgSeATa0xVvdSsYudUgtCSsQJ0M2cDS', 'ACTIVE', NULL, '2026-12-31'),
 -- 資訊安全部
-('E26010', N'蔡宗翰', 'DPT005', 'R010', 'tsunghan.tsai@javabank.com', '$2a$10$1Wa/uOR8VZXCrOwfd9.2ZOtgSeATa0xVvdSsYudUgtCSsQJ0M2cDS', 'LOCKED', NULL, '2026-12-31'), -- 密碼鎖定
+('E26010', N'蔡宗翰', 'DPT005', 'R010', 'tsunghan.tsai@javabank.com', '$2a$10$1Wa/uOR8VZXCrOwfd9.2ZOtgSeATa0xVvdSsYudUgtCSsQJ0M2cDS', 'ACTIVE', NULL, '2026-12-31'),
 ('E26011', N'鄭文華', 'DPT005', 'R011', 'wenhua.cheng@javabank.com','$2a$10$1Wa/uOR8VZXCrOwfd9.2ZOtgSeATa0xVvdSsYudUgtCSsQJ0M2cDS', 'ACTIVE', NULL, '2026-12-31'),
 ('E26012', N'管理員甲', 'DPT005', 'R012', 'admin.a@javabank.com', '$2a$10$1Wa/uOR8VZXCrOwfd9.2ZOtgSeATa0xVvdSsYudUgtCSsQJ0M2cDS', 'ACTIVE', NULL, '2026-12-31'),
 ('E26013', N'管理員乙', 'DPT005', 'R013', 'admin.b@javabank.com', '$2a$10$1Wa/uOR8VZXCrOwfd9.2ZOtgSeATa0xVvdSsYudUgtCSsQJ0M2cDS', 'ACTIVE', NULL, '2026-12-31');
 GO
 
 -- 寫入登入日誌模擬資料
+IF NOT EXISTS (SELECT 1 FROM AUTH_LOGIN_LOG)
 INSERT INTO AUTH_LOGIN_LOG (attempt_email, emp_id, login_result, fail_reason, ip_address) VALUES
 ('wenhua.cheng@javabank.com', 'E26011', 'SUCCESS', NULL, '192.168.1.100'),
 ('chiahao.lin@javabank.com', 'E26001', 'SUCCESS', NULL, '192.168.1.101'),
@@ -62,6 +66,7 @@ INSERT INTO AUTH_LOGIN_LOG (attempt_email, emp_id, login_result, fail_reason, ip
 GO
 
 -- 寫入 CISO 系統日誌預設資料（8 筆）
+IF NOT EXISTS (SELECT 1 FROM AUTH_ACTION_LOG)
 INSERT INTO AUTH_ACTION_LOG (emp_id, emp_name, action, target, details, action_time, ip_address) VALUES
 ('E26003', N'陳建志', 'LOGIN', 'E26003', N'員工登入系統', DATEADD(MINUTE, -56, GETDATE()), '192.168.10.23'),
 ('E26003', N'陳建志', 'LOGOUT', 'E26003', N'員工登出系統', DATEADD(MINUTE, -52, GETDATE()), '192.168.10.23'),

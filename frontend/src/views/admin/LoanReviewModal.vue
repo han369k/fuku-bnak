@@ -292,7 +292,7 @@
                 </div>
 
                 <div class="form-hint-row" v-if="!review && !isSubmitted">
-                  <span class="hint-icon">ℹ️</span> 請先儲存草稿，才能執行送審
+                  <span class="hint-icon"><i class="fa-solid fa-circle-info"></i></span> 請先儲存草稿，才能執行送審
                 </div>
 
               </div>

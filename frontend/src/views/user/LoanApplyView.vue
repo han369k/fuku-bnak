@@ -6,7 +6,6 @@
     ══════════════════════════════════════════ -->
     <div v-if="step === 'entry'" class="home-wrap">
       <div class="home-left">
-        <div class="home-brand">🏦 Java Easy Bank</div>
         <h1 class="home-title">快速申請<br>專屬貸款方案</h1>
         <p class="home-desc">提供多元貸款方案，快速填寫申請資料，<br>專屬行員將於審核後主動與您聯繫。</p>
 
