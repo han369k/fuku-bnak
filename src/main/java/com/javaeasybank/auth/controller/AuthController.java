@@ -9,6 +9,7 @@ import com.javaeasybank.auth.service.AuthEmpService;
 import com.javaeasybank.common.dto.response.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -24,6 +25,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
+    private static final int ADMIN_SESSION_TIMEOUT_SECONDS = 8 * 60 * 60;
 
     private final AuthEmpService authEmpService;
     private final AuthenticationManager authenticationManager;
@@ -59,6 +61,7 @@ public class AuthController {
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
         session.setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
+        session.setMaxInactiveInterval(ADMIN_SESSION_TIMEOUT_SECONDS);
 
         // 擷取來源 IP
         String ipAddress = getClientIp(httpRequest);
@@ -69,7 +72,21 @@ public class AuthController {
     // ===== 確認登入狀態（給前端路由守衛用）=====
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<AuthRespository.AuthEmpResponse>> me(Authentication authentication) {
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || "anonymousUser".equals(authentication.getPrincipal())) {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.fail("登入已失效，請重新登入"));
+        }
+
         String email = authentication.getName();
+        if (authEmpRepository.findByEmail(email).isEmpty()) {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.fail("登入資訊已失效，請重新登入"));
+        }
+
         AuthRespository.AuthEmpResponse employee = authEmpService.getEmpByEmail(email);
         return ResponseEntity.ok(ApiResponse.success(employee));
     }
