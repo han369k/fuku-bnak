@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -39,11 +40,18 @@ public class ReviewTaskController {
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 
+
     @PutMapping("/{taskId}/start")
     public ResponseEntity<ApiResponse<Void>> startProcessing(
-            @PathVariable Long taskId) {
+            @PathVariable Long taskId,
+            Authentication authentication) { // 👈 1. 注入當前登入用戶的驗證資訊
 
-        reviewTaskService.startProcessing(taskId);
+        // 2. 取得管理員的標識（對應前端 Vue 的 currentUser.email 或 username）
+        String currentAdminIdentifier = authentication.getName();
+
+        // 3. 將管理員標識傳入 Service
+        reviewTaskService.startProcessing(taskId, currentAdminIdentifier);
+
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 }

@@ -136,26 +136,31 @@ public class ReviewTaskService {
     }
 
     @Transactional
-    public void startProcessing(Long taskId) {
+    public void startProcessing(Long taskId,String currentAuditor) {
         ReviewTask task = rtRepos.findById(taskId)
                 .orElseThrow(() -> new EntityNotFoundException("找不到審核任務：" + taskId));
 
-        // 同時攔截 PROCESSING 和 COMPLETED
-        if ("PROCESSING".equals(task.getStatus()) || "COMPLETED".equals(task.getStatus())) {
-            throw new BusinessException("該案件已被其他人處理或已結案");
-        }
-        // 只允許 PENDING 狀態鎖定
-        if (!"PENDING".equals(task.getStatus())) {
-            throw new BusinessException("該案件狀態異常，無法鎖定");
+        // 1. 如果已經是 PROCESSING，且鎖定人不是自己，才阻擋
+        if ("PROCESSING".equals(task.getStatus())) {
+            if (task.getAssignee() != null && !task.getAssignee().equals(currentAuditor)) {
+                throw new BusinessException("該案件已被其他審核人員處理中");
+            }
+            // 如果已經是 PROCESSING 且 assignee 就是自己，直接 return 即可，不需重複處理
+            return;
         }
 
-        // 取得目前登入的風控人員帳號
-        String currentAuditor = SecurityContextHolder.getContext().getAuthentication().getName();
+        // 2. 如果是已結案，絕對不允許再處理
+        if ("COMPLETED".equals(task.getStatus())) {
+            throw new BusinessException("該案件已結案，無法重新審核");
+        }
 
-        // 鎖定案件
+        // 3. ✨ 放行退回補件後的案件 ✨
+        // 只要不是已結案，且沒被別的管理員鎖定，不論原本是 PENDING 還是補件狀態（如 WAITING_DOCUMENT）
+        // 當管理員點擊「開始審核」時，都允許強制覆蓋為當前管理員
         task.setStatus("PROCESSING");
         task.setSubstatus("IN_REVIEW");
-        task.setAssignee(currentAuditor); // 提早綁定審核人
+        task.setAssignee(currentAuditor); // 👈 這裡會成功把客戶 ID (cust0001) 覆蓋掉！
+
         rtRepos.save(task);
 
         log.info("[ReviewTask] 案件已被鎖定開始處理 taskId={} auditor={}", taskId, currentAuditor);
