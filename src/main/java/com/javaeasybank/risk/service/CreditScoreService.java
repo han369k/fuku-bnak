@@ -1,7 +1,11 @@
 package com.javaeasybank.risk.service;
 
 import com.javaeasybank.account.enums.FundSource;
+import com.javaeasybank.common.exception.BusinessException;
+import com.javaeasybank.customer.entity.CustomerProfile;
+import com.javaeasybank.customer.repository.CustomerProfileRepository;
 import com.javaeasybank.risk.dto.request.RiskReviewRequest;
+import com.javaeasybank.risk.dto.response.CreditInfoResponse;
 import com.javaeasybank.risk.enums.Occupation;
 import com.javaeasybank.risk.utils.CreditMockUtils;
 import com.javaeasybank.risk.enums.RiskLevel;
@@ -9,13 +13,18 @@ import com.javaeasybank.risk.entity.CustomerCreditInfo;
 import com.javaeasybank.risk.repository.CustomerCreditRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -27,6 +36,69 @@ public class CreditScoreService {
     private static final int EXTERNAL_SCORE_RANGE = 500; // 800 - 300
 
     private final CustomerCreditRepository ccRepos;
+    private final CustomerProfileRepository cpRepos;
+
+    public Page<CreditInfoResponse> listAllCredit(String keyword, Pageable pageable) {
+        Page<CustomerCreditInfo> creditPage;
+
+        if (keyword != null && !keyword.isEmpty()) {
+            // 先從 CustomerProfile 查符合條件的客戶 ID
+            List<String> matchedIds = cpRepos
+                    .findByNameContaining(keyword)
+                    .stream()
+                    .map(CustomerProfile::getCustomerId)
+                    .toList();
+
+            creditPage = ccRepos.findByCustomerIdIn(matchedIds, pageable);
+        } else {
+            creditPage = ccRepos.findAll(pageable);
+        }
+
+        // 批次查詢所有客戶姓名（避免 N+1 查詢）
+        List<String> customerIds = creditPage.getContent()
+                .stream()
+                .map(CustomerCreditInfo::getCustomerId)
+                .toList();
+
+        Map<String, String> customerNames = cpRepos
+                .findAllById(customerIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        CustomerProfile::getCustomerId,
+                        CustomerProfile::getName
+                ));
+
+        return creditPage.map(credit -> CreditInfoResponse.builder()
+                .customerId(credit.getCustomerId())
+                .customerName(customerNames.getOrDefault(credit.getCustomerId(), "未知"))
+                .riskLevel(credit.getRiskLevel())
+                .lastUpdatedAt(credit.getLastUpdatedAt())
+                .build());
+    }
+
+
+    public CreditInfoResponse getCreditInfoByCustomerId(String customerId) {
+        CustomerCreditInfo credit = ccRepos.findById(customerId)
+                .orElseThrow(() -> new BusinessException("查無此客戶信用資料"));
+
+        // 關聯查詢客戶姓名
+        CustomerProfile profile = cpRepos.findById(customerId)
+                .orElseThrow(() -> new BusinessException("查無此客戶"));
+
+        return CreditInfoResponse.builder()
+                .customerId(credit.getCustomerId())
+                .customerName(profile.getName())
+                .riskLevel(credit.getRiskLevel())
+                .finalScore(credit.getFinalScore())
+                .externalScore(credit.getExternalScore())
+                .annualIncome(credit.getAnnualIncome())
+                .otherBankDebt(credit.getOtherBankDebt())
+                .occupation(credit.getOccupation())
+                .hasRealEstate(credit.getHasRealEstate())
+                .isPep(credit.getIsPep())
+                .lastUpdatedAt(credit.getLastUpdatedAt())
+                .build();
+    }
 
     @Transactional
     public CustomerCreditInfo initializeCreditInfo(String customerId, LocalDate birthday, Occupation occupation, BigDecimal annualIncome, FundSource fundSource, Boolean isPep) {

@@ -21,7 +21,8 @@ CREATE TABLE REVIEW_TASK
     log_id        BIGINT      NOT NULL,
     business_id   VARCHAR(64) NOT NULL,
     scene         VARCHAR(32) NULL,
-    status        VARCHAR(50) NULL,           -- 255 有點大，通常狀態代碼 50 綽綽有餘
+    status        VARCHAR(50) NULL,
+    sub_status    VARCHAR(50) NULL,
     review_result VARCHAR(20) NULL,
     assignee      VARCHAR(255) NULL,
     admin_comment VARCHAR(255) NULL,
