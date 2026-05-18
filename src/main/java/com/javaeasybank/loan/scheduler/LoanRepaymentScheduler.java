@@ -95,7 +95,7 @@ public class LoanRepaymentScheduler {
                     if (email != null) {
                         emailService.sendLoanOverdueNotification(
                                 email,
-                                account.getAccountNumber(),
+                                account.getAccountId(),
                                 rp.getPeriodIndex(),
                                 rp.getScheduledDate().toString(),
                                 rp.getTotalAmount());
@@ -140,7 +140,7 @@ public class LoanRepaymentScheduler {
                     int daysLeft = (int) ChronoUnit.DAYS.between(today, rp.getScheduledDate());
                     emailService.sendLoanRepaymentReminderNotification(
                             email,
-                            account.getAccountNumber(),
+                            account.getAccountId(),
                             rp.getPeriodIndex(),
                             account.getConfirmedPeriod(),
                             rp.getScheduledDate().toString(),

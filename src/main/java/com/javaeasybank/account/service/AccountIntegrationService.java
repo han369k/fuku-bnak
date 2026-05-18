@@ -289,7 +289,8 @@ public class AccountIntegrationService {
         ensureSufficientBalance(sourceAccount, amount, "扣款帳戶餘額不足");
 
         BigDecimal liabilityBefore = zeroIfNull(loanAccount.getLiability());
-        if (amount.compareTo(liabilityBefore) > 0) {
+        if (amount.compareTo(liabilityBefore) > 0
+                && !isFinalPrincipalRepayment(loanAccountNumber, request.getApplicationId(), amount)) {
             throw new AccountException("LOAN_OVERPAYMENT_NOT_ALLOWED", "還款金額不可大於剩餘負債");
         }
         LoanRepaymentPlan repaymentPlan = validateLoanRepaymentAmount(
@@ -300,7 +301,7 @@ public class AccountIntegrationService {
         BigDecimal sourceBefore = zeroIfNull(sourceAccount.getBalance());
         BigDecimal collectionBefore = zeroIfNull(bankCollection.getBalance());
         sourceAccount.setBalance(sourceBefore.subtract(amount));
-        loanAccount.setLiability(liabilityBefore.subtract(amount));
+        loanAccount.setLiability(liabilityBefore.subtract(amount.min(liabilityBefore)));
         bankCollection.setBalance(collectionBefore.add(amount));
 
         String referenceId = ReferenceIdGenerator.generate();
@@ -793,6 +794,12 @@ public class AccountIntegrationService {
             }
         }
 
+        BigDecimal remainingPrincipal = zeroIfNull(loanModuleAccount.getRemainingPrincipal())
+                .setScale(Currency.TWD.getDecimalPlaces(), RoundingMode.HALF_UP);
+        if (pendingRepayments.size() == 1 && amount.compareTo(remainingPrincipal) == 0) {
+            return new LoanRepaymentPlan(loanModuleAccount.getApplicationId(), 1);
+        }
+
         BigDecimal currentAmount = zeroIfNull(pendingRepayments.get(0).getTotalAmount()).setScale(
                 Currency.TWD.getDecimalPlaces(),
                 RoundingMode.HALF_UP);
@@ -802,6 +809,27 @@ public class AccountIntegrationService {
     }
 
     private record LoanRepaymentPlan(String applicationId, int periodsToPay) {
+    }
+
+    private boolean isFinalPrincipalRepayment(String loanAccountNumber, String applicationId, BigDecimal amount) {
+        return loanAccountRepository.findByAccountNumber(loanAccountNumber)
+                .filter(loanAccount -> applicationId == null
+                        || applicationId.isBlank()
+                        || applicationId.trim().equals(loanAccount.getApplicationId()))
+                .filter(loanAccount -> {
+                    long pendingCount = loanRepaymentRepository.findByAccountIdAndRepaymentStatusIn(
+                                    loanAccount.getAccountId(),
+                                    List.of(LoanRepaymentStatus.SCHEDULED, LoanRepaymentStatus.OVERDUE))
+                            .size();
+                    return pendingCount == 1;
+                })
+                .map(LoanAccount::getRemainingPrincipal)
+                .map(this::zeroIfNull)
+                .map(remainingPrincipal -> remainingPrincipal.setScale(
+                        Currency.TWD.getDecimalPlaces(),
+                        RoundingMode.HALF_UP))
+                .filter(remainingPrincipal -> amount.compareTo(remainingPrincipal) == 0)
+                .isPresent();
     }
 
     private BigDecimal normalizePositiveAmount(BigDecimal amount, String label) {
