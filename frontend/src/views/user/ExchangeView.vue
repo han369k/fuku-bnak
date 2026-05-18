@@ -108,13 +108,29 @@
         </template>
       </a-result>
     </a-modal>
+
+    <!-- 無外幣帳戶提示 modal -->
+    <transition name="modal-fade">
+      <div v-if="showNoForeignModal" class="jb-modal-overlay">
+        <div class="jb-modal">
+          <h3 class="jb-modal-title">尚未擁有外幣帳戶</h3>
+          <p class="jb-modal-content">您目前沒有任何外幣存款帳戶，無法使用換匯服務。請先前往開戶申請頁面申請外幣活期存款帳戶。</p>
+          <div class="jb-modal-actions">
+            <button class="jb-btn jb-btn-primary" @click="goToApply">前往申請</button>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { doExchange, getExchangeRates, getMyAccounts } from '@/api/customerAccount'
+
+const router = useRouter()
 
 const currencyNames = {
   TWD: '臺幣',
@@ -204,8 +220,22 @@ const rateRows = computed(() => ['USD', 'JPY', 'EUR', 'GBP', 'CNY']
 
 onMounted(async () => {
   await Promise.all([loadAccounts(), loadRates()])
+
+  // 檢查是否有外幣帳戶（非 TWD 且 ACTIVE）
+  const hasForeignAccount = accounts.value.some(
+    a => a.status === 'ACTIVE' && a.currency !== 'TWD' && a.accountType !== 'LOAN'
+  )
+  if (!hasForeignAccount) {
+    showNoForeignModal.value = true
+    return
+  }
+
   pickDefaultAccounts()
 })
+
+function goToApply() {
+  router.push({ name: 'user-account-application' })
+}
 
 async function loadAccounts() {
   try {
@@ -547,6 +577,48 @@ h2 {
     transform: scale(1);
   }
 }
+
+.jb-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(43, 43, 43, 0.4);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.jb-modal {
+  width: 90%;
+  max-width: 400px;
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  border-radius: 12px;
+  background: rgba(255, 249, 239, 0.96);
+  border: 1px solid rgba(214, 206, 195, 0.86);
+  box-shadow: 0 12px 36px rgba(63, 74, 66, 0.12);
+}
+.jb-modal-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+.jb-modal-content {
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.6;
+}
+.jb-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+.modal-fade-enter-active, .modal-fade-leave-active { transition: opacity 0.2s var(--ease); }
+.modal-fade-enter-from, .modal-fade-leave-to { opacity: 0; }
 
 @media (max-width: 860px) {
   .exchange-page {

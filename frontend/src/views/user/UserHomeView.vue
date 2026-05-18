@@ -354,7 +354,9 @@ const customerInitial = computed(() => (customerAuthStore.customer?.name || '會
 const avatarSrc = computed(() => {
   const url = customerAuthStore.customer?.avatarUrl
   if (!url) return null
-  return url.startsWith('http') ? url : BASE_URL + url
+  if (url.startsWith('http')) return url
+  if (url.startsWith('/uploads/')) return BASE_URL + url
+  return url
 })
 const maskedId = computed(() => {
   const id = customerAuthStore.customer?.username || 'user0001'

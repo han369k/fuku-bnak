@@ -26,7 +26,7 @@
       </h3>
 
       <form @submit.prevent="handleSave" novalidate>
-        
+
         <!-- 帳號及電子郵件 -->
         <div v-if="activeTab === 'email'" class="ctbc-form">
           <div class="ctbc-row avatar-tab" style="margin-bottom: 24px;">
@@ -313,19 +313,19 @@ const isDirty = computed(() => {
   if (editForm.email || editForm.emailConfirm) return true
   if (editForm.phone !== (profile.phone || '')) return true
   if (editForm.address !== (profile.address || '')) return true
-  
+
   const currentJob = editForm.jobSelect === '其他' ? editForm.jobOther : editForm.jobSelect
   if (currentJob !== (profile.job || '')) return true
-  
+
   const currentOcc = editForm.occupationSelect === '其他' ? editForm.occupationOther : editForm.occupationSelect
   if (currentOcc !== (profile.occupation || '')) return true
-  
+
   const currentFund = editForm.fundSourceSelect === '其他' ? editForm.fundSourceOther : editForm.fundSourceSelect
   if (currentFund !== (profile.fundSource || '')) return true
-  
+
   if (editForm.employer !== (profile.employer || '')) return true
   if (editForm.annualIncome !== normalizeAnnualIncomeRange(profile.annualIncome)) return true
-  
+
   return false
 })
 
@@ -379,7 +379,15 @@ onMounted(async () => {
 })
 
 function updateAvatarSrc(url) {
-  avatarSrc.value = !url ? null : url.startsWith('http') ? url : BASE_URL + url
+  if (!url) {
+    avatarSrc.value = null
+  } else if (url.startsWith('http')) {
+    avatarSrc.value = url
+  } else if (url.startsWith('/uploads/')) {
+    avatarSrc.value = BASE_URL + url
+  } else {
+    avatarSrc.value = url
+  }
 }
 
 function triggerUpload() {
@@ -416,7 +424,7 @@ async function handleSave() {
   }
 
   saving.value = true
-  
+
   const finalJob = editForm.jobSelect === '其他' ? editForm.jobOther : editForm.jobSelect
   const finalOcc = editForm.occupationSelect === '其他' ? editForm.occupationOther : editForm.occupationSelect
   const finalFund = editForm.fundSourceSelect === '其他' ? editForm.fundSourceOther : editForm.fundSourceSelect
@@ -473,19 +481,19 @@ function resetForm() {
   editForm.email = ''
   editForm.emailConfirm = ''
   editForm.address = profile.address || ''
-  
+
   const j = parseSelectOther(profile.job, jobOptions)
   editForm.jobSelect = j.select
   editForm.jobOther = j.other
-  
+
   const o = parseSelectOther(profile.occupation, occupationOptions)
   editForm.occupationSelect = o.select
   editForm.occupationOther = o.other
-  
+
   const f = parseSelectOther(profile.fundSource, fundSourceOptions)
   editForm.fundSourceSelect = f.select
   editForm.fundSourceOther = f.other
-  
+
   editForm.employer = profile.employer || ''
   editForm.annualIncome = normalizeAnnualIncomeRange(profile.annualIncome)
 }

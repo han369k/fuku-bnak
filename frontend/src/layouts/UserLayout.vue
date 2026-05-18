@@ -15,7 +15,7 @@
                 </button>
                 <button class="demo-mode-badge" @click="triggerIdleAlert">Demo 模式</button>
               </div>
-              
+
               <button
                 class="avatar-btn"
                 aria-label="前往會員中心"
@@ -167,7 +167,9 @@ const customerInitial = computed(() => (customerAuthStore.customer?.name || '會
 const avatarSrc = computed(() => {
   const url = customerAuthStore.customer?.avatarUrl
   if (!url) return null
-  return url.startsWith('http') ? url : BASE_URL + url
+  if (url.startsWith('http')) return url
+  if (url.startsWith('/uploads/')) return BASE_URL + url
+  return url
 })
 
 const menus = [
@@ -336,12 +338,12 @@ function stopGraceTimer() {
 
 onMounted(() => {
   document.addEventListener('click', closeOnOutsideClick)
-  
+
   // 每 1 秒更新倒數
   secondTimer = setInterval(() => {
     if (idleModal.visible) return
     if (isTimerPaused.value) return // 暫停時不動作
-    
+
     if (countdown.value > 0) {
       countdown.value--
     } else {
