@@ -72,11 +72,4 @@ public class ReviewTask {
     @Version // 樂觀鎖預防併發衝突
     private Long version;
 
-
-    @PrePersist
-    protected void onCreate() {
-        if (createAt == null) {
-            createAt = LocalDateTime.now();
-        }
-    }
 }
