@@ -199,6 +199,7 @@ SELECT
 FROM #customers
 WHERE rn <= 5 AND status = 'ACTIVE';
 
+IF NOT EXISTS (SELECT 1 FROM [ACCOUNT])
 INSERT INTO [ACCOUNT] (
     account_number, customer_id, account_type, currency, balance, liability,
     interest_rate, status, parent_account_number, created_at, changed_at, created_by, changed_by
@@ -210,6 +211,7 @@ FROM #mock_accounts
 WHERE parent_account_number IS NULL
 ORDER BY account_number;
 
+IF NOT EXISTS (SELECT 1 FROM [ACCOUNT])
 INSERT INTO [ACCOUNT] (
     account_number, customer_id, account_type, currency, balance, liability,
     interest_rate, status, parent_account_number, created_at, changed_at, created_by, changed_by
@@ -222,6 +224,7 @@ WHERE parent_account_number IS NOT NULL
 ORDER BY account_number;
 
 -- Account applications: exactly one latest application per mock customer.
+IF NOT EXISTS (SELECT 1 FROM ACCOUNT_APPLICATION)
 INSERT INTO ACCOUNT_APPLICATION (
     application_no, customer_id, account_type, currency,
     customer_name, id_number, birthday, gender, email, address, nationality, phone,
@@ -326,6 +329,7 @@ JOIN ACCOUNT_APPLICATION a ON a.customer_id = p.customer_id;
 
 IF OBJECT_ID('ACCOUNT_STATUS_HISTORY', 'U') IS NOT NULL
 BEGIN
+    IF NOT EXISTS (SELECT 1 FROM ACCOUNT_STATUS_HISTORY)
     INSERT INTO ACCOUNT_STATUS_HISTORY (
         history_id, account_number, old_status, new_status, change_reason, changed_at, changed_by
     )
@@ -341,6 +345,7 @@ BEGIN
     WHERE account_type <> 'BUSINESS';
 END;
 
+IF NOT EXISTS (SELECT 1 FROM FAVORITE_ACCOUNT)
 INSERT INTO FAVORITE_ACCOUNT (customer_id, bank_code, account_number, alias, bank_name, created_at, updated_at)
 SELECT TOP (12)
     customer_id,
@@ -508,6 +513,7 @@ BEGIN
     SET @referenceId = 'TXN-20260513-' + RIGHT(REPLICATE('0', 6) + CAST(@i AS VARCHAR(6)), 6);
     SET @createdAt = DATEADD(MINUTE, -(@i * 43), CAST('2026-05-13 10:00:00' AS DATETIME2(3)));
 
+    IF NOT EXISTS (SELECT 1 FROM TRANS_LOG)
     INSERT INTO TRANS_LOG (
         transaction_id, reference_id, account_number, counterpart_account,
         bank_code, bank_name, counterpart_bank_code, counterpart_bank_name,

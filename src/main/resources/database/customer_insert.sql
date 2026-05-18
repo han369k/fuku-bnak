@@ -125,6 +125,7 @@ INSERT INTO @customers (
     (50, 'X9N5T3Q7', '2605-K4D6M2V8', 'AUTH26050050', 'CASE26050050', N'尤芷晴', '1971-02-23', 'F', 'B200260550', 'customer050@java-bank.demo', '0913000050', N'苗栗縣苗栗市縣府路100號', 'cust0050', 'ACTIVE', 'ACTIVE', 'APPROVED', 'TW', N'苗栗縣苗栗市縣府路100號', N'苗栗縣苗栗市縣府路100號', N'金融保險業', N'國泰金控', 5, 'INVESTMENT', 'SALARY', 'TW', 0, '/uploads/mock/customer/X9N5T3Q7-front.jpg', '/uploads/mock/customer/X9N5T3Q7-back.jpg', '/uploads/mock/customer/X9N5T3Q7-second.jpg', '/avatars/mock/X9N5T3Q7.png', N'金融保險業', 1320000, 'LOW', N'苗栗縣', N'大學', 'S', N'換發', N'薪資收入', '2026-05-03 13:43:00', '2026-05-03 13:43:00');
 
 -- Formal customer profiles.
+IF NOT EXISTS (SELECT 1 FROM CUSTOMER_PROFILE)
 INSERT INTO CUSTOMER_PROFILE (
     customer_id, cif, id_number, name, birthday, gender, email, phone, address,
     nationality, registered_address, current_address, occupation, employer,
@@ -141,6 +142,7 @@ SELECT
 FROM @customers;
 
 -- Authentication accounts. Password for every mock customer is 123456.
+IF NOT EXISTS (SELECT 1 FROM CUSTOMER_AUTH)
 INSERT INTO CUSTOMER_AUTH (
     auth_id, customer_id, username, password_hash, role, status,
     last_login_date, verification_token, created_at, updated_at
@@ -158,6 +160,7 @@ SELECT
     updated_at
 FROM @customers;
 
+IF NOT EXISTS (SELECT 1 FROM CUSTOMER_LOGIN_LOG)
 INSERT INTO CUSTOMER_LOGIN_LOG (
     customer_id, username, result, fail_reason, ip_address, user_agent, device_name, login_time
 )
@@ -175,6 +178,7 @@ SELECT
     DATEADD(HOUR, -1 * seq, CAST('2026-05-13 10:00:00' AS DATETIME2))
 FROM @customers;
 
+IF NOT EXISTS (SELECT 1 FROM CUSTOMER_DEVICE)
 INSERT INTO CUSTOMER_DEVICE (
     customer_id, device_fingerprint, device_name, browser_name, operating_system,
     ip_address, user_agent, status, trusted, first_seen_at, last_seen_at, revoked_at

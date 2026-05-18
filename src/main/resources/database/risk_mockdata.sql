@@ -85,7 +85,8 @@ FROM Numbers;
 
 PRINT
 N'資料已成功生成：200 筆紀錄。欄位已對齊 RiskEventLog Entity。';
-INSERT INTO [java_easy_bank].[dbo].[customer_credit_info] ([annual_income], [external_score], [final_score], [has_real_estate], [is_pep],
+IF NOT EXISTS (SELECT 1 FROM [customer_credit_info])
+INSERT INTO [customer_credit_info] ([annual_income], [external_score], [final_score], [has_real_estate], [is_pep],
     [other_bank_debt], [last_updated_at], [risk_level], [customer_id], [fund_source],
     [occupation], [job])
 VALUES

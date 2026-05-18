@@ -5,6 +5,7 @@ Java Easy Bank 系統權限模組 (Auth Module)
 */
 
 -- 寫入 5 大實體部門
+IF NOT EXISTS (SELECT 1 FROM AUTH_DEPT)
 INSERT INTO AUTH_DEPT (dept_id, dept_code, dept_name) VALUES
 ('DPT001', 'CF',  N'消費金融部'),
 ('DPT002', 'CS',  N'客戶服務部'),
@@ -14,6 +15,7 @@ INSERT INTO AUTH_DEPT (dept_id, dept_code, dept_name) VALUES
 GO
 
 -- 寫入 13 個標準職務角色
+IF NOT EXISTS (SELECT 1 FROM AUTH_ROLE)
 INSERT INTO AUTH_ROLE (role_id, dept_id, role_code, role_name, perm_level, perm_scope) VALUES
 ('R001', 'DPT001', 'CFSO',   N'消金業務專員',   0, NULL),
 ('R002', 'DPT001', 'CFDM',   N'消金部經理',     2, NULL),
@@ -31,6 +33,7 @@ INSERT INTO AUTH_ROLE (role_id, dept_id, role_code, role_name, perm_level, perm_
 GO
 
 -- 寫入 13 位擬真員工帳號（密碼皆為 123456）
+IF NOT EXISTS (SELECT 1 FROM AUTH_EMP)
 INSERT INTO AUTH_EMP (emp_id, emp_name, dept_id, role_id, email, password_hash, status, contract_end_date, permission_expire) VALUES
 -- 消費金融部
 ('E26001', N'林家豪', 'DPT001', 'R001', 'chiahao.lin@javabank.com',  '$2a$10$1Wa/uOR8VZXCrOwfd9.2ZOtgSeATa0xVvdSsYudUgtCSsQJ0M2cDS', 'ACTIVE', NULL, '2026-12-31'),
@@ -53,6 +56,7 @@ INSERT INTO AUTH_EMP (emp_id, emp_name, dept_id, role_id, email, password_hash, 
 GO
 
 -- 寫入登入日誌模擬資料
+IF NOT EXISTS (SELECT 1 FROM AUTH_LOGIN_LOG)
 INSERT INTO AUTH_LOGIN_LOG (attempt_email, emp_id, login_result, fail_reason, ip_address) VALUES
 ('wenhua.cheng@javabank.com', 'E26011', 'SUCCESS', NULL, '192.168.1.100'),
 ('chiahao.lin@javabank.com', 'E26001', 'SUCCESS', NULL, '192.168.1.101'),
@@ -62,6 +66,7 @@ INSERT INTO AUTH_LOGIN_LOG (attempt_email, emp_id, login_result, fail_reason, ip
 GO
 
 -- 寫入 CISO 系統日誌預設資料（8 筆）
+IF NOT EXISTS (SELECT 1 FROM AUTH_ACTION_LOG)
 INSERT INTO AUTH_ACTION_LOG (emp_id, emp_name, action, target, details, action_time, ip_address) VALUES
 ('E26003', N'陳建志', 'LOGIN', 'E26003', N'員工登入系統', DATEADD(MINUTE, -56, GETDATE()), '192.168.10.23'),
 ('E26003', N'陳建志', 'LOGOUT', 'E26003', N'員工登出系統', DATEADD(MINUTE, -52, GETDATE()), '192.168.10.23'),
