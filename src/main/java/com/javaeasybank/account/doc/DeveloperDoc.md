@@ -16,9 +16,9 @@
 
 | 項目 | 現況 |
 | --- | --- |
-| 對齊日期 | 2026-05-11 |
-| 對齊依據 | `src/main/java/com/javaeasybank/account/**`、`src/main/resources/database/account_init.sql`、`frontend/src/router/index.js`、`frontend/src/api/**`、`common/doc/ProjectOverview.md` |
-| 模組現況 | 帳戶管理、客戶帳戶查詢、開戶申請、行內/跨行轉帳、台幣與外幣換匯、電子存摺 PDF、存提款、沖正、交易紀錄、常用帳號、預約轉帳皆已有程式碼 |
+| 對齊日期 | 2026-05-19 |
+| 對齊依據 | `src/main/java/com/javaeasybank/account/**`、`src/main/java/com/javaeasybank/notification/**`、`src/main/resources/database/account_init.sql`、`frontend/src/router/index.js`、`frontend/src/api/**`、`src/main/resources/doc/ProjectOverview.md` |
+| 模組現況 | 帳戶管理、客戶帳戶查詢、開戶申請、行內/跨行轉帳、台幣與外幣換匯、電子存摺 PDF、存提款、沖正、交易紀錄、常用帳號、預約轉帳皆已有程式碼；轉帳與開戶補件已接站內通知 |
 | 仍屬未落地設計 | 每日快照、正式利息批次、帳戶狀態歷史表、完整風控攔截、預約轉帳實際排程執行、貸款撥款 / 還款專用 API、外幣對外幣直接互換 |
 
 ---
@@ -64,6 +64,7 @@
 | 交易紀錄查詢 | 已實作 | `TransLogController`, `TransLogService`, `TransLogRepository` |
 | 常用帳號 | 已實作 | `FavoriteAccountController`, `FavoriteAccountService`, `FavoriteAccount` |
 | 預約轉帳 | 可建立 / 查詢 / 取消；到期執行仍是占位 | `ScheduledTransferController`, `ScheduledTransferService`, `ScheduledTransfer` |
+| 站內通知整合 | 已實作開戶補件通知與轉帳 mail 同步通知 | `NotificationService`, `NotificationPreferenceService`, `UserLayout.vue` |
 | 風控整合 | 有 AOP 標註與查詢方法；實際 handler 尚未完成 | `@RiskCheck`, `TransferRiskHandler`, `TransLogRepository` |
 
 ---
@@ -90,6 +91,7 @@
 | 風控 | A1/B1/B2 等規則規劃 | `TransLogRepository` 已有 B1/B2 查詢方法；風控 handler 尚未完成且尚未接入轉帳流程 |
 | 常用帳號 | 舊文件未涵蓋 | 已新增 `FavoriteAccount` 與 `/api/customer/favorite-accounts` |
 | 預約轉帳 | 舊文件列為遠期 | 已新增建立 / 查詢 / 取消；`executeDueTransfers` 目前只改狀態，沒有實際呼叫轉帳，也未看到 `@Scheduled` 入口 |
+| 站內通知 | 舊文件標示為未來推播 | 已有 `notifications`、`notification_preferences`、header 鈴鐺與通知偏好；開戶補件與轉帳事件已接入 |
 | 前端管理端 | 舊文件提到 `/admin/transfers` | 目前 router 沒有 `/admin/transfers`；`TransferView.vue` 存在但未掛路由 |
 | 前端客戶端 | 舊文件標示待實作 | 已有帳戶、交易、轉帳、換匯、電子存摺、常用帳號、預約轉帳、開戶申請與安全中心頁面 |
 
@@ -128,6 +130,12 @@
 | PATCH | `/api/admin/account-applications/{id}/approve` | 核准並自動建帳 |
 | PATCH | `/api/admin/account-applications/{id}/supplement` | 要求補件 |
 | PATCH | `/api/admin/account-applications/{id}/reject` | 駁回 |
+| GET | `/api/customer/notifications` | 客戶查自己的站內通知 |
+| GET | `/api/customer/notifications/unread-count` | 客戶查未讀通知數 |
+| PATCH | `/api/customer/notifications/{id}/read` | 客戶標記自己的通知已讀 |
+| PATCH | `/api/customer/notifications/read-all` | 客戶全部通知標記已讀 |
+| GET | `/api/customer/notification-preferences` | 客戶查通知偏好 |
+| PATCH | `/api/customer/notification-preferences` | 客戶更新通知偏好，`SECURITY` 不可關閉 |
 
 ### 交易操作
 
@@ -207,8 +215,8 @@
 
 Loan/Card 交接細節已拆分：
 
-- Loan：`src/main/java/com/javaeasybank/common/doc/LoanAccountIntegrationGuide.md`
-- Card：`src/main/java/com/javaeasybank/common/doc/CardAccountIntegrationGuide.md`
+- Loan：`src/main/resources/doc/LoanAccountIntegrationGuide.md`
+- Card：`src/main/resources/doc/CardAccountIntegrationGuide.md`
 
 現行 `ACCOUNT` entity 欄位：
 
@@ -710,7 +718,7 @@ Request body：
 - 跨行手續費：金額 `<= 1000` 收 10 元，`>= 1001` 收 15 元。
 - 跨行會寫兩筆同 `referenceId` 的 `TransLog`：本金 `TRANSFER` 與手續費 `TRANSFER_FEE`。
 - 本行轉帳會寫兩筆同 `referenceId` 的 `TransLog`：轉出方 `DEBIT` 與轉入方 `CREDIT`。
-- 轉帳成功後會寄送轉帳通知信。
+- 轉帳審核中與轉帳成功會寄送通知信，並同步建立 `TRANSFER` 站內通知。
 
 目前 `TransferService.exchange` 已實作：
 
@@ -1299,6 +1307,7 @@ flowchart TD
 
 - `AccountApplicationService.submit(...)` 送出申請後，會將最新申請資料以 `PENDING` 狀態同步到 Customer Profile。
 - 管理端 `approve(...)`、`requestSupplement(...)`、`reject(...)` 完成審核後，都會再次呼叫 `CustomerService.syncAccountApplicationProfile(...)`。
+- 管理端 `requestSupplement(...)` 會建立 `ACCOUNT_SUPPLEMENT_REQUIRED` 站內通知，連到 `/user/account-application`。
 - 同步內容包含 KYC 個資、地址、職業財務、開戶目的、資金來源、法遵聲明、證件圖路徑，以及最近一次開戶申請的審核狀態、審核人、審核時間、原因與建帳帳號。
 - Account 模組只依賴 Customer 對外 service / DTO，不直接操作 `CUSTOMER_PROFILE`。
 
@@ -2326,7 +2335,7 @@ public static String generateReferenceId() {
 
 | 檔案 | 說明 |
 | --- | --- |
-| `frontend/src/layouts/UserLayout.vue` | 客戶端 Layout，頂部導覽列與 mega nav |
+| `frontend/src/layouts/UserLayout.vue` | 客戶端 Layout，頂部導覽列、通知鈴鐺與 mega nav |
 | `frontend/src/views/user/UserLoginView.vue` | 客戶端登入頁，串接 `customerAuth.js` |
 | `frontend/src/views/user/UserHomeView.vue` | 客戶端首頁 |
 | `frontend/src/views/user/AccountApplicationView.vue` | 開戶申請，multipart 上傳證件 |
@@ -2339,6 +2348,7 @@ public static String generateReferenceId() {
 | `frontend/src/views/user/FavoriteAccountsView.vue` | 常用帳號 |
 | `frontend/src/views/user/SecurityLoginRecordsView.vue` | 安全中心登入紀錄 |
 | `frontend/src/views/user/SecurityDevicesView.vue` | 安全中心裝置管理 |
+| `frontend/src/views/user/NotificationSettingsView.vue` | 通知偏好設定 |
 | `frontend/src/views/NotFoundView.vue` | 404 頁面 |
 
 ### 2.2 現行路由
@@ -2355,6 +2365,7 @@ public static String generateReferenceId() {
 | `/user/exchange` | `user-exchange` | `ExchangeView.vue` |
 | `/user/scheduled-transfer` | `user-scheduled-transfer` | `ScheduledTransferView.vue` |
 | `/user/favorite-accounts` | `user-favorite-accounts` | `FavoriteAccountsView.vue` |
+| `/user/notification-settings` | `user-notification-settings` | `NotificationSettingsView.vue` |
 | `/user/security/login-records` | `user-security-login-records` | `SecurityLoginRecordsView.vue` |
 | `/user/security/devices` | `user-security-devices` | `SecurityDevicesView.vue` |
 | `/:pathMatch(.*)*` | `NotFound` | `NotFoundView.vue` |
@@ -2382,6 +2393,8 @@ public static String generateReferenceId() {
 | `frontend/src/api/favoriteAccount.js` | 客戶端常用帳號 |
 | `frontend/src/api/scheduledTransfer.js` | 客戶端預約轉帳 |
 | `frontend/src/api/customerAuth.js` | 客戶端登入、登入紀錄、裝置管理 |
+| `frontend/src/api/notification.js` | 客戶端站內通知查詢與已讀操作 |
+| `frontend/src/api/notificationPreference.js` | 客戶端通知偏好設定 |
 
 ### 2.5 已完成與待補
 
@@ -2393,6 +2406,7 @@ public static String generateReferenceId() {
 - [x] 客戶端換匯
 - [x] 電子存摺與 PDF 下載
 - [x] 安全中心登入紀錄與裝置管理
+- [x] 通知鈴鐺、站內通知與通知偏好設定
 - [x] 客戶端開戶申請
 - [x] 管理端開戶申請審核
 - [x] 常用帳號
@@ -2404,6 +2418,30 @@ public static String generateReferenceId() {
 ---
 
 # 五、補充
+
+## 測試與驗證現況
+
+2026-05-19 已完成完整測試回歸：
+
+```bash
+./mvnw -q test
+```
+
+```bash
+cd frontend
+npm run test:unit
+```
+
+目前測試覆蓋重點：
+
+- `CustomerAuthServiceImplTest`：客戶註冊、登入成功、登入失敗警示、帳號鎖定、解除鎖定。
+- `customerAuth.spec.js`：前端客戶 auth API wrapper endpoint、multipart avatar、登入紀錄 / 裝置資料解包。
+- `NotificationServiceTest` / `NotificationPreferenceServiceTest`：通知權限、已讀、偏好設定與 `SECURITY` 不可關閉。
+- `AccountApplicationServiceTest`：開戶申請 submit / approve / supplement / reject 與補件通知。
+- `AccountIntegrationServiceTest`：帳戶與 Loan/Card 整合建帳。
+- `LoanApplicationServiceTest`：貸款補件文件批次與 mail / notification 文案。
+
+`JavaEasyBankApplicationTests` 現在只做 application class load smoke test，不啟動完整 Spring context，避免本機沒有 SQL Server 時讓單元測試被外部服務卡住。
 
 ## Docker
 

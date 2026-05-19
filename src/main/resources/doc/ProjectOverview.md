@@ -1,6 +1,6 @@
 # Java Easy Bank 專案理解文件
 
-> 本文件依照目前程式碼靜態閱讀整理，時間點：2026-05-11。
+> 本文件依照目前程式碼靜態閱讀整理，時間點：2026-05-19。
 > 目的：作為資訊交接、後續開發定位、API 對接與模組責任切分的總覽文件。  
 > 範圍：後端 Spring Boot、前端 Vue、資料庫初始化腳本、目前可觀察到的業務流程與注意事項。
 
@@ -23,6 +23,7 @@ Java Easy Bank 是一套銀行業務系統，提供兩個主要使用端：
 - Loan：貸款申請、聯繫紀錄、二次填單、送審、利率規則。
 - Credit Card：信用卡卡別、申請、申請明細審核、發卡、交易、刷退。
 - Risk：黑名單、風險事件、AOP 風控檢查框架。
+- Notification：客戶站內通知、未讀狀態、通知偏好設定、mail 事件同步通知。
 - Common：共用回應格式、例外處理、安全設定、JWT、CORS、檔案上傳等。
 
 ---
@@ -61,6 +62,7 @@ Java Easy Bank 是一套銀行業務系統，提供兩個主要使用端：
 | HTTP | axios |
 | CSS | Tailwind CSS + 自訂 theme css |
 | Chart / Export | Chart.js, vue-chartjs, xlsx, file-saver |
+| Unit Test | Vitest |
 
 ### 資料庫
 
@@ -87,11 +89,13 @@ java-easy-bank/
 │   ├── account/
 │   ├── loan/
 │   ├── creditcard/
+│   ├── notification/
 │   └── risk/
 ├── src/main/resources/
 │   ├── application.properties
 │   ├── banner.txt
 │   ├── database/
+│   ├── doc/
 │   └── static/img/
 ├── src/test/java/com/javaeasybank/
 └── frontend/
@@ -357,7 +361,9 @@ npm run dev
 - 客戶個人資料維護。
 - 大頭照上傳。
 - 密碼重設 token 產生與重設。
+- 登入成功、登入失敗警示、帳號鎖定與解除鎖定。
 - 登入紀錄與授權裝置查詢 / 撤銷。
+- 客戶 auth 事件的 mail 與站內通知同步。
 - 提供 `syncAccountApplicationProfile`，讓帳戶模組同步開戶申請與審核結果。
 
 ### 主要 Entity
@@ -416,6 +422,7 @@ npm run dev
 | POST | `/api/customer/auth/avatar` | 上傳大頭照 |
 | POST | `/api/customer/auth/request-reset` | 請求密碼重設 |
 | POST | `/api/customer/auth/reset-password` | 執行密碼重設 |
+| PATCH | `/api/customer/auth/{customerId}/unlock` | 解除客戶鎖定狀態 |
 | POST | `/api/customer/auth/seed` | 建立客戶認證測試資料 |
 
 ### 客戶安全中心 API
@@ -444,11 +451,12 @@ npm run dev
 3. 產生 `customerId` 與 CIF。
 4. 建立 `CustomerProfile`。
 5. 使用 BCrypt hash 建立 `CustomerAuth`。
-6. 產生 JWT 並回傳登入資料。
+6. 寄送 email 驗證信，並建立 `SECURITY` 站內通知。
+7. 回傳註冊資料。
 
 ### 密碼重設現況
 
-目前 `requestPasswordReset` 會用 email、身分證字號與生日驗證身分，產生 30 分鐘有效的 reset token，組成前端重設連結後透過 `EmailService.sendPasswordResetEmail` 以 SMTP / Thymeleaf template 寄出。
+目前 `requestPasswordReset` 會用 email、身分證字號與生日驗證身分，產生 30 分鐘有效的 reset token，組成前端重設連結後透過 `EmailService.sendPasswordResetEmail` 以 SMTP / Thymeleaf template 寄出，並同步建立 `SECURITY` 站內通知。
 
 ---
 
@@ -595,8 +603,8 @@ npm run dev
 
 詳細 service 方法與交接規則已拆分：
 
-- Loan：`src/main/java/com/javaeasybank/common/doc/LoanAccountIntegrationGuide.md`
-- Card：`src/main/java/com/javaeasybank/common/doc/CardAccountIntegrationGuide.md`
+- Loan：`src/main/resources/doc/LoanAccountIntegrationGuide.md`
+- Card：`src/main/resources/doc/CardAccountIntegrationGuide.md`
 
 | Method | Path | 說明 |
 |---|---|---|
@@ -964,6 +972,60 @@ npm run dev
 
 ---
 
+## 7.7 Notification 模組
+
+### 職責
+
+- 提供客戶端站內通知查詢、未讀數量、單筆已讀、全部已讀。
+- 提供通知類型偏好設定，非安全類通知可由使用者關閉。
+- `SECURITY` 類通知固定啟用，不能被偏好設定關閉。
+- 由帳戶補件、客戶 auth mail、貸款、轉帳、信用卡帳單等事件建立站內通知。
+
+### 主要 Entity
+
+| Entity | Table | 用途 |
+|---|---|---|
+| `Notification` | `notifications` | 客戶站內通知，含 `customerId`, `type`, `title`, `message`, `linkUrl`, `isRead`, `createdAt`, `readAt` |
+| `NotificationPreference` | `notification_preferences` | 客戶通知偏好，依 `customerId + type` 控制是否建立通知 |
+
+通知文字欄位已使用 `NVARCHAR`，可正確保存中文標題與內容。通知表目前由 JPA entity 建表；`src/main/resources/database/` 尚未另拆 notification SQL 初始化腳本。
+
+### NotificationType
+
+| Type | 用途 |
+|---|---|
+| `ACCOUNT_APPLICATION` | 開戶申請通知 |
+| `ACCOUNT_SUPPLEMENT_REQUIRED` | 開戶補件通知 |
+| `TRANSFER` | 轉帳通知 |
+| `LOAN` | 貸款通知 |
+| `CREDIT_CARD` | 信用卡通知 |
+| `PASSBOOK` | 電子存摺通知 |
+| `SECURITY` | 安全通知，不可關閉 |
+| `SYSTEM` | 系統通知 |
+
+### 客戶端通知 API
+
+| Method | Path | 說明 |
+|---|---|---|
+| GET | `/api/customer/notifications` | 查目前登入客戶通知，依建立時間由新到舊 |
+| GET | `/api/customer/notifications/unread-count` | 查未讀通知數 |
+| PATCH | `/api/customer/notifications/{id}/read` | 單筆標記已讀，只能標記自己的通知 |
+| PATCH | `/api/customer/notifications/read-all` | 全部標記已讀 |
+| GET | `/api/customer/notification-preferences` | 查通知類型偏好 |
+| PATCH | `/api/customer/notification-preferences` | 更新通知類型偏好，`SECURITY` 不允許關閉 |
+
+### 目前已接入事件
+
+| 類型 | 來源 |
+|---|---|
+| `ACCOUNT_SUPPLEMENT_REQUIRED` | 管理端將開戶申請改為需補件 |
+| `SECURITY` | 註冊驗證信、登入成功、登入失敗警示、密碼重設、帳號鎖定 |
+| `TRANSFER` | 轉帳審核中、轉帳成功 |
+| `LOAN` | 貸款申請、補件、拒絕、核准撥款、還款、結清、逾期、到期提醒 |
+| `CREDIT_CARD` | 信用卡月結帳單 PDF 寄送 |
+
+---
+
 ## 8. 前端架構
 
 ### 入口
@@ -979,7 +1041,7 @@ npm run dev
 
 | Layout | 用途 |
 |---|---|
-| `layouts/UserLayout.vue` | 客戶端登入後主版面，含頂部 logo、會員資訊、mega nav |
+| `layouts/UserLayout.vue` | 客戶端登入後主版面，含頂部 logo、會員資訊、通知鈴鐺、mega nav |
 | `layouts/AdminLayout.vue` | 管理端主版面，左側固定 sidebar、上方員工資訊、登出 |
 
 ### Store
@@ -1007,6 +1069,8 @@ npm run dev
 |---|---|
 | `api/auth.js` | 管理端登入、員工、日誌 |
 | `api/customerAuth.js` | 客戶登入、註冊、個資、密碼重設、登入紀錄、裝置管理 |
+| `api/notification.js` | 客戶站內通知查詢、未讀數、已讀操作 |
+| `api/notificationPreference.js` | 客戶通知偏好設定 |
 | `api/customer.js` | 管理端客戶管理 |
 | `api/account.js` | 帳戶、轉帳、交易紀錄、存提款、沖正 |
 | `api/customerAccount.js` | 客戶端帳戶、交易、轉帳、銀行選單、電子存摺 PDF、匯率、換匯 |
@@ -1040,6 +1104,7 @@ npm run dev
 | `/user/exchange` | `user-exchange` | `ExchangeView.vue` |
 | `/user/scheduled-transfer` | `user-scheduled-transfer` | `ScheduledTransferView.vue` |
 | `/user/favorite-accounts` | `user-favorite-accounts` | `FavoriteAccountsView.vue` |
+| `/user/notification-settings` | `user-notification-settings` | `NotificationSettingsView.vue` |
 | `/user/security/login-records` | `user-security-login-records` | `SecurityLoginRecordsView.vue` |
 | `/user/security/devices` | `user-security-devices` | `SecurityDevicesView.vue` |
 | `/:pathMatch(.*)*` | `NotFound` | `NotFoundView.vue` |
@@ -1127,6 +1192,8 @@ npm run dev
 | `risk_init.sql` | Risk 初始化 |
 | `risk_mockdata.sql` | Risk mock data |
 
+Notification 模組目前沒有獨立 SQL 腳本；`notifications` 與 `notification_preferences` 由 JPA entity 建表。若未來改成嚴格 migration 流程，需補上對應 init / drop 腳本。
+
 建議初始化順序：
 
 1. 先建立模組 table：`auth_init.sql`、`customer_init.sql`、`account_init.sql`、`loan_init.sql`、`card_init.sql`、`risk_init.sql`。
@@ -1152,9 +1219,20 @@ Customer 腳本重點：
 
 | Test | 內容 |
 |---|---|
-| `JavaEasyBankApplicationTests` | Spring Boot context load |
+| `JavaEasyBankApplicationTests` | Application class load smoke test，不啟動外部 DB |
 | `AccountApplicationServiceTest` | 開戶申請 submit / approve 等單元測試 |
+| `AccountIntegrationServiceTest` | Account 與 Loan/Card 整合建立帳戶相關單元測試 |
+| `CustomerAuthServiceImplTest` | 客戶註冊、登入成功、登入失敗警示、帳號鎖定、解除鎖定單元測試 |
+| `LoanApplicationServiceTest` | 貸款補件文件批次與通知內容單元測試 |
+| `NotificationServiceTest` | 通知查詢、已讀、偏好檢查單元測試 |
+| `NotificationPreferenceServiceTest` | 通知偏好預設值、更新與 `SECURITY` 保護規則單元測試 |
 | `ReferenceIdGeneratorTest` | 交易 referenceId 格式與唯一性 |
+
+前端目前有：
+
+| Test | 內容 |
+|---|---|
+| `frontend/src/api/customerAuth.spec.js` | 客戶 auth API wrapper endpoint 與回傳資料解包測試 |
 
 測試輔助設定：
 
@@ -1168,10 +1246,19 @@ Customer 腳本重點：
 
 ```bash
 cd frontend
+npm run test:unit
+```
+
+```bash
+cd frontend
 npm run build
 ```
 
-目前閱讀範圍內測試主要集中在 account 模組，其他模組測試覆蓋較少。完整後端測試會載入 Spring context，若本機沒有 SQL Server 或 `application-local.properties` 設定不完整，可能會在 context load 階段失敗。
+2026-05-19 已確認：
+
+- `./mvnw -q test` 通過。
+- `cd frontend && npm run test:unit` 通過。
+- `cd frontend && npm run build` 通過；目前仍會出現既有的 Lightning CSS `:deep(input)` warning 與 Vite chunk size warning。
 
 ---
 
@@ -1280,6 +1367,7 @@ npm run build
 | `loan` | 貸款申請與審核流程 | 不直接撥款到 account，除非設計整合點 |
 | `creditcard` | 信用卡業務 | 不直接操作 account 交易紀錄 |
 | `risk` | 風控規則、黑名單、風險事件 | 不承擔業務流程本身 |
+| `notification` | 客戶站內通知、未讀狀態、通知偏好 | 不寄送 email；mail 仍由 `EmailService` 負責 |
 
 ---
 
