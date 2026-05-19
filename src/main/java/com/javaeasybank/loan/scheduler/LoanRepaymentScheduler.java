@@ -21,18 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/**
- * 貸款還款排程批次元件。
- *
- * <p>每日 01:00 執行一次，負責兩項任務：</p>
- * <ol>
- *   <li><b>逾期標記</b>：掃描應繳日已過但狀態仍為 {@code SCHEDULED} 的期數，
- *       批次更新為 {@code OVERDUE}，並同步將對應的 {@code LoanAccount.accountStatus}
- *       從 {@code ACTIVE} 升級為 {@code OVERDUE}，同時寄送逾期通知信給客戶。</li>
- *   <li><b>到期提醒</b>：掃描距應繳日 1～3 天內的 {@code SCHEDULED} 期數，
- *       提前寄送繳款到期提醒通知給客戶。</li>
- * </ol>
- */
+// 貸款還款排程批次元件
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -43,21 +32,7 @@ public class LoanRepaymentScheduler {
     private final EmailService            emailService;
     private final CustomerService         customerService;
 
-    /**
-     * 逾期掃描與到期提醒的主排程方法，每日 01:00 自動執行。
-     *
-     * <p>執行流程：</p>
-     * <ol>
-     *   <li>查詢應繳日早於今日且仍為 {@code SCHEDULED} 的期數，批次標記為 {@code OVERDUE}。</li>
-     *   <li>將上述期數所屬的 {@code LoanAccount}（若目前為 {@code ACTIVE}）升級為 {@code OVERDUE}。</li>
-     *   <li>對每筆逾期期數寄送逾期通知 Email 給客戶。</li>
-     *   <li>查詢未來 1～3 天內到期的 {@code SCHEDULED} 期數，寄送到期提醒 Email 給客戶。</li>
-     * </ol>
-     *
-     * <p>整個方法包裹在 {@code @Transactional} 中，
-     * 確保逾期標記與帳戶狀態更新為同一個 DB 事務（原子性）。
-     * Email 發送失敗時僅記錄錯誤日誌，不影響事務提交。</p>
-     */
+    // 逾期掃描與到期提醒的主排程方法，每日 01:00 自動執行
     @Scheduled(cron = "0 0 1 * * *")
     @Transactional
     public void scanOverdueRepayments() {
