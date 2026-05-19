@@ -243,7 +243,7 @@ onMounted(() => {
           {{ Number(record.currentDebt).toLocaleString() }}
         </template>
 
-        <template v-else-if="column.key === 'status'">
+        <template v-else-if="column.dataIndex === 'status'">
           <div :class="['status-tag', `status-${record.status.toLowerCase()}`]">
             <span class="status-dot"></span>
             {{ getCardStatusLabel(record.status) }}
