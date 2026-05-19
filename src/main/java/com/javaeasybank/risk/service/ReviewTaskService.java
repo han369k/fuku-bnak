@@ -209,6 +209,7 @@ public class ReviewTaskService {
                 .businessId(task.getBusinessId())
                 .scene(task.getScene())
                 .status(task.getStatus())
+                .substatus(task.getSubstatus())
                 .reviewResult(task.getReviewResult())
                 .assignee(task.getAssignee())
                 .adminComment(task.getAdminComment())

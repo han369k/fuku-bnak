@@ -13,5 +13,6 @@ public class RiskAttachmentRequest {
         private String documentId;
         private String fileUrl;
         private String documentType;
+        private String originalName;
     }
 }

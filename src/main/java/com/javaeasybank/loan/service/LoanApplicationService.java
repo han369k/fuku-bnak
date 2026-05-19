@@ -427,10 +427,10 @@ public class LoanApplicationService {
             // 攔截風控傳過來的「退回補件」通知
             if (dto.getNewStatus() == LoanApplicationStatus.RETURNED) {
 
-                // 狀態不變，依然維持在審核中
-                log.info("[RiskCallback] 收到風控退回補件通知。保持狀態為 PENDING_REVIEW，觸發客戶郵件通知。applicationId={}", applicationId);
+                log.info("[RiskCallback] 收到風控退回補件通知。狀態改為 RETURNED，觸發客戶郵件通知。applicationId={}", applicationId);
 
                 // 清空先前的送出時間，這樣前端網銀的「補件上傳按鈕」才會再度亮起允許客戶操作！
+                loan.setApplicationStatus(LoanApplicationStatus.RETURNED);
                 loan.setDocumentsSubmittedAt(null);
                 loan.setUpdateTime(LocalDateTime.now());
 
@@ -443,6 +443,12 @@ public class LoanApplicationService {
                         docs = List.of(raw.split(",\\s*"));
                     }
                 }
+                if (docs != null) {
+                    docs = docs.stream()
+                            .filter(doc -> doc != null && !doc.isBlank())
+                            .map(String::trim)
+                            .collect(Collectors.toList());
+                }
                 if (docs != null && !docs.isEmpty()) {
                     loan.setRequiredDocuments(String.join(",", docs));
                 }
@@ -451,7 +457,12 @@ public class LoanApplicationService {
                 log.info("[LoanCallback] 準備發送補件通知 email={}, applicationId={}", email, loan.getApplicationId());
                 if (email != null) {
                     emailService.sendLoanDocumentRequiredNotification(
-                            email, loan.getApplicationId(), loan.getApplyType(), loan.getApplyAmount());
+                            email,
+                            loan.getApplicationId(),
+                            loan.getApplyType(),
+                            loan.getApplyAmount(),
+                            docs,
+                            dto.getAdminComment());
                 } else {
                     log.warn("[LoanCallback] 客戶無 email，略過通知。customerId={}", loan.getCustomerId());
                 }

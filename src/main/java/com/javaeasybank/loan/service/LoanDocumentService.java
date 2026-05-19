@@ -7,6 +7,7 @@ import com.javaeasybank.loan.dto.requests.LoanDocumentInfoDTO;
 import com.javaeasybank.loan.dto.response.LoanDocumentResponseDTO;
 import com.javaeasybank.loan.entity.LoanApplication;
 import com.javaeasybank.loan.entity.LoanDocument;
+import com.javaeasybank.loan.enums.LoanApplicationStatus;
 import com.javaeasybank.loan.enums.LoanDocumentType;
 import com.javaeasybank.loan.repository.LoanApplicationRepository;
 import com.javaeasybank.loan.repository.LoanDocumentRepository;
@@ -105,7 +106,11 @@ public class LoanDocumentService {
         if (loan.getDocumentsSubmittedAt() != null) {
             throw new BusinessException("補件已送出，如需補充請聯繫行員");
         }
+        if (loan.getApplicationStatus() != LoanApplicationStatus.RETURNED) {
+            throw new BusinessException("此申請目前不是退回補件狀態，無法送出補件");
+        }
 
+        loan.setApplicationStatus(LoanApplicationStatus.PENDING_REVIEW);
         loan.setDocumentsSubmittedAt(LocalDateTime.now());
         loanApplicationRepo.save(loan);
         log.info("[Document] 補件送出 applicationId={} customerId={}", applicationId, customerId);

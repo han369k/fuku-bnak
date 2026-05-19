@@ -434,6 +434,7 @@ const STATUS_OPTIONS = [
   {value: 'PENDING_CONTACT', label: '新申請', dot: 'dot-amber'},
   {value: 'IN_CONTACT', label: '聯繫中', dot: 'dot-blue'},
   {value: 'PENDING_REVIEW', label: '審核中', dot: 'dot-purple'},
+  {value: 'RETURNED', label: '退回補件', dot: 'dot-red'},
   {value: 'APPROVED', label: '已核准', dot: 'dot-green'},
   {value: 'REJECTED', label: '已拒絕', dot: 'dot-red'},
   {value: 'CANCELLED', label: '已取消', dot: 'dot-orange'},
@@ -443,11 +444,13 @@ const STATUS_OPTIONS = [
 
 const STATUS_LABEL = {
   PENDING_CONTACT: '新申請', IN_CONTACT: '聯繫中', PENDING_REVIEW: '審核中',
+  RETURNED: '退回補件',
   APPROVED: '已核准', REJECTED: '已拒絕', CANCELLED: '已取消',
   DISBURSED: '已撥款', CLOSED: '已結案',
 }
 const STATUS_CLASS = {
   PENDING_CONTACT: 'status-yellow', IN_CONTACT: 'status-blue', PENDING_REVIEW: 'status-purple',
+  RETURNED: 'status-returned',
   APPROVED: 'status-green', REJECTED: 'status-red', CANCELLED: 'status-gray',
   DISBURSED: 'status-teal', CLOSED: 'status-gray',
 }
@@ -464,8 +467,8 @@ const LOAN_TYPE_NAME = {
   BUSINESS: '創業貸款', HOUSE: '房屋貸款', LAND: '土地貸款',
 }
 const LOAN_TYPE_KEYS = Object.keys(LOAN_TYPE_NAME)
-const POST_REVIEW_STATUSES = new Set(['PENDING_REVIEW', 'APPROVED', 'DISBURSED', 'CLOSED'])
-const STATUS_PROGRESS_STATUSES = new Set(['PENDING_REVIEW', 'APPROVED', 'REJECTED', 'DISBURSED', 'CLOSED'])
+const POST_REVIEW_STATUSES = new Set(['PENDING_REVIEW', 'RETURNED', 'APPROVED', 'DISBURSED', 'CLOSED'])
+const STATUS_PROGRESS_STATUSES = new Set(['PENDING_REVIEW', 'RETURNED', 'APPROVED', 'REJECTED', 'DISBURSED', 'CLOSED'])
 
 // ① 排序欄位中文對照
 const SORT_LABEL = {
@@ -1652,6 +1655,13 @@ onUnmounted(() => clearInterval(refreshTimer))
   color: var(--red);
   border-color: rgba(192, 57, 43, 0.4);
   background: rgba(192, 57, 43, 0.08);
+}
+
+.status-returned {
+  color: #c0392b;
+  border-color: #f5a8a1;
+  background: #fff5f5;
+  font-weight: 600;
 }
 
 .status-teal {
