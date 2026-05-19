@@ -162,9 +162,60 @@ public class EmailService {
         sendEmail(to, "Java Easy Bank - 貸款申請補件通知", html);
     }
 
-    public void sendAccountLockedNotification(String to, String username,String ipAddress) {}
+    public void sendAccountLockedNotification(String to, String username,String ipAddress) {
+        String time = LocalDateTime.now().format(formatter);
+        Context context = new Context();
+        context.setVariable("username", username);
+        context.setVariable("time", time);
+        context.setVariable("ipAddress", ipAddress);
+        String html = templateEngine.process("mail/account-locked-notification", context);
+        sendEmail(to, "Java Easy Bank - 登入通知", html);
+    }
+    //郵件附件
+    @Async
+    public void sendEmailWithAttachment(
+        String to,
+        String subject,
+        String content,
+        String filename,
+        byte[] attachmentBytes) {
 
-    // ─── 貸款模組通知 ───
+    try {
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+        helper.setFrom(fromEmail);
+        helper.setTo(to);
+        helper.setSubject(subject);
+        helper.setText(content, true);
+
+        helper.addAttachment(
+                filename,
+                new ByteArrayResource(attachmentBytes)
+        );
+
+        mailSender.send(message);
+
+    } catch (Exception e) {
+        log.error("Failed to send email with attachment to {}: {}", to, e.getMessage());
+    }
+}
+
+    private String formatLoanType(String loanType) {
+        if (loanType == null || loanType.isBlank()) {
+            return "";
+        }
+        return switch (loanType) {
+            case "PERSONAL" -> "個人信貸";
+            case "CAR" -> "汽車貸款";
+            case "MOTOR" -> "機車貸款";
+            case "STUDENT" -> "學貸";
+            case "BUSINESS" -> "創業貸款";
+            case "HOUSE" -> "房屋貸款";
+            case "LAND" -> "土地貸款";
+            default -> loanType;
+        };
+    }
 
     /** 申請成立：客戶送出申請後立即通知 */
     public void sendLoanAppliedNotification(
@@ -322,51 +373,6 @@ public class EmailService {
         sendEmail(to, "Java Easy Bank - 貸款繳款到期提醒", html);
     }
 
-    //郵件附件
-    @Async
-    public void sendEmailWithAttachment(
-        String to,
-        String subject,
-        String content,
-        String filename,
-        byte[] attachmentBytes) {
-
-    try {
-        MimeMessage message = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-
-        helper.setFrom(fromEmail);
-        helper.setTo(to);
-        helper.setSubject(subject);
-        helper.setText(content, true);
-
-        helper.addAttachment(
-                filename,
-                new ByteArrayResource(attachmentBytes)
-        );
-
-        mailSender.send(message);
-
-    } catch (Exception e) {
-        log.error("Failed to send email with attachment to {}: {}", to, e.getMessage());
-    }
-}
-
-    private String formatLoanType(String loanType) {
-        if (loanType == null || loanType.isBlank()) {
-            return "";
-        }
-        return switch (loanType) {
-            case "PERSONAL" -> "個人信貸";
-            case "CAR" -> "汽車貸款";
-            case "MOTOR" -> "機車貸款";
-            case "STUDENT" -> "學貸";
-            case "BUSINESS" -> "創業貸款";
-            case "HOUSE" -> "房屋貸款";
-            case "LAND" -> "土地貸款";
-            default -> loanType;
-        };
-    }
 
     private String formatAnnualRate(BigDecimal rate) {
         if (rate == null) {

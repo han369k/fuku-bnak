@@ -2,11 +2,7 @@ package com.javaeasybank.loan.entity;
 
 import com.javaeasybank.loan.enums.LoanApplicationStatus;
 import com.javaeasybank.loan.enums.LoanContactStatus;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Table;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -57,6 +53,13 @@ public class LoanApplication {
     /** 申請目前的狀態，以字串形式存入 DB，參見 {@code LoanApplicationStatus}。 */
     @Enumerated(EnumType.STRING)
     private LoanApplicationStatus applicationStatus;
+
+    @Lob
+    @Column(name = "required_documents", columnDefinition = "NVARCHAR(MAX)")
+    private String requiredDocuments;
+
+    @Column(columnDefinition = "NVARCHAR(50)")
+    private String reviewComment;
 
     /** 申請建立時間。 */
     private LocalDateTime createTime;

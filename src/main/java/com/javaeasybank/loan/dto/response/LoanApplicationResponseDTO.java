@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 貸款申請查詢回應 DTO。
@@ -76,6 +77,8 @@ public class LoanApplicationResponseDTO {
 
     /** 最近一筆聯繫紀錄的時間。 */
     private LocalDateTime latestContactTime;
+    private List<String> requiredDocuments;
+    private String reviewComment;
 
     /**
      * 客戶送出補件的時間戳記。
