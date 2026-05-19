@@ -934,7 +934,7 @@ onMounted(async () => {
 
 .page-title {
   font-family: var(--font-heading);
-  font-size: 52px;
+  font-size: 60px;
   color: var(--text-primary);
   margin-bottom: var(--space-3);
 }
@@ -948,7 +948,7 @@ onMounted(async () => {
 
 .page-subtitle {
   color: var(--text-secondary);
-  font-size: 16px;
+  font-size: 17.5px;
 }
 
 .helper-text {
@@ -1040,7 +1040,7 @@ onMounted(async () => {
 }
 
 .stepper-label {
-  font-size: 14px;
+  font-size: 15.5px;
   color: var(--text-disabled);
   text-align: center;
   white-space: nowrap;
@@ -1066,7 +1066,7 @@ onMounted(async () => {
 
 .step-title {
   font-family: var(--font-heading);
-  font-size: var(--text-h3);
+  font-size: var(--text-h2);
   color: var(--text-primary);
   margin-bottom: var(--space-5);
 }

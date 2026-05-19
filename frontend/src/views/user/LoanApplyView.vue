@@ -629,6 +629,7 @@ onUnmounted(() => clearInterval(showcaseTimer))
   font-family: 'Noto Sans TC', sans-serif;
   color: var(--ink);
   padding: 48px 24px 80px;
+  border-radius: 10px;
 }
 
 /* ── Home ── */

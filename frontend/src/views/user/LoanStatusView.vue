@@ -793,6 +793,7 @@ onMounted(load)
   background: var(--bg);
   font-family: 'Noto Sans TC', sans-serif;
   color: var(--ink);
+  border-radius: 10px;
 }
 
 /* ── Header ── */
@@ -800,6 +801,7 @@ onMounted(load)
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   padding: 28px 0;
+  border-radius: 10px 10px 0 0;
 }
 
 .page-header-inner {
