@@ -47,12 +47,62 @@
       </div>
 
       <!-- ── List ── -->
-      <div v-else class="app-list">
-        <div
-          v-for="app in applications"
-          :key="app.applicationId"
-          class="app-card"
-        >
+      <div v-else>
+
+        <!-- 控制列：貸款類型篩選 + 狀態篩選 + 每頁筆數 -->
+        <div class="list-controls">
+          <div class="type-filter-group">
+            <button
+              class="type-pill"
+              :class="{ active: selectedLoanType === '' }"
+              @click="setLoanTypeFilter('')"
+            >全部</button>
+            <button
+              v-for="t in availableLoanTypes"
+              :key="t.key"
+              class="type-pill"
+              :class="{ active: selectedLoanType === t.key }"
+              @click="setLoanTypeFilter(t.key)"
+            >{{ t.label }}</button>
+          </div>
+          <div class="list-select-controls">
+            <label class="status-filter-ctrl">
+              <span class="size-label">狀態</span>
+              <div class="size-select-wrap">
+                <select class="status-select" v-model="selectedStatus" @change="currentPage = 1">
+                  <option value="">全部狀態</option>
+                  <option v-for="s in availableStatuses" :key="s.key" :value="s.key">
+                    {{ s.label }}
+                  </option>
+                </select>
+                <span class="size-caret">▾</span>
+              </div>
+            </label>
+            <label class="page-size-ctrl">
+              <span class="size-label">每頁</span>
+              <div class="size-select-wrap">
+              <select class="size-select" v-model.number="pageSize" @change="currentPage = 1">
+                <option v-for="n in PAGE_SIZE_OPTIONS" :key="n" :value="n">{{ n }} 筆</option>
+              </select>
+              <span class="size-caret">▾</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- 篩選無結果 -->
+        <div v-if="filteredApplications.length === 0" class="state-block state-empty">
+          <span class="state-icon"><i class="fa-solid fa-filter-circle-xmark"></i></span>
+          <div class="state-text">{{ emptyFilterText }}</div>
+          <button class="btn-apply-sm" @click="clearFilters">清除篩選</button>
+        </div>
+
+        <div v-else class="app-list">
+          <div
+            v-for="app in pagedApplications"
+            :key="app.applicationId"
+            class="app-card"
+          >
           <!-- 卡片頂部：ID + 狀態標籤 -->
           <div class="card-top">
             <div class="card-top">
@@ -102,7 +152,7 @@
           </div>
           <div
             class="doc-required-section"
-            v-if="app.applicationStatus === 'RETURNED' && app.requiredDocuments && app.requiredDocuments.length > 0 && !app.documentsSubmittedAt"
+            v-if="canSupplement(app) && app.requiredDocuments && app.requiredDocuments.length > 0 && !app.documentsSubmittedAt"
           >
             <div class="doc-required-title">
               <i class="fa-solid fa-triangle-exclamation"></i>
@@ -136,17 +186,26 @@
             >
               查看貸款帳戶
             </button>
-            <!-- 其他狀態：補交文件 -->
+            <!-- 聯繫中申請文件 / 退回補件 -->
             <button
-              v-else
+              v-if="canManageDocuments(app)"
               class="btn-resubmit"
               :class="{ active: docPanelId === app.applicationId }"
               @click="toggleDocPanel(app)"
             >
-              <i class="fa-solid fa-folder"></i> 補交文件
+              <i class="fa-solid fa-folder"></i> {{ documentButtonLabel(app) }}
               <span v-if="docCount(app.applicationId) > 0" class="doc-badge">
                 {{ docCount(app.applicationId) }}
               </span>
+            </button>
+            <!-- 已送出補件（審核中）：查看紀錄（唯讀） -->
+            <button
+              v-if="canViewSubmittedDocuments(app)"
+              class="btn-view-docs"
+              :class="{ active: docPanelId === app.applicationId }"
+              @click="toggleDocPanel(app)"
+            >
+              <i class="fa-solid fa-folder-open"></i> {{ documentRecordLabel(app) }}
             </button>
           </div>
 
@@ -156,7 +215,7 @@
 
               <!-- 已上傳清單 -->
               <div class="doc-panel-section">
-                <div class="doc-section-title">已上傳文件</div>
+                <div class="doc-section-title">{{ documentPanelTitle(app) }}</div>
                 <div v-if="docLoading" class="doc-loading">載入中…</div>
                 <div v-else-if="docs[app.applicationId] && docs[app.applicationId].length > 0"
                      class="doc-list">
@@ -176,6 +235,7 @@
                       </span>
                     </div>
                     <button
+                      v-if="!app.documentsSubmittedAt"
                       class="doc-del-btn"
                       :disabled="deletingId === d.documentId"
                       @click="deleteDoc(d.documentId, app.applicationId)"
@@ -208,7 +268,7 @@
                   <div class="doc-upload-form">
                     <select v-model="uploadForm.documentType" class="doc-select">
                       <option value="" disabled>選擇文件類型</option>
-                      <option v-for="(label, key) in DOC_TYPE_MAP" :key="key" :value="key">
+                      <option v-for="(label, key) in availableDocTypes(app)" :key="key" :value="key">
                         {{ label }}
                       </option>
                     </select>
@@ -237,7 +297,7 @@
                 </template>
               </div>
 
-              <!-- 送出補件（右下角） -->
+              <!-- 送出文件（右下角） -->
               <div class="doc-panel-footer" v-if="docs[app.applicationId]?.length > 0">
                 <span v-if="app.documentsSubmittedAt" class="doc-submitted-hint">
                   <i class="fa-solid fa-circle-check"></i>
@@ -252,26 +312,54 @@
                   <i v-if="submittingAppId === app.applicationId"
                      class="fa-solid fa-spinner fa-spin"></i>
                   <i v-else class="fa-solid fa-paper-plane"></i>
-                  {{ submittingAppId === app.applicationId ? '送出中…' : '送出補件' }}
+                  {{ submittingAppId === app.applicationId ? '送出中…' : documentSubmitLabel(app) }}
                 </button>
               </div>
 
             </div>
           </transition>
         </div>
-      </div>
+        </div><!-- end app-list -->
+
+        <!-- 分頁 Footer -->
+        <div class="list-footer">
+          <span class="footer-range">
+            第 {{ pageStart }}–{{ pageEnd }} 筆，共 {{ filteredApplications.length }} 筆
+          </span>
+          <div class="pagination" v-if="totalPages > 1">
+            <button class="page-btn" @click="goToPage(1)" :disabled="currentPage === 1">«</button>
+            <button class="page-btn" @click="goToPage(currentPage - 1)" :disabled="currentPage === 1">‹</button>
+            <button
+              v-for="p in pageNumbers"
+              :key="p"
+              class="page-btn"
+              :class="{ active: p === currentPage, ellipsis: p === '…' }"
+              @click="p !== '…' && goToPage(p)"
+              :disabled="p === '…'"
+            >{{ p }}</button>
+            <button class="page-btn" @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages">›</button>
+            <button class="page-btn" @click="goToPage(totalPages)" :disabled="currentPage === totalPages">»</button>
+          </div>
+        </div>
+
+      </div><!-- end outer v-else -->
 
     </div>
   </div>
 </template>
 
 <script setup>
-import {ref, onMounted} from 'vue'
+import {ref, computed, onMounted} from 'vue'
 import api from '@/api/axios'
 
 const applications = ref([])
 const loading = ref(false)
 const error = ref('')
+
+// ── 分頁 ──
+const PAGE_SIZE_OPTIONS = [5, 10, 20]
+const pageSize = ref(5)
+const currentPage = ref(1)
 
 // ── 補件面板狀態 ──
 const docPanelId = ref(null)   // 目前展開的申請 ID
@@ -284,6 +372,106 @@ const uploadError = ref('')
 const uploadSuccess = ref(false)
 const deletingId = ref(null)
 const submittingAppId = ref(null)
+
+// ── 貸款種類篩選 ──
+const selectedLoanType = ref('')
+const selectedStatus = ref('')
+
+const STATUS_ORDER = [
+  'PENDING_CONTACT',
+  'IN_CONTACT',
+  'PENDING_REVIEW',
+  'RETURNED',
+  'APPROVED',
+  'DISBURSED',
+  'CLOSED',
+  'REJECTED',
+  'CANCELLED',
+]
+
+// ── Computed: 只列出申請中有出現的貸款種類 ──
+const availableLoanTypes = computed(() => {
+  const seen = new Set()
+  return applications.value
+    .map(a => a.applyType)
+    .filter(t => t && !seen.has(t) && seen.add(t))
+    .map(t => ({ key: t, label: LOAN_TYPE_MAP[t] || t }))
+})
+
+const availableStatuses = computed(() => {
+  const existing = new Set(applications.value.map(a => a.applicationStatus).filter(Boolean))
+  return STATUS_ORDER
+    .filter(s => existing.has(s))
+    .map(s => ({ key: s, label: STATUS_MAP[s]?.label || s }))
+})
+
+// ── Computed: 依最近活動時間排序（新改動在上） ──
+function lastActivity(app) {
+  const times = [app.updateTime, app.latestContactTime, app.documentsSubmittedAt, app.createTime]
+    .filter(Boolean)
+  return times.sort().reverse()[0] || ''
+}
+
+const sortedApplications = computed(() =>
+  [...applications.value].sort((a, b) => lastActivity(b).localeCompare(lastActivity(a)))
+)
+
+// ── Computed: 套用類型篩選 ──
+const filteredApplications = computed(() => {
+  return sortedApplications.value.filter(a => {
+    const matchType = !selectedLoanType.value || a.applyType === selectedLoanType.value
+    const matchStatus = !selectedStatus.value || a.applicationStatus === selectedStatus.value
+    return matchType && matchStatus
+  })
+})
+
+const emptyFilterText = computed(() => {
+  const parts = []
+  if (selectedLoanType.value) {
+    parts.push(`「${LOAN_TYPE_MAP[selectedLoanType.value] || selectedLoanType.value}」類型`)
+  }
+  if (selectedStatus.value) {
+    parts.push(`「${STATUS_MAP[selectedStatus.value]?.label || selectedStatus.value}」狀態`)
+  }
+  return parts.length
+    ? `目前沒有符合${parts.join('、')}的申請記錄`
+    : '目前沒有符合條件的申請記錄'
+})
+
+function setLoanTypeFilter(type) {
+  selectedLoanType.value = type
+  currentPage.value = 1
+}
+
+function clearFilters() {
+  selectedLoanType.value = ''
+  selectedStatus.value = ''
+  currentPage.value = 1
+}
+
+// ── Computed: 分頁 ──
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredApplications.value.length / pageSize.value)))
+const pageStart = computed(() =>
+  filteredApplications.value.length === 0 ? 0 : (currentPage.value - 1) * pageSize.value + 1
+)
+const pageEnd = computed(() => Math.min(currentPage.value * pageSize.value, filteredApplications.value.length))
+const pagedApplications = computed(() => {
+  const s = (currentPage.value - 1) * pageSize.value
+  return filteredApplications.value.slice(s, s + pageSize.value)
+})
+const pageNumbers = computed(() => {
+  const total = totalPages.value
+  const cur = currentPage.value
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
+  if (cur <= 4) return [1, 2, 3, 4, 5, '…', total]
+  if (cur >= total - 3) return [1, '…', total - 4, total - 3, total - 2, total - 1, total]
+  return [1, '…', cur - 1, cur, cur + 1, '…', total]
+})
+
+function goToPage(page) {
+  if (page < 1 || page > totalPages.value) return
+  currentPage.value = page
+}
 
 // ── 文件類型對照 ──
 const DOC_TYPE_MAP = {
@@ -359,18 +547,10 @@ function loanTypeLabel(type) {
 }
 
 function statusLabel(app) {
-  const st = app.applicationStatus;
-  // 如果處於審核中，且有要求補件，且客戶尚未送出補件，則顯示「待補件」
-  if (st === 'PENDING_REVIEW' && app.requiredDocuments && app.requiredDocuments.length > 0 && !app.documentsSubmittedAt) {
-    return STATUS_MAP.RETURNED.label;
-  }
   return STATUS_MAP[app.applicationStatus]?.label || app.applicationStatus;
 }
 
 function statusClass(app) {
-  if (app.applicationStatus === 'PENDING_REVIEW' && app.requiredDocuments?.length > 0 && !app.documentsSubmittedAt) {
-    return STATUS_MAP.RETURNED.cls; // 套用 'st-returned' 樣式
-  }
   return STATUS_MAP[app.applicationStatus]?.cls || '';
 }
 
@@ -422,6 +602,61 @@ async function load() {
 // ── 補件面板邏輯 ──
 function docCount(appId) {
   return docs.value[appId]?.length || 0
+}
+
+function canSupplement(app) {
+  return app.applicationStatus === 'RETURNED'
+}
+
+function canUploadApplicationDocuments(app) {
+  return app.applicationStatus === 'IN_CONTACT'
+}
+
+function canManageDocuments(app) {
+  return canUploadApplicationDocuments(app) || canSupplement(app)
+}
+
+function canViewSubmittedDocuments(app) {
+  return app.applicationStatus === 'PENDING_REVIEW' && app.documentsSubmittedAt
+}
+
+function documentButtonLabel(app) {
+  if (canUploadApplicationDocuments(app)) return '上傳申請文件'
+  if (canSupplement(app)) return '上傳補件內容'
+  return '查看文件'
+}
+
+function isSupplementDocumentBatch(app) {
+  return app.requiredDocuments?.length > 0
+}
+
+function documentRecordLabel(app) {
+  return isSupplementDocumentBatch(app) ? '查看補件紀錄' : '查看申請文件紀錄'
+}
+
+function documentPanelTitle(app) {
+  if (canUploadApplicationDocuments(app)) return '已上傳申請文件'
+  if (canSupplement(app)) return '已上傳補件內容'
+  return isSupplementDocumentBatch(app) ? '補件紀錄' : '申請文件紀錄'
+}
+
+function documentSubmitLabel(app) {
+  if (canUploadApplicationDocuments(app)) return '送出申請文件'
+  if (canSupplement(app)) return '送出補件內容'
+  return '送出文件'
+}
+
+function availableDocTypes(app) {
+  if (!app.requiredDocuments?.length) {
+    return DOC_TYPE_MAP
+  }
+
+  return app.requiredDocuments.reduce((types, docType) => {
+    if (DOC_TYPE_MAP[docType]) {
+      types[docType] = DOC_TYPE_MAP[docType]
+    }
+    return types
+  }, {})
 }
 
 function docIcon(name) {
@@ -1003,6 +1238,36 @@ onMounted(load)
     margin-left: 4px;
   }
 
+  /* 查看補件紀錄按鈕（唯讀） */
+
+  .btn-view-docs {
+    padding: 6px 16px;
+    background: transparent;
+    color: var(--muted-2);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .btn-view-docs:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: rgba(92, 107, 95, 0.07);
+  }
+
+  .btn-view-docs.active {
+    background: var(--surface-2);
+    border-color: var(--primary);
+    color: var(--primary);
+  }
+
   .btn-resubmit.active .doc-badge {
     background: rgba(255, 255, 255, 0.25);
     color: #fff;
@@ -1262,6 +1527,179 @@ onMounted(load)
     color: #27ae60;
     margin: 2px 0 0;
     font-weight: 600;
+  }
+
+  /* ── 控制列：篩選 + 每頁筆數 ── */
+  .list-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .type-filter-group {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .type-pill {
+    padding: 5px 13px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted-2);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .type-pill:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+  }
+
+  .type-pill.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+  }
+
+  .page-size-ctrl {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .list-select-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .status-filter-ctrl {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .size-label {
+    font-size: 12px;
+    color: var(--muted-2);
+    white-space: nowrap;
+  }
+
+  .size-select-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .size-select,
+  .status-select {
+    appearance: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--ink);
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 12px;
+    padding: 5px 26px 5px 10px;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .size-select:focus {
+    border-color: var(--primary);
+  }
+
+  .status-select {
+    min-width: 136px;
+  }
+
+  .status-select:focus {
+    border-color: var(--primary);
+  }
+
+  .size-caret {
+    position: absolute;
+    right: 9px;
+    font-size: 10px;
+    color: var(--muted-2);
+    pointer-events: none;
+  }
+
+  /* ── 分頁 Footer ── */
+  .list-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  .footer-range {
+    font-size: 12px;
+    color: var(--muted-2);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .pagination {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .page-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 9px;
+    border-radius: 7px;
+    font-size: 13px;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted-2);
+    transition: all 0.15s;
+    min-width: 32px;
+  }
+
+  .page-btn:hover:not(:disabled) {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: rgba(92, 107, 95, 0.07);
+  }
+
+  .page-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  .page-btn.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+    font-weight: 700;
+  }
+
+  .page-btn.ellipsis {
+    border-color: transparent;
+    background: transparent;
+    cursor: default;
+    color: var(--muted);
   }
 
   /* slide-down transition */

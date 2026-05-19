@@ -16,17 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 import java.util.Map;
 
-/*
- * 補件文件入口
- *
- * 客戶端：
- *   POST   /api/loan-documents/{applicationId}/upload       - 上傳補件
- *   GET    /api/loan-documents/{applicationId}              - 查自己申請的文件清單
- *
- * 行員端：
- *   GET    /api/admin/loan-documents/{applicationId}        - 查任意申請的文件清單
- *   PATCH  /api/admin/loan-documents/{documentId}/review    - 審核補件（ACCEPTED / REJECTED）
- */
+// 補件文件 Controller，整合客戶端與行員端的文件操作
 @RestController
 @RequiredArgsConstructor
 public class LoanDocumentController {
@@ -34,12 +24,9 @@ public class LoanDocumentController {
     private final LoanDocumentService loanDocumentService;
     private final JwtUtil jwtUtil;
 
-    // ===客戶端===
+    // ── 客戶端 ────────────────────────────────────────────────────────
 
-    /**
-     * 上傳補件（multipart/form-data）
-     * 前端 FormData 欄位：documentType（字串）、file（檔案）
-     */
+    // 上傳補件文件（multipart/form-data）
     @PreAuthorize("hasRole('CUSTOMER')")
     @PostMapping(value = "/api/loan-documents/{applicationId}/upload",
                  consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -55,10 +42,7 @@ public class LoanDocumentController {
         return ResponseEntity.ok(ApiResponse.success(dto));
     }
 
-    /**
-     * 送出補件（客戶端）
-     * 標記該申請的補件已全數備妥，後台才可查看文件清單
-     */
+    // 客戶送出補件（標記補件已全數備妥）
     @PreAuthorize("hasRole('CUSTOMER')")
     @PostMapping("/api/loan-documents/{applicationId}/submit")
     public ResponseEntity<ApiResponse<Void>> submitDocs(
@@ -70,10 +54,7 @@ public class LoanDocumentController {
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 
-    /**
-     * 刪除補件（客戶端）
-     * 只能刪除自己上傳的文件
-     */
+    // 刪除客戶自己上傳的補件文件
     @PreAuthorize("hasRole('CUSTOMER')")
     @DeleteMapping("/api/loan-documents/{documentId}")
     public ResponseEntity<ApiResponse<Void>> deleteDoc(
@@ -85,10 +66,7 @@ public class LoanDocumentController {
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 
-    /**
-     * 查詢補件清單（客戶端）
-     * 只能查看自己申請的文件
-     */
+    // 查詢客戶自己申請的補件文件清單
     @PreAuthorize("hasRole('CUSTOMER')")
     @GetMapping("/api/loan-documents/{applicationId}")
     public ResponseEntity<ApiResponse<List<LoanDocumentResponseDTO>>> getMyDocs(
@@ -100,10 +78,9 @@ public class LoanDocumentController {
                 loanDocumentService.getByApplicationId(applicationId, customerId)));
     }
 
-    /**
-     * 查詢補件清單（行員端）
-     * 可查任意申請的文件
-     */
+    // ── 行員端 ────────────────────────────────────────────────────────
+
+    // 查詢任意申請的補件文件清單（行員端）
     @GetMapping("/api/admin/loan-documents/{applicationId}")
     public ResponseEntity<ApiResponse<List<LoanDocumentResponseDTO>>> getAdminDocs(
             @PathVariable String applicationId) {
@@ -112,10 +89,9 @@ public class LoanDocumentController {
                 loanDocumentService.getByApplicationId(applicationId)));
     }
 
-    /**
-     * 查詢可用的文件類型清單（客戶端 / 行員端共用）
-     * 前端用來產生下拉選單，避免寫死
-     */
+    // ── 共用 ─────────────────────────────────────────────────────────
+
+    // 取得所有可用的文件類型及其中文名稱（客戶端 / 行員端共用）
     @GetMapping("/api/loan-documents/types")
     public ResponseEntity<ApiResponse<Map<String, String>>> getDocumentTypes() {
         Map<String, String> types = new java.util.LinkedHashMap<>();
@@ -129,7 +105,7 @@ public class LoanDocumentController {
         return ResponseEntity.ok(ApiResponse.success(types));
     }
 
-    // Helper：從 Authorization Header 解析 customerId
+    // 從 Authorization Header 解析 JWT 並取得 customerId
     private String extractCustomerId(HttpServletRequest request) {
         String authHeader = request.getHeader("Authorization");
         if (authHeader != null && authHeader.startsWith("Bearer ")) {

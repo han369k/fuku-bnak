@@ -15,12 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/*
- * 客戶端：貸款帳戶查詢入口
- *   GET /api/loan-accounts/my                           - 查自己所有帳戶
- *   GET /api/loan-accounts/application/{id}             - 依申請編號查單筆帳戶（含所有權驗證）
- *   GET /api/loan-accounts/{accountId}/repayments       - 查還款時間表（含所有權驗證）
- */
+// 客戶端貸款帳戶查詢 Controller
 @RestController
 @RequestMapping("/api/loan-accounts")
 @RequiredArgsConstructor
@@ -30,7 +25,7 @@ public class LoanAccountController {
     private final LoanRepaymentService loanRepaymentService;
     private final JwtUtil jwtUtil;
 
-    // 查詢自己的所有貸款帳戶
+    // 查詢客戶自己的所有貸款帳戶
     @PreAuthorize("hasRole('CUSTOMER')")
     @GetMapping("/my")
     public ResponseEntity<ApiResponse<List<LoanAccountResponseDTO>>> getMyAccounts(
@@ -39,8 +34,7 @@ public class LoanAccountController {
         return ResponseEntity.ok(ApiResponse.success(loanAccountService.getMyAccounts(customerId)));
     }
 
-    // 依申請編號查單筆帳戶（客戶確認撥款結果時使用）
-    // 驗證帳戶的 customerId 必須與 JWT 一致，防止越權查詢
+    // 依申請編號查詢單筆貸款帳戶，供客戶確認撥款結果時使用
     @PreAuthorize("hasRole('CUSTOMER')")
     @GetMapping("/application/{applicationId}")
     public ResponseEntity<ApiResponse<LoanAccountResponseDTO>> getByApplicationId(
@@ -54,8 +48,7 @@ public class LoanAccountController {
         return ResponseEntity.ok(ApiResponse.success(dto));
     }
 
-    // 查詢指定帳戶的還款時間表
-    // 驗證帳戶所有權後，委派 LoanRepaymentService 取得明細
+    // 查詢指定貸款帳戶的完整還款時間表
     @PreAuthorize("hasRole('CUSTOMER')")
     @GetMapping("/{accountId}/repayments")
     public ResponseEntity<ApiResponse<List<LoanRepaymentResponseDTO>>> getRepayments(
@@ -70,7 +63,7 @@ public class LoanAccountController {
                 loanRepaymentService.getByAccountId(accountId)));
     }
 
-    // Helper：從 Authorization Header 解析 customerId，與 LoanApplicationController 同規格
+    // 從 Authorization Header 解析 JWT 並取得 customerId
     private String extractCustomerId(HttpServletRequest request) {
         String authHeader = request.getHeader("Authorization");
         if (authHeader != null && authHeader.startsWith("Bearer ")) {

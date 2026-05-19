@@ -7,23 +7,16 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * 等額本息攤還計算工具（純靜態，無 Spring 依賴，可直接單元測試）
- *
- * 提供兩個入口：
- *   calcMonthlyPayment() - 計算每月應繳金額（元，無條件進位）
- *   buildSchedule()      - 展開每一期的本金 / 利息 / 剩餘本金明細
- */
+// 等額本息（本息平均攤還）計算工具
 public class AmortizationCalculator {
 
+    // 工具類，禁止外部實例化
     private AmortizationCalculator() {}
 
-    /**
-     * 等額本息月付金：M = P × r × (1+r)^n / ((1+r)^n − 1)
-     * 若利率為 0（如學生貸款），退化為平均攤還：M = ceil(P / n)
-     */
+    // 計算每月應繳的固定金額（等額本息月付金）
     public static BigDecimal calcMonthlyPayment(BigDecimal principal, BigDecimal annualRate, int periods) {
         if (annualRate.compareTo(BigDecimal.ZERO) == 0) {
+            // 零利率：直接平均攤還，無條件進位
             return principal.divide(BigDecimal.valueOf(periods), 0, RoundingMode.CEILING);
         }
         BigDecimal r            = annualRate.divide(BigDecimal.valueOf(12), 10, RoundingMode.HALF_UP);
@@ -34,15 +27,7 @@ public class AmortizationCalculator {
         return numerator.divide(denominator, 0, RoundingMode.CEILING);
     }
 
-    /**
-     * 展開完整攤還表：逐期計算本金 / 利息 / 繳完後剩餘本金
-     *
-     * @param principal        撥款本金
-     * @param annualRate       年利率（例如 0.04 代表 4%）
-     * @param periods          還款總期數
-     * @param firstPaymentDate 第 1 期應繳日（通常為 startDate + 1 個月）
-     * @return 長度為 periods 的列表，索引 0 = 第 1 期
-     */
+    // 展開完整攤還表，逐期計算本金 / 利息 / 繳完後剩餘本金
     public static List<RepaymentRow> buildSchedule(
             BigDecimal principal,
             BigDecimal annualRate,
@@ -58,7 +43,8 @@ public class AmortizationCalculator {
         BigDecimal remaining = principal;
 
         for (int i = 1; i <= periods; i++) {
-            BigDecimal interest  = remaining.multiply(r).setScale(0, RoundingMode.HALF_UP);
+            // 本期利息 = 剩餘本金 × 月利率（四捨五入至整數元）
+            BigDecimal interest = remaining.multiply(r).setScale(0, RoundingMode.HALF_UP);
             BigDecimal principal2;
             BigDecimal payment;
 
@@ -85,7 +71,7 @@ public class AmortizationCalculator {
         return rows;
     }
 
-    /** 每一期攤還明細（不可變 record）*/
+    // 單期攤還明細（不可變 record）
     public record RepaymentRow(
             int        periodIndex,
             LocalDate  scheduledDate,

@@ -12,28 +12,23 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/*
- * 行員端：貸款帳戶管理入口
- *   GET /api/admin/loan-accounts                        - 查全部（可依 status 篩選）
- *   GET /api/admin/loan-accounts/application/{id}       - 依申請編號查帳戶
- *   GET /api/admin/loan-accounts/{accountId}/repayments - 查還款時間表
- */
+// 行員端貸款帳戶管理 Controller
 @RestController
 @RequestMapping("/api/admin/loan-accounts")
 @RequiredArgsConstructor
 public class LoanAccountAdminController {
 
-    private final LoanAccountService    loanAccountService;
-    private final LoanRepaymentService  loanRepaymentService;
+    private final LoanAccountService   loanAccountService;
+    private final LoanRepaymentService loanRepaymentService;
 
-    // 查全部帳戶（不帶 status 參數則顯示全部）
+    // 查詢所有貸款帳戶，支援依狀態篩選
     @GetMapping
     public ResponseEntity<ApiResponse<List<LoanAccountResponseDTO>>> getAllAccounts(
             @RequestParam(required = false) LoanAccountStatus status) {
         return ResponseEntity.ok(ApiResponse.success(loanAccountService.getAllAccounts(status)));
     }
 
-    // 依申請編號查單筆帳戶
+    // 依申請編號查詢單筆貸款帳戶
     @GetMapping("/application/{applicationId}")
     public ResponseEntity<ApiResponse<LoanAccountResponseDTO>> getByApplicationId(
             @PathVariable String applicationId) {
@@ -41,7 +36,7 @@ public class LoanAccountAdminController {
                 loanAccountService.getByApplicationId(applicationId)));
     }
 
-    // 查某帳戶的完整還款時間表
+    // 查詢指定帳戶的完整還款時間表
     @GetMapping("/{accountId}/repayments")
     public ResponseEntity<ApiResponse<List<LoanRepaymentResponseDTO>>> getRepayments(
             @PathVariable String accountId) {
@@ -49,6 +44,7 @@ public class LoanAccountAdminController {
                 loanRepaymentService.getByAccountId(accountId)));
     }
 
+    // 手動同步指定帳戶的已繳款期數狀態
     @PostMapping("/{accountId}/repayments/sync-paid")
     public ResponseEntity<ApiResponse<List<LoanRepaymentResponseDTO>>> syncPaidRepayment(
             @PathVariable String accountId) {

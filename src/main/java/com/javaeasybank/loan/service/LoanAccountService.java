@@ -24,11 +24,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/*
- * 負責貸款帳戶相關業務：
- *   - 撥款協調：ACCOUNT 模組確認撥款後，依二次填單資料建立 LoanAccount 紀錄
- *   - 客戶查詢：依 customerId 或 applicationId 查詢帳戶資訊
- */
+// 貸款帳戶業務邏輯 Service
 @Slf4j
 @Service
 @Transactional
@@ -49,17 +45,14 @@ public class LoanAccountService {
     @Autowired
     private LoanRepaymentService loanRepaymentService;
 
-    // ===撥款協調===
+    // ── 撥款協調 ─────────────────────────────────────────────────────
 
-    /**
-     * 由 LoanApplicationService.handleStatusCallback 在 ACCOUNT 分支呼叫。
-     * 讀取二次填單核准資料，建立 LoanAccount 並設定還款起算日。
-     * 具備冪等保護：帳戶已存在時直接略過，不拋錯。
-     */
+    // 撥款完成後建立貸款帳戶（不帶貸款帳號的多載版本）
     public void createOnDisbursement(String applicationId) {
         createOnDisbursement(applicationId, null);
     }
 
+    // 撥款完成後建立貸款帳戶（主要邏輯）
     public void createOnDisbursement(String applicationId, String loanAccountNumber) {
 
         // 冪等保護：重複回調時不重複建帳
@@ -75,12 +68,12 @@ public class LoanAccountService {
         LoanReviewDetail detail = reviewDetailRepo.findByApplicationId(applicationId)
                 .orElseThrow(() -> new BusinessException("找不到二次填單：" + applicationId));
 
-        BigDecimal principal    = detail.getConfirmedAmount();
-        Integer    periods      = detail.getConfirmedPeriod();
-        BigDecimal annualRate   = detail.getConfirmedRate();
+        BigDecimal principal  = detail.getConfirmedAmount();
+        Integer    periods    = detail.getConfirmedPeriod();
+        BigDecimal annualRate = detail.getConfirmedRate();
         log.info("[Disbursement] Step-B 計算月付金 principal={} annualRate={} periods={}",
                 principal, annualRate, periods);
-        BigDecimal monthlyPmt   = AmortizationCalculator.calcMonthlyPayment(principal, annualRate, periods);
+        BigDecimal monthlyPmt = AmortizationCalculator.calcMonthlyPayment(principal, annualRate, periods);
         log.info("[Disbursement] Step-B 完成 monthlyPmt={}", monthlyPmt);
 
         LocalDate startDate = LocalDate.now();
@@ -107,14 +100,13 @@ public class LoanAccountService {
         log.info("[Disbursement] Step-C 完成 applicationId={}", applicationId);
 
         log.info("[Disbursement] Step-D 預排還款明細 periods={}", periods);
-        // 預排 N 期還款明細
         loanRepaymentService.createSchedule(account);
         log.info("[Disbursement] Step-D 完成 applicationId={}", applicationId);
     }
 
-    // ===客戶查詢===
+    // ── 查詢 ─────────────────────────────────────────────────────────
 
-    // 查詢客戶自己的所有貸款帳戶，按建立時間降序
+    // 查詢客戶自己的所有貸款帳戶，按建立時間降序排列
     @Transactional(readOnly = true)
     public List<LoanAccountResponseDTO> getMyAccounts(String customerId) {
         return loanAccountRepo.findByCustomerIdOrderByCreateTimeDesc(customerId)
@@ -123,7 +115,7 @@ public class LoanAccountService {
                 .collect(Collectors.toList());
     }
 
-    // 行員端：查全部帳戶（可依 accountStatus 篩選；null 表示不篩選）
+    // 行員端查詢全部貸款帳戶，支援依帳戶狀態篩選
     @Transactional(readOnly = true)
     public List<LoanAccountResponseDTO> getAllAccounts(LoanAccountStatus status) {
         List<LoanAccount> accounts = (status != null)
@@ -132,7 +124,7 @@ public class LoanAccountService {
         return accounts.stream().map(this::toResponseDTO).collect(Collectors.toList());
     }
 
-    // 依申請編號查單筆帳戶（客戶確認撥款結果用）
+    // 依貸款申請編號查詢單筆帳戶，供客戶確認撥款結果使用
     @Transactional(readOnly = true)
     public LoanAccountResponseDTO getByApplicationId(String applicationId) {
         LoanAccount account = loanAccountRepo.findByApplicationId(applicationId)
@@ -140,7 +132,7 @@ public class LoanAccountService {
         return toResponseDTO(account);
     }
 
-    // 依帳戶 ID 查單筆（客戶端還款時間表的所有權驗證用）
+    // 依帳戶 ID 查詢單筆帳戶，供 Controller 層進行所有權驗證
     @Transactional(readOnly = true)
     public LoanAccountResponseDTO getAccountById(String accountId) {
         LoanAccount account = loanAccountRepo.findById(accountId)
@@ -148,16 +140,16 @@ public class LoanAccountService {
         return toResponseDTO(account);
     }
 
-    // ===工具方法===
+    // ── 工具方法 ─────────────────────────────────────────────────────
 
-    // 產生格式化 ID（前綴 + yyyyMMddHHmmss + 4 位亂數），與 LoanApplicationService 同規格
+    // 產生格式化識別碼：前綴 + yyyyMMddHHmmss + 4 位隨機數字
     private String generateId(String prefix) {
-        String timeStr       = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
-        String randomSuffix  = String.format("%04d", (int) (Math.random() * 10000));
+        String timeStr      = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        String randomSuffix = String.format("%04d", (int) (Math.random() * 10000));
         return prefix + timeStr + randomSuffix;
     }
 
-    // Entity → LoanAccountResponseDTO（不帶還款明細，明細由還款模組負責）
+    // 將 LoanAccount Entity 轉換為 LoanAccountResponseDTO
     private LoanAccountResponseDTO toResponseDTO(LoanAccount account) {
         LoanAccountResponseDTO dto = new LoanAccountResponseDTO();
         dto.setAccountId(account.getAccountId());

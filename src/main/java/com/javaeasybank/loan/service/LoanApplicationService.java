@@ -23,6 +23,7 @@ import com.javaeasybank.loan.enums.LoanContactStatus;
 import com.javaeasybank.loan.enums.LoanReviewStatus;
 import com.javaeasybank.loan.repository.LoanApplicationRepository;
 import com.javaeasybank.loan.repository.LoanContactLogRepository;
+import com.javaeasybank.loan.repository.LoanDocumentRepository;
 import com.javaeasybank.loan.repository.LoanReviewDetailRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -56,6 +57,8 @@ import java.util.stream.Collectors;
 @Transactional
 public class LoanApplicationService {
 
+    private static final String BATCH_INITIAL = "INITIAL";
+
     @Autowired
     private LoanApplicationRepository laRepo;
 
@@ -64,6 +67,9 @@ public class LoanApplicationService {
 
     @Autowired
     private LoanReviewDetailRepository reviewDetailRepo;
+
+    @Autowired
+    private LoanDocumentRepository documentRepo;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -334,13 +340,12 @@ public class LoanApplicationService {
             throw new BusinessException("此申請已送審，請勿重複操作");
         }
 
-        // 更新填單狀態
+        // 更新填單狀態 DRAFT → SUBMITTED
         detail.setReviewStatus(LoanReviewStatus.SUBMITTED);
         detail.setSubmittedTime(LocalDateTime.now());
 
-        // 同步更新主表狀態
+        // 同步更新主表狀態 IN_CONTACT → PENDING_REVIEW
         loan.setApplicationStatus(LoanApplicationStatus.PENDING_REVIEW);
-
         // 準備送出的 DTO
         loan.setUpdateTime(detail.getSubmittedTime());
 
@@ -385,6 +390,18 @@ public class LoanApplicationService {
         dto.setConfirmedPeriod(detail.getConfirmedPeriod());
         dto.setConfirmedRate(detail.getConfirmedRate());
         dto.setCollateralNote(detail.getCollateralNote());
+        if (loan.getDocumentsSubmittedAt() != null) {
+            dto.setDocuments(documentRepo
+                    .findByApplicationIdAndDocumentBatchTypeAndDocumentBatchNoOrderByUploadTimeAsc(
+                            loan.getApplicationId(), BATCH_INITIAL, 0)
+                    .stream()
+                    .map(d -> new LoanDocumentInfoDTO(
+                            d.getDocumentId(),
+                            d.getDocumentType().name(),
+                            d.getFileUrl(),
+                            d.getOriginalName()))
+                    .collect(Collectors.toList()));
+        }
         dto.setEmpId(detail.getEmpId());
         dto.setSubmittedTime(detail.getSubmittedTime());
         return dto;
@@ -428,11 +445,12 @@ public class LoanApplicationService {
             // 攔截風控傳過來的「退回補件」通知
             if (dto.getNewStatus() == LoanApplicationStatus.RETURNED) {
 
-                // 狀態不變，依然維持在審核中
-                log.info("[RiskCallback] 收到風控退回補件通知。保持狀態為 PENDING_REVIEW，觸發客戶郵件通知。applicationId={}", applicationId);
+                log.info("[RiskCallback] 收到風控退回補件通知。狀態改為 RETURNED，觸發客戶郵件通知。applicationId={}", applicationId);
 
                 // 清空先前的送出時間，這樣前端網銀的「補件上傳按鈕」才會再度亮起允許客戶操作！
+                loan.setApplicationStatus(LoanApplicationStatus.RETURNED);
                 loan.setDocumentsSubmittedAt(null);
+                loan.setCurrentSupplementBatchNo(safeBatchNo(loan.getCurrentSupplementBatchNo()) + 1);
                 loan.setUpdateTime(LocalDateTime.now());
 
                 List<String> docs = dto.getRequiredDocuments();
@@ -444,6 +462,12 @@ public class LoanApplicationService {
                         docs = List.of(raw.split(",\\s*"));
                     }
                 }
+                if (docs != null) {
+                    docs = docs.stream()
+                            .filter(doc -> doc != null && !doc.isBlank())
+                            .map(String::trim)
+                            .collect(Collectors.toList());
+                }
                 if (docs != null && !docs.isEmpty()) {
                     loan.setRequiredDocuments(String.join(",", docs));
                 }
@@ -452,15 +476,21 @@ public class LoanApplicationService {
                 log.info("[LoanCallback] 準備發送補件通知 email={}, applicationId={}", email, loan.getApplicationId());
                 if (email != null) {
                     emailService.sendLoanDocumentRequiredNotification(
-                            email, loan.getApplicationId(), loan.getApplyType(), loan.getApplyAmount());
+                            email,
+                            loan.getApplicationId(),
+                            loan.getApplyType(),
+                            loan.getApplyAmount(),
+                            docs,
+                            dto.getAdminComment());
                 } else {
                     log.warn("[LoanCallback] 客戶無 email，略過通知。customerId={}", loan.getCustomerId());
                 }
                 return; //處理完補件通知，直接結束方法
             }
 
-            // 前置狀態：必須是 PENDING_REVIEW
-            if (loan.getApplicationStatus() != LoanApplicationStatus.PENDING_REVIEW) {
+            // 前置狀態：一般送審為 PENDING_REVIEW；退回補件後也允許風控改判核准/拒絕。
+            if (loan.getApplicationStatus() != LoanApplicationStatus.PENDING_REVIEW
+                    && loan.getApplicationStatus() != LoanApplicationStatus.RETURNED) {
                 throw new BusinessException(
                         "申請目前狀態為 " + loan.getApplicationStatus() + "，無法套用風控回調");
             }
@@ -780,6 +810,10 @@ public class LoanApplicationService {
             dto.setConfirmedRate(review.getConfirmedRate());
         });
         return dto;
+    }
+
+    private Integer safeBatchNo(Integer batchNo) {
+        return batchNo == null ? 0 : batchNo;
     }
 
     // Entity → LoanContactLogResponseDTO

@@ -19,6 +19,7 @@ public class ReviewTaskResponse {
     private String businessId;
     private BusinessScene scene;
     private String status;
+    private String substatus;
     private ReviewResult reviewResult;
     private String assignee;
     private String adminComment;

@@ -10,6 +10,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+// 還款期數 Entity，對應資料庫 LOAN_REPAYMENT
 @Entity
 @Table(name = "LOAN_REPAYMENT")
 @Getter
@@ -17,27 +18,49 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class LoanRepayment {
 
+    // 還款期數唯一識別碼（UUID），作為主鍵
     @Id
-    private String repaymentId; // 識別碼
+    private String repaymentId;
 
-    private String accountId; // 帳戶ID
+    // 關聯的貸款帳戶識別碼
+    private String accountId;
 
-    // 期數資訊
-    private Integer periodIndex; // 期數序號
-    private LocalDate scheduledDate; // 預計應繳日（建立時預排）
-    private LocalDate paidDate; // 實際繳款日（SCHEDULED / OVERDUE 時為 null）
+    // ── 期數資訊 ─────────────────────────────────────────────────────
 
-    // 金額明細
-    private BigDecimal totalAmount; // 本期應繳總額（本金 + 利息）
-    private BigDecimal principalPortion; // 本期本金部分
-    private BigDecimal interestPortion; // 本期利息部分
-    private BigDecimal remainingAfter; // 繳完後剩餘本金（建立時預算，還款後更新）
+    // 期數序號（1-based），第一期為 1
+    private Integer periodIndex;
 
-    // 狀態
+    // 預計應繳截止日，建立時依攤還表預排，到期未繳則由排程標記為 OVERDUE
+    private LocalDate scheduledDate;
+
+    // 實際繳款日
+    private LocalDate paidDate;
+
+    // ── 金額明細（由 AmortizationCalculator 預算，還款後更新） ────────
+
+    // 本期應繳總額（本金 + 利息），單位
+    private BigDecimal totalAmount;
+
+    // 本期應繳總額中的本金部分，單位
+    private BigDecimal principalPortion;
+
+    // 本期應繳總額中的利息部分，單位
+    private BigDecimal interestPortion;
+
+    // 繳清本期後的預計剩餘本金，單位：新台幣
+    private BigDecimal remainingAfter;
+
+    // ── 狀態 ─────────────────────────────────────────────────────────
+
+    // 本期還款狀態，以字串形式存入 DB
     @Enumerated(EnumType.STRING)
-    private LoanRepaymentStatus repaymentStatus; // 還款狀態
+    private LoanRepaymentStatus repaymentStatus;
 
-    // 時間戳
+    // ── 時間戳 ──────────────────────────────────────────────────────
+
+    // 此筆還款紀錄的建立時間（撥款時批次寫入）
     private LocalDateTime createTime;
-    private LocalDateTime updateTime; // 還款時更新
+
+    // 最後更新時間，繳款成功或排程標記逾期時更新
+    private LocalDateTime updateTime;
 }

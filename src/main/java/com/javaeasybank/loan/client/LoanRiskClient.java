@@ -15,21 +15,16 @@ import org.springframework.web.client.RestTemplate;
 import java.util.List;
 import java.util.Map;
 
-/*
- * 負責將送審資料傳給風控模組。
- * 使用 RestTemplate 發 POST；若風控服務不可達，丟出 BusinessException
- * 讓 @Transactional 回滾整筆 submitReview 操作，避免主表停在 PENDING_REVIEW 卻沒有真正送出。
- */
+// 風控模組 HTTP 客戶端
 @Slf4j
 @Component
 public class LoanRiskClient {
 
-    // application-local.properties:
-    //   risk.api.base-url=http://localhost:8080/api/risk/
-    //   risk.api.loan.callback-url=http://localhost:8080/api/loan-callbacks
+    // 風控 API 的 base URL，例如 http://risk-service/api/risk/
     @Value("${risk.api.base-url}")
     private String riskBaseUrl;
 
+    // 風控完成審核後回呼的 base URL
     @Value("${risk.api.loan.callback-url:${risk.api.callback-url:http://localhost:8080/api/loan-callbacks}}")
     private String callbackBaseUrl;
 
@@ -39,7 +34,7 @@ public class LoanRiskClient {
         this.restTemplate = restTemplate;
     }
 
-    // 補件通知：把文件清單推給風控，更新對應的 ReviewTask
+    // 補件通知：將客戶新上傳的文件清單推送給風控，更新對應的審核任務（ReviewTask）
     public void attachDocuments(String businessId, List<LoanDocumentInfoDTO> documents) {
         String url = buildRiskUrl("reviews/" + businessId + "/attachments");
         log.info("[RiskClient] 補件通知 businessId={} count={} → {}", businessId, documents.size(), url);
@@ -52,9 +47,8 @@ public class LoanRiskClient {
         }
     }
 
-    // 送審：把 DTO 打到風控的 /risk/review 入口
+    // 送審：將整合後的審核資料 POST 至風控系統的 /risk/reviews 入口
     public void submitForReview(LoanRiskRequestDTO dto) {
-
         dto.setCallbackUrl(callbackBaseUrl + "/" + dto.getApplicationId() + "/status");
 
         String url = buildRiskUrl("reviews");
@@ -71,6 +65,7 @@ public class LoanRiskClient {
         }
     }
 
+    // 組裝完整的風控 API URL
     private String buildRiskUrl(String path) {
         String normalizedBaseUrl = riskBaseUrl.endsWith("/") ? riskBaseUrl : riskBaseUrl + "/";
         return normalizedBaseUrl + path;
