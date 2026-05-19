@@ -4,6 +4,7 @@ import { customerRequestReset, customerGetProfile } from '@/api/customerAuth'
 
 const form = reactive({
   idNumber: '',
+  birthday: '',
   email: '',
   type: 'PASSWORD' // PASSWORD or USERNAME
 })
@@ -24,18 +25,20 @@ async function fillMockData() {
     const res = await customerGetProfile()
     const profile = res.data.data
     form.idNumber = profile.idNumber || 'A123456789'
+    form.birthday = profile.birthday || '1985-05-15'
     form.email = profile.email || 'demo@example.com'
     showToast('已帶入驗證資料', 'success')
   } catch (err) {
     form.idNumber = 'A123456789'
+    form.birthday = '1985-05-15'
     form.email = 'demo@example.com'
     showToast('已帶入測試驗證資料', 'success')
   }
 }
 
 async function handleSubmit() {
-  if (!form.idNumber || !form.email) {
-    showToast('請填寫身分證字號與註冊信箱', 'warning')
+  if (!form.idNumber || !form.email || !form.birthday) {
+    showToast('請填寫身分證字號、出生年月日與註冊信箱', 'warning')
     return
   }
 
@@ -44,7 +47,8 @@ async function handleSubmit() {
     // Both password and username change request will send the verification email in this demo.
     await customerRequestReset({
       email: form.email,
-      idNumber: form.idNumber
+      idNumber: form.idNumber,
+      birthday: form.birthday
     })
     
     if (form.type === 'USERNAME') {
@@ -55,6 +59,7 @@ async function handleSubmit() {
     
     // Clear form
     form.idNumber = ''
+    form.birthday = ''
     form.email = ''
   } catch (err) {
     showToast(err.response?.data?.message || '發送失敗，請確認資料是否正確', 'error')
@@ -80,6 +85,13 @@ async function handleSubmit() {
           <label class="ctbc-label">身分證字號</label>
           <div class="ctbc-field">
             <input v-model.trim="form.idNumber" type="text" class="jb-input" placeholder="請輸入身分證字號" />
+          </div>
+        </div>
+
+        <div class="ctbc-row">
+          <label class="ctbc-label">出生年月日</label>
+          <div class="ctbc-field">
+            <input v-model.trim="form.birthday" type="date" class="jb-input" />
           </div>
         </div>
 

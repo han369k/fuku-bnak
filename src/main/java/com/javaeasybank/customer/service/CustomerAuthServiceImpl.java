@@ -336,6 +336,10 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
     @Override
     @Transactional
     public void requestPasswordReset(CustomerRespository.PasswordResetEmailRequest request) {
+        if (request.getEmail() == null || request.getIdNumber() == null || request.getBirthday() == null) {
+            throw new BusinessException("驗證失敗：請提供完整的身分證字號、信箱與出生年月日");
+        }
+
         // 用 email, idNumber, birthday 找到 customer_profile
         CustomerProfile profile = customerProfileRepository.findAll().stream()
                 .filter(p -> request.getEmail().equals(p.getEmail())
