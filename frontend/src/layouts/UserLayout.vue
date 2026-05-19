@@ -263,12 +263,12 @@ const menus = [
     ],
   },
   {
-    label: '個人資料',
+    label: '個人設定',
     svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
     route: 'user-profile',
     children: [
       { label: '基本資料', desc: '查看與修改個人資訊', route: 'user-profile' },
-      { label: '通知中心', desc: '查看站內通知', action: 'notifications' },
+      { label: '通知設定', desc: '設定站內通知類型', route: 'user-notification-settings' },
     ],
   },
   {
