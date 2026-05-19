@@ -125,7 +125,6 @@ INSERT INTO @customers (
     (50, 'X9N5T3Q7', '2605-K4D6M2V8', 'AUTH26050050', 'CASE26050050', N'尤芷晴', '1971-02-23', 'F', 'B200260550', 'customer050@java-bank.demo', '0913000050', N'苗栗縣苗栗市縣府路100號', 'cust0050', 'ACTIVE', 'ACTIVE', 'APPROVED', 'TW', N'苗栗縣苗栗市縣府路100號', N'苗栗縣苗栗市縣府路100號', N'金融保險業', N'國泰金控', 5, 'INVESTMENT', 'SALARY', 'TW', 0, '/uploads/mock/customer/X9N5T3Q7-front.jpg', '/uploads/mock/customer/X9N5T3Q7-back.jpg', '/uploads/mock/customer/X9N5T3Q7-second.jpg', '/avatars/mock/X9N5T3Q7.png', N'金融保險業', 1320000, 'LOW', N'苗栗縣', N'大學', 'S', N'換發', N'薪資收入', '2026-05-03 13:43:00', '2026-05-03 13:43:00');
 
 -- Formal customer profiles.
-IF NOT EXISTS (SELECT 1 FROM CUSTOMER_PROFILE)
 INSERT INTO CUSTOMER_PROFILE (
     customer_id, cif, id_number, name, birthday, gender, email, phone, address,
     nationality, registered_address, current_address, occupation, employer,
@@ -139,10 +138,14 @@ SELECT
     estimated_monthly_tx, account_purpose, fund_source, tax_residency, is_pep,
     id_front_url, id_back_url, second_id_url, avatar_url, job, annual_income,
     risk_level, profile_status, created_at, updated_at
-FROM @customers;
+FROM @customers c
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM CUSTOMER_PROFILE p
+    WHERE p.customer_id = c.customer_id
+);
 
 -- Authentication accounts. Password for every mock customer is 123456.
-IF NOT EXISTS (SELECT 1 FROM CUSTOMER_AUTH)
 INSERT INTO CUSTOMER_AUTH (
     auth_id, customer_id, username, password_hash, role, status,
     last_login_date, verification_token, created_at, updated_at
@@ -158,9 +161,13 @@ SELECT
     NULL,
     created_at,
     updated_at
-FROM @customers;
+FROM @customers c
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM CUSTOMER_AUTH a
+    WHERE a.auth_id = c.auth_id OR a.customer_id = c.customer_id
+);
 
-IF NOT EXISTS (SELECT 1 FROM CUSTOMER_LOGIN_LOG)
 INSERT INTO CUSTOMER_LOGIN_LOG (
     customer_id, username, result, fail_reason, ip_address, user_agent, device_name, login_time
 )
@@ -176,9 +183,14 @@ SELECT
     END,
     CASE WHEN seq % 2 = 0 THEN N'Chrome / macOS' ELSE N'Safari / iOS' END,
     DATEADD(HOUR, -1 * seq, CAST('2026-05-13 10:00:00' AS DATETIME2))
-FROM @customers;
+FROM @customers c
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM CUSTOMER_LOGIN_LOG l
+    WHERE l.customer_id = c.customer_id
+      AND l.ip_address = CONCAT('203.0.113.', (c.seq % 200) + 10)
+);
 
-IF NOT EXISTS (SELECT 1 FROM CUSTOMER_DEVICE)
 INSERT INTO CUSTOMER_DEVICE (
     customer_id, device_fingerprint, device_name, browser_name, operating_system,
     ip_address, user_agent, status, trusted, first_seen_at, last_seen_at, revoked_at
@@ -199,32 +211,41 @@ SELECT
     DATEADD(DAY, -30 - seq, CAST('2026-05-13 10:00:00' AS DATETIME2)),
     DATEADD(HOUR, -1 * seq, CAST('2026-05-13 10:00:00' AS DATETIME2)),
     CASE WHEN profile_status = 'INACTIVE' THEN DATEADD(DAY, -2, CAST('2026-05-13 10:00:00' AS DATETIME2)) ELSE NULL END
-FROM @customers;
+FROM @customers c
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM CUSTOMER_DEVICE d
+    WHERE d.device_fingerprint = CONCAT('mock-fingerprint-', RIGHT(CONCAT('0000', c.seq), 4))
+);
 
-IF (SELECT COUNT(*) FROM CUSTOMER_PROFILE) <> 50
-    THROW 51001, 'customer_insert.sql expected exactly 50 CUSTOMER_PROFILE rows.', 1;
+IF (
+    SELECT COUNT(*)
+    FROM CUSTOMER_PROFILE p
+    JOIN @customers c ON c.customer_id = p.customer_id
+) <> 50
+    THROW 51001, 'customer_insert.sql expected all 50 mock CUSTOMER_PROFILE rows to exist.', 1;
 
 IF EXISTS (
     SELECT 1
-    FROM CUSTOMER_PROFILE
+    FROM @customers
     GROUP BY email
     HAVING COUNT(*) > 1
 )
-    THROW 51002, 'customer_insert.sql generated duplicated customer emails.', 1;
+    THROW 51002, 'customer_insert.sql declares duplicated customer emails.', 1;
 
 IF EXISTS (
     SELECT 1
-    FROM CUSTOMER_PROFILE
+    FROM @customers
     WHERE customer_id LIKE 'C2605[0-9][0-9][0-9][0-9]' OR customer_id NOT LIKE '[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]'
 )
-    THROW 51003, 'customer_insert.sql generated invalid customer_id format.', 1;
+    THROW 51003, 'customer_insert.sql declares invalid customer_id format.', 1;
 
 IF EXISTS (
     SELECT 1
-    FROM CUSTOMER_PROFILE
+    FROM @customers
     WHERE cif LIKE '2605-C[0-9][0-9][0-9][0-9][0-9][0-9]' OR cif NOT LIKE '2605-[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]'
 )
-    THROW 51004, 'customer_insert.sql generated invalid cif format.', 1;
+    THROW 51004, 'customer_insert.sql declares invalid cif format.', 1;
 
 PRINT N'customer_insert.sql mock data completed: 50 customer profiles.';
 

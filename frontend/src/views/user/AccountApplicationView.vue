@@ -67,6 +67,8 @@ const form = reactive({
 const idFrontPreview = ref(null)
 const idBackPreview = ref(null)
 const secondIdPreview = ref(null)
+const supplementMessage = ref('')
+const supplementMessageAppId = ref(null)
 
 // ===== 驗證 =====
 const errors = reactive({})
@@ -405,22 +407,56 @@ async function fetchProfile() {
 }
 
 function getStatusLabel(status) {
-  const map = { PENDING: '審核中', APPROVED: '已核准', REJECTED: '已駁回', CANCELLED: '已取消' }
+  const map = {
+    PENDING: '審核中',
+    SUPPLEMENT_REQUIRED: '補件中',
+    APPROVED: '已核准',
+    REJECTED: '已駁回',
+    CANCELLED: '已取消',
+  }
   return map[status] || status
 }
 
 function getStatusClass(status) {
-  const map = { PENDING: 'warning', APPROVED: 'success', REJECTED: 'danger', CANCELLED: 'muted' }
+  const map = {
+    PENDING: 'warning',
+    SUPPLEMENT_REQUIRED: 'warning',
+    APPROVED: 'success',
+    REJECTED: 'danger',
+    CANCELLED: 'muted',
+  }
   return `status-${map[status] || 'warning'}`
+}
+
+function getSupplementReason(app) {
+  return app.rejectReason?.trim() || '請依照通知內容補充資料。'
+}
+
+function handleSupplementAction(appId) {
+  supplementMessageAppId.value = appId
+  supplementMessage.value = '補件上傳功能尚未開放，請依照通知內容準備資料。'
+}
+
+function getCurrencyLabel(currency) {
+  const map = {
+    TWD: '台幣',
+    USD: '美元',
+    EUR: '歐元',
+    JPY: '日圓',
+    GBP: '英鎊',
+    CNY: '人民幣',
+    AUD: '澳幣',
+  }
+  return map[currency] || currency || '-'
 }
 
 function getAccountTypeLabel(app) {
   if (app.accountType === 'SUB_ACCOUNT') return '子帳戶'
   if (app.accountType === 'TIME_DEPOSIT') {
-    return app.currency ? `${app.currency} 定期存款` : '定期存款'
+    return app.currency ? `${getCurrencyLabel(app.currency)}定期存款` : '定期存款'
   }
   if (app.accountType === 'CHECKING' && app.currency && app.currency !== 'TWD') {
-    return `${app.currency} 外幣活期存款`
+    return `${getCurrencyLabel(app.currency)}外幣活期存款`
   }
   return '台幣活期存款'
 }
@@ -846,10 +882,24 @@ onMounted(async () => {
               <td>#{{ app.id }}</td>
               <td>{{ getAccountTypeLabel(app) }}</td>
               <td>{{ app.createdAt?.substring(0, 10) || '-' }}</td>
-              <td>
+              <td class="application-status-cell">
                 <span class="status-pill" :class="getStatusClass(app.status)">
                   {{ getStatusLabel(app.status) }}
                 </span>
+                <div v-if="app.status === 'SUPPLEMENT_REQUIRED'" class="supplement-notice">
+                  <div class="supplement-title">需補件</div>
+                  <div class="supplement-reason">原因：{{ getSupplementReason(app) }}</div>
+                  <button
+                    type="button"
+                    class="supplement-action-btn"
+                    @click="handleSupplementAction(app.id)"
+                  >
+                    補件資料
+                  </button>
+                  <p v-if="supplementMessage && supplementMessageAppId === app.id" class="supplement-inline-note">
+                    {{ supplementMessage }}
+                  </p>
+                </div>
               </td>
               <td>{{ app.createdAccountNumber || '-' }}</td>
             </tr>
@@ -1007,10 +1057,11 @@ onMounted(async () => {
 
 /* === 步驟卡片 === */
 .step-card {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  background: rgba(255, 249, 239, 0.78);
+  border: 1px solid rgba(214, 206, 195, 0.92);
+  border-radius: 22px;
   padding: var(--space-6);
+  box-shadow: 0 10px 26px rgba(63, 74, 66, 0.06);
 }
 
 .step-title {
@@ -1037,7 +1088,7 @@ onMounted(async () => {
 .type-option {
   cursor: pointer;
   border: 2px solid var(--border);
-  border-radius: var(--radius-md);
+  border-radius: 18px;
   padding: var(--space-5);
   background: var(--bg-card);
   transition: all 0.2s;
@@ -1051,7 +1102,7 @@ onMounted(async () => {
 
 .type-option.selected {
   border-color: var(--primary);
-  background: rgba(92, 107, 95, 0.04);
+  background: rgba(92, 107, 95, 0.05);
 }
 
 .type-name {
@@ -1111,7 +1162,7 @@ onMounted(async () => {
   cursor: pointer;
   padding: var(--space-4);
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  border-radius: 18px;
   background: var(--bg-card);
 }
 
@@ -1166,7 +1217,7 @@ onMounted(async () => {
   justify-content: center;
   aspect-ratio: 3 / 2;
   border: 2px dashed var(--border);
-  border-radius: var(--radius-md);
+  border-radius: 18px;
   cursor: pointer;
   background: var(--bg-card);
   overflow: hidden;
@@ -1202,6 +1253,8 @@ onMounted(async () => {
 .result-card {
   text-align: center;
   padding: var(--space-8) var(--space-6);
+  background: rgba(255, 249, 239, 0.82);
+  box-shadow: 0 10px 26px rgba(63, 74, 66, 0.06);
 }
 
 .result-icon {
@@ -1242,13 +1295,14 @@ onMounted(async () => {
 .table-wrap {
   overflow-x: auto;
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  border-radius: 18px;
   background: var(--bg-card);
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
+  min-width: 680px;
 }
 
 th, td {
@@ -1274,14 +1328,73 @@ tbody tr:last-child td {
   align-items: center;
   min-height: 28px;
   padding: 0 var(--space-2);
-  border-radius: var(--radius-sm);
+  border-radius: 999px;
   font-size: var(--text-xs);
   font-weight: 600;
 }
 
-.status-success { color: #237804; background: #f6ffed; }
-.status-danger  { color: #a8071a; background: #fff1f0; }
-.status-warning { color: #ad6800; background: #fffbe6; }
+.application-status-cell {
+  white-space: normal;
+  min-width: 240px;
+}
+
+.supplement-notice {
+  margin-top: 12px;
+  padding: 14px 16px;
+  background-color: rgba(166, 90, 77, 0.05);
+  border: 1px solid rgba(166, 90, 77, 0.22);
+  border-radius: 14px;
+  color: var(--text-primary);
+  display: grid;
+  gap: 6px;
+}
+
+.supplement-title {
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.supplement-reason {
+  color: var(--text-secondary);
+  line-height: 1.7;
+  white-space: normal;
+  word-break: break-word;
+  font-size: 13px;
+}
+
+.supplement-action-btn {
+  margin-top: 4px;
+  width: fit-content;
+  padding: 9px 16px;
+  color: var(--accent);
+  background-color: rgba(255, 249, 239, 0.62);
+  border: 1px solid rgba(166, 90, 77, 0.3);
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.18s ease, border-color 0.18s ease;
+}
+
+.supplement-action-btn:hover {
+  background-color: rgba(166, 90, 77, 0.06);
+  border-color: rgba(166, 90, 77, 0.38);
+}
+
+.supplement-inline-note {
+  margin: 2px 0 0;
+  padding: 10px 12px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.65;
+  background: rgba(92, 107, 95, 0.05);
+  border: 1px solid rgba(214, 206, 195, 0.72);
+  border-radius: 12px;
+}
+
+.status-success { color: #1a7a40; background: rgba(74, 140, 92, 0.10); }
+.status-danger  { color: #a65a4d; background: rgba(166, 90, 77, 0.10); }
+.status-warning { color: #7a6000; background: rgba(196, 154, 60, 0.10); }
 .status-muted   { color: var(--text-disabled); background: var(--bg-secondary); }
 
 .state-panel {
@@ -1307,6 +1420,37 @@ tbody tr:last-child td {
 }
 
 @media (max-width: 640px) {
+  .acct-app-page {
+    padding: var(--space-4) 16px 56px;
+    gap: var(--space-5);
+  }
+
+  .page-title {
+    font-size: 34px;
+    line-height: 1.2;
+  }
+
+  .page-subtitle {
+    font-size: 14px;
+  }
+
+  .step-card {
+    padding: var(--space-5) var(--space-4);
+    border-radius: 18px;
+  }
+
+  .step-actions {
+    flex-direction: column;
+  }
+
+  .step-actions .jb-btn {
+    width: 100%;
+  }
+
+  .type-grid {
+    grid-template-columns: 1fr;
+  }
+
   .form-grid {
     grid-template-columns: 1fr;
   }
@@ -1316,8 +1460,12 @@ tbody tr:last-child td {
   .upload-grid {
     grid-template-columns: 1fr;
   }
+  .upload-box {
+    aspect-ratio: 4 / 3;
+  }
   .stepper {
     gap: 0;
+    flex-wrap: wrap;
   }
   .stepper-item {
     flex: 1;
@@ -1325,6 +1473,27 @@ tbody tr:last-child td {
   }
   .stepper-label {
     font-size: 11px;
+    white-space: normal;
+  }
+  .table-wrap {
+    border-radius: 14px;
+  }
+  .status-pill {
+    white-space: normal;
+    line-height: 1.3;
+  }
+
+  .application-status-cell {
+    min-width: 200px;
+  }
+
+  .supplement-notice {
+    padding: 12px 14px;
+  }
+
+  .supplement-action-btn {
+    max-width: 100%;
+    white-space: normal;
   }
 }
 </style>

@@ -9,11 +9,77 @@
             <div class="header-user">
               <!-- Countdown and Demo Button -->
               <div class="session-timer">
-                <span class="session-timer-text">自動登出倒數: {{ formatTime(countdown) }}</span>
-                <button class="session-continue-btn" @click="isTimerPaused = !isTimerPaused">
-                  {{ isTimerPaused ? '保持登入' : '暫停計時' }}
+                <span class="session-timer-text">自動登出倒數：{{ formatTime(countdown) }}</span>
+                <button class="session-continue-btn" :class="{ paused: isTimerPaused }" @click="isTimerPaused = !isTimerPaused">
+                  保持登入
                 </button>
                 <button class="demo-mode-badge" @click="triggerIdleAlert">Demo 模式</button>
+              </div>
+
+              <div class="notification-bell-wrap" ref="notificationWrapRef">
+                <button
+                  class="notification-bell-btn"
+                  :class="{ active: isNotificationOpen }"
+                  aria-label="通知中心"
+                  @click.stop="toggleNotificationDropdown"
+                >
+                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M15 17H9m8-4v-3a5 5 0 10-10 0v3l-2 2v1h14v-1l-2-2zm-4 5a2 2 0 01-4 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  <span v-if="unreadCount > 0" class="notification-badge">{{ badgeText }}</span>
+                </button>
+
+                <transition name="dropdown">
+                  <div v-if="isNotificationOpen" class="notification-dropdown" @click.stop>
+                    <div class="notification-dropdown-header">
+                      <div>
+                        <p class="notification-dropdown-eyebrow">最新通知</p>
+                        <h3>通知中心</h3>
+                      </div>
+                      <button
+                        class="notification-mark-all-btn"
+                        type="button"
+                        :disabled="unreadCount === 0 || isNotificationLoading"
+                        @click="handleMarkAllAsRead"
+                      >
+                        全部標記為已讀
+                      </button>
+                    </div>
+
+                    <div v-if="isNotificationLoading" class="notification-empty">通知載入中...</div>
+                    <div v-else-if="notificationError" class="notification-empty notification-empty-error">
+                      通知載入失敗，請稍後再試。
+                    </div>
+                    <div v-else-if="notifications.length === 0" class="notification-empty">
+                      <strong>目前沒有通知</strong>
+                      <span>新的帳戶、交易與系統提醒會顯示在這裡。</span>
+                    </div>
+                    <div v-else class="notification-list">
+                      <button
+                        v-for="item in notifications"
+                        :key="item.id"
+                        class="notification-item"
+                        :class="{ unread: !item.isRead }"
+                        @click="handleNotificationClick(item)"
+                      >
+                        <div class="notification-item-dot" :class="{ unread: !item.isRead }"></div>
+                        <div class="notification-item-body">
+                          <div class="notification-item-top">
+                            <strong>{{ item.title }}</strong>
+                            <span>{{ formatNotificationTime(item.createdAt) }}</span>
+                          </div>
+                          <p>{{ item.message }}</p>
+                        </div>
+                      </button>
+                    </div>
+
+                    <div class="notification-dropdown-footer">
+                      <button class="notification-settings-link" type="button" @click="goNotificationSettings">
+                        通知設定
+                      </button>
+                    </div>
+                  </div>
+                </transition>
               </div>
 
               <button
@@ -96,40 +162,6 @@
         </div>
       </div>
     </transition>
-
-    <transition name="modal-fade">
-      <div v-if="notificationModal.visible" class="jb-modal-overlay" @click.self="notificationModal.visible = false">
-        <div class="notification-modal jb-card">
-          <div class="notification-header">
-            <div>
-              <p class="notification-eyebrow">Notification Center</p>
-              <h3 class="jb-modal-title">通知中心</h3>
-            </div>
-            <button class="notification-close" aria-label="關閉通知中心" @click="notificationModal.visible = false">×</button>
-          </div>
-
-          <div class="offer-list">
-            <article v-for="offer in offerMessages" :key="offer.title" class="offer-row">
-              <div class="offer-badge">{{ offer.badge }}</div>
-              <div class="offer-body">
-                <h4>{{ offer.title }}</h4>
-                <p>{{ offer.text }}</p>
-              </div>
-            </article>
-          </div>
-
-          <div class="preference-panel">
-            <label v-for="pref in notificationPrefs" :key="pref.key" class="preference-row">
-              <span>
-                <strong>{{ pref.label }}</strong>
-                <small>{{ pref.desc }}</small>
-              </span>
-              <input v-model="pref.enabled" type="checkbox" />
-            </label>
-          </div>
-        </div>
-      </div>
-    </transition>
   </div>
 </template>
 
@@ -138,11 +170,24 @@ import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCustomerAuthStore } from '@/stores/customerAuth'
 import { BASE_URL } from '@/api/axios'
+import {
+  getCustomerNotifications,
+  getCustomerUnreadNotificationCount,
+  markAllCustomerNotificationsAsRead,
+  markCustomerNotificationAsRead,
+} from '@/api/notification'
 import JbLogo from '@/components/JbLogo.vue'
+import dayjs from 'dayjs'
 
 const router = useRouter()
 const customerAuthStore = useCustomerAuthStore()
 const openMenu = ref(-1)
+const isNotificationOpen = ref(false)
+const isNotificationLoading = ref(false)
+const notificationError = ref(false)
+const notifications = ref([])
+const unreadCount = ref(0)
+const notificationWrapRef = ref(null)
 let leaveTimer = null
 
 function handleMouseEnter(idx) {
@@ -162,7 +207,7 @@ function toggleMenu(idx) {
 }
 
 const customerName = computed(() => customerAuthStore.customer?.name || '會員')
-const customerInitial = computed(() => (customerAuthStore.customer?.name || '會')[0])
+const badgeText = computed(() => (unreadCount.value > 99 ? '99+' : String(unreadCount.value)))
 
 const avatarSrc = computed(() => {
   const url = customerAuthStore.customer?.avatarUrl
@@ -223,7 +268,7 @@ const menus = [
     route: 'user-profile',
     children: [
       { label: '基本資料', desc: '查看與修改個人資訊', route: 'user-profile' },
-      { label: '通知設定', desc: '管理通知偏好', action: 'notifications' },
+      { label: '通知中心', desc: '查看站內通知', action: 'notifications' },
     ],
   },
   {
@@ -240,7 +285,10 @@ const menus = [
 
 function handleSubClick(sub) {
   if (sub.action === 'notifications') {
-    notificationModal.visible = true
+    isNotificationOpen.value = true
+    if (notifications.value.length === 0 && !isNotificationLoading.value) {
+      loadNotifications()
+    }
     openMenu.value = -1
     return
   }
@@ -253,37 +301,84 @@ function handleSubClick(sub) {
   }
 }
 
-const notificationModal = reactive({
-  visible: false,
-})
+function toggleNotificationDropdown() {
+  isNotificationOpen.value = !isNotificationOpen.value
+  if (isNotificationOpen.value && notifications.value.length === 0 && !isNotificationLoading.value) {
+    loadNotifications()
+  }
+}
 
-const offerMessages = [
-  {
-    badge: '安全',
-    title: '登入成功紀錄已建立',
-    text: '系統已記錄本次登入時間、IP 與裝置資訊，可至安全中心查看完整登入紀錄。',
-  },
-  {
-    badge: '裝置',
-    title: '授權裝置同步更新',
-    text: '新瀏覽器或不同作業系統登入時，會更新裝置指紋與最近使用時間，協助辨識異常活動。',
-  },
-  {
-    badge: '安全',
-    title: '密碼異動提醒已開啟',
-    text: '密碼重設與登入失敗會寄送安全通知信，避免敏感帳務操作在未授權情境下發生。',
-  },
-]
+async function loadNotifications() {
+  isNotificationLoading.value = true
+  notificationError.value = false
 
-const notificationPrefs = reactive([
-  { key: 'login', label: '登入提醒', desc: '成功、失敗與高風險登入通知', enabled: true },
-  { key: 'device', label: '裝置提醒', desc: '新裝置、授權移除與異常 IP 提醒', enabled: true },
-  { key: 'password', label: '密碼提醒', desc: '密碼重設與帳號安全異動通知', enabled: true },
-])
+  try {
+    const [listRes, countRes] = await Promise.all([
+      getCustomerNotifications(),
+      getCustomerUnreadNotificationCount(),
+    ])
+
+    notifications.value = listRes.data?.data || []
+    unreadCount.value = countRes.data?.data?.count ?? 0
+  } catch (error) {
+    console.error('載入通知失敗', error)
+    notificationError.value = true
+    notifications.value = []
+  } finally {
+    isNotificationLoading.value = false
+  }
+}
+
+function formatNotificationTime(value) {
+  if (!value) return ''
+  return dayjs(value).format('YYYY/MM/DD HH:mm')
+}
+
+async function handleNotificationClick(item) {
+  try {
+    if (!item.isRead) {
+      await markCustomerNotificationAsRead(item.id)
+      item.isRead = true
+      unreadCount.value = Math.max(0, unreadCount.value - 1)
+    }
+
+    isNotificationOpen.value = false
+
+    if (item.linkUrl) {
+      if (/^https?:\/\//i.test(item.linkUrl)) {
+        window.location.href = item.linkUrl
+      } else {
+        router.push(item.linkUrl)
+      }
+    }
+  } catch (error) {
+    console.error('標記通知已讀失敗', error)
+  }
+}
+
+async function handleMarkAllAsRead() {
+  if (unreadCount.value === 0 || isNotificationLoading.value) return
+
+  try {
+    await markAllCustomerNotificationsAsRead()
+    notifications.value = notifications.value.map((item) => ({ ...item, isRead: true }))
+    unreadCount.value = 0
+  } catch (error) {
+    console.error('全部標記已讀失敗', error)
+  }
+}
+
+function goNotificationSettings() {
+  isNotificationOpen.value = false
+  router.push({ name: 'user-notification-settings' })
+}
 
 function closeOnOutsideClick(e) {
   if (!e.target.closest('.mega-nav-item')) {
     openMenu.value = -1
+  }
+  if (!e.target.closest('.notification-bell-wrap')) {
+    isNotificationOpen.value = false
   }
 }
 
@@ -338,6 +433,7 @@ function stopGraceTimer() {
 
 onMounted(() => {
   document.addEventListener('click', closeOnOutsideClick)
+  loadNotifications()
 
   // 每 1 秒更新倒數
   secondTimer = setInterval(() => {
@@ -419,16 +515,255 @@ function handleLogout() {
   font-weight: 500;
 }
 
+.notification-bell-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.notification-bell-btn {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(255, 249, 239, 0.82);
+  color: var(--text-primary);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+}
+
+.notification-bell-btn:hover,
+.notification-bell-btn.active {
+  border-color: rgba(92, 107, 95, 0.34);
+  box-shadow: 0 8px 18px rgba(63, 74, 66, 0.08);
+  transform: translateY(-1px);
+  background: rgba(255, 249, 239, 0.96);
+}
+
+.notification-bell-btn svg {
+  display: block;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -3px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background-color: var(--accent);
+  color: #fffaf2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 3px 8px rgba(118, 56, 53, 0.14);
+}
+
+.notification-dropdown {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  width: min(348px, calc(100vw - 24px));
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: rgba(255, 249, 239, 0.96);
+  box-shadow: 0 14px 32px rgba(63, 74, 66, 0.1);
+  backdrop-filter: blur(10px);
+  z-index: 120;
+}
+
+.notification-dropdown-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.notification-dropdown-eyebrow {
+  margin: 0 0 4px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.notification-dropdown-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: var(--text-primary);
+}
+
+.notification-mark-all-btn {
+  border: 1px solid rgba(214, 206, 195, 0.88);
+  border-radius: 999px;
+  background: rgba(255, 249, 239, 0.74);
+  color: var(--text-primary);
+  font-size: 12px;
+  padding: 6px 11px;
+  cursor: pointer;
+  transition: background-color 0.18s ease, border-color 0.18s ease, opacity 0.18s ease;
+}
+
+.notification-mark-all-btn:hover:not(:disabled) {
+  border-color: rgba(92, 107, 95, 0.26);
+  background: rgba(92, 107, 95, 0.05);
+}
+
+.notification-mark-all-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.notification-list {
+  display: grid;
+  gap: 10px;
+  max-height: min(430px, 60vh);
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.notification-item {
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.78);
+  padding: 12px;
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr);
+  gap: 10px;
+  cursor: pointer;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease, background-color 0.16s ease;
+}
+
+.notification-item:hover {
+  transform: translateY(-1px);
+  border-color: rgba(92, 107, 95, 0.24);
+  box-shadow: 0 8px 20px rgba(63, 74, 66, 0.06);
+}
+
+.notification-item.unread {
+  background-color: rgba(92, 107, 95, 0.05);
+}
+
+.notification-item-dot {
+  width: 10px;
+  height: 10px;
+  margin-top: 5px;
+  border-radius: 999px;
+  background: transparent;
+}
+
+.notification-item-dot.unread {
+  background: rgba(118, 56, 53, 0.68);
+}
+
+.notification-item-body {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.notification-item-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.notification-item-top strong {
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.notification-item-top span {
+  color: var(--text-secondary);
+  font-size: 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.notification-item-body p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+  word-break: break-word;
+}
+
+.notification-empty {
+  padding: 16px 12px;
+  border: 1px dashed rgba(214, 206, 195, 0.88);
+  border-radius: 14px;
+  color: var(--text-secondary);
+  display: grid;
+  gap: 4px;
+  text-align: center;
+}
+
+.notification-empty strong {
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.notification-empty span {
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.notification-empty-error {
+  background: rgba(166, 90, 77, 0.04);
+  border-color: rgba(166, 90, 77, 0.2);
+  color: var(--accent);
+}
+
+.notification-dropdown-footer {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(214, 206, 195, 0.72);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.notification-settings-link {
+  border: 1px solid rgba(214, 206, 195, 0.82);
+  border-radius: 999px;
+  background: rgba(255, 249, 239, 0.7);
+  color: var(--text-primary);
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.notification-settings-link:hover {
+  border-color: rgba(92, 107, 95, 0.28);
+  background: rgba(92, 107, 95, 0.05);
+  color: var(--primary-dark);
+}
+
 .session-timer {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 12px;
-  background-color: rgba(234, 228, 218, 0.72);
-  border: 1px solid rgba(214, 206, 195, 0.9);
-  border-radius: 999px;
+  padding: 8px 14px;
+  background-color: rgba(255, 249, 239, 0.76);
+  border: 1px solid rgba(214, 206, 195, 0.88);
+  border-radius: 18px;
   color: var(--text-secondary);
-  box-shadow: 0 4px 14px rgba(63, 74, 66, 0.05);
+  box-shadow: 0 6px 18px rgba(63, 74, 66, 0.05);
 }
 
 .session-timer-text {
@@ -441,7 +776,7 @@ function handleLogout() {
 .session-continue-btn {
   padding: 4px 14px;
   color: var(--primary-dark);
-  background-color: rgba(255, 249, 239, 0.55);
+  background-color: rgba(255, 249, 239, 0.92);
   border: 1px solid rgba(92, 107, 95, 0.28);
   border-radius: 10px;
   font-size: 13px;
@@ -451,16 +786,28 @@ function handleLogout() {
 }
 
 .session-continue-btn:hover {
-  color: var(--bg-primary);
-  background-color: var(--primary);
-  border-color: var(--primary);
+  color: var(--primary);
+  background-color: rgba(92, 107, 95, 0.08);
+  border-color: rgba(92, 107, 95, 0.42);
+}
+
+.session-continue-btn.paused {
+  color: var(--accent);
+  border-color: rgba(166, 90, 77, 0.24);
+  background-color: rgba(255, 249, 239, 0.98);
+}
+
+.session-continue-btn.paused:hover {
+  color: var(--accent);
+  background-color: rgba(166, 90, 77, 0.08);
+  border-color: rgba(166, 90, 77, 0.34);
 }
 
 .demo-mode-badge {
   padding: 4px 12px;
   color: var(--accent);
-  background-color: rgba(166, 90, 77, 0.06);
-  border: 1px solid rgba(166, 90, 77, 0.26);
+  background-color: rgba(166, 90, 77, 0.08);
+  border: 1px solid rgba(166, 90, 77, 0.28);
   border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
@@ -470,7 +817,7 @@ function handleLogout() {
 
 .demo-mode-badge:hover {
   background-color: rgba(166, 90, 77, 0.12);
-  border-color: rgba(166, 90, 77, 0.42);
+  border-color: rgba(166, 90, 77, 0.38);
 }
 
 .logout-btn {
@@ -729,7 +1076,7 @@ function handleLogout() {
     min-height: 64px;
     height: auto;
     padding: 8px 16px 0;
-    align-items: center;
+    align-items: flex-start;
     gap: 8px 12px;
     flex-wrap: wrap;
   }
@@ -755,11 +1102,15 @@ function handleLogout() {
     justify-content: space-between;
     gap: 8px;
     border-radius: 14px;
+    flex-wrap: wrap;
   }
 
   .session-timer-text {
     font-size: 12px;
-    white-space: nowrap;
+    white-space: normal;
+    line-height: 1.35;
+    min-width: 0;
+    flex: 1 1 140px;
   }
 
   .session-continue-btn {
@@ -770,6 +1121,25 @@ function handleLogout() {
 
   .demo-mode-badge {
     display: none;
+  }
+
+  .notification-bell-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .notification-dropdown {
+    right: 0;
+    left: auto;
+    width: min(348px, calc(100vw - 20px));
+  }
+
+  .notification-dropdown-footer {
+    justify-content: stretch;
+  }
+
+  .notification-settings-link {
+    width: 100%;
   }
 
   .user-name {
@@ -847,109 +1217,4 @@ function handleLogout() {
 }
 .modal-fade-enter-active, .modal-fade-leave-active { transition: all 0.4s var(--ease); }
 .modal-fade-enter-from, .modal-fade-leave-to { opacity: 0; transform: scale(0.95); }
-
-.notification-modal {
-  width: min(560px, calc(100vw - 32px));
-  padding: 28px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-xl);
-}
-
-.notification-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 18px;
-}
-
-.notification-eyebrow {
-  margin: 0 0 6px;
-  color: var(--text-secondary);
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.notification-close {
-  width: 34px;
-  height: 34px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--bg-card);
-  color: var(--text-primary);
-  cursor: pointer;
-  font-size: 22px;
-  line-height: 1;
-}
-
-.offer-list,
-.preference-panel {
-  display: grid;
-  gap: 10px;
-}
-
-.offer-row {
-  display: grid;
-  grid-template-columns: 72px minmax(0, 1fr);
-  gap: 14px;
-  padding: 14px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: rgba(255, 249, 239, 0.72);
-}
-
-.offer-badge {
-  display: grid;
-  place-items: center;
-  min-height: 42px;
-  border-radius: 8px;
-  background: var(--primary);
-  color: #fff;
-  font-weight: 700;
-  font-size: 13px;
-}
-
-.offer-body h4 {
-  margin: 0 0 5px;
-  font-size: 15px;
-}
-
-.offer-body p {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 13px;
-  line-height: 1.6;
-}
-
-.preference-panel {
-  margin-top: 18px;
-}
-
-.preference-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 12px 14px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-}
-
-.preference-row span {
-  display: grid;
-  gap: 3px;
-}
-
-.preference-row small {
-  color: var(--text-secondary);
-}
-
-.preference-row input {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--primary);
-}
 </style>

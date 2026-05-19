@@ -34,10 +34,12 @@ public class LoginRiskClient {
         req.addContext("eventType", eventType);
         req.addContext("reason", reason);
 
-        log.info("[LoginRiskClient] 嘗試發送風控事件 customerId={}, eventType={}", customerId, eventType);
+        String url = buildRiskUrl("check");
+        log.info("[LoginRiskClient] 嘗試發送風控事件 customerId={}, eventType={}, url={}",
+                customerId, eventType, url);
 
         try {
-            restTemplate.postForEntity(riskBaseUrl + "check", req, Void.class);
+            restTemplate.postForEntity(url, req, Void.class);
         } catch (org.springframework.web.client.HttpStatusCodeException e) {
             // 關鍵：這行能印出到底是 404、400 還是 403，以及遠端回傳的錯誤訊息
             log.error("[LoginRiskClient] 遠端風控服務回傳錯誤! 狀態碼={}, 回傳內容={}",
@@ -45,5 +47,10 @@ public class LoginRiskClient {
         } catch (RestClientException e) {
             log.error("[LoginRiskClient] 網路連線失敗或目標伺服器未啟動", e);
         }
+    }
+
+    private String buildRiskUrl(String path) {
+        String normalizedBaseUrl = riskBaseUrl.endsWith("/") ? riskBaseUrl : riskBaseUrl + "/";
+        return normalizedBaseUrl + path;
     }
 }

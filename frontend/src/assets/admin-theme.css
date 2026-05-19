@@ -1,7 +1,7 @@
 :root {
   --admin-primary: #5C6B5F;
   --admin-primary-hover: #4A574D;
-  --admin-bg: #f4f5f7;
+  --admin-bg: #f4f5f3;
 }
 
 body {
@@ -12,7 +12,7 @@ body {
    側邊欄 (Sidebar) 選單圓弧化
 ========================================= */
 .ant-menu-item {
-  border-radius: 100px !important; /* 膠囊狀圓弧 */
+  border-radius: 14px !important;
   margin: 4px 12px !important;
   width: calc(100% - 24px) !important;
 }
@@ -31,21 +31,22 @@ body {
    卡片與表格 (Card & Table) 圓弧化
 ========================================= */
 .ant-card {
-  border-radius: 24px !important;
-  border: none !important;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+  border-radius: 14px !important;
+  border: 1px solid rgba(214, 206, 195, 0.78) !important;
+  box-shadow: 0 6px 18px rgba(63, 74, 66, 0.045) !important;
 }
 
 /* 讓所有頁面的 Table 外框變圓 */
 .ant-table-wrapper {
   background: #ffffff;
-  border-radius: 24px;
+  border-radius: 14px;
   padding: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(214, 206, 195, 0.78);
+  box-shadow: 0 6px 18px rgba(63, 74, 66, 0.045);
 }
 
 .ant-table-thead > tr > th {
-  background-color: rgba(92, 107, 95, 0.05) !important; /* 表頭帶有極淡的墨綠色 */
+  background-color: rgba(234, 228, 218, 0.55) !important;
   font-weight: 600;
 }
 
@@ -55,7 +56,7 @@ body {
 /* 固定欄的 header 要有實色背景 + 更高 z-index，避免其他 header 捲過時文字重疊 */
 .ant-table-thead > tr > th.ant-table-cell-fix-left,
 .ant-table-thead > tr > th.ant-table-cell-fix-right {
-  background-color: #f6f7f6 !important; /* 對應 rgba(92,107,95,0.05) on white 的實色等值 */
+  background-color: #f4f2ed !important;
   z-index: 3 !important;
 }
 
@@ -69,7 +70,7 @@ body {
 /* hover 行固定欄保持 hover 背景色 */
 .ant-table-tbody > tr:hover > td.ant-table-cell-fix-left,
 .ant-table-tbody > tr:hover > td.ant-table-cell-fix-right {
-  background-color: #fafafa !important;
+  background-color: #fcfbf8 !important;
 }
 
 /* 移除固定欄的陰影分隔線 */
@@ -82,7 +83,7 @@ body {
    全域按鈕 (Button) 變色與圓弧
 ========================================= */
 .ant-btn {
-  border-radius: 16px !important;
+  border-radius: 12px !important;
 }
 
 .ant-btn-primary {
@@ -130,7 +131,7 @@ body {
 .page-title {
   font-size: 24px;
   font-weight: 700;
-  color: #1a1a2e;
+  color: #2B2B2B;
   margin: 0;
   letter-spacing: 0.5px;
 }
@@ -166,18 +167,20 @@ body {
 }
 
 .rounded-btn {
-  border-radius: 12px !important;
+  border-radius: 10px !important;
   font-weight: 600;
 }
 
 .btn-ghost {
-  border-color: #d9d9d9;
+  border-color: rgba(214, 206, 195, 0.95);
   color: var(--admin-primary);
+  background: #fff;
 }
 
 .btn-ghost:hover {
   border-color: var(--admin-primary);
   color: var(--admin-primary);
+  background: rgba(92, 107, 95, 0.05);
 }
 
 /* 右側 F 終點：行動按鈕區塊 */

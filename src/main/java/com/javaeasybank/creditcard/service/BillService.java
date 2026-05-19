@@ -24,6 +24,8 @@ import com.javaeasybank.account.service.AccountIntegrationService;
 import com.javaeasybank.account.service.TransferService;
 import com.javaeasybank.common.exception.BusinessException;
 import com.javaeasybank.common.service.EmailService;
+import com.javaeasybank.notification.enums.NotificationType;
+import com.javaeasybank.notification.service.NotificationService;
 import com.javaeasybank.creditcard.dto.CardBillResponseDto;
 import com.javaeasybank.creditcard.entity.CardAccount;
 import com.javaeasybank.creditcard.entity.CardBill;
@@ -53,6 +55,7 @@ public class BillService {
     private final AccountIntegrationService accountIntegrationService;
     private final EmailService emailService;
     private final CardBillPDFService cardBillPDFService;
+    private final NotificationService notificationService;
 
     // 查帳單
 
@@ -153,6 +156,12 @@ public class BillService {
             "您的信用卡月結帳單已產生，PDF 附件請使用身分證字號末 4 碼開啟。",
             "card-bill-" + billingMonth + ".pdf",
             pdfBytes);
+            notificationService.createNotification(
+                    cardAccount.getCustomer().getCustomerId(),
+                    NotificationType.CREDIT_CARD,
+                    "信用卡帳單已寄出",
+                    "您的本期信用卡月結帳單已產生，請至信箱查看附件。",
+                    "/user/card-bills");
 
             //寄檔案到本地
             /*

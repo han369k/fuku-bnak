@@ -8,6 +8,8 @@ import com.javaeasybank.loan.enums.LoanAccountStatus;
 import com.javaeasybank.loan.enums.LoanRepaymentStatus;
 import com.javaeasybank.loan.repository.LoanAccountRepository;
 import com.javaeasybank.loan.repository.LoanRepaymentRepository;
+import com.javaeasybank.notification.enums.NotificationType;
+import com.javaeasybank.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -31,6 +33,7 @@ public class LoanRepaymentScheduler {
     private final LoanAccountRepository   loanAccountRepo;
     private final EmailService            emailService;
     private final CustomerService         customerService;
+    private final NotificationService     notificationService;
 
     // 逾期掃描與到期提醒的主排程方法，每日 01:00 自動執行
     @Scheduled(cron = "0 0 1 * * *")
@@ -91,6 +94,12 @@ public class LoanRepaymentScheduler {
                                 rp.getPeriodIndex(),
                                 rp.getScheduledDate().toString(),
                                 rp.getTotalAmount());
+                        notificationService.createNotification(
+                                account.getCustomerId(),
+                                NotificationType.LOAN,
+                                "貸款逾期通知",
+                                "您有一期貸款已逾期，請儘速處理。",
+                                "/user/loan-repayment?accountId=" + account.getAccountId());
                     } else {
                         log.warn("[LoanOverdue] 客戶無 email，略過通知。customerId={}", account.getCustomerId());
                     }
@@ -139,6 +148,12 @@ public class LoanRepaymentScheduler {
                             rp.getScheduledDate().toString(),
                             daysLeft,
                             rp.getTotalAmount());
+                    notificationService.createNotification(
+                            account.getCustomerId(),
+                            NotificationType.LOAN,
+                            "貸款到期提醒",
+                            "您有一期貸款即將到期。",
+                            "/user/loan-repayment?accountId=" + account.getAccountId());
                 } else {
                     log.warn("[LoanReminder] 客戶無 email，略過通知。customerId={}", account.getCustomerId());
                 }

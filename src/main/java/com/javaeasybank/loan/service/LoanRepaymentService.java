@@ -14,6 +14,8 @@ import com.javaeasybank.loan.enums.LoanRepaymentStatus;
 import com.javaeasybank.loan.repository.LoanAccountRepository;
 import com.javaeasybank.loan.repository.LoanApplicationRepository;
 import com.javaeasybank.loan.repository.LoanRepaymentRepository;
+import com.javaeasybank.notification.enums.NotificationType;
+import com.javaeasybank.notification.service.NotificationService;
 import com.javaeasybank.loan.utils.AmortizationCalculator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,6 +53,9 @@ public class LoanRepaymentService {
 
     @Autowired
     private CustomerService customerService;
+
+    @Autowired
+    private NotificationService notificationService;
 
     // ── 還款時間表建立 ────────────────────────────────────────────────
 
@@ -216,6 +221,12 @@ public class LoanRepaymentService {
                         paidInterestAmount,
                         nextDateStr,
                         nextAmt);
+                notificationService.createNotification(
+                        account.getCustomerId(),
+                        NotificationType.LOAN,
+                        "還款成功",
+                        "本期貸款已完成繳款。",
+                        "/user/loan-repayment?accountId=" + account.getAccountId());
             } else {
                 log.warn("[RepaymentPaid] 客戶無 email，略過通知。customerId={}", account.getCustomerId());
             }
@@ -281,6 +292,12 @@ public class LoanRepaymentService {
                             account.getAccountId(),
                             loan.getApplyType(),
                             account.getConfirmedPeriod());
+                    notificationService.createNotification(
+                            account.getCustomerId(),
+                            NotificationType.LOAN,
+                            "貸款已結清",
+                            "您的貸款已全數結清。",
+                            "/user/loan-accounts");
                 } else {
                     log.warn("[LoanPaidOff] 客戶無 email，略過通知。customerId={}", account.getCustomerId());
                 }

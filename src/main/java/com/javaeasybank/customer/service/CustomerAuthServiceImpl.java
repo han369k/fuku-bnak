@@ -13,6 +13,8 @@ import com.javaeasybank.customer.repository.CustomerDeviceRepository;
 import com.javaeasybank.customer.repository.CustomerLoginLogRepository;
 import com.javaeasybank.customer.repository.CustomerProfileRepository;
 import com.javaeasybank.common.service.EmailService;
+import com.javaeasybank.notification.enums.NotificationType;
+import com.javaeasybank.notification.service.NotificationService;
 import com.javaeasybank.customer.util.TaiwanIdValidator;
 import com.javaeasybank.risk.enums.Occupation;
 import com.javaeasybank.risk.repository.CustomerCreditRepository;
@@ -52,6 +54,7 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final EmailService emailService;
+    private final NotificationService notificationService;
     private final LoginRiskClient loginRiskClient;
     private final LoginAuditService loginAuditService;
     private final CreditScoreService creditScoreService;
@@ -75,6 +78,7 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
                                    PasswordEncoder passwordEncoder,
                                    JwtUtil jwtUtil,
                                    EmailService emailService,
+                                   NotificationService notificationService,
                                    LoginRiskClient loginRiskClient,
                                    LoginAuditService loginAuditService, CreditScoreService creditScoreService, CustomerCreditRepository customerCreditRepository) {
         this.customerAuthRepository = customerAuthRepository;
@@ -84,6 +88,7 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
         this.emailService = emailService;
+        this.notificationService = notificationService;
         this.loginRiskClient = loginRiskClient;
         this.loginAuditService = loginAuditService;
         this.creditScoreService = creditScoreService;
@@ -154,6 +159,12 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
 
         // 4. 發送驗證信到使用者填寫的信箱
         emailService.sendVerificationEmail(email, verificationToken);
+        notificationService.createNotification(
+                customerId,
+                NotificationType.SECURITY,
+                "電子郵件驗證",
+                "請點擊驗證信完成帳號驗證。",
+                "/login");
 
         CustomerRespository.LoginResponse response = new CustomerRespository.LoginResponse();
         response.setCustomerId(customerId);
@@ -242,6 +253,12 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
         // 7. 發送登入成功通知
         if (email != null) {
             emailService.sendLoginNotification(email, auth.getUsername(), true, location);
+            notificationService.createNotification(
+                    auth.getCustomerId(),
+                    NotificationType.SECURITY,
+                    "登入通知",
+                    "您已成功登入系統。",
+                    "/user/security/login-records");
         }
 
         CustomerRespository.LoginResponse response = new CustomerRespository.LoginResponse();
@@ -404,6 +421,12 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
         String resetLink = frontendUrl + "/reset-password?token=" + resetToken;
 
         emailService.sendPasswordResetEmail(profile.getEmail(), resetLink);
+        notificationService.createNotification(
+                profile.getCustomerId(),
+                NotificationType.SECURITY,
+                "密碼重設申請",
+                "您已申請重設密碼，請依信件完成驗證。",
+                "/login");
     }
 
     // ===========================
@@ -491,6 +514,12 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
             loginRiskClient.recordLoginEvent(auth.getCustomerId(), ipAddress, "LOCK", "觸發多次失敗鎖定");
             if (email != null) {
                 emailService.sendAccountLockedNotification(email, auth.getUsername(), location);
+                notificationService.createNotification(
+                        auth.getCustomerId(),
+                        NotificationType.SECURITY,
+                        "帳號已鎖定",
+                        "登入失敗次數過多，帳號已暫時鎖定。",
+                        "/login");
             }
             throw new BusinessException("登入失敗次數過多，帳號已暫時鎖定，請聯繫客服解鎖");
         } else if (recentFailures >= 2) {
@@ -498,6 +527,12 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
             loginRiskClient.recordLoginEvent(auth.getCustomerId(), ipAddress, "WARNING", "登入三次失敗警告");
             if (email != null) {
                 emailService.sendLoginNotification(email, auth.getUsername(), false, location);
+                notificationService.createNotification(
+                        auth.getCustomerId(),
+                        NotificationType.SECURITY,
+                        "登入異常提醒",
+                        "您的帳號登入失敗次數增加，請確認是否為本人操作。",
+                        "/user/security/login-records");
             }
         }
         throw new BusinessException(userErrorMessage);

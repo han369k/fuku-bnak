@@ -13,6 +13,8 @@ import com.javaeasybank.account.utils.ApplicationNoGenerator;
 import com.javaeasybank.common.exception.BusinessException;
 import com.javaeasybank.customer.repository.CustomerRespository;
 import com.javaeasybank.customer.service.CustomerService;
+import com.javaeasybank.notification.enums.NotificationType;
+import com.javaeasybank.notification.service.NotificationService;
 import com.javaeasybank.risk.enums.Occupation;
 import com.javaeasybank.risk.service.CreditScoreService;
 import lombok.RequiredArgsConstructor;
@@ -50,6 +52,7 @@ public class AccountApplicationService {
     private final AccountApplicationRepository applicationRepository;
     private final AccountRepository accountRepository;
     private final CustomerService customerService;
+    private final NotificationService notificationService;
     private final JdbcTemplate jdbcTemplate;
     private final CreditScoreService creditScoreService;
 
@@ -305,7 +308,8 @@ public class AccountApplicationService {
         AccountApplication app = applicationRepository.findById(applicationId)
                 .orElseThrow(() -> new BusinessException("找不到申請紀錄：" + applicationId));
 
-        if (app.getStatus() != ApplicationStatus.PENDING) {
+        ApplicationStatus previousStatus = app.getStatus();
+        if (previousStatus != ApplicationStatus.PENDING) {
             throw new BusinessException("此申請已非待審核狀態，無法要求補件");
         }
 
@@ -316,6 +320,7 @@ public class AccountApplicationService {
 
         AccountApplication updated = applicationRepository.save(app);
         syncCustomerProfileFromApplication(updated);
+        notifySupplementRequired(updated, previousStatus);
         log.info("Account application supplement requested: id={}, reason={}", applicationId, reason);
         return AccountApplicationResponse.fromEntityForAdmin(updated);
     }
@@ -434,6 +439,24 @@ public class AccountApplicationService {
         request.setCreatedAccountNumber(app.getCreatedAccountNumber());
 
         customerService.syncAccountApplicationProfile(app.getCustomerId(), request);
+    }
+
+    private void notifySupplementRequired(AccountApplication app, ApplicationStatus previousStatus) {
+        if (previousStatus == ApplicationStatus.SUPPLEMENT_REQUIRED) {
+            return;
+        }
+
+        String reason = app.getRejectReason();
+        String message = (reason != null && !reason.isBlank())
+                ? "您的開戶申請需要補件：" + reason
+                : "您的開戶申請需要補件，請查看申請紀錄。";
+
+        notificationService.createNotification(
+                app.getCustomerId(),
+                NotificationType.ACCOUNT_SUPPLEMENT_REQUIRED,
+                "開戶申請需補件",
+                message,
+                "/user/account-application");
     }
 
     private String enumName(Enum<?> value) {

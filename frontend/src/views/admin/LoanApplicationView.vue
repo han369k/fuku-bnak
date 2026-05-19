@@ -827,7 +827,7 @@ onUnmounted(() => clearInterval(refreshTimer))
 }
 
 .filter-pill.active {
-  background: var(--accent-dim);
+  background: rgba(92, 107, 95, 0.10);
   border-color: var(--accent);
   color: var(--accent);
 }
@@ -857,7 +857,7 @@ onUnmounted(() => clearInterval(refreshTimer))
   align-items: center;
   gap: 7px;
   padding: 6px 12px;
-  border-radius: 8px;
+  border-radius: 12px;
   font-size: 13px;
   font-family: 'Noto Sans TC', sans-serif;
   cursor: pointer;
@@ -880,7 +880,7 @@ onUnmounted(() => clearInterval(refreshTimer))
 
 .type-dropdown-trigger.active {
   border-color: var(--accent);
-  background: var(--accent-dim);
+  background: rgba(92, 107, 95, 0.10);
   color: var(--accent);
 }
 
@@ -970,8 +970,8 @@ onUnmounted(() => clearInterval(refreshTimer))
   left: 0;
   background: var(--surface);
   border: 1px solid var(--border-2);
-  border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border-radius: 14px;
+  box-shadow: 0 10px 26px rgba(63, 74, 66, 0.06);
   min-width: 230px;
   z-index: 300;
   overflow: hidden;
@@ -1211,9 +1211,9 @@ onUnmounted(() => clearInterval(refreshTimer))
 .table-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 10px 26px rgba(63, 74, 66, 0.06);
 }
 
 /* ── Toolbar ── */
@@ -1223,7 +1223,7 @@ onUnmounted(() => clearInterval(refreshTimer))
   justify-content: space-between;
   padding: 10px 16px;
   border-bottom: 1px solid var(--border);
-  background: var(--surface-2);
+  background: rgba(234, 228, 218, 0.62);
 }
 
 .toolbar-info {
@@ -1356,7 +1356,7 @@ onUnmounted(() => clearInterval(refreshTimer))
   color: var(--muted-2);
   border-bottom: 1px solid var(--border);
   font-weight: 600;
-  background: var(--surface-2);
+  background: rgba(234, 228, 218, 0.62);
   user-select: none;
 }
 
@@ -1412,7 +1412,7 @@ onUnmounted(() => clearInterval(refreshTimer))
 }
 
 .data-row:hover td {
-  background: rgba(92, 107, 95, 0.04);
+  background: rgba(92, 107, 95, 0.03);
 }
 
 .td-action {
@@ -1549,43 +1549,43 @@ onUnmounted(() => clearInterval(refreshTimer))
 .type-PERSONAL {
   color: #7A5C3A;
   border-color: #D6CEC3;
-  background: #F5F1EA;
+  background: rgba(245, 241, 234, 0.82);
 }
 
 .type-CAR {
   color: #3F5F5A;
   border-color: #B5CECA;
-  background: #EEF3F2;
+  background: rgba(238, 243, 242, 0.86);
 }
 
 .type-MOTOR {
   color: #7A4A38;
   border-color: #D4B8AE;
-  background: #F5EDE9;
+  background: rgba(245, 237, 233, 0.86);
 }
 
 .type-STUDENT {
   color: #4A6B5C;
   border-color: #B5CCBF;
-  background: #EEF3EF;
+  background: rgba(238, 243, 239, 0.86);
 }
 
 .type-BUSINESS {
   color: #5C5074;
   border-color: #C4BCDA;
-  background: #F0EEF5;
+  background: rgba(240, 238, 245, 0.86);
 }
 
 .type-HOUSE {
   color: #3D5C58;
   border-color: #AECBC7;
-  background: #EBF2F1;
+  background: rgba(235, 242, 241, 0.86);
 }
 
 .type-LAND {
   color: #6E6259;
   border-color: #D6CEC3;
-  background: #EAE4DA;
+  background: rgba(234, 228, 218, 0.86);
 }
 
 .amount {
@@ -1628,33 +1628,33 @@ onUnmounted(() => clearInterval(refreshTimer))
 }
 
 .status-yellow {
-  color: #7A5C30;
-  border-color: #C4B090;
-  background: #F5EFE6;
+  color: #7a6000;
+  border-color: rgba(196, 154, 60, 0.24);
+  background: rgba(196, 154, 60, 0.10);
 }
 
 .status-blue {
-  color: #3F5F5A;
-  border-color: #9BBAB6;
-  background: #EEF3F2;
+  color: #4A574D;
+  border-color: rgba(92, 107, 95, 0.20);
+  background: rgba(92, 107, 95, 0.08);
 }
 
 .status-purple {
-  color: #5C5074;
-  border-color: #C4BCDA;
-  background: #F0EEF5;
+  color: #5A4F82;
+  border-color: rgba(114, 101, 160, 0.20);
+  background: rgba(114, 101, 160, 0.08);
 }
 
 .status-green {
   color: var(--primary-dk);
-  border-color: #A5B8A9;
-  background: #ECF0EC;
+  border-color: rgba(74, 140, 92, 0.20);
+  background: rgba(74, 140, 92, 0.08);
 }
 
 .status-red {
   color: var(--red);
-  border-color: rgba(192, 57, 43, 0.4);
-  background: rgba(192, 57, 43, 0.08);
+  border-color: rgba(166, 90, 77, 0.28);
+  background: rgba(166, 90, 77, 0.10);
 }
 
 .status-returned {
@@ -1665,15 +1665,15 @@ onUnmounted(() => clearInterval(refreshTimer))
 }
 
 .status-teal {
-  color: #3D5C58;
-  border-color: #AECBC7;
-  background: #EBF2F1;
+  color: #4A574D;
+  border-color: rgba(92, 107, 95, 0.20);
+  background: rgba(92, 107, 95, 0.08);
 }
 
 .status-gray {
   color: var(--muted-2);
   border-color: var(--border-2);
-  background: var(--surface-2);
+  background: rgba(234, 228, 218, 0.62);
 }
 
 .contact-cell {
@@ -1692,7 +1692,7 @@ onUnmounted(() => clearInterval(refreshTimer))
 }
 
 .c-blue {
-  color: var(--blue);
+  color: #4A574D;
 }
 
 .c-green {
@@ -1700,7 +1700,7 @@ onUnmounted(() => clearInterval(refreshTimer))
 }
 
 .c-gold {
-  color: var(--yellow);
+  color: #7a6000;
 }
 
 .c-red {
@@ -1770,7 +1770,7 @@ onUnmounted(() => clearInterval(refreshTimer))
 .btn-ghost:hover {
   border-color: var(--accent);
   color: var(--accent);
-  background: var(--accent-dim);
+  background: rgba(92, 107, 95, 0.05);
 }
 
 .btn-ghost:disabled {
@@ -1787,7 +1787,7 @@ onUnmounted(() => clearInterval(refreshTimer))
 .btn-outline:hover {
   border-color: var(--accent);
   color: var(--accent);
-  background: var(--accent-dim);
+  background: rgba(92, 107, 95, 0.05);
 }
 /* 權限不足時的禁用按鈕樣式 */
 .btn-disabled {

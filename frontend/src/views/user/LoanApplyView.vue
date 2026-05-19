@@ -611,10 +611,10 @@ onUnmounted(() => clearInterval(showcaseTimer))
   --accent-dim:  rgba(166, 90, 77, 0.10);
   --accent-lt:   rgba(166, 90, 77, 0.20);
   --bg:          #F5F1EA;
-  --surface:     #FDFAF6;
-  --surface-2:   #EAE4DA;
-  --border:      #D6CEC3;
-  --border-2:    #C4BBB0;
+  --surface:     rgba(255, 249, 239, 0.78);
+  --surface-2:   rgba(234, 228, 218, 0.80);
+  --border:      rgba(214, 206, 195, 0.92);
+  --border-2:    rgba(196, 187, 176, 0.96);
   --ink:         #2B2B2B;
   --ink-2:       #3D3530;
   --muted:       #A89A8E;
@@ -663,8 +663,9 @@ onUnmounted(() => clearInterval(showcaseTimer))
 .home-stats {
   display: flex; align-items: center; gap: 0;
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: 12px; padding: 16px 0;
+  border-radius: 18px; padding: 16px 0;
   margin-bottom: 32px;
+  box-shadow: 0 10px 26px rgba(63,74,66,0.06);
 }
 .stat-item { flex: 1; text-align: center; }
 .stat-num {
@@ -702,19 +703,19 @@ onUnmounted(() => clearInterval(showcaseTimer))
 }
 .showcase-card {
   background: var(--surface); border: 1.5px solid var(--border);
-  border-radius: 16px; padding: 32px 28px;
+  border-radius: 22px; padding: 32px 28px;
   text-align: center;
   position: absolute; inset: 0;
   opacity: 0; transform: translateY(10px) scale(0.97);
   transition: opacity 0.5s, transform 0.5s;
   pointer-events: none;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  box-shadow: 0 10px 26px rgba(63,74,66,0.06);
 }
 .showcase-card.active {
   opacity: 1; transform: translateY(0) scale(1);
   pointer-events: auto;
   border-color: var(--accent);
-  box-shadow: 0 0 0 4px var(--accent-dim), 0 8px 32px rgba(166,90,77,0.08);
+  box-shadow: 0 0 0 4px var(--accent-dim), 0 10px 28px rgba(166,90,77,0.08);
 }
 .sc-icon  { font-size: 52px; margin-bottom: 12px; }
 .sc-name  { font-family: 'Noto Serif TC', serif; font-size: 20px; font-weight: 700; color: var(--ink); margin-bottom: 6px; }
@@ -775,10 +776,11 @@ onUnmounted(() => clearInterval(showcaseTimer))
 .form-main {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 22px;
   padding: 28px;
   display: flex; flex-direction: column; gap: 0;
   min-width: 340px;   /* 欄位最小可讀寬度 */
+  box-shadow: 0 10px 26px rgba(63,74,66,0.06);
 }
 
 /* 申請人資訊只讀顯示 */
@@ -939,9 +941,9 @@ onUnmounted(() => clearInterval(showcaseTimer))
 .rate-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 22px;
   padding: 24px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+  box-shadow: 0 10px 26px rgba(63,74,66,0.06);
 }
 .rate-card-label {
   font-size: 11px; color: var(--muted-2);
@@ -1042,7 +1044,7 @@ onUnmounted(() => clearInterval(showcaseTimer))
   background: var(--surface); color: var(--ink-2);
   border: 1.5px solid var(--border-2);
 }
-.btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+.btn-outline:hover { border-color: var(--primary); color: var(--primary); background: rgba(92,107,95,0.05); }
 .btn-lg     { padding: 13px 32px; font-size: 15px; border-radius: 12px; }
 .btn-submit { width: 100%; padding: 13px; font-size: 15px; margin-top: 8px; }
 
@@ -1051,7 +1053,7 @@ onUnmounted(() => clearInterval(showcaseTimer))
   background: var(--surface); border: 1px solid var(--border);
   border-radius: 20px; padding: 48px 40px;
   max-width: 540px; margin: 0 auto; text-align: center;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+  box-shadow: 0 10px 26px rgba(63,74,66,0.06);
 }
 .done-icon   { font-size: 56px; margin-bottom: 16px; }
 .done-title  { font-family: 'Noto Serif TC', serif; font-size: 26px; font-weight: 700; margin-bottom: 8px; }
@@ -1186,4 +1188,123 @@ onUnmounted(() => clearInterval(showcaseTimer))
 .rate-sidebar .rh-note         { font-size: 12px; }
 .rate-sidebar .tip-title       { font-size: 13px; }
 .rate-sidebar .rate-tips li    { font-size: 13px; }
+
+@media (max-width: 900px) {
+  .apply-page {
+    padding: 24px 16px 56px;
+  }
+
+  .home-wrap {
+    grid-template-columns: 1fr;
+    gap: 28px;
+    min-height: auto;
+    max-width: 100%;
+  }
+
+  .home-left,
+  .home-right {
+    max-width: 100%;
+  }
+
+  .home-title {
+    white-space: normal;
+    font-size: clamp(26px, 7vw, 38px);
+  }
+
+  .home-desc {
+    white-space: normal;
+  }
+
+  .home-stats {
+    flex-wrap: wrap;
+    gap: 0;
+  }
+
+  .stat-item {
+    min-width: 140px;
+    padding: 6px 0;
+  }
+
+  .stat-divider {
+    display: none;
+  }
+
+  .home-actions {
+    flex-direction: column;
+  }
+
+  .home-actions .btn,
+  .home-actions .btn-action {
+    width: 100%;
+  }
+
+  .loan-showcase {
+    max-width: 100%;
+  }
+
+  .step-wrap {
+    max-width: 100%;
+  }
+
+  .step-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .form-layout {
+    min-width: 0;
+    grid-template-columns: 1fr;
+    max-width: 100%;
+  }
+
+  .form-main {
+    min-width: 0;
+    padding: 20px;
+  }
+
+  .rate-sidebar {
+    position: static;
+  }
+
+  .type-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .period-btns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .step-actions {
+    flex-direction: column;
+  }
+
+  .step-actions .jb-btn,
+  .btn-submit {
+    width: 100%;
+  }
+
+  .done-card {
+    padding: 36px 20px;
+  }
+}
+
+@media (max-width: 600px) {
+  .type-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .period-btns {
+    grid-template-columns: 1fr;
+  }
+
+  .applicant-info-row,
+  .field-grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .span-2 {
+    grid-column: span 1;
+  }
+}
 </style>
