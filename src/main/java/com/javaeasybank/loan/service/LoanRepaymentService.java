@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+// 還款期數業務邏輯 Service
 @Slf4j
 @Service
 @Transactional
@@ -50,6 +51,9 @@ public class LoanRepaymentService {
     @Autowired
     private CustomerService customerService;
 
+    // ── 還款時間表建立 ────────────────────────────────────────────────
+
+    // 依攤還表預建指定帳戶的所有還款期數，由 LoanAccountService 在撥款時呼叫
     public void createSchedule(LoanAccount account) {
         List<AmortizationCalculator.RepaymentRow> rows = AmortizationCalculator.buildSchedule(
                 account.getRemainingPrincipal(),
@@ -77,18 +81,23 @@ public class LoanRepaymentService {
                 account.getAccountId(), repayments.size());
     }
 
+    // ── 繳款處理（公開入口） ──────────────────────────────────────────
+
+    // 依申請編號處理單期繳款（便利方法）
     public void processRepayment(String applicationId) {
         LoanAccount account = loanAccountRepo.findByApplicationId(applicationId)
                 .orElseThrow(() -> new BusinessException("Loan account not found applicationId=" + applicationId));
         processRepayments(account, 1);
     }
 
+    // 依申請編號批次處理多期繳款
     public void processRepayments(String applicationId, int periodsToPay) {
         LoanAccount account = loanAccountRepo.findByApplicationId(applicationId)
                 .orElseThrow(() -> new BusinessException("Loan account not found applicationId=" + applicationId));
         processRepayments(account, periodsToPay);
     }
 
+    // 依帳戶 ID 手動同步繳款（行員補同步用途）
     public void processRepaymentByAccountId(String accountId) {
         LoanAccount account = loanAccountRepo.findById(accountId)
                 .orElseThrow(() -> new BusinessException("Loan account not found accountId=" + accountId));
@@ -96,6 +105,9 @@ public class LoanRepaymentService {
         processRepayments(account, 1);
     }
 
+    // ── 繳款處理（私有核心） ──────────────────────────────────────────
+
+    // 驗證帳務模組的負債餘額是否已等於「當前待繳期繳清後的剩餘本金」
     private void validateAccountingAlreadyDeducted(LoanAccount account) {
         Account accountingLoanAccount = accountRepo.findById(account.getAccountNumber())
                 .orElseThrow(() -> new BusinessException("Accounting loan account not found accountNumber="
@@ -107,6 +119,7 @@ public class LoanRepaymentService {
         }
     }
 
+    // 批次標記還款期數為已繳，並更新帳戶狀態與還款進度（核心邏輯）
     private void processRepayments(LoanAccount account, int periodsToPay) {
         if (periodsToPay <= 0) {
             throw new BusinessException("periodsToPay must be greater than 0");
@@ -135,6 +148,7 @@ public class LoanRepaymentService {
         account.setPaidPeriods(account.getPaidPeriods() + paymentsToApply.size());
         account.setRemainingPrincipal(lastApplied.getRemainingAfter());
 
+        // 下一期應繳日：從待繳清單中找比本次最後一期更大的最小期數
         account.setNextPaymentDate(
                 pending.stream()
                         .filter(r -> r.getPeriodIndex() > lastApplied.getPeriodIndex())
@@ -142,6 +156,7 @@ public class LoanRepaymentService {
                         .map(LoanRepayment::getScheduledDate)
                         .orElse(null));
 
+        // 判斷本次標記後是否仍有其他逾期期數
         List<String> appliedIds = paymentsToApply.stream()
                 .map(LoanRepayment::getRepaymentId)
                 .toList();
@@ -168,7 +183,7 @@ public class LoanRepaymentService {
                 account.getConfirmedPeriod(),
                 account.getAccountStatus());
 
-        // 還款成功通知（以最後一筆 applied 為準）
+        // 還款成功通知（以本次最後一筆已繳期為準；失敗不影響主流程）
         try {
             String email = customerService.findEmailByCustomerId(account.getCustomerId());
             if (email != null) {
@@ -199,6 +214,7 @@ public class LoanRepaymentService {
         }
     }
 
+    // 取得指定帳戶所有待繳期數（SCHEDULED 或 OVERDUE）
     private List<LoanRepayment> getPendingRepayments(LoanAccount account) {
         List<LoanRepayment> pending = repaymentRepo.findByAccountIdAndRepaymentStatusIn(
                 account.getAccountId(),
@@ -210,16 +226,21 @@ public class LoanRepaymentService {
         return pending;
     }
 
+    // 取得當前應繳的期數（期數最小的待繳記錄）
     private LoanRepayment getCurrentPendingRepayment(LoanAccount account) {
         return getCurrentPendingRepayment(account, getPendingRepayments(account));
     }
 
+    // 從已取得的待繳清單中找出期數最小（即當前應繳）的期數
     private LoanRepayment getCurrentPendingRepayment(LoanAccount account, List<LoanRepayment> pending) {
         return pending.stream()
                 .min(Comparator.comparing(LoanRepayment::getPeriodIndex))
                 .orElseThrow(() -> new BusinessException("No pending repayment found accountId=" + account.getAccountId()));
     }
 
+    // ── 查詢 ─────────────────────────────────────────────────────────
+
+    // 取得指定帳戶的完整還款時間表，依期數升序排列
     @Transactional(readOnly = true)
     public List<LoanRepaymentResponseDTO> getByAccountId(String accountId) {
         return repaymentRepo.findByAccountIdOrderByPeriodIndexAsc(accountId)
@@ -228,6 +249,9 @@ public class LoanRepaymentService {
                 .collect(Collectors.toList());
     }
 
+    // ── 結案 ─────────────────────────────────────────────────────────
+
+    // 全數還清後將關聯的貸款申請狀態更新為 CLOSED，並寄送結清通知 Email
     private void closeApplication(LoanAccount account) {
         log.info("[Repayment] paid off accountId={}", account.getAccountId());
 
@@ -237,7 +261,7 @@ public class LoanRepaymentService {
             loanApplicationRepo.save(loan);
             log.info("[Repayment] closed applicationId={}", loan.getApplicationId());
 
-            // 結清通知
+            // 結清通知（失敗不影響主流程）
             try {
                 String email = customerService.findEmailByCustomerId(account.getCustomerId());
                 if (email != null) {
@@ -256,6 +280,9 @@ public class LoanRepaymentService {
         });
     }
 
+    // ── 工具方法 ─────────────────────────────────────────────────────
+
+    // 將 LoanRepayment Entity 轉換為回應 DTO
     private LoanRepaymentResponseDTO toResponseDTO(LoanRepayment rp) {
         LoanRepaymentResponseDTO dto = new LoanRepaymentResponseDTO();
         dto.setRepaymentId(rp.getRepaymentId());
@@ -271,6 +298,7 @@ public class LoanRepaymentService {
         return dto;
     }
 
+    // 產生還款期數識別碼：前綴 + UUID（去除橫線）
     private String generateId(String prefix) {
         return prefix + UUID.randomUUID().toString().replace("-", "");
     }

@@ -213,7 +213,7 @@
           </template>
         </a-descriptions>
 
-        <div v-if="drawerTask.attachments" style="margin-top: 20px">
+        <div v-if="hasAttachments(drawerTask)" style="margin-top: 20px">
           <h3
             style="
               font-size: 14px;
@@ -235,7 +235,7 @@
                 <div>
                   <a-tag color="blue">{{ docLabel(doc.documentType) }}</a-tag>
                   <span style="font-size: 12px; color: #8c8c8c; font-family: monospace">{{
-                      doc.documentId
+                      doc.originalName || doc.documentId
                     }}</span>
                 </div>
 
@@ -366,7 +366,7 @@
         </a-descriptions-item>
       </a-descriptions>
       <div
-        v-if="currentTask?.attachments"
+        v-if="hasAttachments(currentTask)"
         style="
           margin-bottom: 20px;
           background: #fafafa;
@@ -395,7 +395,7 @@
             <div>
               <a-tag color="blue">{{ docLabel(doc.documentType) }}</a-tag>
               <span style="font-size: 11px; color: #8c8c8c; font-family: monospace">{{
-                  doc.documentId
+                  doc.originalName || doc.documentId
                 }}</span>
             </div>
             <a-button
@@ -674,11 +674,16 @@ onMounted(fetchTasks)
 function parseAttachments(attachmentsStr) {
   if (!attachmentsStr) return []
   try {
-    return JSON.parse(attachmentsStr)
+    const parsed = JSON.parse(attachmentsStr)
+    return Array.isArray(parsed) ? parsed : []
   } catch (e) {
     console.error('解析補件資料失敗:', e)
     return []
   }
+}
+
+function hasAttachments(task) {
+  return parseAttachments(task?.attachments).length > 0
 }
 
 const drawerTrigger = computed(() => {

@@ -18,6 +18,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -149,6 +150,16 @@ public class EmailService {
             String referenceId,
             String loanType,
             BigDecimal amount) {
+        sendLoanDocumentRequiredNotification(to, referenceId, loanType, amount, null, null);
+    }
+
+    public void sendLoanDocumentRequiredNotification(
+            String to,
+            String referenceId,
+            String loanType,
+            BigDecimal amount,
+            List<String> requiredDocuments,
+            String adminComment) {
 
         Context context = new Context();
         context.setVariable("time", LocalDateTime.now()
@@ -156,6 +167,8 @@ public class EmailService {
         context.setVariable("referenceId", referenceId);
         context.setVariable("loanType", formatLoanType(loanType));
         context.setVariable("amount", amount);
+        context.setVariable("requiredDocuments", formatRequiredDocuments(requiredDocuments));
+        context.setVariable("adminComment", adminComment);
 
         String html = templateEngine.process("mail/loan-document-required", context);
 
@@ -214,6 +227,29 @@ public class EmailService {
             case "HOUSE" -> "房屋貸款";
             case "LAND" -> "土地貸款";
             default -> loanType;
+        };
+    }
+
+    private List<String> formatRequiredDocuments(List<String> requiredDocuments) {
+        if (requiredDocuments == null || requiredDocuments.isEmpty()) {
+            return List.of();
+        }
+        return requiredDocuments.stream()
+                .filter(document -> document != null && !document.isBlank())
+                .map(document -> formatLoanDocumentType(document.trim()))
+                .toList();
+    }
+
+    private String formatLoanDocumentType(String documentType) {
+        return switch (documentType) {
+            case "ID_CARD" -> "身分證明文件";
+            case "INCOME_CERT" -> "收入證明";
+            case "EMPLOYMENT_CERT" -> "在職證明";
+            case "BANK_STATEMENT" -> "銀行往來明細";
+            case "PROPERTY_CERT" -> "財產證明";
+            case "TITLE_DEED" -> "不動產權狀";
+            case "OTHER" -> "其他補充文件";
+            default -> documentType;
         };
     }
 

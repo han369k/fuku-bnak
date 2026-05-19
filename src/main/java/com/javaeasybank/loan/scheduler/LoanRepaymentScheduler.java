@@ -21,12 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/*
- * 貸款還款排程批次：
- *   每日 01:00 掃描應繳日已過但仍為 SCHEDULED 的期數，標記為 OVERDUE，
- *   並同步將對應 LoanAccount.accountStatus 升級為 OVERDUE。
- *   同時掃描距應繳日 3 天內的期數，發送繳款到期提醒通知。
- */
+// 貸款還款排程批次元件
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -37,10 +32,7 @@ public class LoanRepaymentScheduler {
     private final EmailService            emailService;
     private final CustomerService         customerService;
 
-    /**
-     * 逾期掃描 + 到期提醒：每日 01:00 執行
-     * cron = 秒 分 時 日 月 週
-     */
+    // 逾期掃描與到期提醒的主排程方法，每日 01:00 自動執行
     @Scheduled(cron = "0 0 1 * * *")
     @Transactional
     public void scanOverdueRepayments() {
@@ -48,8 +40,8 @@ public class LoanRepaymentScheduler {
         LocalDate today = LocalDate.now();
         log.info("[OverdueScan] 開始掃描 date={}", today);
 
-        // ── 1. 逾期標記 ──────────────────────────────────────────
-        // 應繳日 < 今天 且 仍為 SCHEDULED → 逾期
+        // ── 1. 逾期標記 ──────────────────────────────────────────────
+        // 應繳日 < 今天 且 仍為 SCHEDULED → 標記為 OVERDUE
         List<LoanRepayment> overdues = repaymentRepo
                 .findByScheduledDateBeforeAndRepaymentStatus(today, LoanRepaymentStatus.SCHEDULED);
 
@@ -81,7 +73,7 @@ public class LoanRepaymentScheduler {
             log.info("[OverdueScan] 完成：逾期期數={} 涉及帳戶={}",
                     overdues.size(), accountsToUpdate.size());
 
-            // 逾期通知：每個逾期期數各寄一封
+            // 逾期通知：每個逾期期數各寄一封通知給客戶
             Map<String, LoanAccount> accountMap = loanAccountRepo
                     .findAllById(byAccount.keySet())
                     .stream()
@@ -110,7 +102,7 @@ public class LoanRepaymentScheduler {
             log.info("[OverdueScan] 無逾期期數");
         }
 
-        // ── 2. 到期提醒（距應繳日 1 ~ 3 天內）────────────────────
+        // ── 2. 到期提醒（距應繳日 1 ~ 3 天內）────────────────────────
         LocalDate reminderStart = today.plusDays(1);
         LocalDate reminderEnd   = today.plusDays(3);
 
@@ -131,6 +123,7 @@ public class LoanRepaymentScheduler {
                 .stream()
                 .collect(Collectors.toMap(LoanAccount::getAccountId, a -> a));
 
+        // 對每筆即將到期的期數寄送提醒 Email
         upcoming.forEach(rp -> {
             LoanAccount account = upcomingAccountMap.get(rp.getAccountId());
             if (account == null) return;
