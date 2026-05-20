@@ -883,7 +883,7 @@ button.metric-card:hover {
 }
 
 .metric-label {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--muted-2);
 }
@@ -897,7 +897,7 @@ button.metric-card:hover {
 
 .metric-hint {
   margin-top: auto;
-  font-size: 11px;
+  font-size: 13px;
   color: var(--muted);
 }
 
@@ -931,7 +931,7 @@ button.metric-card:hover {
 }
 
 .ar-label {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--muted-2);
   white-space: nowrap;
 }
@@ -945,7 +945,7 @@ button.metric-card:hover {
   align-items: center;
   gap: 5px;
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--accent);
   background: var(--accent-dim);
   border: 1px solid var(--accent-lt);
@@ -997,7 +997,7 @@ button.metric-card:hover {
   gap: 6px;
   padding: 6px 13px;
   border-radius: 20px;
-  font-size: 12px;
+  font-size: 14px;
   font-family: 'IBM Plex Mono', monospace;
   cursor: pointer;
   border: 1px solid var(--border);
@@ -1029,7 +1029,7 @@ button.metric-card:hover {
   background: rgba(37, 99, 235, 0.12);
   border-radius: 10px;
   padding: 1px 6px;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 /* ── Type Multi-Select Dropdown ── */
@@ -1180,7 +1180,7 @@ button.metric-card:hover {
 }
 
 .dropdown-title {
-  font-size: 11px;
+  font-size: 13px;
   font-family: 'IBM Plex Mono', monospace;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -1188,7 +1188,7 @@ button.metric-card:hover {
 }
 
 .clear-btn {
-  font-size: 11px;
+  font-size: 13px;
   color: var(--accent);
   background: none;
   border: none;
@@ -1213,7 +1213,7 @@ button.metric-card:hover {
   gap: 9px;
   padding: 9px 14px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--ink-2);
   transition: background 0.1s;
 }
@@ -1299,7 +1299,7 @@ button.metric-card:hover {
 
 .item-count {
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 11px;
+  font-size: 13px;
   color: var(--muted);
   background: var(--surface-2);
   padding: 1px 7px;
@@ -1322,7 +1322,7 @@ button.metric-card:hover {
 
 .sort-hint {
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 11px;
+  font-size: 13px;
   color: var(--accent);
 }
 
@@ -1388,7 +1388,7 @@ button.metric-card:hover {
   color: var(--red);
   padding: 10px 16px;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 14px;
   margin-bottom: 16px;
 }
 
@@ -1412,7 +1412,7 @@ button.metric-card:hover {
 }
 
 .toolbar-info {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--muted-2);
   font-family: 'IBM Plex Mono', monospace;
 }
@@ -1424,7 +1424,7 @@ button.metric-card:hover {
 }
 
 .size-label {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--muted-2);
   white-space: nowrap;
 }
@@ -1442,7 +1442,7 @@ button.metric-card:hover {
   border-radius: 6px;
   color: var(--ink);
   font-family: 'Noto Sans TC', sans-serif;
-  font-size: 12px;
+  font-size: 14px;
   padding: 5px 28px 5px 10px;
   cursor: pointer;
   outline: none;
@@ -1534,7 +1534,7 @@ button.metric-card:hover {
 .data-table th {
   text-align: left;
   padding: 11px 16px;
-  font-size: 11px;
+  font-size: 14px;
   font-family: 'IBM Plex Mono', monospace;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1556,7 +1556,7 @@ button.metric-card:hover {
 }
 
 .sort-icon {
-  font-size: 11px;
+  font-size: 13px;
   opacity: 0.45;
   margin-left: 4px;
 }
@@ -1588,7 +1588,7 @@ button.metric-card:hover {
   padding: 13px 16px;
   border-bottom: 1px solid var(--border);
   vertical-align: middle;
-  font-size: 13px;
+  font-size: 15px;
   color: var(--ink-2);
 }
 
@@ -1607,7 +1607,7 @@ button.metric-card:hover {
 /* Cells */
 .id-chip {
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 11px;
+  font-size: 13px;
   color: var(--accent);
   background: var(--accent-dim);
   border: 1px solid var(--accent-lt);
@@ -1624,12 +1624,12 @@ button.metric-card:hover {
 
 .member-id {
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--muted-2);
 }
 
 .member-name {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   color: var(--ink);
   margin-left: 8px;
@@ -1660,7 +1660,7 @@ button.metric-card:hover {
   border-radius: 8px;
   color: var(--ink);
   font-family: 'Noto Sans TC', sans-serif;
-  font-size: 13px;
+  font-size: 14px;
   padding: 6px 28px 6px 28px;
   outline: none;
   width: 180px;
@@ -1697,7 +1697,7 @@ button.metric-card:hover {
 }
 
 .nm-name {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   color: var(--ink);
 }
@@ -1709,7 +1709,7 @@ button.metric-card:hover {
 }
 
 .nm-meta span {
-  font-size: 11px;
+  font-size: 13px;
   color: var(--muted-2);
   font-family: 'IBM Plex Mono', monospace;
 }
@@ -1721,7 +1721,7 @@ button.metric-card:hover {
 }
 
 .type-badge {
-  font-size: 11px;
+  font-size: 13px;
   font-family: 'IBM Plex Mono', monospace;
   padding: 3px 9px;
   border-radius: 5px;
@@ -1775,13 +1775,13 @@ button.metric-card:hover {
 
 .amount {
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--ink);
 }
 
 .confirmed-hint {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--green);
   font-family: 'IBM Plex Mono', monospace;
   margin-top: 2px;
@@ -1789,20 +1789,20 @@ button.metric-card:hover {
 }
 
 .meta-tag {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--muted-2);
   font-family: 'IBM Plex Mono', monospace;
 }
 
 .meta-rate {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--green);
   font-family: 'IBM Plex Mono', monospace;
   font-weight: 500;
 }
 
 .status-badge {
-  font-size: 11px;
+  font-size: 13px;
   font-family: 'IBM Plex Mono', monospace;
   padding: 4px 10px;
   border-radius: 20px;
@@ -1866,7 +1866,7 @@ button.metric-card:hover {
 }
 
 .contact-status {
-  font-size: 11px;
+  font-size: 13px;
   font-family: 'IBM Plex Mono', monospace;
   display: inline-block;
   font-weight: 500;
@@ -1893,7 +1893,7 @@ button.metric-card:hover {
 }
 
 .contact-time {
-  font-size: 11px;
+  font-size: 13px;
   color: var(--muted);
   font-family: 'IBM Plex Mono', monospace;
   margin-top: 2px;
@@ -1905,14 +1905,14 @@ button.metric-card:hover {
 
 .date-main {
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--ink-2);
   display: block;
 }
 
 .date-time {
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 11px;
+  font-size: 13px;
   color: var(--muted);
 }
 
@@ -1937,7 +1937,7 @@ button.metric-card:hover {
 
 .btn-sm {
   padding: 7px 14px;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .btn-xs {
@@ -1996,7 +1996,7 @@ button.metric-card:hover {
 }
 
 .footer-count {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--muted-2);
   font-family: 'IBM Plex Mono', monospace;
 }
@@ -2023,7 +2023,7 @@ button.metric-card:hover {
   justify-content: center;
   padding: 5px 9px;
   border-radius: 6px;
-  font-size: 12px;
+  font-size: 14px;
   font-family: 'IBM Plex Mono', monospace;
   cursor: pointer;
   border: 1px solid var(--border);
