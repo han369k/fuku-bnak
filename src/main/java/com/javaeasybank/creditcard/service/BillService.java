@@ -36,7 +36,6 @@ import com.javaeasybank.creditcard.repository.CardAccountRepository;
 import com.javaeasybank.creditcard.repository.CardBillRepository;
 import com.javaeasybank.creditcard.repository.CardBillSpecification;
 import com.javaeasybank.creditcard.repository.CardTxnRepository;
-import com.javaeasybank.customer.entity.CustomerProfile;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -66,19 +65,20 @@ public class BillService {
 
         Specification<CardBill> spec = CardBillSpecification.search(customerName, billingMonth, billStatus);
         Pageable sortedPageable = PageRequest.of(
-            pageable.getPageNumber(),
-            pageable.getPageSize(),
-            Sort.by(
-                    Sort.Order.desc("billingMonth"),
-                    Sort.Order.desc("billId")
-            )
-    );
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                Sort.by(
+                        Sort.Order.desc("billingMonth"),
+                        Sort.Order.desc("billId")));
         return cardBillRepository.findAll(spec, sortedPageable).map(cardBillMapper::toDto);
     }
 
     // 產生帳單
     public Integer generateBills() throws IOException {
         int count = 0;
+        int skippedExists = 0;
+        int skippedNoTxns = 0;
+        int processed = 0;
         String billingMonth = YearMonth.now().toString();
 
         // if (cardBillRepository.existsByBillingMonth(billingMonth)) {
@@ -86,105 +86,120 @@ public class BillService {
         // generated");
         // }
 
-        List<CardAccount> cardAccounts = cardAccountRepository.findAll();
-        for (CardAccount cardAccount : cardAccounts) {
+        int page = 0;
+        int size = 20;
+        Page<CardAccount> cardAccountPage;
+        do {
+            cardAccountPage = cardAccountRepository.findAll(
+                    PageRequest.of(page, size, Sort.by("id").ascending()));
 
-            // 已存在本月帳單則跳過
-            if (cardBillRepository.existsByCardAccountIdAndBillingMonth(cardAccount.getId(), billingMonth)) {
-                continue;
+            for (CardAccount cardAccount : cardAccountPage.getContent()) {
+                processed++;
+
+                // 已存在本月帳單則跳過
+                if (cardBillRepository.existsByCardAccountIdAndBillingMonth(cardAccount.getId(), billingMonth)) {
+                    skippedExists++;
+                    continue;
+                }
+
+                List<CardTransaction> txns = cardTransactionRepository
+                        .findByCard_CardAccount_IdAndBillIsNull(cardAccount.getId());
+                if (txns.isEmpty()) {
+                    skippedNoTxns++;
+                    continue;
+                }
+
+                BigDecimal total = txns.stream()
+                        .map(CardTransaction::getTxnAmount)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                BigDecimal cashbackAmount = txns.stream()
+                        .map(CardTransaction::getCashbackAmount)
+                        .filter(cashback -> cashback != null)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                CardBill bill = new CardBill();
+                bill.setCardAccount(cardAccount);
+                bill.setBillingMonth(billingMonth);
+                bill.setBillDate(LocalDate.now());
+                bill.setDueDate(LocalDate.now().plusDays(resolveDueDays(cardAccount)));
+                bill.setTotalAmount(total);
+                BigDecimal minimumPayment = total.compareTo(BigDecimal.ZERO) <= 0
+                        ? BigDecimal.ZERO
+                        : total.multiply(BigDecimal.valueOf(0.1)).setScale(0, RoundingMode.UP);
+
+                bill.setMinimumPayment(minimumPayment);
+                bill.setPaidAmount(BigDecimal.ZERO);
+                bill.setBillStatus(BillStatus.UNPAID);
+
+                bill.setCashbackAmount(cashbackAmount);
+                bill.setRewardPosted(false);
+
+                CardBill savedBill = cardBillRepository.save(bill);
+
+                /*
+                 * 寄文字格式
+                 * emailService.sendCardBillStatementEmail(
+                 * cardAccount.getCustomer().getEmail(),
+                 * cardAccount.getCustomer().getName(),
+                 * billingMonth,
+                 * total,
+                 * minimumPayment,
+                 * savedBill.getDueDate(),
+                 * savedBill.getBillId());
+                 */
+                String idNumber = cardAccount.getCustomer().getIdNumber();
+                String pdfPassword = getIdNumberLast4(idNumber);
+
+                byte[] pdfBytes = cardBillPDFService.generateBillPdf(
+                        cardAccount.getCustomer().getName(),
+                        billingMonth,
+                        total,
+                        minimumPayment,
+                        savedBill.getDueDate(),
+                        pdfPassword);
+
+                emailService.sendEmailWithAttachment(
+                        cardAccount.getCustomer().getEmail(),
+                        "Java Easy Bank - 信用卡月結帳單",
+                        "您的信用卡月結帳單已產生，PDF 附件請使用身分證字號末 4 碼開啟。",
+                        "card-bill-" + billingMonth + ".pdf",
+                        pdfBytes);
+                notificationService.createNotification(
+                        cardAccount.getCustomer().getCustomerId(),
+                        NotificationType.CREDIT_CARD,
+                        "信用卡帳單已寄出",
+                        "您的本期信用卡月結帳單已產生，請至信箱查看附件。",
+                        "/user/card-bills");
+
+                // 寄檔案到本地
+                /*
+                 * CustomerProfile customer = cardAccount.getCustomer();
+                 * String last4 = customer.getIdNumber()
+                 * .substring(customer.getIdNumber().length() - 4);
+                 * Files.write(
+                 * Paths.get(
+                 * "uploads",
+                 * customer.getName()
+                 * + "-"
+                 * + last4
+                 * + ".pdf"),
+                 * pdfBytes);
+                 */
+
+                postCashbackReward(savedBill, cardAccount, cashbackAmount, billingMonth);
+
+                txns.forEach(txn -> txn.setBill(savedBill));
+                cardTransactionRepository.saveAll(txns);
+                count++;
             }
 
-            List<CardTransaction> txns = cardTransactionRepository
-                    .findByCard_CardAccount_IdAndBillIsNull(cardAccount.getId());
-            if (txns.isEmpty()) {
-                continue;
-            }
+            page++;
 
-            BigDecimal total = txns.stream()
-                    .map(CardTransaction::getTxnAmount)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+        } while (cardAccountPage.hasNext());
 
-            BigDecimal cashbackAmount = txns.stream()
-                    .map(CardTransaction::getCashbackAmount)
-                    .filter(cashback -> cashback != null)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-            CardBill bill = new CardBill();
-            bill.setCardAccount(cardAccount);
-            bill.setBillingMonth(billingMonth);
-            bill.setBillDate(LocalDate.now());
-            bill.setDueDate(LocalDate.now().plusDays(resolveDueDays(cardAccount)));
-            bill.setTotalAmount(total);
-            BigDecimal minimumPayment = total.compareTo(BigDecimal.ZERO) <= 0
-                    ? BigDecimal.ZERO
-                    : total.multiply(BigDecimal.valueOf(0.1)).setScale(0, RoundingMode.UP);
-
-            bill.setMinimumPayment(minimumPayment);
-            bill.setPaidAmount(BigDecimal.ZERO);
-            bill.setBillStatus(BillStatus.UNPAID);
-
-            bill.setCashbackAmount(cashbackAmount);
-            bill.setRewardPosted(false);
-
-            CardBill savedBill = cardBillRepository.save(bill);
-
-            /*
-             * 寄文字格式
-             * emailService.sendCardBillStatementEmail(
-             * cardAccount.getCustomer().getEmail(),
-             * cardAccount.getCustomer().getName(),
-             * billingMonth,
-             * total,
-             * minimumPayment,
-             * savedBill.getDueDate(),
-             * savedBill.getBillId());
-             */
-            String idNumber = cardAccount.getCustomer().getIdNumber();
-            String pdfPassword = getIdNumberLast4(idNumber);
-
-            byte[] pdfBytes = cardBillPDFService.generateBillPdf(
-                    cardAccount.getCustomer().getName(),
-                    billingMonth,
-                    total,
-                    minimumPayment,
-                    savedBill.getDueDate(),
-                    pdfPassword);
-
-            emailService.sendEmailWithAttachment(
-            cardAccount.getCustomer().getEmail(),
-            "Java Easy Bank - 信用卡月結帳單",
-            "您的信用卡月結帳單已產生，PDF 附件請使用身分證字號末 4 碼開啟。",
-            "card-bill-" + billingMonth + ".pdf",
-            pdfBytes);
-            notificationService.createNotification(
-                    cardAccount.getCustomer().getCustomerId(),
-                    NotificationType.CREDIT_CARD,
-                    "信用卡帳單已寄出",
-                    "您的本期信用卡月結帳單已產生，請至信箱查看附件。",
-                    "/user/card-bills");
-
-            //寄檔案到本地
-            /*
-            CustomerProfile customer = cardAccount.getCustomer();
-            String last4 = customer.getIdNumber()
-                    .substring(customer.getIdNumber().length() - 4);
-            Files.write(
-                    Paths.get(
-                            "uploads",
-                            customer.getName()
-                                    + "-"
-                                    + last4
-                                    + ".pdf"),
-                    pdfBytes);
-             */
-
-            postCashbackReward(savedBill, cardAccount, cashbackAmount, billingMonth);
-
-            txns.forEach(txn -> txn.setBill(savedBill));
-            cardTransactionRepository.saveAll(txns);
-            count++;
-        }
-
+        log.info("帳單產生完成 processed={}, generated={}, skippedExists={}, skippedNoTxns={}",
+                processed, count, skippedExists, skippedNoTxns);
         return count;
     }
 

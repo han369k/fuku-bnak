@@ -232,6 +232,45 @@ SET c.customer_id = cmc.customer_id
 FROM CREDIT_CARD c
 JOIN #card_mock_customers cmc ON cmc.slot = c.card_id;
 
+-- Keep Wang Da-Ming (cust0001 / Q8M4T7K2) with one active credit card.
+-- Card 26 reuses existing April mock transactions: 4/3, 4/7, 4/17 billed and 4/30 unbilled.
+UPDATE CARD_APPLICATION
+SET customer_id = 'Q8M4T7K2'
+WHERE application_id = 26;
+
+UPDATE CREDIT_CARD
+SET
+    customer_id = 'Q8M4T7K2',
+    application_item_id = 26,
+    status = 'ACTIVE'
+WHERE card_id = 26;
+
+-- ===== Demo Test Cards (aligned with customer/account/risk demo data) =====
+-- DM01NR01, DM02NR02: normal active customers.
+-- DM03FZ01, DM04BK01 intentionally have no credit cards.
+SET IDENTITY_INSERT CARD_APPLICATION ON;
+IF NOT EXISTS (SELECT 1 FROM CARD_APPLICATION WHERE application_id BETWEEN 31 AND 32)
+INSERT INTO CARD_APPLICATION (application_id, customer_id, apply_date, status, remark) VALUES
+(31, 'DM01NR01', GETDATE(), 'COMPLETED', N'Demo normal customer card'),
+(32, 'DM02NR02', GETDATE(), 'COMPLETED', N'Demo normal customer card');
+SET IDENTITY_INSERT CARD_APPLICATION OFF;
+
+SET IDENTITY_INSERT CARD_APPLICATION_ITEM ON;
+IF NOT EXISTS (SELECT 1 FROM CARD_APPLICATION_ITEM WHERE item_id BETWEEN 31 AND 32)
+INSERT INTO CARD_APPLICATION_ITEM
+(item_id, application_id, card_type_id, result, approved_limit, annual_fee, create_card_flag, remark) VALUES
+(31, 31, 1, 'APPROVED', 120000, 1000, 1, N'Demo normal approved card'),
+(32, 32, 2, 'APPROVED', 180000, 2000, 1, N'Demo normal approved card');
+SET IDENTITY_INSERT CARD_APPLICATION_ITEM OFF;
+
+SET IDENTITY_INSERT CREDIT_CARD ON;
+IF NOT EXISTS (SELECT 1 FROM CREDIT_CARD WHERE card_id BETWEEN 51 AND 52)
+INSERT INTO CREDIT_CARD
+(card_id, customer_id, card_type_id, application_item_id, card_number, expiry_date, current_debt, status) VALUES
+(51, 'DM01NR01', 1, 31, '4000000010000051', '2031-03-28', 3650, 'ACTIVE'),
+(52, 'DM02NR02', 2, 32, '4000000010000052', '2031-04-28', 14300, 'ACTIVE');
+SET IDENTITY_INSERT CREDIT_CARD OFF;
+
 IF EXISTS (
     SELECT 1
     FROM CREDIT_CARD c
@@ -243,6 +282,7 @@ IF EXISTS (
           AND a.currency = 'TWD'
           AND a.status = 'ACTIVE'
     )
+      AND c.status = 'ACTIVE'
 )
     THROW 51202, 'card_mockdata.sql generated a credit card customer without an ACTIVE TWD CHECKING account.', 1;
 
@@ -252,6 +292,7 @@ IF EXISTS (
     SELECT
         CONCAT('801', RIGHT(CONCAT('00000000000', CAST(c.card_id AS VARCHAR(11))), 11)) AS account_number,
         customer_id,
+        c.status AS card_status,
         ROW_NUMBER() OVER (ORDER BY c.card_id) AS rn
     FROM CREDIT_CARD c
     WHERE NOT EXISTS (
@@ -274,7 +315,7 @@ SELECT
     0.0000,
     0.0000,
     NULL,
-    'ACTIVE',
+    CASE WHEN card_status = 'BLOCKED' THEN 'FROZEN' ELSE 'ACTIVE' END,
     NULL,
     GETDATE(),
     GETDATE(),
@@ -289,7 +330,7 @@ SET
     a.currency = 'TWD',
     a.liability = 0.0000,
     a.interest_rate = NULL,
-    a.status = 'ACTIVE',
+    a.status = CASE WHEN c.status = 'BLOCKED' THEN 'FROZEN' ELSE 'ACTIVE' END,
     a.changed_at = GETDATE(),
     a.changed_by = 'card-mock'
 FROM ACCOUNT a
@@ -341,13 +382,14 @@ SELECT
     0.0000,
     0.0000,
     NULL,
-    'ACTIVE',
+    CASE WHEN c.status = 'BLOCKED' THEN 'FROZEN' ELSE 'ACTIVE' END,
     NULL,
     GETDATE(),
     GETDATE(),
     'mock',
     'mock'
 FROM CARD_ACCOUNT ca
+JOIN CREDIT_CARD c ON c.card_account_id = ca.id
 WHERE NOT EXISTS (
     SELECT 1 FROM [ACCOUNT] a
     WHERE a.account_number = ca.account_number
@@ -560,6 +602,18 @@ INSERT INTO CARD_TRANSACTION
 (200, 32, 7, NULL, 5000, 'PURCHASE', '2026-04-29 11:11:51', N'網購');
 SET IDENTITY_INSERT CARD_TRANSACTION OFF;
 
+SET IDENTITY_INSERT CARD_TRANSACTION ON;
+IF NOT EXISTS (SELECT 1 FROM CARD_TRANSACTION WHERE txn_id BETWEEN 201 AND 206)
+INSERT INTO CARD_TRANSACTION
+(txn_id, card_id, merchant_id, ref_txn_id, txn_amount, txn_type, txn_date, description) VALUES
+(201, 51, 1, NULL, 1200, 'PURCHASE', '2026-04-10 09:30:00', N'Demo normal billed transaction'),
+(202, 51, 7, NULL, 2000, 'PURCHASE', '2026-04-24 14:20:00', N'Demo normal billed transaction'),
+(203, 51, 3, NULL, 450, 'PURCHASE', '2026-04-28 18:45:00', N'Demo normal unbilled transaction'),
+(204, 52, 2, NULL, 5000, 'PURCHASE', '2026-04-05 12:10:00', N'Demo normal billed transaction'),
+(205, 52, 8, NULL, 7500, 'PURCHASE', '2026-04-22 20:05:00', N'Demo normal billed transaction'),
+(206, 52, 9, NULL, 1800, 'PURCHASE', '2026-04-29 16:35:00', N'Demo normal unbilled transaction');
+SET IDENTITY_INSERT CARD_TRANSACTION OFF;
+
 -- ===== 7. CARD_BILL（50 筆）=====
 SET IDENTITY_INSERT CARD_BILL ON;
 IF NOT EXISTS (SELECT 1 FROM CARD_BILL)
@@ -617,6 +671,14 @@ INSERT INTO CARD_BILL
 (50, 50, '2026-03', '2026-03-25', '2026-04-10', 2000, 200, 2000, 'PAID');
 SET IDENTITY_INSERT CARD_BILL OFF;
 
+SET IDENTITY_INSERT CARD_BILL ON;
+IF NOT EXISTS (SELECT 1 FROM CARD_BILL WHERE bill_id BETWEEN 51 AND 52)
+INSERT INTO CARD_BILL
+(bill_id, card_id, billing_month, bill_date, due_date, total_amount, minimum_payment, paid_amount, bill_status) VALUES
+(51, 51, '2026-04', '2026-04-25', '2026-05-10', 3200, 320, 0, 'UNPAID'),
+(52, 52, '2026-04', '2026-04-25', '2026-05-10', 12500, 1250, 6000, 'PARTIAL');
+SET IDENTITY_INSERT CARD_BILL OFF;
+
 -- 1. 先補交易回饋
 UPDATE ct
 SET
@@ -650,6 +712,15 @@ JOIN CARD_BILL b ON b.card_id = t.card_id
 WHERE t.card_id = 26
   AND b.billing_month = '2026-04'
   AND t.txn_date >= '2026-03-01'
+  AND t.txn_date <= '2026-04-25 23:59:59';
+
+UPDATE t
+SET t.bill_id = b.bill_id
+FROM CARD_TRANSACTION t
+JOIN CARD_BILL b ON b.card_id = t.card_id
+WHERE t.card_id IN (51, 52)
+  AND b.billing_month = '2026-04'
+  AND t.txn_date >= '2026-04-01'
   AND t.txn_date <= '2026-04-25 23:59:59';
 
 -- 3. 再補帳單 card_account_id
