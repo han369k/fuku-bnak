@@ -2,7 +2,7 @@
   <div class="page-container">
     <a-page-header title="客戶信用評分詳情" @back="router.back()">
       <template #extra>
-        <a-tag :color="riskColor(credit?.riskLevel)" class="large-risk-badge">
+        <a-tag  class="large-risk-badge">
           {{ riskLabel(credit?.riskLevel) }}
         </a-tag>
       </template>
@@ -154,6 +154,7 @@ onMounted(fetchDetail)
 .large-risk-badge {
   font-size: 16px !important;
   padding: 4px 14px !important;
+  font-weight: 600 !important;
 }
 
 .large-alert {
