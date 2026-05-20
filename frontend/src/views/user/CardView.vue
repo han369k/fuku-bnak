@@ -140,7 +140,7 @@ onMounted(() => {
             <div class="card-footer">
               <div>
                 <span class="label">VALID THRU</span>
-                <div>{{ card.expiryDate }}</div>
+                <div>{{ formatExpiryDate(card.expiryDate) }}</div>
               </div>
             </div>
           </div>
@@ -152,10 +152,10 @@ onMounted(() => {
         <h2>信用卡開卡</h2>
 
         <label>卡號</label>
-        <input v-model="activateForm.cardNumber" disabled />
+        <input v-model="activateForm.cardNumber" readonly />
 
         <label>到期日</label>
-        <input v-model="activateForm.expiryDate" disabled />
+        <input v-model="activateForm.expiryDate" readonly />
 
         <label>安全碼 CVV</label>
         <input v-model="activateForm.cvv" maxlength="3" placeholder="請輸入卡片背面末 3 碼" />
@@ -362,12 +362,11 @@ onMounted(() => {
   border-radius: 10px;
   font-size: 15px;
   outline: none;
-}
-
-.modal input:disabled {
-  background: #f9fafb;
+  background: white;
   color: #374151;
 }
+
+
 
 .demo-fill-btn {
   width: 100%;
