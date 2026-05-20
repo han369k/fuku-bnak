@@ -10,6 +10,9 @@ import com.javaeasybank.account.repository.AccountRepository;
 import com.javaeasybank.common.exception.BusinessException;
 import com.javaeasybank.customer.repository.CustomerRespository;
 import com.javaeasybank.customer.service.CustomerService;
+import com.javaeasybank.notification.enums.NotificationType;
+import com.javaeasybank.notification.service.NotificationService;
+import com.javaeasybank.risk.service.CreditScoreService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -40,6 +43,12 @@ class AccountApplicationServiceTest {
 
     @Mock
     private CustomerService customerService;
+
+    @Mock
+    private NotificationService notificationService;
+
+    @Mock
+    private CreditScoreService creditScoreService;
 
     @InjectMocks
     private AccountApplicationService service;
@@ -413,6 +422,81 @@ class AccountApplicationServiceTest {
     // =========================================================
     // reject()
     // =========================================================
+
+    @Nested
+    @DisplayName("requestSupplement() 要求補件")
+    class RequestSupplementTests {
+
+        private AccountApplication pendingApp;
+
+        @BeforeEach
+        void setUp() {
+            pendingApp = new AccountApplication();
+            pendingApp.setId(150L);
+            pendingApp.setCustomerId("C055");
+            pendingApp.setAccountType(AccountType.CHECKING);
+            pendingApp.setCurrency(Currency.TWD);
+            pendingApp.setName("王小明");
+            pendingApp.setIdNumber("A123456789");
+            pendingApp.setBirthday(LocalDate.of(1990, 1, 15));
+            pendingApp.setNationality("TW");
+            pendingApp.setPhone("0912345678");
+            pendingApp.setRegisteredAddress("台北市");
+            pendingApp.setCurrentAddress("台北市");
+            pendingApp.setIdFrontUrl("front.jpg");
+            pendingApp.setIdBackUrl("back.jpg");
+            pendingApp.setSecondIdUrl("second.jpg");
+            pendingApp.setRiskFlag(RiskFlag.NORMAL);
+            pendingApp.setStatus(ApplicationStatus.PENDING);
+            pendingApp.setCreatedAt(LocalDateTime.now().minusDays(1));
+            pendingApp.setUpdatedAt(LocalDateTime.now().minusDays(1));
+        }
+
+        @Test
+        @DisplayName("補件成功 — 狀態變 SUPPLEMENT_REQUIRED 並建立通知")
+        void requestSupplement_success_createsNotification() {
+            // given
+            when(applicationRepository.findById(150L)).thenReturn(Optional.of(pendingApp));
+            when(applicationRepository.save(any(AccountApplication.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            // when
+            AccountApplicationResponse result = service.requestSupplement(150L, "請補上最新地址證明", "admin03");
+
+            // then
+            assertEquals(ApplicationStatus.SUPPLEMENT_REQUIRED, result.getStatus());
+            assertEquals("請補上最新地址證明", result.getRejectReason());
+            assertEquals("admin03", result.getReviewedBy());
+            assertNotNull(result.getReviewedAt());
+            verify(notificationService, times(1)).createNotification(
+                    eq("C055"),
+                    eq(NotificationType.ACCOUNT_SUPPLEMENT_REQUIRED),
+                    eq("開戶申請需補件"),
+                    eq("您的開戶申請需要補件：請補上最新地址證明"),
+                    eq("/user/account-application"));
+            verify(customerService).syncAccountApplicationProfile(
+                    eq("C055"),
+                    any(CustomerRespository.AccountApplicationProfileSyncRequest.class));
+        }
+
+        @Test
+        @DisplayName("補件原因空白 — 使用 fallback 文案")
+        void requestSupplement_blankReason_usesFallbackMessage() {
+            // given
+            when(applicationRepository.findById(150L)).thenReturn(Optional.of(pendingApp));
+            when(applicationRepository.save(any(AccountApplication.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            // when
+            service.requestSupplement(150L, "  ", "admin03");
+
+            // then
+            verify(notificationService).createNotification(
+                    eq("C055"),
+                    eq(NotificationType.ACCOUNT_SUPPLEMENT_REQUIRED),
+                    eq("開戶申請需補件"),
+                    eq("您的開戶申請需要補件，請查看申請紀錄。"),
+                    eq("/user/account-application"));
+        }
+    }
 
     @Nested
     @DisplayName("reject() 駁回申請")

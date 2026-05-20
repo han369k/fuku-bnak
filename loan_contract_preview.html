@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>貸款契約書（示意預覽）</title>
+  <style>
+    :root {
+      --ink: #222;
+      --muted: #666;
+      --line: #d9dee6;
+      --panel: #f4f7fb;
+      --accent: #2e74b5;
+      --soft: #e8eef5;
+      --page: #fff;
+      --bg: #eef2f7;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Calibri, "Microsoft JhengHei", Arial, sans-serif;
+      line-height: 1.4;
+    }
+    .page {
+      width: min(900px, calc(100vw - 40px));
+      margin: 24px auto;
+      background: var(--page);
+      border: 1px solid var(--line);
+      box-shadow: 0 10px 32px rgba(25, 35, 52, 0.08);
+      padding: 44px 52px 36px;
+    }
+    .preview-tag {
+      text-align: right;
+      color: #7a7a7a;
+      font-size: 12px;
+      font-style: italic;
+      margin-bottom: 6px;
+    }
+    h1 {
+      margin: 0;
+      text-align: center;
+      font-size: 30px;
+      letter-spacing: 0;
+      color: #000;
+    }
+    .subtitle {
+      text-align: center;
+      margin: 4px 0 14px;
+      color: var(--muted);
+      font-style: italic;
+      font-size: 14px;
+    }
+    .note {
+      background: var(--panel);
+      border-left: 4px solid var(--accent);
+      padding: 14px 16px;
+      margin: 14px 0 18px;
+      color: #4d4d4d;
+      font-size: 14px;
+    }
+    h2 {
+      margin: 18px 0 10px;
+      font-size: 19px;
+      color: var(--accent);
+      border-bottom: 1px solid #edf1f6;
+      padding-bottom: 4px;
+    }
+    .summary {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      margin-bottom: 12px;
+    }
+    .summary th,
+    .summary td {
+      border: 1px solid var(--line);
+      padding: 11px 12px;
+      vertical-align: middle;
+      word-wrap: break-word;
+    }
+    .summary th {
+      width: 16%;
+      background: var(--soft);
+      color: #1f4d78;
+      font-weight: 700;
+      text-align: center;
+      font-size: 13px;
+    }
+    .summary td { width: 34%; font-size: 13.5px; }
+    .article {
+      margin-top: 10px;
+      font-size: 14px;
+    }
+    .article-title {
+      font-weight: 700;
+      color: #1f4d78;
+      margin: 14px 0 4px;
+      font-size: 15px;
+    }
+    .article p { margin: 0 0 8px; }
+    .signatures {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      margin-top: 12px;
+    }
+    .signatures th,
+    .signatures td {
+      border: 1px solid var(--line);
+      padding: 12px;
+      text-align: center;
+      vertical-align: middle;
+    }
+    .signatures th {
+      background: #f6f7f8;
+      color: #1f4d78;
+      width: 50%;
+    }
+    .signature-line {
+      margin-top: 10px;
+      font-family: "Courier New", monospace;
+      letter-spacing: 0.3px;
+    }
+    .footer-note {
+      margin-top: 12px;
+      color: #666;
+      font-size: 12.5px;
+      font-style: italic;
+    }
+    @media print {
+      body { background: #fff; }
+      .page {
+        width: auto;
+        margin: 0;
+        border: 0;
+        box-shadow: none;
+        padding: 24px 28px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="preview-tag">示意預覽 / 系統產生</div>
+    <h1>貸款契約書</h1>
+    <div class="subtitle">個人信貸契約示意稿</div>
+    <div class="note">本文件為根據填單與審核資料生成之契約示意預覽，主要用於版面與欄位確認；正式文件將依實際核准結果、法務條款與簽核流程另行定稿。</div>
+    <h2>一、契約條件摘要</h2>
+    <table class="summary">
+      <tr><th>契約編號</th><td>LC-20260520-001</td><th>申請編號</th><td>LA202605200001</td></tr>
+      <tr><th>借款人</th><td>王大明</td><th>身分證字號</th><td>A123456789</td></tr>
+      <tr><th>貸款類型</th><td>個人信貸</td><th>貸款用途</th><td>個人資金週轉</td></tr>
+      <tr><th>核准金額</th><td>NT$ 13,000</td><th>期數</th><td>12 期</td></tr>
+      <tr><th>年利率</th><td>4.00%</td><th>每月應繳</th><td>NT$ 1,107</td></tr>
+      <tr><th>貸款帳號</th><td>LAC202605190004301909</td><th>撥款帳號</th><td>070000000027</td></tr>
+      <tr><th>首期繳款日</th><td>2027-05-19</td><th>簽約日期</th><td>中華民國115年5月20日</td></tr>
+      <tr><th>聯絡電話</th><td>0912-345-678</td><th>電子郵件</th><td>chiu890909@gmail.com</td></tr>
+    </table>
+    <h2>二、契約主文</h2>
+    <div class="article">
+      <p>本契約由借款人王大明（以下稱「借款人」）與 Java Easy Bank（以下稱「本行」）依雙方約定條件簽訂。借款人同意依本契約及系統所載條件，向本行申請並使用本筆貸款。</p>
+      <div class="article-title">第1條　貸款金額與期間</div>
+      <p>本行同意於核准後提供借款人新臺幣 13,000 元整之貸款額度，還款期數為 12 期。借款人應依本契約及系統通知之還款計畫按期清償。</p>
+      <div class="article-title">第2條　撥款與還款方式</div>
+      <p>本行得於核准條件完成後，依約將款項撥入借款人指定帳戶。借款人應自首期繳款日起，按月依系統顯示之應繳金額扣款或繳納；若因四捨五入或提前清償產生差額，以實際結算金額為準。</p>
+      <div class="article-title">第3條　利率與費用</div>
+      <p>本貸款年利率為 4.00%。除本契約另有約定外，借款人應依實際動用本金及期間計息；如有逾期、補費或其他費用，依本行公告、系統提示及相關規定辦理。</p>
+      <div class="article-title">第4條　提前清償</div>
+      <p>借款人得於貸款存續期間內申請提前清償。本行得依清償日之實際餘額、未到期利息及相關費用計算最終應付金額，借款人同意以系統結算結果為準。</p>
+      <div class="article-title">第5條　遲延與違約</div>
+      <p>借款人如未依約於應繳日前完成繳款，本行得依本契約及相關規定進行催收、收取遲延費用，並採取必要之風險控管措施；如情節重大，本行得依約提前終止本契約。</p>
+      <div class="article-title">第6條　資料真實性與通知</div>
+      <p>借款人聲明本次申請與填載資料均屬真實、完整且無重大遺漏。借款人同意本行得以電子郵件、簡訊或系統通知方式送達本契約相關訊息，並視為合法有效之通知。</p>
+      <div class="article-title">第7條　其他約定</div>
+      <p>本契約未盡事宜，悉依中華民國相關法令、本行作業規則及雙方後續書面或電子約定辦理。若本示意文件與正式核准版本不一致，應以正式版本及系統紀錄為準。</p>
+    </div>
+    <h2>三、簽署欄位</h2>
+    <table class="signatures">
+      <tr><th>借款人簽章</th><th>本行代表簽章</th></tr>
+      <tr>
+        <td><div class="signature-line">____________________________</div><div>王大明</div><div>日期：__________________</div></td>
+        <td><div class="signature-line">____________________________</div><div>Java Easy Bank</div><div>日期：__________________</div></td>
+      </tr>
+    </table>
+    <div class="footer-note">備註：本契約為示意預覽版，若您要，我可以再把它改成更像正式銀行版的「精簡條款版」或「法務版」格式。</div>
+  </div>
+</body>
+</html>

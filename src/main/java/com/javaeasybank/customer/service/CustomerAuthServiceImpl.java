@@ -4,7 +4,6 @@ import com.javaeasybank.account.enums.FundSource;
 import com.javaeasybank.common.exception.BusinessException;
 import com.javaeasybank.common.util.JwtUtil;
 import com.javaeasybank.customer.entity.CustomerDevice;
-import com.javaeasybank.customer.entity.CustomerLoginLog;
 import com.javaeasybank.customer.repository.CustomerRespository;
 import com.javaeasybank.customer.entity.CustomerAuth;
 import com.javaeasybank.customer.entity.CustomerProfile;
@@ -14,10 +13,13 @@ import com.javaeasybank.customer.repository.CustomerDeviceRepository;
 import com.javaeasybank.customer.repository.CustomerLoginLogRepository;
 import com.javaeasybank.customer.repository.CustomerProfileRepository;
 import com.javaeasybank.common.service.EmailService;
+import com.javaeasybank.notification.enums.NotificationType;
+import com.javaeasybank.notification.service.NotificationService;
 import com.javaeasybank.customer.util.TaiwanIdValidator;
 import com.javaeasybank.risk.enums.Occupation;
 import com.javaeasybank.risk.repository.CustomerCreditRepository;
 import com.javaeasybank.risk.service.CreditScoreService;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -33,6 +35,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HexFormat;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -51,10 +54,11 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final EmailService emailService;
+    private final NotificationService notificationService;
     private final LoginRiskClient loginRiskClient;
     private final LoginAuditService loginAuditService;
-    private final CreditScoreService  creditScoreService;
-    private final CustomerCreditRepository  customerCreditRepository;
+    private final CreditScoreService creditScoreService;
+    private final CustomerCreditRepository customerCreditRepository;
 
     @Value("${app.frontend-url:http://localhost:5173}")
     private String frontendUrl;
@@ -74,6 +78,7 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
                                    PasswordEncoder passwordEncoder,
                                    JwtUtil jwtUtil,
                                    EmailService emailService,
+                                   NotificationService notificationService,
                                    LoginRiskClient loginRiskClient,
                                    LoginAuditService loginAuditService, CreditScoreService creditScoreService, CustomerCreditRepository customerCreditRepository) {
         this.customerAuthRepository = customerAuthRepository;
@@ -83,6 +88,7 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
         this.emailService = emailService;
+        this.notificationService = notificationService;
         this.loginRiskClient = loginRiskClient;
         this.loginAuditService = loginAuditService;
         this.creditScoreService = creditScoreService;
@@ -153,6 +159,12 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
 
         // 4. 發送驗證信到使用者填寫的信箱
         emailService.sendVerificationEmail(email, verificationToken);
+        notificationService.createNotification(
+                customerId,
+                NotificationType.SECURITY,
+                "電子郵件驗證",
+                "請點擊驗證信完成帳號驗證。",
+                "/login");
 
         CustomerRespository.LoginResponse response = new CustomerRespository.LoginResponse();
         response.setCustomerId(customerId);
@@ -168,7 +180,7 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
     // ===========================
     @Override
     public CustomerRespository.LoginResponse login(CustomerRespository.LoginRequest request, String ipAddress,
-            String userAgent) {
+                                                   String userAgent) {
         String deviceName = resolveDeviceName(userAgent);
         String location = (ipAddress == null || ipAddress.isBlank() ? "未知位置" : ipAddress) + " / " + deviceName;
 
@@ -241,6 +253,12 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
         // 7. 發送登入成功通知
         if (email != null) {
             emailService.sendLoginNotification(email, auth.getUsername(), true, location);
+            notificationService.createNotification(
+                    auth.getCustomerId(),
+                    NotificationType.SECURITY,
+                    "登入通知",
+                    "您已成功登入系統。",
+                    "/user/security/login-records");
         }
 
         CustomerRespository.LoginResponse response = new CustomerRespository.LoginResponse();
@@ -284,7 +302,7 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
     @Override
     @Transactional
     public CustomerRespository.CustomerResponse updateProfile(String customerId,
-            CustomerRespository.ProfileUpdateRequest request) {
+                                                              CustomerRespository.ProfileUpdateRequest request) {
         CustomerProfile profile = customerProfileRepository.findById(customerId)
                 .orElseThrow(() -> new BusinessException("查無此客戶"));
 
@@ -335,8 +353,8 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
             creditScoreService.syncAndRescore(
                     customerId,
                     Occupation.fromString(profile.getOccupation()),
-                    BigDecimal.valueOf(profile.getAnnualIncome()* 10000L),
-                    profile.getFundSource()!= null ? mapChineseToEnum(profile.getFundSource()): null,
+                    BigDecimal.valueOf(profile.getAnnualIncome() * 10000L),
+                    profile.getFundSource() != null ? mapChineseToEnum(profile.getFundSource()) : null,
                     profile.getIsPep()
             );
         } else {
@@ -403,6 +421,12 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
         String resetLink = frontendUrl + "/reset-password?token=" + resetToken;
 
         emailService.sendPasswordResetEmail(profile.getEmail(), resetLink);
+        notificationService.createNotification(
+                profile.getCustomerId(),
+                NotificationType.SECURITY,
+                "密碼重設申請",
+                "您已申請重設密碼，請依信件完成驗證。",
+                "/login");
     }
 
     // ===========================
@@ -440,11 +464,11 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
     public void seedAuthTestData() {
         // 為已有的 seed 客戶資料建立對應的 customer_auth
         String[][] data = {
-                { "X7K9P2M4", "mingwang85" },
-                { "V4L6T1Y8", "hualin90" },
-                { "D3H8F5G2", "chienchen78" },
-                { "B9W1C7R5", "yachang95" },
-                { "P6M4N2Q8", "chihlee82" },
+                {"X7K9P2M4", "mingwang85"},
+                {"V4L6T1Y8", "hualin90"},
+                {"D3H8F5G2", "chienchen78"},
+                {"B9W1C7R5", "yachang95"},
+                {"P6M4N2Q8", "chihlee82"},
         };
 
         for (String[] d : data) {
@@ -465,12 +489,12 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
     // 私有方法
     // ===========================
     private void handleLoginFailure(CustomerAuth auth, CustomerProfile profile, String email, String location,
-            String failReason,
-            String ipAddress, String userAgent, String deviceName, String userErrorMessage) {
+                                    String failReason,
+                                    String ipAddress, String userAgent, String deviceName, String userErrorMessage) {
         // 取得最近 30 分鐘內的失敗次數 (不含本次)
         int recentFailures = customerLoginLogRepository.countRecentFailures(
                 auth.getCustomerId(),
-                LocalDateTime.now().minusMinutes(30));
+                LocalDateTime.now().minusMinutes(30), auth.getUnlockedAt());
 
         // 紀錄本次失敗
         loginAuditService.recordLogin(auth.getCustomerId(), auth.getUsername(), "失敗", failReason, ipAddress, userAgent,
@@ -490,6 +514,12 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
             loginRiskClient.recordLoginEvent(auth.getCustomerId(), ipAddress, "LOCK", "觸發多次失敗鎖定");
             if (email != null) {
                 emailService.sendAccountLockedNotification(email, auth.getUsername(), location);
+                notificationService.createNotification(
+                        auth.getCustomerId(),
+                        NotificationType.SECURITY,
+                        "帳號已鎖定",
+                        "登入失敗次數過多，帳號已暫時鎖定。",
+                        "/login");
             }
             throw new BusinessException("登入失敗次數過多，帳號已暫時鎖定，請聯繫客服解鎖");
         } else if (recentFailures >= 2) {
@@ -497,6 +527,12 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
             loginRiskClient.recordLoginEvent(auth.getCustomerId(), ipAddress, "WARNING", "登入三次失敗警告");
             if (email != null) {
                 emailService.sendLoginNotification(email, auth.getUsername(), false, location);
+                notificationService.createNotification(
+                        auth.getCustomerId(),
+                        NotificationType.SECURITY,
+                        "登入異常提醒",
+                        "您的帳號登入失敗次數增加，請確認是否為本人操作。",
+                        "/user/security/login-records");
             }
         }
         throw new BusinessException(userErrorMessage);
@@ -530,6 +566,22 @@ public class CustomerAuthServiceImpl implements CustomerAuthService {
                     return FundSource.OTHER; // 真的找不到就給其他
                 }
         }
+    }
+    @Transactional
+    @Override
+    public void unlockCustomer(String customerId) {
+        CustomerAuth auth = customerAuthRepository.findByCustomerId(customerId)
+                .orElseThrow(() -> new EntityNotFoundException("Customer not found: " + customerId));
+
+        auth.setStatus("ACTIVE");
+        auth.setUnlockedAt(LocalDateTime.now());
+        customerAuthRepository.save(auth);
+        log.info("[unlockCustomer] customerId={} unlockedAt={}", customerId, auth.getUnlockedAt());
+
+        customerProfileRepository.findById(customerId).ifPresent(profile -> {
+            profile.setStatus("ACTIVE");
+            customerProfileRepository.save(profile);
+        });
     }
 
     private void upsertDevice(String customerId, String ipAddress, String userAgent) {

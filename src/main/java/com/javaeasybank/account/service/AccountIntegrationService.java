@@ -48,7 +48,6 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -92,7 +91,6 @@ public class AccountIntegrationService {
     private final LoanAccountRepository loanAccountRepository;
     private final LoanRepaymentRepository loanRepaymentRepository;
     private final EntityManager entityManager;
-    private final JdbcTemplate jdbcTemplate;
 
     // @Lazy 避免 account ↔ loan 模組啟動順序問題；無實際循環依賴
     @Lazy
@@ -159,7 +157,7 @@ public class AccountIntegrationService {
 
         String referenceId = ReferenceIdGenerator.generate();
         String note = joinNote("貸款撥款 loanAccount=" + loanAccount.getAccountNumber(), request.getNote());
-        insertTransLog(buildTransLog(
+        saveTransLog(buildTransLog(
                 referenceId,
                 bankDisbursement,
                 targetAccount.getAccountNumber(),
@@ -169,7 +167,7 @@ public class AccountIntegrationService {
                 bankBefore,
                 bankDisbursement.getBalance(),
                 note));
-        insertTransLog(buildTransLog(
+        saveTransLog(buildTransLog(
                 referenceId,
                 targetAccount,
                 bankDisbursement.getAccountNumber(),
@@ -231,7 +229,7 @@ public class AccountIntegrationService {
         loanAccount.setLiability(liabilityBefore.add(amount));
 
         String referenceId = ReferenceIdGenerator.generate();
-        insertTransLog(buildTransLog(
+        saveTransLog(buildTransLog(
                 referenceId,
                 loanAccount,
                 null,
@@ -307,13 +305,13 @@ public class AccountIntegrationService {
 
         String referenceId = ReferenceIdGenerator.generate();
         String note = joinNote("貸款還款 loanAccount=" + loanAccount.getAccountNumber(), request.getNote());
-        insertTransLog(buildTransLog(referenceId, sourceAccount, loanAccount.getAccountNumber(),
+        saveTransLog(buildTransLog(referenceId, sourceAccount, loanAccount.getAccountNumber(),
                 EntryType.DEBIT, TransactionType.LOAN_REPAYMENT, amount,
                 sourceBefore, sourceAccount.getBalance(), note));
-        insertTransLog(buildTransLog(referenceId, loanAccount, sourceAccount.getAccountNumber(),
+        saveTransLog(buildTransLog(referenceId, loanAccount, sourceAccount.getAccountNumber(),
                 EntryType.CREDIT, TransactionType.LOAN_REPAYMENT, amount,
                 liabilityBefore, loanAccount.getLiability(), note));
-        insertTransLog(buildTransLog(referenceId, bankCollection, sourceAccount.getAccountNumber(),
+        saveTransLog(buildTransLog(referenceId, bankCollection, sourceAccount.getAccountNumber(),
                 EntryType.CREDIT, TransactionType.LOAN_REPAYMENT, amount,
                 collectionBefore, bankCollection.getBalance(), note));
         // Keep accounting and loan schedule state in the same transaction.
@@ -480,11 +478,11 @@ public CreditCardPaymentResponse payCreditCard(String customerId, CreditCardPaym
     String referenceId = ReferenceIdGenerator.generate();
     String note = joinNote("信用卡繳款", request.getNote());
 
-    insertTransLog(buildTransLog(referenceId, sourceAccount, creditCardAccount.getAccountNumber(),
+    saveTransLog(buildTransLog(referenceId, sourceAccount, creditCardAccount.getAccountNumber(),
             EntryType.DEBIT, TransactionType.CARD_PAYMENT, amount,
             sourceBefore, sourceAccount.getBalance(), note));
 
-    insertTransLog(buildTransLog(referenceId, creditCardAccount, sourceAccount.getAccountNumber(),
+    saveTransLog(buildTransLog(referenceId, creditCardAccount, sourceAccount.getAccountNumber(),
             EntryType.CREDIT, TransactionType.CARD_PAYMENT, amount,
             cardBefore, creditCardAccount.getBalance(), note));
 
@@ -654,10 +652,10 @@ public CreditCardPaymentResponse payCreditCard(String customerId, CreditCardPaym
 
         String referenceId = ReferenceIdGenerator.generate();
         String note = joinNote("信用卡帳務結算", request.getNote());
-        insertTransLog(buildTransLog(referenceId, creditCardAccount, bankCollection.getAccountNumber(),
+        saveTransLog(buildTransLog(referenceId, creditCardAccount, bankCollection.getAccountNumber(),
                 EntryType.DEBIT, TransactionType.CARD_SETTLEMENT, amount,
                 cardBefore, creditCardAccount.getBalance(), note));
-        insertTransLog(buildTransLog(referenceId, bankCollection, creditCardAccount.getAccountNumber(),
+        saveTransLog(buildTransLog(referenceId, bankCollection, creditCardAccount.getAccountNumber(),
                 EntryType.CREDIT, TransactionType.CARD_SETTLEMENT, amount,
                 collectionBefore, bankCollection.getBalance(), note));
 
@@ -973,40 +971,8 @@ public CreditCardPaymentResponse payCreditCard(String customerId, CreditCardPaym
         return transLog;
     }
 
-    private void insertTransLog(TransLog transLog) {
-        transLog.prePersist();
-        if (transLog.getCreatedAt() == null) {
-            transLog.setCreatedAt(LocalDateTime.now());
-        }
-
-        jdbcTemplate.update("""
-                INSERT INTO trans_log (
-                    transaction_id, reference_id, account_number, counterpart_account,
-                    bank_code, bank_name, counterpart_bank_code, counterpart_bank_name,
-                    is_interbank, entry_type, transaction_type, amount, fee_amount,
-                    total_debit_amount, balance_before, balance_after, currency, note, created_at
-                )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                transLog.getTransactionId(),
-                transLog.getReferenceId(),
-                transLog.getAccountNumber(),
-                transLog.getCounterpartAccount(),
-                transLog.getBankCode(),
-                transLog.getBankName(),
-                transLog.getCounterpartBankCode(),
-                transLog.getCounterpartBankName(),
-                transLog.isInterbank(),
-                transLog.getEntryType().name(),
-                transLog.getTransactionType().name(),
-                transLog.getAmount(),
-                transLog.getFeeAmount(),
-                transLog.getTotalDebitAmount(),
-                transLog.getBalanceBefore(),
-                transLog.getBalanceAfter(),
-                transLog.getCurrency().name(),
-                transLog.getNote(),
-                transLog.getCreatedAt());
+    private void saveTransLog(TransLog transLog) {
+        transLogRepository.save(transLog);
     }
 
     private String joinNote(String defaultNote, String note) {

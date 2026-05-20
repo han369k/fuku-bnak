@@ -1514,6 +1514,7 @@ onMounted(async () => {
     width: 100%;
     max-width: 100%;
     overflow-x: hidden;
+    padding: 24px 16px 56px;
   }
 
   .dashboard-top,
@@ -1535,6 +1536,20 @@ onMounted(async () => {
     max-width: 100%;
   }
 
+  .profile-header-wrap {
+    gap: 12px;
+  }
+
+  .profile-detail-row {
+    gap: 12px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .profile-value {
+    text-align: right;
+  }
+
   .asset-overview-card {
     padding: 24px 20px;
     border-radius: 20px;
@@ -1554,6 +1569,10 @@ onMounted(async () => {
     margin-bottom: 20px;
   }
 
+  .asset-subcard {
+    padding: 16px;
+  }
+
   .asset-subcard-actions {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -1571,6 +1590,10 @@ onMounted(async () => {
     padding: 24px 20px;
   }
 
+  .distribution-card {
+    grid-template-columns: 1fr;
+  }
+
   .exchange-card {
     overflow-x: hidden;
   }
@@ -1578,6 +1601,12 @@ onMounted(async () => {
   .exchange-table {
     table-layout: fixed;
     font-size: 13px;
+  }
+
+  .exchange-table th,
+  .exchange-table td {
+    padding-left: 0;
+    padding-right: 8px;
   }
 
   .exchange-flag {
@@ -1618,6 +1647,10 @@ onMounted(async () => {
     flex-direction: column;
     gap: var(--space-2);
     align-items: center;
+  }
+
+  .chart-wrap {
+    height: 220px;
   }
 }
 </style>

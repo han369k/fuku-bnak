@@ -58,6 +58,22 @@
   font-weight: normal;
 }
 
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+img,
+svg,
+canvas,
+video {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
 body {
   min-height: 100vh;
   color: var(--color-text);

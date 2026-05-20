@@ -9,12 +9,7 @@ import com.javaeasybank.account.dto.response.TransferResponse;
 import com.javaeasybank.account.entity.Account;
 import com.javaeasybank.account.entity.PendingTransfer;
 import com.javaeasybank.account.entity.TransLog;
-import com.javaeasybank.account.enums.AccountStatus;
-import com.javaeasybank.account.enums.AccountType;
-import com.javaeasybank.account.enums.Currency;
-import com.javaeasybank.account.enums.EntryType;
-import com.javaeasybank.account.enums.TransactionType;
-import com.javaeasybank.account.enums.TransferBank;
+import com.javaeasybank.account.enums.*;
 import com.javaeasybank.account.exception.TransferException;
 import com.javaeasybank.account.repository.AccountRepository;
 import com.javaeasybank.account.repository.PendingTransferRepository;
@@ -23,6 +18,8 @@ import com.javaeasybank.account.utils.ReferenceIdGenerator;
 import com.javaeasybank.common.service.EmailService;
 import com.javaeasybank.common.service.ExchangeRateService;
 import com.javaeasybank.customer.repository.CustomerProfileRepository;
+import com.javaeasybank.notification.enums.NotificationType;
+import com.javaeasybank.notification.service.NotificationService;
 import com.javaeasybank.risk.dto.response.RiskCheckResponse;
 import com.javaeasybank.risk.enums.Disposition;
 import com.javaeasybank.risk.enums.RiskLevel;
@@ -57,6 +54,7 @@ public class TransferService {
     private final CustomerProfileRepository customerProfileRepository;
     private final EmailService emailService;
     private final ExchangeRateService exchangeRateService;
+    private final NotificationService notificationService;
 
     private final PendingTransferRepository pendingTransferRepository;
 
@@ -167,14 +165,20 @@ public class TransferService {
 
             customerProfileRepository.findById(fromAccount.getCustomerId())
                     .ifPresent(profile -> {
-                        if (profile.getEmail() != null) {
-                            emailService.sendTransferPendingNotification(
-                                    profile.getEmail(),
-                                    fromAccNum, toAccNum, amount,
-                                    fromAccount.getCurrency().name(),
-                                    referenceId);
-                        }
-                    });
+                    if (profile.getEmail() != null) {
+                        emailService.sendTransferPendingNotification(
+                                profile.getEmail(),
+                                fromAccNum, toAccNum, amount,
+                                fromAccount.getCurrency().name(),
+                                referenceId);
+                        notificationService.createNotification(
+                                fromAccount.getCustomerId(),
+                                NotificationType.TRANSFER,
+                                "轉帳審核中",
+                                "您的轉帳目前需要人工審核。",
+                                "/user/transactions");
+                    }
+                });
 
             return TransferResponse.pending(finalReason);
         }
@@ -277,6 +281,12 @@ public class TransferService {
                                 fromAccNum, toAccNum, amount,
                                 fromAccount.getCurrency().name(),
                                 referenceId);
+                        notificationService.createNotification(
+                                fromAccount.getCustomerId(),
+                                NotificationType.TRANSFER,
+                                "轉帳成功",
+                                "您的轉帳已完成。",
+                                "/user/transactions");
                     }
                 });
 

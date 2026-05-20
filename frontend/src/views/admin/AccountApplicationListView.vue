@@ -501,24 +501,24 @@ onMounted(fetchData)
   font-weight: 700; font-size: 14px;
 }
 .emp-info { display: flex; flex-direction: column; }
-.emp-name-text { font-weight: 600; color: #1a1a2e; font-size: 14px; }
+.emp-name-text { font-weight: 600; color: #2B2B2B; font-size: 14px; }
 .emp-id-text { font-size: 11px; color: #8c8c8c; margin-top: 2px; }
 
 /* 狀態標籤 */
 .status-tag {
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600;
 }
 .status-dot { width: 6px; height: 6px; border-radius: 50%; }
-.status-approved { background-color: rgba(82, 196, 26, 0.1); color: #389e0d; }
-.status-approved .status-dot { background-color: #52c41a; }
-.status-rejected { background-color: rgba(255, 77, 79, 0.1); color: #d9363e; }
-.status-rejected .status-dot { background-color: #ff4d4f; }
-.status-pending { background-color: rgba(250, 140, 22, 0.1); color: #fa8c16; }
-.status-pending .status-dot { background-color: #fa8c16; }
-.status-supplement_required { background-color: rgba(114, 46, 209, 0.1); color: #722ed1; }
-.status-supplement_required .status-dot { background-color: #722ed1; }
-.status-cancelled { background-color: #f5f5f5; color: #8c8c8c; border: 1px solid #d9d9d9; }
+.status-approved { background-color: rgba(74, 140, 92, 0.10); color: #1a7a40; }
+.status-approved .status-dot { background-color: #4A8C5C; }
+.status-rejected { background-color: rgba(166, 90, 77, 0.10); color: #A65A4D; }
+.status-rejected .status-dot { background-color: #A65A4D; }
+.status-pending { background-color: rgba(196, 154, 60, 0.10); color: #7a6000; }
+.status-pending .status-dot { background-color: #C49A3C; }
+.status-supplement_required { background-color: rgba(92, 107, 95, 0.08); color: #4A574D; }
+.status-supplement_required .status-dot { background-color: #5C6B5F; }
+.status-cancelled { background-color: rgba(234, 228, 218, 0.62); color: #8c8c8c; border: 1px solid #d9d9d9; }
 .status-cancelled .status-dot { background-color: #bfbfbf; }
 
 /* 展開列 */
@@ -534,9 +534,9 @@ onMounted(fetchData)
 }
 
 .expand-section {
-  background: #fafaf7;
-  border: 1px solid #f0f0f0;
-  border-radius: 8px;
+  background: rgba(255, 249, 239, 0.78);
+  border: 1px solid rgba(214, 206, 195, 0.78);
+  border-radius: 14px;
   padding: 16px;
 }
 
@@ -570,7 +570,7 @@ onMounted(fetchData)
 
 .detail-value {
   font-size: 13px;
-  color: #333;
+  color: #2B2B2B;
   text-align: right;
   word-break: break-all;
 }
@@ -584,8 +584,8 @@ onMounted(fetchData)
 
 .id-card-thumb {
   cursor: pointer;
-  border: 1px solid #f0f0f0;
-  border-radius: 6px;
+  border: 1px solid rgba(214, 206, 195, 0.72);
+  border-radius: 10px;
   overflow: hidden;
   text-align: center;
   transition: border-color 0.2s;
@@ -618,7 +618,7 @@ onMounted(fetchData)
   gap: 10px;
   color: #6f6a60;
   text-align: center;
-  background: linear-gradient(145deg, rgba(255, 251, 244, 0.82), rgba(246, 239, 227, 0.74));
+  background: linear-gradient(145deg, rgba(255, 249, 239, 0.82), rgba(246, 239, 227, 0.74));
 }
 
 .account-application-empty-state strong {
@@ -637,9 +637,9 @@ onMounted(fetchData)
   width: 68px;
   height: 68px;
   border-radius: 22px;
-  background: linear-gradient(145deg, rgba(255, 251, 244, 0.96), rgba(242, 233, 216, 0.92));
-  border: 1px solid rgba(164, 142, 111, 0.2);
-  box-shadow: 0 16px 34px rgba(95, 82, 61, 0.12);
+  background: linear-gradient(145deg, rgba(255, 249, 239, 0.96), rgba(242, 233, 216, 0.92));
+  border: 1px solid rgba(214, 206, 195, 0.82);
+  box-shadow: 0 10px 26px rgba(63, 74, 66, 0.06);
 }
 
 .account-application-empty-mark::before,

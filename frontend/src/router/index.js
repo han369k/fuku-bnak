@@ -110,6 +110,11 @@ const router = createRouter({
           component: () => import('../views/user/SecurityDevicesView.vue'),
         },
         {
+          path: 'notification-settings',
+          name: 'user-notification-settings',
+          component: () => import('../views/user/NotificationSettingsView.vue'),
+        },
+        {
           path: 'transactions',
           name: 'user-transactions',
           component: () => import('../views/user/UserTransactionsView.vue'),

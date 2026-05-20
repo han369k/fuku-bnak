@@ -782,9 +782,9 @@ onMounted(load)
   --primary: #5C6B5F;
   --pk: #3F4A42;
   --bg: #F5F1EA;
-  --surface: #FDFAF6;
-  --surface-2: #EAE4DA;
-  --border: #D6CEC3;
+  --surface: rgba(255, 249, 239, 0.78);
+  --surface-2: rgba(234, 228, 218, 0.80);
+  --border: rgba(214, 206, 195, 0.92);
   --ink: #2B2B2B;
   --muted: #A89A8E;
   --muted-2: #6E6259;
@@ -793,6 +793,7 @@ onMounted(load)
   background: var(--bg);
   font-family: 'Noto Sans TC', sans-serif;
   color: var(--ink);
+  border-radius: 10px;
 }
 
 /* ── Header ── */
@@ -800,6 +801,7 @@ onMounted(load)
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   padding: 28px 0;
+  border-radius: 10px 10px 0 0;
 }
 
 .page-header-inner {
@@ -841,12 +843,13 @@ onMounted(load)
   background: var(--primary);
   color: #fff;
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s;
   white-space: nowrap;
+  box-shadow: 0 8px 20px rgba(63,74,66,0.08);
 }
 
 .btn-apply:hover {
@@ -882,8 +885,8 @@ onMounted(load)
 .btn-retry, .btn-apply-sm {
   margin-top: 4px;
   padding: 9px 22px;
-  border: none;
-  border-radius: 8px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -891,7 +894,7 @@ onMounted(load)
 }
 
 .btn-retry {
-  background: var(--surface-2);
+  background: rgba(255, 249, 239, 0.96);
   color: var(--muted-2);
 }
 
@@ -902,6 +905,12 @@ onMounted(load)
 
 .btn-apply-sm:hover {
   background: var(--pk);
+}
+
+.btn-retry:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: rgba(92,107,95,0.05);
 }
 
 /* ── Skeleton ── */
@@ -915,11 +924,12 @@ onMounted(load)
 .skel-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 22px;
   padding: 22px 24px;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  box-shadow: 0 10px 26px rgba(63,74,66,0.06);
 }
 
 .sk {
@@ -963,16 +973,18 @@ onMounted(load)
 .app-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 22px;
   padding: 20px 24px;
   display: flex;
   flex-direction: column;
   gap: 14px;
-  transition: box-shadow 0.15s;
+  transition: box-shadow 0.15s, border-color 0.15s;
+  box-shadow: 0 10px 26px rgba(63,74,66,0.06);
 }
 
 .app-card:hover {
-  box-shadow: 0 4px 20px rgba(92, 107, 95, 0.10);
+  border-color: rgba(92,107,95,0.24);
+  box-shadow: 0 12px 28px rgba(63,74,66,0.08);
 }
 
 /* Top row */
@@ -994,30 +1006,30 @@ onMounted(load)
 /* Status badge */
 .status-badge {
   display: inline-block;
-  padding: 3px 12px;
-  border-radius: 20px;
+  padding: 4px 12px;
+  border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.02em;
 }
 
 .st-pending {
-  background: rgba(166, 140, 0, 0.10);
+  background: rgba(196, 154, 60, 0.10);
   color: #7a6000;
 }
 
 .st-contact {
-  background: rgba(55, 100, 180, 0.10);
-  color: #2a5aad;
+  background: rgba(92, 107, 95, 0.10);
+  color: #4A574D;
 }
 
 .st-review {
-  background: rgba(106, 80, 160, 0.10);
-  color: #5a3aad;
+  background: rgba(114, 101, 160, 0.10);
+  color: #5A4F82;
 }
 
 .st-approved {
-  background: rgba(40, 150, 80, 0.12);
+  background: rgba(74, 140, 92, 0.10);
   color: #1a7a40;
 }
 
@@ -1032,8 +1044,8 @@ onMounted(load)
 }
 
 .st-disbursed {
-  background: rgba(30, 160, 180, 0.12);
-  color: #107080;
+  background: rgba(92, 107, 95, 0.10);
+  color: #4A574D;
 }
 
 .st-closed {
@@ -1042,9 +1054,9 @@ onMounted(load)
 }
 
 .st-returned {
-  background: #fff5f5;
-  color: #e53e3e;
-  border: 1px solid #feb2b2;
+  background: rgba(166, 90, 77, 0.08);
+  color: #A65A4D;
+  border: 1px solid rgba(166, 90, 77, 0.18);
 }
 
   /* Info grid */
@@ -1061,14 +1073,14 @@ onMounted(load)
     }
   }
 
-  .info-item {
-    background: var(--surface-2);
-    border-radius: 8px;
-    padding: 9px 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-  }
+.info-item {
+  background: var(--surface-2);
+  border-radius: 12px;
+  padding: 9px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
 
   .info-label {
     font-size: 10px;
@@ -1090,14 +1102,14 @@ onMounted(load)
 
   /* ── Contact Banner ── */
 
-  .contact-banner {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 16px;
-    border-radius: 10px;
-    border: 1px solid;
-  }
+.contact-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  border: 1px solid;
+}
 
   .contact-banner-icon {
     font-size: 20px;
@@ -1140,23 +1152,23 @@ onMounted(load)
     color: #555;
   }
 
-  .banner-blue {
-    background: rgba(55, 100, 180, 0.07);
-    border-color: rgba(55, 100, 180, 0.22);
-    color: #2a5aad;
-  }
+.banner-blue {
+  background: rgba(92, 107, 95, 0.07);
+  border-color: rgba(92, 107, 95, 0.20);
+  color: #4A574D;
+}
 
-  .banner-green {
-    background: rgba(40, 150, 80, 0.07);
-    border-color: rgba(40, 150, 80, 0.22);
-    color: #1a7a40;
-  }
+.banner-green {
+  background: rgba(74, 140, 92, 0.07);
+  border-color: rgba(74, 140, 92, 0.22);
+  color: #1a7a40;
+}
 
-  .banner-gold {
-    background: rgba(140, 115, 60, 0.08);
-    border-color: rgba(140, 115, 60, 0.22);
-    color: #7a6000;
-  }
+.banner-gold {
+  background: rgba(196, 154, 60, 0.08);
+  border-color: rgba(196, 154, 60, 0.22);
+  color: #7a6000;
+}
 
   .banner-red {
     background: rgba(166, 90, 77, 0.07);
@@ -1181,62 +1193,65 @@ onMounted(load)
 
   /* Loan account button（已撥款） */
 
-  .btn-loan-account {
-    padding: 6px 16px;
-    background: rgba(30, 160, 180, 0.10);
-    color: #107080;
-    border: 1.5px solid #107080;
-    border-radius: 8px;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s;
-    white-space: nowrap;
-  }
+.btn-loan-account {
+  padding: 6px 16px;
+  background: rgba(255, 249, 239, 0.92);
+  color: var(--primary);
+  border: 1.5px solid rgba(92,107,95,0.28);
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
 
-  .btn-loan-account:hover {
-    background: #107080;
-    color: #fff;
-  }
+.btn-loan-account:hover {
+  background: rgba(92,107,95,0.08);
+  border-color: rgba(92,107,95,0.44);
+  color: var(--primary);
+}
 
   /* Resubmit button */
 
-  .btn-resubmit {
-    padding: 6px 16px;
-    background: transparent;
-    color: var(--accent);
-    border: 1.5px solid var(--accent);
-    border-radius: 8px;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s;
-    white-space: nowrap;
-  }
+.btn-resubmit {
+  padding: 6px 16px;
+  background: transparent;
+  color: var(--accent);
+  border: 1.5px solid rgba(166, 90, 77, 0.34);
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
 
-  .btn-resubmit:hover {
-    background: var(--accent);
-    color: #fff;
-  }
+.btn-resubmit:hover {
+  background: rgba(166, 90, 77, 0.08);
+  color: var(--accent);
+  border-color: rgba(166, 90, 77, 0.42);
+}
 
-  .btn-resubmit.active {
-    background: var(--accent);
-    color: #fff;
-  }
+.btn-resubmit.active {
+  background: rgba(166, 90, 77, 0.12);
+  color: var(--accent);
+  border-color: rgba(166, 90, 77, 0.42);
+}
 
-  .doc-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 18px;
-    height: 18px;
-    background: #fff;
-    color: var(--accent);
-    border-radius: 50%;
-    font-size: 11px;
-    font-weight: 700;
-    margin-left: 4px;
-  }
+.doc-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background: rgba(255, 249, 239, 0.96);
+  color: var(--accent);
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  margin-left: 4px;
+}
 
   /* 查看補件紀錄按鈕（唯讀） */
 
@@ -1269,8 +1284,8 @@ onMounted(load)
   }
 
   .btn-resubmit.active .doc-badge {
-    background: rgba(255, 255, 255, 0.25);
-    color: #fff;
+    background: rgba(255, 249, 239, 0.96);
+    color: var(--accent);
   }
 
   /* ── 補件面板 ── */
@@ -1335,15 +1350,15 @@ onMounted(load)
     gap: 8px;
   }
 
-  .doc-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 10px 12px;
-    background: rgba(245, 241, 234, 0.7);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-  }
+.doc-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(255, 249, 239, 0.72);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
 
   .doc-icon {
     font-size: 20px;
@@ -1718,5 +1733,135 @@ onMounted(load)
   .slide-down-enter-to, .slide-down-leave-from {
     opacity: 1;
     max-height: 600px;
+  }
+
+  @media (max-width: 768px) {
+    .page-header {
+      padding: 22px 0;
+    }
+
+    .page-header-inner,
+    .page-body {
+      padding-left: 16px;
+      padding-right: 16px;
+    }
+
+    .page-header-inner {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .page-title-block {
+      width: 100%;
+      align-items: flex-start;
+    }
+
+    .btn-apply {
+      width: 100%;
+    }
+
+    .app-card {
+      padding: 18px 16px;
+    }
+
+    .card-info-grid {
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+
+    .card-top {
+      align-items: flex-start;
+    }
+
+    .status-badge {
+      max-width: 100%;
+      white-space: normal;
+      word-break: break-word;
+    }
+
+    .contact-banner {
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .contact-banner-time {
+      width: 100%;
+      white-space: normal;
+    }
+
+    .card-footer {
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .card-footer button {
+      width: 100%;
+    }
+
+    .doc-required-list {
+      flex-wrap: wrap;
+    }
+
+    .doc-required-tag {
+      max-width: 100%;
+      white-space: normal;
+    }
+
+    .doc-panel {
+      padding-top: 14px;
+    }
+
+    .doc-panel-section {
+      gap: 10px;
+    }
+
+    .doc-upload-form {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .doc-select,
+    .doc-file-btn,
+    .doc-submit-btn {
+      flex: 1 1 auto;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .doc-file-btn {
+      white-space: normal;
+    }
+
+    .doc-panel-footer {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .doc-submit-final-btn {
+      width: 100%;
+    }
+  }
+
+  @media (max-width: 520px) {
+    .page-title {
+      font-size: 20px;
+    }
+
+    .page-subtitle {
+      font-size: 12px;
+    }
+
+    .state-text {
+      font-size: 14px;
+    }
+
+    .lo-right {
+      gap: 10px;
+    }
+
+    .lo-meta {
+      align-items: flex-start;
+    }
   }
 </style>

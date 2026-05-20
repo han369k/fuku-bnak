@@ -545,7 +545,7 @@ onMounted(fetchAccounts)
   transition: all 0.15s;
 }
 .filter-pill:hover  { border-color: var(--accent); color: var(--accent); }
-.filter-pill.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.filter-pill.active { background: rgba(92, 107, 95, 0.10); border-color: var(--accent); color: var(--accent); }
 
 .pill-dot {
   width: 7px; height: 7px;
@@ -576,7 +576,7 @@ onMounted(fetchAccounts)
   align-items: center;
   gap: 6px;
   padding: 6px 14px;
-  border-radius: 20px;
+  border-radius: 12px;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--muted-2);
@@ -589,7 +589,7 @@ onMounted(fetchAccounts)
   border-color: var(--accent);
   color: var(--accent);
 }
-.type-dropdown-trigger.active { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+.type-dropdown-trigger.active { border-color: var(--accent); color: var(--accent); background: rgba(92, 107, 95, 0.10); }
 
 .dropdown-caret { transition: transform 0.2s; font-size: 11px; }
 .dropdown-caret.rotated { transform: rotate(180deg); }
@@ -601,8 +601,8 @@ onMounted(fetchAccounts)
   z-index: 200;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.10);
+  border-radius: 14px;
+  box-shadow: 0 10px 26px rgba(63, 74, 66, 0.06);
   min-width: 200px;
   padding: 8px 0;
 }
@@ -664,8 +664,9 @@ onMounted(fetchAccounts)
 .table-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 16px;
   overflow: hidden;
+  box-shadow: 0 10px 26px rgba(63, 74, 66, 0.06);
 }
 
 /* ── States ── */
@@ -710,6 +711,7 @@ onMounted(fetchAccounts)
   transition: background 0.1s;
 }
 .data-row:hover      { background: var(--surface-2); }
+.data-row:hover      { background: rgba(92,107,95,0.03); }
 .data-row.row-overdue  { background: rgba(192,57,43,0.04); }
 
 .data-table td {
@@ -729,10 +731,10 @@ onMounted(fetchAccounts)
 /* CIF tag */
 .cif-tag {
   font-size: 11px;
-  background: var(--surface-2);
+  background: rgba(234, 228, 218, 0.62);
   border: 1px solid var(--border);
   padding: 2px 7px;
-  border-radius: 4px;
+  border-radius: 8px;
   color: var(--muted-2);
 }
 
@@ -740,17 +742,17 @@ onMounted(fetchAccounts)
 .type-badge {
   font-size: 11px;
   padding: 3px 8px;
-  border-radius: 5px;
+  border-radius: 8px;
   font-weight: 600;
   white-space: nowrap;
 }
-.tb-PERSONAL { background: rgba(123,158,166,0.15); color: #4a7a86; }
-.tb-CAR      { background: rgba(139,115,85,0.15);  color: #6b5432; }
-.tb-MOTOR    { background: rgba(184,134,78,0.15);  color: #8b5e20; }
-.tb-STUDENT  { background: rgba(107,142,107,0.15); color: #3d6b3d; }
-.tb-BUSINESS { background: rgba(166,123,91,0.15);  color: #7a4a2a; }
-.tb-HOUSE    { background: rgba(123,107,142,0.15); color: #4a3d6b; }
-.tb-LAND     { background: rgba(142,123,107,0.15); color: #6b4a3d; }
+.tb-PERSONAL { background: rgba(245,241,234,0.82); color: #7a5c3a; }
+.tb-CAR      { background: rgba(238,243,242,0.86);  color: #4A574D; }
+.tb-MOTOR    { background: rgba(245,237,233,0.86);  color: #7a4a38; }
+.tb-STUDENT  { background: rgba(238,243,239,0.86); color: #4A6B5C; }
+.tb-BUSINESS { background: rgba(240,238,245,0.86);  color: #5A4F82; }
+.tb-HOUSE    { background: rgba(235,242,241,0.86); color: #3D5C58; }
+.tb-LAND     { background: rgba(234,228,218,0.86); color: #6E6259; }
 
 /* 帳戶狀態 */
 .status-badge {
@@ -761,7 +763,7 @@ onMounted(fetchAccounts)
   white-space: nowrap;
 }
 .st-active  { background: rgba(74,140,92,0.12);   color: #1a7a40; }
-.st-overdue { background: rgba(192,57,43,0.12);   color: var(--red); }
+.st-overdue { background: rgba(166,90,77,0.10);   color: var(--red); }
 .st-paidoff { background: rgba(80,80,80,0.08);    color: #555; }
 
 /* 期數進度格 */
@@ -845,7 +847,7 @@ onMounted(fetchAccounts)
 .table-footer {
   display: flex; align-items: center; justify-content: space-between;
   padding: 12px 16px; border-top: 1px solid var(--border);
-  background: var(--surface-2); flex-wrap: wrap; gap: 10px;
+  background: rgba(234, 228, 218, 0.62); flex-wrap: wrap; gap: 10px;
 }
 .footer-count { font-size: 12px; color: var(--muted-2); font-family: 'IBM Plex Mono', monospace; }
 .footer-count strong { color: var(--ink); }
@@ -863,6 +865,7 @@ onMounted(fetchAccounts)
 }
 .nav-btn { padding: 5px 12px; }
 .page-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+.page-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); background: rgba(92,107,95,0.05); }
 .page-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 .page-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
 .page-btn.ellipsis { border-color: transparent; background: transparent; cursor: default; color: var(--muted); }
@@ -879,7 +882,7 @@ onMounted(fetchAccounts)
   background: var(--surface); color: var(--muted-2);
   border: 1px solid var(--border);
 }
-.btn-ghost:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent); background: rgba(92,107,95,0.05); }
 .btn-ghost:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .spin { animation: spin 0.8s linear infinite; display: inline-block; }
@@ -901,7 +904,7 @@ onMounted(fetchAccounts)
 .schedule-btn:hover {
   border-color: var(--accent);
   color: var(--accent);
-  background: var(--accent-dim);
+  background: rgba(92,107,95,0.05);
 }
 
 /* ── Modal 遮罩 ── */
@@ -915,12 +918,12 @@ onMounted(fetchAccounts)
 /* ── Modal 本體 ── */
 .modal-box {
   background: #ffffff;
-  border: 1px solid #dde1de;
+  border: 1px solid rgba(214, 206, 195, 0.78);
   border-radius: 16px;
   width: 100%; max-width: 860px;
   max-height: 85vh;
   display: flex; flex-direction: column;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  box-shadow: 0 10px 26px rgba(63,74,66,0.06);
   overflow: hidden;
 }
 
@@ -929,7 +932,7 @@ onMounted(fetchAccounts)
   display: flex; align-items: center; justify-content: space-between;
   padding: 18px 24px 16px;
   border-bottom: 1px solid #dde1de;
-  background: #f0f2f0;
+  background: rgba(234, 228, 218, 0.62);
   flex-shrink: 0;
 }
 .modal-title-group { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }

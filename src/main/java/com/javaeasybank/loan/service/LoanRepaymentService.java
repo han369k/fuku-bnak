@@ -14,12 +14,15 @@ import com.javaeasybank.loan.enums.LoanRepaymentStatus;
 import com.javaeasybank.loan.repository.LoanAccountRepository;
 import com.javaeasybank.loan.repository.LoanApplicationRepository;
 import com.javaeasybank.loan.repository.LoanRepaymentRepository;
+import com.javaeasybank.notification.enums.NotificationType;
+import com.javaeasybank.notification.service.NotificationService;
 import com.javaeasybank.loan.utils.AmortizationCalculator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Comparator;
@@ -50,6 +53,9 @@ public class LoanRepaymentService {
 
     @Autowired
     private CustomerService customerService;
+
+    @Autowired
+    private NotificationService notificationService;
 
     // ── 還款時間表建立 ────────────────────────────────────────────────
 
@@ -188,6 +194,15 @@ public class LoanRepaymentService {
             String email = customerService.findEmailByCustomerId(account.getCustomerId());
             if (email != null) {
                 LoanRepayment last = paymentsToApply.get(paymentsToApply.size() - 1);
+                BigDecimal paidTotalAmount = paymentsToApply.stream()
+                        .map(LoanRepayment::getTotalAmount)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                BigDecimal paidPrincipalAmount = paymentsToApply.stream()
+                        .map(LoanRepayment::getPrincipalPortion)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                BigDecimal paidInterestAmount = paymentsToApply.stream()
+                        .map(LoanRepayment::getInterestPortion)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
                 String nextDateStr = account.getNextPaymentDate() != null
                         ? account.getNextPaymentDate().toString() : null;
                 // 下期應繳金額：從還款排程取下一筆的 totalAmount
@@ -201,11 +216,17 @@ public class LoanRepaymentService {
                         account.getAccountId(),
                         last.getPeriodIndex(),
                         account.getConfirmedPeriod(),
-                        last.getTotalAmount(),
-                        last.getPrincipalPortion(),
-                        last.getInterestPortion(),
+                        paidTotalAmount,
+                        paidPrincipalAmount,
+                        paidInterestAmount,
                         nextDateStr,
                         nextAmt);
+                notificationService.createNotification(
+                        account.getCustomerId(),
+                        NotificationType.LOAN,
+                        "還款成功",
+                        "本期貸款已完成繳款。",
+                        "/user/loan-repayment?accountId=" + account.getAccountId());
             } else {
                 log.warn("[RepaymentPaid] 客戶無 email，略過通知。customerId={}", account.getCustomerId());
             }
@@ -271,6 +292,12 @@ public class LoanRepaymentService {
                             account.getAccountId(),
                             loan.getApplyType(),
                             account.getConfirmedPeriod());
+                    notificationService.createNotification(
+                            account.getCustomerId(),
+                            NotificationType.LOAN,
+                            "貸款已結清",
+                            "您的貸款已全數結清。",
+                            "/user/loan-accounts");
                 } else {
                     log.warn("[LoanPaidOff] 客戶無 email，略過通知。customerId={}", account.getCustomerId());
                 }

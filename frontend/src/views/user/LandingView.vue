@@ -34,6 +34,9 @@
             以沉穩的態度面對每一筆資產，<br />
             讓您的財務如流水般自在運行。
           </p>
+          <div class="hero-chips" aria-label="核心服務">
+            <span v-for="chip in heroChips" :key="chip" class="hero-chip">{{ chip }}</span>
+          </div>
           <div class="hero-actions">
             <button class="jb-btn jb-btn-primary jb-btn-lg" @click="$router.push('/register')">
               立即開戶
@@ -94,6 +97,7 @@
       <div class="cta-card reveal">
         <h2>準備好開始了嗎？</h2>
         <p>只需幾分鐘，即可線上開立您的數位帳戶。</p>
+        <p class="cta-support">支援帳戶查詢、轉帳、信用卡與貸款服務。</p>
         <button class="jb-btn jb-btn-primary jb-btn-lg" @click="$router.push('/register')">
           免費開戶
         </button>
@@ -117,6 +121,8 @@ import { storeToRefs } from 'pinia'
 
 const customerAuthStore = useCustomerAuthStore()
 const { isLoggedIn, customer } = storeToRefs(customerAuthStore)
+
+const heroChips = ['安全驗證', '即時查詢', '數位存摺', '貸款申辦']
 
 const previewItems = [
   {
@@ -294,6 +300,24 @@ onMounted(() => {
   margin-bottom: var(--space-7);
 }
 
+.hero-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: var(--space-6);
+}
+
+.hero-chip {
+  padding: 8px 14px;
+  color: var(--text-secondary);
+  background-color: rgba(255, 249, 239, 0.62);
+  border: 1px solid rgba(214, 206, 195, 0.9);
+  border-radius: 999px;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  box-shadow: 0 6px 16px rgba(63, 74, 66, 0.04);
+}
+
 .hero-actions {
   display: flex;
   gap: var(--space-3);
@@ -373,7 +397,9 @@ onMounted(() => {
   padding: var(--space-6) var(--space-4);
   text-align: center;
   box-shadow: none;
-  transition: background 0.25s var(--ease),
+  transition: transform 0.2s ease,
+              box-shadow 0.2s ease,
+              background 0.25s var(--ease),
               border-color 0.25s var(--ease),
               opacity 0.7s var(--ease),
               transform 0.7s var(--ease);
@@ -381,7 +407,9 @@ onMounted(() => {
 
 .preview-card:hover {
   background: #e5ddd2;
-  border-color: #c8beb1;
+  border-color: rgba(92, 107, 95, 0.28);
+  transform: translateY(-3px);
+  box-shadow: 0 14px 32px rgba(63, 74, 66, 0.09);
 }
 
 .preview-icon {
@@ -391,9 +419,9 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--primary);
-  background: transparent;
-  border: 1px solid rgba(92, 107, 95, 0.15);
+  color: var(--primary-dark);
+  background: rgba(92, 107, 95, 0.1);
+  border: 1px solid rgba(92, 107, 95, 0.12);
   border-radius: 50%;
 }
 
@@ -425,19 +453,41 @@ onMounted(() => {
 
 .value-item {
   padding: var(--space-5) var(--space-4);
-  border-left: 2px solid var(--border);
+  position: relative;
   transition: border-color 0.3s var(--ease);
 }
 
 .value-item:hover {
-  border-left-color: var(--primary);
+  transform: translateY(-2px);
+}
+
+.value-item:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  right: -24px;
+  top: 12px;
+  width: 1px;
+  height: 72%;
+  background: linear-gradient(
+    transparent,
+    rgba(214, 206, 195, 0.9),
+    transparent
+  );
+}
+
+.value-item:hover:not(:last-child)::after {
+  background: linear-gradient(
+    transparent,
+    rgba(92, 107, 95, 0.32),
+    transparent
+  );
 }
 
 .value-num {
   font-family: var(--font-display);
   font-size: 48px;
   font-weight: 400;
-  color: var(--border);
+  color: rgba(92, 107, 95, 0.28);
   display: block;
   margin-bottom: var(--space-3);
   line-height: 1;
@@ -464,12 +514,12 @@ onMounted(() => {
 }
 
 .cta-card {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
+  background-color: rgba(255, 249, 239, 0.78);
+  border: 1px solid rgba(214, 206, 195, 0.92);
   border-radius: 20px;
   padding: 80px var(--space-8);
   text-align: center;
-  box-shadow: none;
+  box-shadow: 0 12px 30px rgba(63, 74, 66, 0.07);
 }
 
 .cta-card h2 {
@@ -483,6 +533,14 @@ onMounted(() => {
   color: var(--text-secondary);
   margin-bottom: var(--space-6);
   line-height: 1.8;
+}
+
+.cta-support {
+  font-size: 15px;
+  color: var(--text-secondary);
+  margin-top: -12px;
+  margin-bottom: var(--space-6);
+  opacity: 0.9;
 }
 
 /* === Footer === */
@@ -520,6 +578,7 @@ onMounted(() => {
   }
   .hero-content { max-width: 100%; }
   .hero-actions { justify-content: center; }
+  .hero-chips { justify-content: center; }
   .hero-visual { max-width: 280px; }
   .hero-line-1 { font-size: 32px; }
   .hero-line-2 { font-size: 40px; }
@@ -528,6 +587,7 @@ onMounted(() => {
   .preview-grid { grid-template-columns: repeat(2, 1fr); }
   .values { padding: 64px var(--space-4) 96px; }
   .values-grid { grid-template-columns: 1fr; }
+  .value-item::after { display: none; }
   .cta-section { padding: 0 var(--space-4) 80px; }
 }
 
@@ -540,6 +600,26 @@ onMounted(() => {
   .preview-grid { grid-template-columns: 1fr; }
   .hero-line-1 { font-size: 28px; }
   .hero-line-2 { font-size: 34px; }
+  .hero-chips { gap: 10px; }
+  .hero-chip {
+    padding: 7px 12px;
+    font-size: 13px;
+  }
+  .hero-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+  .hero-actions .jb-btn {
+    width: 100%;
+  }
+  .preview-grid { grid-template-columns: 1fr; }
+  .preview-card {
+    padding: var(--space-5) var(--space-4);
+  }
   .cta-card { padding: var(--space-7) var(--space-4); }
+  .cta-support { margin-bottom: var(--space-5); }
+  .cta-card .jb-btn {
+    width: 100%;
+  }
 }
 </style>

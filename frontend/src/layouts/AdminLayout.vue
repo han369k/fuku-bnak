@@ -151,15 +151,15 @@
 
         <div class="header-right">
           <div class="admin-timer">
-            <span class="timer-text">剩餘登出時間: {{ formatTime(countdown) }}</span>
+            <span class="timer-text">自動登出倒數：{{ formatTime(countdown) }}</span>
             <a-button
               size="small"
-              :type="isTimerPaused ? 'primary' : 'default'"
+              class="session-toggle-btn"
               @click="isTimerPaused = !isTimerPaused"
             >
-              {{ isTimerPaused ? '繼續' : '暫停' }}
+              保持登入
             </a-button>
-            <a-button size="small" @click="triggerIdleAlert">Demo Alert</a-button>
+            <a-button size="small" class="demo-mode-badge" @click="triggerIdleAlert">Demo 模式</a-button>
           </div>
           <a-tag class="custom-role-tag">
             {{ authStore.user?.roleCode || 'ROLE' }}
@@ -428,10 +428,11 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: rgba(92, 107, 95, 0.05);
-  padding: 6px 16px;
-  border-radius: 6px;
-  border: 1px solid rgba(92, 107, 95, 0.3);
+  background: rgba(255, 249, 239, 0.78);
+  padding: 8px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(214, 206, 195, 0.9);
+  box-shadow: 0 6px 18px rgba(63, 74, 66, 0.045);
   line-height: normal;
 }
 
@@ -443,14 +444,40 @@ onUnmounted(() => {
   white-space: nowrap;
 }
 
+.session-toggle-btn.ant-btn {
+  border-radius: 10px !important;
+  border-color: rgba(92, 107, 95, 0.28) !important;
+  color: #4A574D !important;
+  background: rgba(255, 249, 239, 0.88) !important;
+}
+
+.session-toggle-btn.ant-btn:hover {
+  border-color: rgba(92, 107, 95, 0.44) !important;
+  color: #5C6B5F !important;
+  background: rgba(92, 107, 95, 0.08) !important;
+}
+
+.demo-mode-badge.ant-btn {
+  border-radius: 10px !important;
+  border-color: rgba(166, 90, 77, 0.28) !important;
+  color: #A65A4D !important;
+  background: rgba(166, 90, 77, 0.08) !important;
+}
+
+.demo-mode-badge.ant-btn:hover {
+  border-color: rgba(166, 90, 77, 0.40) !important;
+  color: #A65A4D !important;
+  background: rgba(166, 90, 77, 0.12) !important;
+}
+
 .custom-role-tag {
-  background-color: rgba(92, 107, 95, 0.1) !important;
+  background-color: rgba(92, 107, 95, 0.08) !important;
   color: #5c6b5f !important;
-  border: 1px solid rgba(92, 107, 95, 0.3) !important;
+  border: 1px solid rgba(92, 107, 95, 0.24) !important;
   font-size: 14px !important;
   font-weight: 600;
   padding: 4px 12px !important;
-  border-radius: 6px !important;
+  border-radius: 10px !important;
   margin: 0;
 }
 
@@ -466,6 +493,11 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.logout-btn:hover {
+  border-color: rgba(166, 90, 77, 0.32) !important;
+  color: #A65A4D !important;
 }
 
 .admin-content {

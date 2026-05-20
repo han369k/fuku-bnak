@@ -25,12 +25,13 @@ import com.javaeasybank.loan.repository.LoanApplicationRepository;
 import com.javaeasybank.loan.repository.LoanContactLogRepository;
 import com.javaeasybank.loan.repository.LoanDocumentRepository;
 import com.javaeasybank.loan.repository.LoanReviewDetailRepository;
+import com.javaeasybank.notification.enums.NotificationType;
+import com.javaeasybank.notification.service.NotificationService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -75,9 +76,6 @@ public class LoanApplicationService {
     private EntityManager entityManager;
 
     @Autowired
-    private JdbcTemplate jdbcTemplate;
-
-    @Autowired
     private LoanRiskClient loanRiskClient;
 
     @Autowired
@@ -91,6 +89,9 @@ public class LoanApplicationService {
     @Autowired
     private AccountIntegrationService accountIntegrationService;
 
+    @Autowired
+    private NotificationService notificationService;
+
     // 自身 proxy 注入：讓 autoDisburse() 的 @Transactional 能被 Spring AOP 攔截
     @Lazy
     @Autowired
@@ -98,6 +99,9 @@ public class LoanApplicationService {
 
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    private LoanContractPdfService loanContractPdfService;
 
     // ===查詢功能===
     // 依狀態顯示
@@ -133,6 +137,12 @@ public class LoanApplicationService {
             emailService.sendLoanAppliedNotification(
                     email, loan.getApplicationId(), loan.getApplyType(),
                     loan.getApplyAmount(), loan.getApplyPeriod());
+            notificationService.createNotification(
+                    customerId,
+                    NotificationType.LOAN,
+                    "貸款申請已受理",
+                    "您的貸款申請已送出，請等待後續審核。",
+                    "/user/loan-status");
         } else {
             log.warn("[LoanApplied] 客戶無 email，略過通知。customerId={}", customerId);
         }
@@ -176,70 +186,29 @@ public class LoanApplicationService {
         LoanContactChannel contactChannel = LoanContactChannel.valueOf(dto.getContactChannel());
 
         LocalDateTime contactTime = LocalDateTime.now();
-        insertContactLog(applicationId, dto, contactStatus, contactChannel, contactTime);
+        LoanContactLog log = new LoanContactLog();
+        log.setLogId(generateId("CL"));
+        log.setApplicationId(applicationId);
+        log.setEmpId(dto.getEmpId());
+        log.setContactStatus(contactStatus);
+        log.setContactChannel(contactChannel);
+        log.setContactTime(contactTime);
+        log.setNote(dto.getNote());
+        contactLogRepo.save(log);
 
         // 若主表仍是 PENDING_CONTACT，推進為 IN_CONTACT
-        LoanApplicationStatus nextApplicationStatus = null;
         if (loan.getApplicationStatus() == LoanApplicationStatus.PENDING_CONTACT) {
-            nextApplicationStatus = LoanApplicationStatus.IN_CONTACT;
+            loan.setApplicationStatus(LoanApplicationStatus.IN_CONTACT);
         }
         // 客戶放棄時，主表推進為 CANCELLED
         if (contactStatus == LoanContactStatus.DECLINED) {
-            nextApplicationStatus = LoanApplicationStatus.CANCELLED;
+            loan.setApplicationStatus(LoanApplicationStatus.CANCELLED);
         }
 
-        updateLoanContactState(applicationId, contactStatus, contactTime, nextApplicationStatus);
-    }
-
-    private void insertContactLog(String applicationId, LoanContactLogRequestDTO dto,
-                                  LoanContactStatus contactStatus,
-                                  LoanContactChannel contactChannel,
-                                  LocalDateTime contactTime) {
-        jdbcTemplate.update("""
-                INSERT INTO loan_contact_log
-                    (log_id, application_id, emp_id, contact_status, contact_channel, contact_time, note)
-                VALUES
-                    (?, ?, ?, ?, ?, ?, ?)
-                """,
-                generateId("CL"),
-                applicationId,
-                dto.getEmpId(),
-                contactStatus.name(),
-                contactChannel.name(),
-                contactTime,
-                dto.getNote());
-    }
-
-    private void updateLoanContactState(String applicationId,
-                                        LoanContactStatus contactStatus,
-                                        LocalDateTime contactTime,
-                                        LoanApplicationStatus nextApplicationStatus) {
-        if (nextApplicationStatus == null) {
-            jdbcTemplate.update("""
-                    UPDATE loan_application
-                       SET latest_contact_status = ?,
-                           latest_contact_time = ?
-                     WHERE application_id = ?
-                    """,
-                    contactStatus.name(),
-                    contactTime,
-                    applicationId);
-            return;
-        }
-
-        jdbcTemplate.update("""
-                UPDATE loan_application
-                   SET latest_contact_status = ?,
-                       latest_contact_time = ?,
-                       application_status = ?,
-                       update_time = ?
-                 WHERE application_id = ?
-                """,
-                contactStatus.name(),
-                contactTime,
-                nextApplicationStatus.name(),
-                contactTime,
-                applicationId);
+        loan.setLatestContactStatus(contactStatus);
+        loan.setLatestContactTime(contactTime);
+        loan.setUpdateTime(contactTime);
+        laRepo.save(loan);
     }
 
     // 查某申請的所有聯繫紀錄
@@ -272,51 +241,21 @@ public class LoanApplicationService {
         LocalDateTime reviewTime = LocalDateTime.now();
 
         if (newDetail) {
-            insertReviewDetail(applicationId, dto, reviewTime);
+            detail = new LoanReviewDetail();
+            detail.setReviewId(generateId("RD"));
+            detail.setApplicationId(applicationId);
+            detail.setReviewStatus(LoanReviewStatus.DRAFT);
         } else {
-            updateReviewDetail(detail.getReviewId(), dto, reviewTime);
+            detail.setReviewStatus(LoanReviewStatus.DRAFT);
         }
-    }
 
-    private void insertReviewDetail(String applicationId, LoanReviewDetailRequestDTO dto, LocalDateTime reviewTime) {
-        jdbcTemplate.update("""
-                INSERT INTO loan_review_detail
-                    (review_id, application_id, confirmed_amount, confirmed_period, confirmed_rate,
-                     collateral_note, emp_id, review_time, review_status, submitted_time, review_note)
-                VALUES
-                    (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL)
-                """,
-                generateId("RD"),
-                applicationId,
-                dto.getConfirmedAmount(),
-                dto.getConfirmedPeriod(),
-                dto.getConfirmedRate(),
-                dto.getCollateralNote(),
-                dto.getEmpId(),
-                reviewTime,
-                LoanReviewStatus.DRAFT.name());
-    }
-
-    private void updateReviewDetail(String reviewId, LoanReviewDetailRequestDTO dto, LocalDateTime reviewTime) {
-        jdbcTemplate.update("""
-                UPDATE loan_review_detail
-                   SET confirmed_amount = ?,
-                       confirmed_period = ?,
-                       confirmed_rate = ?,
-                       collateral_note = ?,
-                       emp_id = ?,
-                       review_time = ?,
-                       review_status = ?
-                 WHERE review_id = ?
-                """,
-                dto.getConfirmedAmount(),
-                dto.getConfirmedPeriod(),
-                dto.getConfirmedRate(),
-                dto.getCollateralNote(),
-                dto.getEmpId(),
-                reviewTime,
-                LoanReviewStatus.DRAFT.name(),
-                reviewId);
+        detail.setConfirmedAmount(dto.getConfirmedAmount());
+        detail.setConfirmedPeriod(dto.getConfirmedPeriod());
+        detail.setConfirmedRate(dto.getConfirmedRate());
+        detail.setCollateralNote(dto.getCollateralNote());
+        detail.setEmpId(dto.getEmpId());
+        detail.setReviewTime(reviewTime);
+        reviewDetailRepo.save(detail);
     }
 
     // 送審：草稿 → SUBMITTED，主表推進為 PENDING_REVIEW
@@ -482,6 +421,12 @@ public class LoanApplicationService {
                             loan.getApplyAmount(),
                             docs,
                             dto.getAdminComment());
+                    notificationService.createNotification(
+                            loan.getCustomerId(),
+                            NotificationType.LOAN,
+                            "貸款需補件",
+                            "您的貸款申請需要補件，請依通知準備文件。",
+                            "/user/loan-status");
                 } else {
                     log.warn("[LoanCallback] 客戶無 email，略過通知。customerId={}", loan.getCustomerId());
                 }
@@ -511,6 +456,12 @@ public class LoanApplicationService {
                         if (rejectEmail != null) {
                             emailService.sendLoanRejectedNotification(
                                     rejectEmail, rejectAppId, rejectType, rejectAmt);
+                            notificationService.createNotification(
+                                    loan.getCustomerId(),
+                                    NotificationType.LOAN,
+                                    "貸款審核結果",
+                                    "您的貸款申請未通過審核。",
+                                    "/user/loan-status");
                         } else {
                             log.warn("[LoanRejected] 客戶無 email，略過通知。applicationId={}", rejectAppId);
                         }
@@ -522,6 +473,11 @@ public class LoanApplicationService {
                 TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                     @Override
                     public void afterCommit() {
+                        try {
+                            sendLoanContractNotification(applicationId);
+                        } catch (Exception e) {
+                            log.error("[LoanContract] APPROVED 後寄送契約失敗，appId={}, error={}", applicationId, e.getMessage());
+                        }
                         log.info("[AutoDisburse] 風控核准，觸發自動撥款 applicationId={}", applicationId);
                         try {
                             LAService.autoDisburse(applicationId);
@@ -579,6 +535,12 @@ public class LoanApplicationService {
                             loanAccount.getAccountId(),
                             loan.getDisbursementAccount(),
                             firstPaymentDate);
+                    notificationService.createNotification(
+                            loan.getCustomerId(),
+                            NotificationType.LOAN,
+                            "貸款已核准撥款",
+                            "您的貸款已核准並完成撥款。",
+                            "/user/loan-accounts");
                 } else {
                     log.warn("[LoanDisbursed] 略過通知：email={} detail={} applicationId={}",
                             disbEmail, detail, applicationId);
@@ -700,6 +662,50 @@ public class LoanApplicationService {
         LoanRiskRequestDTO riskDto = buildRiskRequest(loan, detail);
         log.info("[RetryRisk] 行員手動重送風控 applicationId={}", applicationId);
         loanRiskClient.submitForReview(riskDto);
+    }
+
+    private void sendLoanContractNotification(String applicationId) {
+        LoanApplication loan = laRepo.findById(applicationId)
+                .orElseThrow(() -> new BusinessException("找不到申請編號：" + applicationId));
+        String email = customerService.findEmailByCustomerId(loan.getCustomerId());
+        if (email == null || email.isBlank()) {
+            log.warn("[LoanContract] 客戶無 email，略過契約寄送。customerId={}", loan.getCustomerId());
+            return;
+        }
+
+        byte[] pdfBytes = loanContractPdfService.generateContractPdf(applicationId);
+        String customerName = customerProfileRepository.findById(loan.getCustomerId())
+                .map(profile -> profile.getName())
+                .orElse("親愛的客戶");
+        String contractNo = formatContractNumber(loan.getApplicationId());
+        String body = """
+                <html>
+                <body style="font-family: Microsoft JhengHei, Arial, sans-serif; color:#333; line-height:1.7;">
+                  <p>%s 您好：</p>
+                  <p>您的貸款已通過風控審查，附件為依最終填單內容產生之貸款契約書，請留存備查。</p>
+                  <p>契約編號：<b>%s</b></p>
+                  <p>Java Easy Bank 敬上</p>
+                </body>
+                </html>
+                """.formatted(customerName, contractNo);
+
+        emailService.sendEmailWithAttachment(
+                email,
+                "Java Easy Bank - 貸款契約書",
+                body,
+                "loan-contract-" + applicationId + ".pdf",
+                pdfBytes);
+        log.info("[LoanContract] 契約附件寄送完成 applicationId={} email={}", applicationId, email);
+    }
+
+    private String formatContractNumber(String applicationId) {
+        if (applicationId == null || applicationId.isBlank()) {
+            return "-";
+        }
+        if (applicationId.startsWith("LA")) {
+            return "LC-" + applicationId.substring(2);
+        }
+        return "LC-" + applicationId;
     }
 
     // 查填單內容

@@ -44,6 +44,7 @@ Java Easy Bank 是一套銀行業務系統，提供**管理端（行員）**與*
 | Loan | 貸款申請、聯繫紀錄、二次填單、送審 | 泓翔 |
 | Credit Card | 卡別、信用卡申請、明細審核、發卡、交易、刷退、帳單查詢 | 王昶 |
 | Risk | 黑名單、風險事件、AOP 風控框架 | 世帆 |
+| Notification | 站內通知中心、未讀管理、通知偏好設定、mail 事件同步通知 | 漢億 |
 
 Account 與 Customer 目前有一個明確整合點：客戶送出開戶申請、管理端核准、補件或駁回後，Account 會呼叫 Customer 的 `syncAccountApplicationProfile`，把申請表欄位與審核結果同步到 `CUSTOMER_PROFILE`。
 
@@ -174,10 +175,12 @@ java-easy-bank/
 │   ├── account/         # 帳戶、開戶、轉帳、交易
 │   ├── loan/            # 貸款申請與審核
 │   ├── creditcard/      # 信用卡業務
+│   ├── notification/    # 站內通知與通知偏好
 │   └── risk/            # 風控與黑名單
 ├── src/main/resources/
 │   ├── application.properties
 │   ├── database/
+│   ├── doc/
 │   └── static/img/
 ├── src/test/java/com/javaeasybank/
 └── frontend/
@@ -201,10 +204,15 @@ java-easy-bank/
 
 ```bash
 cd frontend
+npm run test:unit
+```
+
+```bash
+cd frontend
 npm run build
 ```
 
-完整後端測試會載入 Spring context，若本機沒有 SQL Server 或 DB 設定不完整，可能會在 context load 階段失敗。
+目前 `./mvnw -q test` 已調整為可在無本機 SQL Server 的環境下執行完整單元測試（`JavaEasyBankApplicationTests` 為 class load smoke test）。
 
 ---
 
@@ -222,7 +230,7 @@ npm run build
 
 ## 文件
 
-- 詳細專案總覽：`src/main/java/com/javaeasybank/common/doc/ProjectOverview.md`
+- 詳細專案總覽：`src/main/resources/doc/ProjectOverview.md`
 - Account 模組開發文件：`src/main/java/com/javaeasybank/account/doc/DeveloperDoc.md`
 
 ---
