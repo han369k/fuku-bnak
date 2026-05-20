@@ -6,7 +6,7 @@
 
 本文件已依目前專案程式碼再次完整核對，現階段可作為貸款模組的最終整理版。這一版整理重點如下：
 
-1. 正式使用中的整理檔確認為 `src/main/resources/doc/LoanModuleFileCatalog.md`。
+1. 正式使用中的整理檔確認為 `src/main/java/com/javaeasybank/loan/doc/LoanModuleFileCatalog.md`。
 2. 已補齊客戶端、行員端、系統自動流程、帳戶整合、通知、排程、契約輸出等主線說明。
 3. 已把檔名不含 `Loan`、但實際參與貸款流程的橫切檔案一起納入，例如 `frontend/src/api/axios.js`、`common/config/SecurityConfig.java`、`common/service/EmailService.java`、`common/service/FileStorageService.java`。
 4. 已補上各層用途、對象、功能、主要方法、分類、DTO / Entity / Enum / Repository / SQL / 前端畫面與技術方法整理。
@@ -129,6 +129,7 @@
 | Client | `loan/client/LoanRiskClient.java` | 風控 | 呼叫風控送審與補件通知 |
 | Scheduler | `loan/scheduler/LoanRepaymentScheduler.java` | 還款排程 | 每日逾期掃描與到期提醒 |
 | Utils | `loan/utils/AmortizationCalculator.java` | 攤還計算 | 等額本息月付金與攤還表 |
+| Doc | `loan/doc/LoanModuleFileCatalog.md` | 開發 / 交接 | 貸款模組用途、對象、功能、方法、分類總整理 |
 
 ### 2.2 後端資料層
 
@@ -151,12 +152,12 @@
 
 | 分類 | 檔案 | 用途 |
 |---|---|---|
-| Request DTO | `LoanMemberRequestDTO.java` | 客戶送出申請資料 |
-| Request DTO | `LoanContactLogRequestDTO.java` | 行員新增聯繫紀錄 |
-| Request DTO | `LoanReviewDetailRequestDTO.java` | 行員二次填單 |
-| Request DTO | `LoanRiskRequestDTO.java` | 貸款送風控審核資料 |
-| Request DTO | `LoanStatusCallbackRequestDTO.java` | 風控 / 帳戶回調貸款狀態 |
-| Request DTO | `LoanDocumentInfoDTO.java` | 補件通知風控的文件摘要 |
+| Request DTO | `dto/requests/LoanMemberRequestDTO.java` | 客戶送出申請資料 |
+| Request DTO | `dto/requests/LoanContactLogRequestDTO.java` | 行員新增聯繫紀錄 |
+| Request DTO | `dto/requests/LoanReviewDetailRequestDTO.java` | 行員二次填單 |
+| Request DTO | `dto/requests/LoanRiskRequestDTO.java` | 貸款送風控審核資料 |
+| Request DTO | `dto/requests/LoanStatusCallbackRequestDTO.java` | 風控 / 帳戶回調貸款狀態 |
+| Request DTO | `dto/requests/LoanDocumentInfoDTO.java` | 補件通知風控的文件摘要 |
 | Response DTO | `LoanApplicationResponseDTO.java` | 回傳申請清單與詳情 |
 | Response DTO | `LoanContactLogResponseDTO.java` | 回傳聯繫紀錄 |
 | Response DTO | `LoanReviewDetailResponseDTO.java` | 回傳二次填單 |
@@ -224,9 +225,6 @@
 | Mail Template | `templates/mail/loan-overdue.html` | 逾期通知 |
 | Mail Template | `templates/mail/loan-repayment-reminder.html` | 到期提醒 |
 | HTTP | `loan/utils/test.http` | 手動測試 API |
-| Preview Asset | `loan_contract_preview.html` | 契約版型預覽檔 |
-| Preview Asset | `loan_contract_preview.docx` | 契約文字版本參考檔 |
-| Script | `generate_loan_contract_preview.py` | 產生 / 匯出契約預覽用腳本 |
 | Font | `src/main/resources/fonts/SourceHanSansTC-Normal.otf` | 契約 PDF 中文字型 |
 | Doc | `common/doc/LoanAccountIntegrationGuide.md` | 貸款與帳戶整合說明，但目前檔案內容在終端顯示有編碼亂碼 |
 
@@ -454,6 +452,7 @@ Base URL: `/api/loan-callbacks`
 | `safe(String value)` | private | 字串空值保護 |
 | `firstNonBlank(String... values)` | private | 多來源欄位取第一個有效值 |
 | `formatLoanType(String loanType)` | private | 貸款類型轉中文 |
+| `formatPurposeByLoanType(String loanType)` | private | 依貸款類型產生契約中的借款用途文字 |
 | `formatAnnualRate(BigDecimal rate)` | private | 利率轉百分比字串 |
 | `formatMoney(BigDecimal amount)` | private | 金額格式化 |
 | `formatContractNumber(String applicationId)` | private | 產生契約編號 |
@@ -489,7 +488,9 @@ Base URL: `/api/loan-callbacks`
 | `LoanRepaymentRepository` | `findByScheduledDateBeforeAndRepaymentStatus` | 排程查逾期 |
 | `LoanRepaymentRepository` | `findByScheduledDateBetweenAndRepaymentStatus` | 排程查到期提醒 |
 | `LoanDocumentRepository` | `findByApplicationIdOrderByUploadTimeAsc` | 查文件 |
+| `LoanDocumentRepository` | `findByApplicationIdAndDocumentBatchTypeAndDocumentBatchNoOrderByUploadTimeAsc` | 依補件批次查目前可見文件 |
 | `LoanDocumentRepository` | `countByApplicationId` | 計算文件數量上限 |
+| `LoanDocumentRepository` | `countByApplicationIdAndDocumentBatchTypeAndDocumentBatchNo` | 計算指定批次文件數量 |
 
 ## 6. Entity 與資料表欄位
 
@@ -505,11 +506,14 @@ Base URL: `/api/loan-callbacks`
 | `rate` | 申請利率 |
 | `disbursement_account` | 撥款入帳帳號 |
 | `application_status` | 申請狀態 |
+| `required_documents` | 風控要求補件清單（NVARCHAR / JSON 字串） |
+| `review_comment` | 風控或審核補充說明 |
 | `create_time` | 建立時間 |
 | `latest_contact_status` | 最新聯繫結果 |
 | `latest_contact_time` | 最新聯繫時間 |
 | `update_time` | 外部流程異動時間 |
 | `documents_submitted_at` | 客戶送出補件時間 |
+| `current_supplement_batch_no` | 目前補件批次編號，0 為初始文件、1 以上為第 N 次補件 |
 
 ### 6.2 `loan_contact_log`
 
@@ -588,6 +592,9 @@ Base URL: `/api/loan-callbacks`
 | `original_name` | 原始檔名 |
 | `uploaded_by` | 上傳者 |
 | `upload_time` | 上傳時間 |
+| `document_batch_type` | 文件批次類型，`INITIAL` 或 `SUPPLEMENT` |
+| `document_batch_no` | 文件批次編號，初始為 0，補件從 1 起 |
+| `submitted_at` | 該批文件正式送出時間，`null` 代表仍可編輯 |
 
 ## 7. Enum 分類
 
@@ -625,20 +632,20 @@ Base URL: `/api/loan-callbacks`
 | `LoanMemberRequestDTO` | `applyType`, `applyAmount`, `applyPeriod`, `rate`, `disbursementAccount` | 客戶申請 |
 | `LoanContactLogRequestDTO` | `empId`, `contactStatus`, `contactChannel`, `note` | 行員聯繫紀錄 |
 | `LoanReviewDetailRequestDTO` | `confirmedAmount`, `confirmedPeriod`, `confirmedRate`, `collateralNote`, `empId` | 行員二次填單 |
-| `LoanRiskRequestDTO` | `applicationId`, `customerId`, `cif`, `applyType`, `confirmedAmount`, `confirmedPeriod`, `confirmedRate`, `collateralNote`, `empId`, `submittedTime`, `callbackUrl`, `scene`, `businessId`, `amount` | 送風控 |
-| `LoanStatusCallbackRequestDTO` | `newStatus`, `callerModule`, `note`, `loanAccountNumber` | 外部狀態回調 |
+| `LoanRiskRequestDTO` | `applicationId`, `customerId`, `cif`, `applyType`, `confirmedAmount`, `confirmedPeriod`, `confirmedRate`, `collateralNote`, `documents`, `empId`, `submittedTime`, `callbackUrl`, `scene`, `businessId`, `amount` | 送風控 |
+| `LoanStatusCallbackRequestDTO` | `newStatus`, `callerModule`, `note`, `loanAccountNumber`, `requiredDocuments`, `adminComment` | 外部狀態回調 |
 | `LoanDocumentInfoDTO` | `documentId`, `documentType`, `fileUrl`, `originalName` | 補件通知風控 |
 
 ### 8.2 Response DTO
 
 | DTO | 主要欄位 |
 |---|---|
-| `LoanApplicationResponseDTO` | 申請 ID、客戶 ID、CIF、姓名、申請條件、核准條件、申請狀態、聯繫狀態、補件時間 |
+| `LoanApplicationResponseDTO` | 申請 ID、客戶 ID、CIF、姓名、申請條件、核准條件、申請狀態、聯繫狀態、`requiredDocuments`、`reviewComment`、補件時間 |
 | `LoanContactLogResponseDTO` | 紀錄 ID、申請 ID、行員 ID、聯繫結果、管道、時間、備註 |
 | `LoanReviewDetailResponseDTO` | 二次填單 ID、申請 ID、核准金額、期數、利率、擔保備註、行員、狀態、送審時間 |
 | `LoanAccountResponseDTO` | 帳戶 ID、帳號、申請 ID、客戶 ID、CIF、本金、期數、利率、月付金、已繳期數、剩餘本金、狀態 |
 | `LoanRepaymentResponseDTO` | 期數 ID、帳戶 ID、期數、應繳日、繳款日、總額、本金、利息、剩餘本金、狀態 |
-| `LoanDocumentResponseDTO` | 文件 ID、申請 ID、文件類型、URL、原始檔名、上傳者、上傳時間 |
+| `LoanDocumentResponseDTO` | 文件 ID、申請 ID、文件類型、URL、原始檔名、上傳者、上傳時間、`documentBatchType`、`documentBatchNo`、`submittedAt` |
 
 ## 9. 帳戶整合方法
 
@@ -836,6 +843,7 @@ Base URL: `/api/loan-callbacks`
 | 風控整合 | 系統 / 外部 | `LoanRiskClient`, `LoanCallbackController`, `LoanApplicationService` | 送審、補件通知、接收核准 / 拒絕回調 |
 | 帳戶整合 | 系統 / 外部 | `AccountIntegrationService`, `LoanAccountService`, `LoanRepaymentService` | 建帳、撥款、還款、對帳、狀態同步 |
 | 通知輸出 | 客戶 / 系統 | `EmailService`, `LoanContractPdfService` | 寄通知信、寄契約 PDF、格式化輸出 |
+| 文件整理 | 開發 / 維護 | `LoanModuleFileCatalog.md` | 統整貸款模組用途、對象、功能、方法、分類與流程 |
 | 排程管理 | 系統 | `LoanRepaymentScheduler` | 掃描逾期與到期提醒 |
 
 ### 14.1 技術總覽
@@ -939,6 +947,7 @@ Base URL: `/api/loan-callbacks`
 | Thymeleaf `TemplateEngine` | `EmailService` | 套用 `templates/mail/loan-*.html` 郵件模板 |
 | best-effort 發信 | 多個 service 觸發點 | 信件失敗只記錄 log，不回滾主流程 |
 | `formatLoanType(...)` | `EmailService` | 將 enum / 代碼轉成人可讀貸款名稱 |
+| `formatLoanDocumentType(...)` | `EmailService` | 將補件文件類型轉成人可讀中文名稱 |
 | `formatAnnualRate(...)` | `EmailService` | 將利率格式化為顯示文字 |
 
 ### 14.9 排程與批次方法
@@ -999,3 +1008,156 @@ Base URL: `/api/loan-callbacks`
 | `normalizePositiveAmount(...)` | 金額處理 | 禁止 0 或負數金額進入貸款計算 |
 | `normalizeRate(...)` | 利率處理 | 統一利率格式與合法範圍 |
 | `ensureLoanBalanceZero(...)` | 帳戶整合邏輯 | 防止貸款帳戶出現不合法餘額異動 |
+
+## 15. 專案技術學習導讀
+
+本節把整份專案目前實際用到的主要技術，整理成「技術是什麼、這裡怎麼用、什麼時候該學它、建議從哪裡看」的閱讀地圖。若你後續要從貸款模組擴展到帳戶、信用卡、風控、通知或前端，這一節可以當總索引。
+
+### 15.1 後端基礎框架
+
+| 技術 | 專案用途 | 這裡怎麼用 | 什麼時候該學 / 看它 | 建議先看 |
+|---|---|---|---|---|
+| Spring Boot | 整個後端主框架 | 啟動 API、註冊 Bean、整合 Web / Security / JPA / Mail | 想理解整個後端是怎麼跑起來時 | `JavaEasyBankApplication.java`, `pom.xml` |
+| Spring MVC | REST API 層 | 以 Controller + DTO 暴露 JSON API | 想看前後端如何對接時 | `account/controller`, `loan/controller`, `creditcard/controller`, `risk/controller` |
+| `@Configuration` / `@Bean` | 基礎設定注入 | 註冊 `RestTemplate`、Web / Security 組態 | 想知道共用元件怎麼被注入時 | `common/config/*.java` |
+| `@Service` | 業務邏輯層 | 把流程集中在 service，controller 只收參數與回應 | 想讀「實際規則」時 | `account/service`, `loan/service`, `creditcard/service`, `risk/service` |
+| `@Repository` | 資料存取層 | 定義 repository query 與查詢語意 | 想知道資料從哪裡查出來時 | 各模組 `repository` |
+
+### 15.2 安全驗證與授權
+
+| 技術 | 專案用途 | 這裡怎麼用 | 什麼時候該學 / 看它 | 建議先看 |
+|---|---|---|---|---|
+| Spring Security | API 存取控管 | 區分客戶端、行員端、公開 API、callback API | 想理解誰可以呼叫哪支 API 時 | `common/config/SecurityConfig.java` |
+| `SecurityFilterChain` | 安全規則主入口 | 設定 permitAll、authenticated、IP 白名單與角色限制 | 想修改 API 存取規則時 | `SecurityConfig.java` |
+| `@EnableMethodSecurity` + `@PreAuthorize` | 方法層級授權 | 直接在 controller / service 上標角色 | 想查某支 API 為什麼被擋時 | 各 controller 上的 `@PreAuthorize` |
+| JWT / JJWT | 登入憑證 | 簽發 token、解析 `customerId`、登入資訊進 SecurityContext | 想理解登入後怎麼辨識使用者時 | `common/util/JwtUtil.java`, `JwtAuthenticationFilter.java` |
+| `OncePerRequestFilter` | 每次請求攔截 | 解析 token 後放入 SecurityContext | 想看 token 是在哪一層被處理時 | `common/config/JwtAuthenticationFilter.java` |
+
+### 15.3 資料庫與 ORM
+
+| 技術 | 專案用途 | 這裡怎麼用 | 什麼時候該學 / 看它 | 建議先看 |
+|---|---|---|---|---|
+| Spring Data JPA | 主力 ORM | Repository 直接對 Entity 做 CRUD 與查詢 | 想知道平常資料表如何映射成 Java 物件時 | 任一模組 `entity` + `repository` |
+| `JpaRepository` | 基本資料操作 | 快速取得 `save/findById/findAll/delete` 等能力 | 想學最標準的 Spring CRUD 時 | `loan/repository/*.java` |
+| Derived Query Methods | 命名式查詢 | 用 `findBy...OrderBy...` 直接生成查詢 | 查詢條件不複雜時最常用 | `LoanApplicationRepository`, `LoanAccountRepository` |
+| `@Query` | 自訂 JPQL / SQL | 處理複雜查詢、聚合、跨欄位條件 | 命名式查詢不夠用時 | `TransLogRepository`, `LoanDocumentRepository`, `CardAppRepository` |
+| `JdbcTemplate` | 補充型 SQL 工具 | 做較直覺的 SQL 插入 / 更新 / 跨模組查詢 | JPA 寫起來反而更繞時 | `LoanApplicationService`, `AccountIntegrationService` |
+| MSSQL JDBC | 連線 SQL Server | 專案資料庫驅動 | 想查 DB 設定、型別與 SQL 行為時 | `pom.xml`, `application.properties`, `database/*.sql` |
+| JPA Auditing | 自動時間欄位 | 部分風控 / 帳務 entity 用 auditing listener 自動處理時間 | 想看建立 / 更新時間由誰寫入時 | `JavaEasyBankApplication.java`, `risk/entity/*`, `account/entity/PendingTransfer.java` |
+| `@Enumerated(EnumType.STRING)` | enum 落地資料庫 | 狀態值以可讀字串存進 DB | 想讓狀態可讀、避免 ordinal 風險時 | 幾乎所有 `entity` 狀態欄位 |
+
+### 15.4 交易控制與一致性
+
+| 技術 | 專案用途 | 這裡怎麼用 | 什麼時候該學 / 看它 | 建議先看 |
+|---|---|---|---|---|
+| `@Transactional` | 交易一致性 | 將一個業務流程包成同一筆 transaction | 有多表更新、要嘛全成要嘛全失敗時 | `AccountIntegrationService`, `LoanApplicationService` |
+| `readOnly = true` | 查詢優化 | 查詢 service 明示不修改資料 | 純讀取流程時 | 各查詢型 service |
+| `Propagation.REQUIRES_NEW` | 切獨立交易 | 將補償或外部回調切出去單獨提交 | 不希望被外層 rollback 牽連時 | `LoanApplicationService`, `RiskEventService` |
+| `Propagation.NOT_SUPPORTED` | 暫停外層交易 | 自動撥款時不持有原事務鎖 | 跨模組流程太長、怕鎖太多時 | `LoanApplicationService.autoDisburse` |
+| `TransactionSynchronizationManager.afterCommit` | 交易提交後副作用 | DB 成功提交後才通知外部模組 | 外部呼叫不能比 DB 先發生時 | `LoanApplicationService`, `AccountIntegrationService` |
+| 帳戶鎖定 | 併發防呆 | 還款 / 撥款前先鎖相關帳戶 | 同時間可能有多筆扣款 / 撥款時 | `AccountIntegrationService.lockAccounts` |
+
+### 15.5 API 設計與 DTO 分層
+
+| 技術 | 專案用途 | 這裡怎麼用 | 什麼時候該學 / 看它 | 建議先看 |
+|---|---|---|---|---|
+| DTO 分層 | 隔離 API 與 Entity | Request / Response DTO 不直接暴露資料表 entity | 想避免前端直接綁死 DB 結構時 | 各模組 `dto/request*`, `dto/response*` |
+| `ApiResponse<T>` | 統一回傳格式 | 成功 / 失敗 / 訊息 / 資料結構一致 | 想讓前端接 API 更穩定時 | `common/dto/response/ApiResponse.java` |
+| `Page` / `Pageable` | 分頁查詢 | 後台列表、交易紀錄、風控列表都用 | 有列表、搜尋、排序需求時 | `TransLogRepository`, `CardTxnService`, `RiskEventController` |
+| `PageResponse` | 客製分頁回傳 | 前端需要比較乾淨的 page meta 時 | 不想讓前端直接吃 Spring Page 結構時 | `common/dto/response/PageResponse.java` |
+| Bean Validation | 參數驗證 | 用 `@Valid` 與 DTO 規則先擋不合法輸入 | 想在進 service 前先過濾資料時 | `AccountIntegrationController` 與相關 request DTO |
+
+### 15.6 外部整合與 HTTP Client
+
+| 技術 | 專案用途 | 這裡怎麼用 | 什麼時候該學 / 看它 | 建議先看 |
+|---|---|---|---|---|
+| `RestTemplate` | 後端呼叫後端 | 呼叫風控、轉帳風險或其他內部模組 API | 需要 server-to-server API call 時 | `LoanRiskClient`, `LoginRiskClient`, `TransferRiskClient` |
+| Apache HttpClient 5 | 補強 HTTP 能力 | 讓 `RestTemplate` 穩定支援 PATCH | 需要 PATCH 或更完整 HTTP client 時 | `common/config/RestTemplateConfig.java` |
+| callback URL 模式 | 非同步回傳結果 | 送審後由外部模組回調狀態，不同步阻塞 | 外部流程很長、要 decouple 時 | `LoanRiskRequestDTO.callbackUrl`, `LoanCallbackController` |
+| `@Value` | 讀設定檔 | JWT secret、風控 URL、過期時間等由設定注入 | 需要環境可配置值時 | `JwtUtil.java`, `LoanRiskClient.java` |
+
+### 15.7 檔案上傳、下載與靜態資源
+
+| 技術 | 專案用途 | 這裡怎麼用 | 什麼時候該學 / 看它 | 建議先看 |
+|---|---|---|---|---|
+| `MultipartFile` | 後端收檔案 | 收補件、證件、圖片上傳 | 表單要帶檔案時 | `LoanDocumentController`, `AccountApplicationController`, `CustomerController` |
+| `FormData` | 前端送檔案 | 將檔案和文字欄位一起 POST | 前端要傳 multipart/form-data 時 | `LoanStatusView.vue`, `AccountApplicationView.vue` |
+| `FileStorageService` | 檔案落地儲存 | 儲存實體檔案、產生 URL、刪檔 | 需要把上傳檔案存到本地 uploads 時 | `common/service/FileStorageService.java` |
+| 靜態資源目錄 | 圖檔 / 字型 / 頁面素材 | `static`, `public`, `resources/fonts` 存放可直接存取素材 | UI 或 PDF 需要固定資源時 | `frontend/public`, `src/main/resources/static`, `fonts` |
+
+### 15.8 郵件、模板與通知
+
+| 技術 | 專案用途 | 這裡怎麼用 | 什麼時候該學 / 看它 | 建議先看 |
+|---|---|---|---|---|
+| `JavaMailSender` | 寄送通知信 | 登入提醒、貸款通知、密碼重設、結清通知 | 需要寄 Email 時 | `common/service/EmailService.java` |
+| Thymeleaf `TemplateEngine` | 產生 HTML 郵件內容 | 將資料帶入 `templates/mail/*.html` | 郵件需要有版型與變數時 | `EmailService.java`, `templates/mail` |
+| best-effort 通知 | 不讓信件影響主流程 | 有些發信失敗只記錄 log，不回滾交易 | 通知是重要但不應卡主交易時 | `LoanDocumentService`, `EmailService` |
+| 站內通知模組 | 前端鈴鐺通知 | 設定偏好、未讀數、通知列表 | 要做多通路通知而不只 email 時 | `notification/*`, `UserLayout.vue` |
+
+### 15.9 PDF、CSV、匯出與報表
+
+| 技術 | 專案用途 | 這裡怎麼用 | 什麼時候該學 / 看它 | 建議先看 |
+|---|---|---|---|---|
+| OpenHTMLtoPDF | HTML 轉 PDF | 電子存摺、貸款契約以 HTML + CSS 輸出 PDF | 版面像網頁、想用 HTML 描述時 | `PassbookPdfService`, `LoanContractPdfService` |
+| iText | PDF 加密 / 進階處理 | 信用卡帳單 PDF 加密、權限控制 | PDF 不只要生成，還要加密或後處理時 | `CardBillPDFService` |
+| OpenPDF | PDF 匯出依賴 | 補充 PDF 能力 | 想看專案 PDF 工具鏈時 | `pom.xml` |
+| OpenCSV | 匯出 CSV | 系統日誌 / 行為紀錄匯出 | 管理後台需要輕量資料匯出時 | `AuthActionLogService.exportToCsv` |
+| `xlsx` + FileSaver | 前端匯出 Excel | 把交易資料直接在瀏覽器匯出 `.xlsx` | 資料已在前端、想快速下載 Excel 時 | `frontend/src/views/admin/TransLogView.vue` |
+
+### 15.10 前端框架與互動模式
+
+| 技術 | 專案用途 | 這裡怎麼用 | 什麼時候該學 / 看它 | 建議先看 |
+|---|---|---|---|---|
+| Vue 3 | 整個前端框架 | 以單檔元件組成頁面與 modal | 想理解前端頁面結構時 | `frontend/src/main.js`, `views`, `layouts` |
+| Composition API | 狀態與邏輯管理 | 大量使用 `ref`、`reactive`、`computed`、`watch`、`onMounted` | 想讀畫面行為而不是 Options API 時 | `Loan*.vue`, `UserLayout.vue`, `AdminLayout.vue` |
+| Vue Router | 前端路由 | 客戶端與後台頁面切換 | 想看網址怎麼對應畫面時 | `frontend/src/router/index.js` |
+| Pinia | 全域狀態 | 保存登入者、token、使用者資訊 | 多頁共用狀態時 | `frontend/src/stores/auth.js`, `customerAuth.js` |
+| Axios | 呼叫後端 API | 建立共用 `api` instance，集中攔截 token / 錯誤 | 想統一處理前後端通訊時 | `frontend/src/api/axios.js` |
+| `localStorage` | 前端持久化 | 暫存登入 token 與使用者資料 | 頁面刷新後仍要保留登入狀態時 | `stores/auth.js`, `stores/customerAuth.js` |
+
+### 15.11 UI、樣式與資料視覺化
+
+| 技術 | 專案用途 | 這裡怎麼用 | 什麼時候該學 / 看它 | 建議先看 |
+|---|---|---|---|---|
+| Ant Design Vue | 後台與部分互動元件 | `message`、`Modal`、表單、表格、分頁等 | 需要成熟元件庫快速搭後台時 | `frontend/src/main.js`, 各 `admin/*.vue` |
+| Tailwind CSS 4 | 快速樣式工具 | 提供 utility class 與部分樣式入口 | 需要快速調整 layout / spacing / typography 時 | `frontend/src/assets/tailwind.css` |
+| 自訂主題 CSS | 視覺主題分層 | 客戶端、後台各自有 theme 樣式 | 想看專案不是只靠元件庫時 | `customer-theme.css`, `admin-theme.css`, `main.css` |
+| Chart.js / vue-chartjs | 圖表呈現 | 首頁或統計頁顯示圖表資料 | 有趨勢圖、圓餅圖或統計面板時 | `UserHomeView.vue` |
+| Day.js | 日期格式化 | 顯示帳單、交易、排程時間 | 前端要輕量處理日期時 | `CardBillView.vue`, `ScheduledTransferView.vue`, `layouts` |
+
+### 15.12 物件轉換與程式碼生成
+
+| 技術 | 專案用途 | 這裡怎麼用 | 什麼時候該學 / 看它 | 建議先看 |
+|---|---|---|---|---|
+| Lombok | 減少樣板碼 | `@Getter`、`@Setter`、`@RequiredArgsConstructor` 等 | 想看為什麼類別沒手寫 getter/setter 也能用時 | 幾乎所有 entity / dto / service |
+| MapStruct | DTO / Entity mapper | 信用卡模組大量用 mapper 自動轉換 | 轉換邏輯多、又不想手寫時 | `creditcard/mapper/*` |
+| Java Record | 小型不可變資料結構 | 用在攤還列、批次範圍等輕量資料封裝 | 只是想包一小團資料、不要完整 class 時 | `AmortizationCalculator.RepaymentRow`, `LoanDocumentService.BatchScope` |
+
+### 15.13 測試、建置與開發工具鏈
+
+| 技術 | 專案用途 | 這裡怎麼用 | 什麼時候該學 / 看它 | 建議先看 |
+|---|---|---|---|---|
+| Maven | 後端建置 | 管理 Spring、JPA、JWT、Mail、PDF 等依賴 | 想知道後端吃了哪些 library 時 | `pom.xml` |
+| Vite | 前端開發 / 打包 | 啟動 dev server、build Vue 專案 | 想知道前端是怎麼跑的時 | `frontend/package.json`, `vite.config.js` |
+| JUnit 5 | 後端單元測試基礎 | 測 service 行為與商業規則 | 想補測試或看邏輯驗證方式時 | `src/test/java/**` |
+| Mockito | mock 依賴 | 隔離 repository / mail / 外部 service 來測業務邏輯 | 測試不想真的打 DB 或寄信時 | `LoanApplicationServiceTest`, `NotificationServiceTest` |
+| Vitest | 前端單元測試 | 前端 API / 小功能測試 | 想補前端測試時 | `frontend/package.json`, `frontend/src/api/customerAuth.spec.js` |
+| ESLint / Prettier / Oxlint | 前端靜態檢查與格式化 | 統一風格、抓錯、快速修正 | 想維持前端品質與一致性時 | `frontend/eslint.config.js`, `package.json` |
+
+### 15.14 建議閱讀順序
+
+| 目標 | 建議順序 |
+|---|---|
+| 想先看整體架構 | `pom.xml` -> `JavaEasyBankApplication.java` -> `frontend/package.json` -> `frontend/src/main.js` |
+| 想學後端 API | `SecurityConfig` -> 任一 Controller -> 對應 Service -> Repository -> Entity |
+| 想學交易與資料一致性 | `AccountIntegrationService` -> `LoanApplicationService` -> `LoanRepaymentService` |
+| 想學前後端串接 | `frontend/src/api/axios.js` -> 某個 Vue 頁面 -> 對應 Controller / Service |
+| 想學檔案上傳與通知 | `LoanStatusView.vue` -> `LoanDocumentController` -> `LoanDocumentService` -> `FileStorageService` -> `EmailService` |
+| 想學 PDF / 匯出 | `PassbookPdfService` -> `LoanContractPdfService` -> `CardBillPDFService` -> `AuthActionLogService` -> `TransLogView.vue` |
+| 想學大型列表與查詢 | `TransLogRepository` -> `CardTxnService` -> `BillService` -> `RiskEventController` |
+
+### 15.15 閱讀提醒
+
+1. 這個專案主要技術主軸是 `Spring Boot + Spring Security + Spring Data JPA + Vue 3 + Axios + Ant Design Vue`，先把這條主線看懂，其他像 PDF、CSV、JWT、排程、MapStruct 都會比較好吸收。
+2. 專案雖然有 `Kotlin` 依賴，但目前主要業務程式仍以 `Java` 為主，學習時先專注 Java / Spring 主線就夠了。
+3. 同一個需求通常會同時跨前端頁面、controller、service、repository、SQL 與通知層，建議用「一條流程一路追下去」的方式學，比只看單一資料夾更快上手。
