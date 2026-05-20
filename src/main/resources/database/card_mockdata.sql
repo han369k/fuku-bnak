@@ -78,6 +78,8 @@ INSERT INTO CARD_TYPE (card_type_id, card_type_name, brand, annual_fee, cashback
 (10, N'頂級黑卡', 'Master', 10000, 3.5, 'img/black1.png');
 SET IDENTITY_INSERT CARD_TYPE OFF;
 
+DBCC CHECKIDENT ('CARD_TYPE', RESEED, 10) WITH NO_INFOMSGS;
+
 -- ===== 2. MERCHANT =====
 IF NOT EXISTS (SELECT 1 FROM MERCHANT)
 INSERT INTO MERCHANT (merchant_id, merchant_name, merchant_category) VALUES
