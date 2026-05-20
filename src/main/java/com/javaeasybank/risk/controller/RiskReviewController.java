@@ -55,16 +55,6 @@ public class RiskReviewController {
     @PostMapping
     public ResponseEntity<ApiResponse<RiskReviewResponse>> submitReview(
             @RequestBody @Valid RiskReviewRequest dto) {
-        log.info("[RiskReview] ===== 收到送審請求 =====");
-        log.info("[RiskReview] scene={}, businessId={}, customerId={}",
-                dto.getScene(), dto.getBusinessId(), dto.getCustomerId());
-        log.info("[RiskReview] amount={}, callbackUrl={}", dto.getAmount(), dto.getCallbackUrl());
-        log.info("[RiskReview] 選填欄位 annualIncome={}, occupation={}, externalScore={}, otherBankDebt={}, hasRealEstate={}",
-                dto.getAnnualIncome(), dto.getOccupation(), dto.getExternalScore(),
-                dto.getOtherBankDebt(), dto.getHasRealEstate());
-        log.info("[RiskReview] 黑名單欄位 idCard={}, email={}, phone={}",
-                dto.getIdCard(), dto.getEmail(), dto.getPhone());
-
         RiskReviewResponse result = riskReviewService.process(dto);
         return ResponseEntity.ok(ApiResponse.success(result));
     }

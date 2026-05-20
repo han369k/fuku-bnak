@@ -81,6 +81,16 @@
         <template v-else-if="column.key === 'createdAt'">
           {{ formatDate(record.createdAt) }}
         </template>
+        <template v-else-if="column.key === 'businessId'">
+          <a-tooltip :title="record.businessId">
+            <span class="mono-id">{{ record.businessId }}</span>
+          </a-tooltip>
+        </template>
+        <template v-else-if="column.key === 'targetIdentifier'">
+          <a-tooltip :title="record.targetIdentifier">
+            <span class="mono-id">{{ record.targetIdentifier }}</span>
+          </a-tooltip>
+        </template>
       </template>
 
       <template #expandedRowRender="{ record }">
@@ -131,20 +141,27 @@ const eventTypeMap = {
 }
 
 const columns = [
-  {title: '事件 ID', dataIndex: 'logId', key: 'logId', width: 100},
+  {title: '事件 ID', dataIndex: 'logId', key: 'logId', width: 50},
   {
     title: '時間',
     dataIndex: 'createdAt',
     key: 'createdAt',
-    width: 180,
+    width: 120,
     sorter: true,
     sortDirections: ['descend', 'ascend', 'descend'],
     defaultSortOrder: 'descend'
   },
-  {title: '事件類型', dataIndex: 'eventType', key: 'eventType', width: 120},
-  {title: '目標識別碼', dataIndex: 'targetIdentifier', key: 'targetIdentifier', width: 150},
-  {title: '採取行動', dataIndex: 'actionTaken', key: 'actionTaken', width: 120},
-  {title: '風險等級', dataIndex: 'riskLevel', key: 'riskLevel', width: 120, fixed: 'right'},
+  {title: '事件類型', dataIndex: 'eventType', key: 'eventType', width: 100},
+  {title: '業務編號', dataIndex: 'businessId', key: 'businessId', width: 150, ellipsis: true},
+  {
+    title: '目標識別碼',
+    dataIndex: 'targetIdentifier',
+    key: 'targetIdentifier',
+    width: 150,
+    ellipsis: true
+  },
+  {title: '採取行動', dataIndex: 'actionTaken', key: 'actionTaken', width: 100},
+  {title: '風險等級', dataIndex: 'riskLevel', key: 'riskLevel', width: 100, fixed: 'right'},
 ]
 
 const pagination = reactive({
@@ -334,7 +351,6 @@ onMounted(() => loadData())
   color: #d48806;
 }
 
-
 .action-bar {
   margin-bottom: 8px;
 }
@@ -343,5 +359,12 @@ onMounted(() => loadData())
   display: flex;
   gap: 12px;
   align-items: center;
+}
+
+.mono-id {
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 14px;
+  color: #595959;
+  cursor: default;
 }
 </style>
