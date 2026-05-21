@@ -23,3 +23,12 @@ export const getUnbilledBills = (page=0, size=10) => {
     }).then(unwrap);
 
 };
+
+//取得出帳交易明細
+export const getBilledTransactions = (billId, cardId) => {
+  return api.get(`${BASE_URL}/${billId}/transactions`, {
+    params: {
+      cardId,
+    },
+  }).then(unwrap)
+}
