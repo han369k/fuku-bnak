@@ -13,7 +13,6 @@
 -- - Risk review queue and credit-visible demo rows stay aligned
 -- ============================================================
 
-SET NOCOUNT ON;
 
 DELETE FROM LOAN_REPAYMENT;
 DELETE FROM LOAN_ACCOUNT;
@@ -522,7 +521,7 @@ INSERT INTO LOAN_ACCOUNT (
 )
 SELECT
     CONCAT('LAC20260521', RIGHT(CONCAT('00', CAST(ROW_NUMBER() OVER (ORDER BY a.seq) AS VARCHAR(2))), 2)) AS account_id,
-    a.disbursement_account AS account_number,
+    (SELECT TOP 1 account_number FROM account WHERE customer_id = a.customer_id AND account_type = 'LOAN') AS account_number,
     a.application_id,
     a.customer_id,
     a.apply_type,

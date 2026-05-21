@@ -2,7 +2,6 @@
 -- Card Module Mock Data (重新生成版)
 -- 依賴：customer_profile 與 ACCOUNT 表必須先有資料
 -- ============================================================
-SET NOCOUNT ON;
 
 -- ===== 清除舊資料（依 FK 順序由下往上刪）=====
 DELETE FROM CARD_TRANSACTION;

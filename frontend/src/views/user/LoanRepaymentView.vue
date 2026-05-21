@@ -295,18 +295,21 @@ const periodCount = ref(1)
 const paymentAmount = computed(() => {
   const periods = unpaidRepayments.value.slice(0, periodCount.value)
   if (periods.length === 0) return 0
-  return Math.round(periods.reduce((sum, rp) => sum + Number(rp.totalAmount || 0), 0))
+  const sum = periods.reduce((acc, rp) => acc + Number(rp.totalAmount || 0), 0)
+  return Number(sum.toFixed(2))
 })
 
 // ── 本金 / 利息 拆分（供顯示用）──
-const paymentPrincipal = computed(() =>
-  Math.round(unpaidRepayments.value.slice(0, periodCount.value)
-    .reduce((sum, rp) => sum + Number(rp.principalPortion || 0), 0))
-)
-const paymentInterest = computed(() =>
-  Math.round(unpaidRepayments.value.slice(0, periodCount.value)
-    .reduce((sum, rp) => sum + Number(rp.interestPortion || 0), 0))
-)
+const paymentPrincipal = computed(() => {
+  const sum = unpaidRepayments.value.slice(0, periodCount.value)
+    .reduce((acc, rp) => acc + Number(rp.principalPortion || 0), 0)
+  return Number(sum.toFixed(2))
+})
+const paymentInterest = computed(() => {
+  const sum = unpaidRepayments.value.slice(0, periodCount.value)
+    .reduce((acc, rp) => acc + Number(rp.interestPortion || 0), 0)
+  return Number(sum.toFixed(2))
+})
 
 const history        = ref([])
 const historyLoading = ref(false)
