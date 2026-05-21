@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { message, Modal } from 'ant-design-vue'
-import { getCards, createCard, updateCard, deleteCard, blockCard, unblockCard } from '@/api/card'
+import { getCards, updateCard, deleteCard, blockCard, unblockCard } from '@/api/card'
 import { PlusOutlined, SearchOutlined, SyncOutlined } from '@ant-design/icons-vue'
 import api from '@/api/axios'
 
@@ -70,21 +70,7 @@ const handleCreate = () => {
   form.value.creditLimit = 0
   modalVisible.value = true
 }
-//刪除資料
-const handleDelete = async (record) => {
-  Modal.confirm({
-    title: '確定刪除嗎?',
-    onOk: async () => {
-      try {
-        await deleteCard(record.cardId)
-        await fetchData()
-        message.success('刪除成功')
-      } catch (error) {
-        console.log(error)
-      }
-    },
-  })
-}
+
 
 //停用卡片
 const handleBlock = async (record) => {
@@ -112,12 +98,12 @@ const columns = [
   { title: 'ID', dataIndex: 'cardId', width: 80 },
   { title: '客戶姓名', dataIndex: 'customerName', width: 150 },
   { title: '卡號', dataIndex: 'cardNumber', width: 180 },
-  { title: '卡片名稱', key: 'cardTypeName', width: 150 },
+  { title: '卡片名稱', key: 'cardTypeName', width: 120 },
   { title: '卡片圖片', key: 'image', width: 120, align: 'center' },
   { title: '額度', dataIndex: 'creditLimit', width: 100 },
   { title: '已用額度', dataIndex: 'currentDebt', width: 100 },
   { title: '狀態', dataIndex: 'status', width: 100 },
-  { title: '編輯額度', key: 'edit', width: 80 },
+  { title: '編輯額度', key: 'edit', width: 100 },
   { title: '卡片狀態操作', key: 'statusAction', width: 120 },
 ]
 

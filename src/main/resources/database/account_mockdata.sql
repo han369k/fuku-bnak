@@ -8,7 +8,6 @@ Java Easy Bank Account Mock Data
 ===============================================================================
 */
 
-SET NOCOUNT ON;
 
 -- Clear account mock data in FK-safe order. Business accounts are recreated below.
 IF OBJECT_ID('SCHEDULED_TRANSFER', 'U') IS NOT NULL DELETE FROM SCHEDULED_TRANSFER;
@@ -27,15 +26,45 @@ IF OBJECT_ID('tempdb..#customers') IS NOT NULL DROP TABLE #customers;
 IF OBJECT_ID('tempdb..#mock_accounts') IS NOT NULL DROP TABLE #mock_accounts;
 IF OBJECT_ID('tempdb..#tx_accounts') IS NOT NULL DROP TABLE #tx_accounts;
 
-SELECT TOP (100)
-    CAST(SUBSTRING(email, 9, 3) AS INT) AS rn,
-    customer_id, cif, id_number, name, birthday, gender, email, phone, address,
-    nationality, registered_address, current_address, occupation, employer,
-    estimated_monthly_tx, account_purpose, fund_source, tax_residency, is_pep,
-    id_front_url, id_back_url, second_id_url, risk_level, status
+SELECT
+    mock_customers.rn,
+    mock_customers.customer_id,
+    mock_customers.cif,
+    mock_customers.id_number,
+    mock_customers.name,
+    mock_customers.birthday,
+    mock_customers.gender,
+    mock_customers.email,
+    mock_customers.phone,
+    mock_customers.address,
+    mock_customers.nationality,
+    mock_customers.registered_address,
+    mock_customers.current_address,
+    mock_customers.occupation,
+    mock_customers.employer,
+    mock_customers.estimated_monthly_tx,
+    mock_customers.account_purpose,
+    mock_customers.fund_source,
+    mock_customers.tax_residency,
+    mock_customers.is_pep,
+    mock_customers.id_front_url,
+    mock_customers.id_back_url,
+    mock_customers.second_id_url,
+    mock_customers.risk_level,
+    mock_customers.status
 INTO #customers
-FROM CUSTOMER_PROFILE
-ORDER BY rn;
+FROM (
+    SELECT
+        TRY_CAST(SUBSTRING(email, 9, 3) AS INT) AS rn,
+        customer_id, cif, id_number, name, birthday, gender, email, phone, address,
+        nationality, registered_address, current_address, occupation, employer,
+        estimated_monthly_tx, account_purpose, fund_source, tax_residency, is_pep,
+        id_front_url, id_back_url, second_id_url, risk_level, status
+    FROM CUSTOMER_PROFILE
+    WHERE email LIKE 'customer[0-9][0-9][0-9]@java-bank.demo'
+) mock_customers
+WHERE mock_customers.rn BETWEEN 1 AND 100
+ORDER BY mock_customers.rn;
 
 IF (SELECT COUNT(*) FROM #customers) <> 100
     THROW 51101, 'account_mockdata.sql requires exactly 100 customers. Run customer_insert.sql first.', 1;
@@ -71,7 +100,7 @@ SELECT
     customer_id,
     'CHECKING',
     'TWD',
-    CAST(18000 + rn * 2200 + (rn % 7) * 375 AS DECIMAL(19,4)),
+    CAST(12000 + ((rn * 7919) % 185000) + ((rn * 37) % 100) / 100.0 AS DECIMAL(19,4)),
     0.0000,
     0.00500,
     CASE WHEN status = 'ACTIVE' THEN 'ACTIVE' ELSE 'FROZEN' END,
@@ -94,8 +123,8 @@ SELECT
     'SAVINGS',
     CASE rn % 6 WHEN 0 THEN 'JPY' WHEN 1 THEN 'USD' WHEN 2 THEN 'EUR' WHEN 3 THEN 'GBP' WHEN 4 THEN 'CNY' ELSE 'AUD' END,
     CASE rn % 6
-        WHEN 0 THEN CAST(120000 + rn * 2500 AS DECIMAL(19,4))
-        ELSE CAST(800 + rn * 37 + (rn % 4) * 0.25 AS DECIMAL(19,4))
+        WHEN 0 THEN CAST(50000 + ((rn * 13877) % 980000) AS DECIMAL(19,4))
+        ELSE CAST(250 + ((rn * 197) % 12000) + ((rn * 31) % 100) / 100.0 AS DECIMAL(19,4))
     END,
     0.0000,
     CASE rn % 6 WHEN 0 THEN 0.00100 ELSE 0.00250 END,
@@ -119,9 +148,9 @@ SELECT
     'TIME_DEPOSIT',
     CASE rn % 4 WHEN 0 THEN 'JPY' WHEN 1 THEN 'TWD' WHEN 2 THEN 'USD' ELSE 'EUR' END,
     CASE rn % 4
-        WHEN 0 THEN CAST(300000 + rn * 5000 AS DECIMAL(19,4))
-        WHEN 1 THEN CAST(180000 + rn * 12000 AS DECIMAL(19,4))
-        ELSE CAST(5000 + rn * 220 + (rn % 3) * 0.50 AS DECIMAL(19,4))
+        WHEN 0 THEN CAST(100000 + ((rn * 25789) % 1800000) AS DECIMAL(19,4))
+        WHEN 1 THEN CAST(80000 + ((rn * 43711) % 2200000) AS DECIMAL(19,4))
+        ELSE CAST(1500 + ((rn * 983) % 45000) + ((rn * 29) % 100) / 100.0 AS DECIMAL(19,4))
     END,
     0.0000,
     CASE rn % 4 WHEN 0 THEN 0.00350 WHEN 1 THEN 0.01200 ELSE 0.00800 END,
@@ -144,7 +173,7 @@ SELECT
     customer_id,
     'SUB_ACCOUNT',
     'TWD',
-    CAST(3000 + rn * 550 AS DECIMAL(19,4)),
+    CAST(800 + ((rn * 3203) % 98000) + ((rn * 13) % 100) / 100.0 AS DECIMAL(19,4)),
     0.0000,
     0.00500,
     'ACTIVE',
@@ -166,7 +195,7 @@ SELECT
     customer_id,
     'CREDIT_CARD',
     'TWD',
-    CAST((rn % 4) * 1000 AS DECIMAL(19,4)),
+    CAST(((rn * 4217) % 92000) + ((rn * 19) % 100) / 100.0 AS DECIMAL(19,4)),
     0.0000,
     NULL,
     'ACTIVE',
@@ -189,7 +218,7 @@ SELECT
     'LOAN',
     'TWD',
     0.0000,
-    CAST(120000 + rn * 35000 AS DECIMAL(19,4)),
+    CAST(80000 + ((rn * 67411) % 3600000) AS DECIMAL(19,4)),
     0.02100,
     'ACTIVE',
     NULL,
@@ -605,16 +634,15 @@ DROP TABLE #customers;
 INSERT INTO [ACCOUNT] (account_number, customer_id, account_type, currency, balance, liability, interest_rate, status, parent_account_number, created_at, changed_at, created_by, changed_by)
 SELECT v.account_number, v.customer_id, v.account_type, v.currency, v.balance, v.liability, v.interest_rate, v.status, NULL, GETDATE(), GETDATE(), 'mock-demo', 'mock-demo'
 FROM (VALUES
-    ('090000000101', 'DM01NR01', 'CHECKING', 'TWD', 150000.0000, 0.0000, NULL, 'ACTIVE'),
-    ('090000000201', 'DM01NR01', 'SAVINGS',  'TWD', 500000.0000, 0.0000, 1.50, 'ACTIVE'),
-    ('090000000102', 'DM02NR02', 'CHECKING', 'TWD', 280000.0000, 0.0000, NULL, 'ACTIVE'),
-    ('090000000202', 'DM02NR02', 'SAVINGS',  'TWD', 1200000.0000, 0.0000, 1.50, 'ACTIVE'),
-    ('090000000103', 'DM03FZ01', 'CHECKING', 'TWD', 75000.0000, 0.0000, NULL, 'FROZEN'),
-    ('090000000203', 'DM03FZ01', 'SAVINGS',  'TWD', 300000.0000, 0.0000, 1.50, 'FROZEN'),
-    ('090000000104', 'DM04BK01', 'CHECKING', 'TWD', 95000.0000, 0.0000, NULL, 'ACTIVE'),
-    ('090000000204', 'DM04BK01', 'SAVINGS',  'TWD', 420000.0000, 0.0000, 1.50, 'ACTIVE')
+    ('090000000101', 'DM01NR01', 'CHECKING', 'TWD', 163842.3700, 0.0000, NULL, 'ACTIVE'),
+    ('090000000201', 'DM01NR01', 'SAVINGS',  'TWD', 487915.6200, 0.0000, 1.50, 'ACTIVE'),
+    ('090000000102', 'DM02NR02', 'CHECKING', 'TWD', 296731.0500, 0.0000, NULL, 'ACTIVE'),
+    ('090000000202', 'DM02NR02', 'SAVINGS',  'TWD', 1136842.8100, 0.0000, 1.50, 'ACTIVE'),
+    ('090000000103', 'DM03FZ01', 'CHECKING', 'TWD', 68219.4400, 0.0000, NULL, 'FROZEN'),
+    ('090000000203', 'DM03FZ01', 'SAVINGS',  'TWD', 327508.1900, 0.0000, 1.50, 'FROZEN'),
+    ('090000000104', 'DM04BK01', 'CHECKING', 'TWD', 104376.9200, 0.0000, NULL, 'ACTIVE'),
+    ('090000000204', 'DM04BK01', 'SAVINGS',  'TWD', 398641.7300, 0.0000, 1.50, 'ACTIVE')
 ) AS v(account_number, customer_id, account_type, currency, balance, liability, interest_rate, status)
 WHERE NOT EXISTS (SELECT 1 FROM [ACCOUNT] a WHERE a.account_number = v.account_number);
 
-SET NOCOUNT OFF;
 GO
