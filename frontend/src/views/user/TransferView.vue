@@ -19,7 +19,7 @@
               :key="a.accountNumber"
               :value="a.accountNumber"
             >
-              {{ a.accountNumber }} — 餘額 {{ formatNum(a.balance) }} TWD
+              {{ transferAccountLabel(a) }}
             </a-select-option>
           </a-select>
         </a-form-item>
@@ -164,6 +164,13 @@ const resultStatus = ref('success')
 const resultTitle = ref('')
 const resultSub = ref('')
 const selectedBalance = ref(null)
+const accountTypeLabels = {
+  CHECKING: '活期存款',
+  SAVINGS: '儲蓄存款',
+  TIME_DEPOSIT: '定期存款',
+  SUB_ACCOUNT: '子帳戶',
+  CREDIT_CARD: '信用卡帳戶',
+}
 
 const twdAccounts = computed(() =>
   accounts.value.filter(
@@ -338,6 +345,14 @@ function formatNum(v) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })
+}
+
+function accountTypeLabel(type) {
+  return accountTypeLabels[type] || type || '帳戶'
+}
+
+function transferAccountLabel(account) {
+  return `${account.accountNumber} — ${accountTypeLabel(account.accountType)} — 餘額 ${formatNum(account.balance)} ${account.currency || 'TWD'}`
 }
 </script>
 
