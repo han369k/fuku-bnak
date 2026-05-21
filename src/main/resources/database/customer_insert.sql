@@ -7,7 +7,6 @@ Java Easy Bank Customer Mock Data
 ===============================================================================
 */
 
-SET NOCOUNT ON;
 
 -- Clear customer mock data in FK-safe order.
 -- IF OBJECT_ID('card_application_item', 'U') IS NOT NULL DELETE FROM card_application_item; -- ✨ 新增這行：先刪除申請細項
@@ -304,5 +303,4 @@ IF EXISTS (
 
 PRINT N'customer_insert.sql mock data completed: 104 customer profiles (100 regular + 4 demo).';
 
-SET NOCOUNT OFF;
 GO

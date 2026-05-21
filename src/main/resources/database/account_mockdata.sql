@@ -8,7 +8,6 @@ Java Easy Bank Account Mock Data
 ===============================================================================
 */
 
-SET NOCOUNT ON;
 
 -- Clear account mock data in FK-safe order. Business accounts are recreated below.
 IF OBJECT_ID('SCHEDULED_TRANSFER', 'U') IS NOT NULL DELETE FROM SCHEDULED_TRANSFER;
@@ -646,5 +645,4 @@ FROM (VALUES
 ) AS v(account_number, customer_id, account_type, currency, balance, liability, interest_rate, status)
 WHERE NOT EXISTS (SELECT 1 FROM [ACCOUNT] a WHERE a.account_number = v.account_number);
 
-SET NOCOUNT OFF;
 GO

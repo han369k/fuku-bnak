@@ -13,7 +13,6 @@
 -- - Risk review queue and credit-visible demo rows stay aligned
 -- ============================================================
 
-SET NOCOUNT ON;
 
 DELETE FROM LOAN_REPAYMENT;
 DELETE FROM LOAN_ACCOUNT;
