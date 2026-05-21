@@ -92,8 +92,13 @@ public class RiskReviewService {
      * LOW    → PASS          自動通過
      * MEDIUM → MANUAL_REVIEW 轉人工審核
      * HIGH   → REJECT        自動拒絕
+
+     pep人士一律轉人工審核
      */
     private Disposition resolveDisposition(CustomerCreditInfo credit) {
+        if (credit.getIsPep()) {
+            return Disposition.MANUAL_REVIEW;
+        }
         return switch (credit.getRiskLevel()) {
             case LOW -> Disposition.PASS;
             case MEDIUM -> Disposition.MANUAL_REVIEW;
@@ -149,7 +154,7 @@ public class RiskReviewService {
         RiskEventLog log = new RiskEventLog();
         log.setEventType(dto.getScene().name());
         log.setBusinessId(dto.getBusinessId());
-        log.setTargetIdentifier("客戶ID: "+dto.getCustomerId());
+        log.setTargetIdentifier("客戶ID: " + dto.getCustomerId());
         log.setRiskLevel(credit != null ? credit.getRiskLevel() : RiskLevel.HIGH);
         log.setDisposition(disposition);
         log.setTransactionAmount(dto.getAmount());
