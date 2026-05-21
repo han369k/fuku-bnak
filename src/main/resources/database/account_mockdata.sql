@@ -27,15 +27,45 @@ IF OBJECT_ID('tempdb..#customers') IS NOT NULL DROP TABLE #customers;
 IF OBJECT_ID('tempdb..#mock_accounts') IS NOT NULL DROP TABLE #mock_accounts;
 IF OBJECT_ID('tempdb..#tx_accounts') IS NOT NULL DROP TABLE #tx_accounts;
 
-SELECT TOP (100)
-    CAST(SUBSTRING(email, 9, 3) AS INT) AS rn,
-    customer_id, cif, id_number, name, birthday, gender, email, phone, address,
-    nationality, registered_address, current_address, occupation, employer,
-    estimated_monthly_tx, account_purpose, fund_source, tax_residency, is_pep,
-    id_front_url, id_back_url, second_id_url, risk_level, status
+SELECT
+    mock_customers.rn,
+    mock_customers.customer_id,
+    mock_customers.cif,
+    mock_customers.id_number,
+    mock_customers.name,
+    mock_customers.birthday,
+    mock_customers.gender,
+    mock_customers.email,
+    mock_customers.phone,
+    mock_customers.address,
+    mock_customers.nationality,
+    mock_customers.registered_address,
+    mock_customers.current_address,
+    mock_customers.occupation,
+    mock_customers.employer,
+    mock_customers.estimated_monthly_tx,
+    mock_customers.account_purpose,
+    mock_customers.fund_source,
+    mock_customers.tax_residency,
+    mock_customers.is_pep,
+    mock_customers.id_front_url,
+    mock_customers.id_back_url,
+    mock_customers.second_id_url,
+    mock_customers.risk_level,
+    mock_customers.status
 INTO #customers
-FROM CUSTOMER_PROFILE
-ORDER BY rn;
+FROM (
+    SELECT
+        TRY_CAST(SUBSTRING(email, 9, 3) AS INT) AS rn,
+        customer_id, cif, id_number, name, birthday, gender, email, phone, address,
+        nationality, registered_address, current_address, occupation, employer,
+        estimated_monthly_tx, account_purpose, fund_source, tax_residency, is_pep,
+        id_front_url, id_back_url, second_id_url, risk_level, status
+    FROM CUSTOMER_PROFILE
+    WHERE email LIKE 'customer[0-9][0-9][0-9]@java-bank.demo'
+) mock_customers
+WHERE mock_customers.rn BETWEEN 1 AND 100
+ORDER BY mock_customers.rn;
 
 IF (SELECT COUNT(*) FROM #customers) <> 100
     THROW 51101, 'account_mockdata.sql requires exactly 100 customers. Run customer_insert.sql first.', 1;
