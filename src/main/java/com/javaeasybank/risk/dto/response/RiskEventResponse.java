@@ -17,6 +17,8 @@ public class RiskEventResponse {
 
     private String eventType;
 
+    private String businessId;
+
     private String targetIdentifier;
 
     private RiskLevel riskLevel;

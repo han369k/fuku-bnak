@@ -41,7 +41,7 @@ public class TransferRiskClient {
         req.setScene(BusinessScene.TRANSFER_REVIEW);
         req.setBusinessId(referenceId);
         req.setAmount(amount);
-        req.setTargetIdentifier(toAccNum);
+        req.setTargetIdentifier("轉入帳戶: "+toAccNum);
         req.setCallbackUrl(callbackBaseUrl + "/" + referenceId + "/status");
         if (internalWarning != null) {
             req.addContext("internalWarning", internalWarning);

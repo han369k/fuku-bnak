@@ -175,9 +175,9 @@ function formatDate(value) {
 const columns = [
   { title: '類型', dataIndex: 'listType', key: 'listType', width: 120 },
   { title: '資料', dataIndex: 'listValue', key: 'listValue' },
-  { title: '原因', dataIndex: 'reason', key: 'reason', ellipsis: true },
   { title: '啟用狀態', dataIndex: 'status', key: 'status', width: 100 },
-  { title: '資料來源', dataIndex: 'source', key: 'source', ellipsis: true },
+  { title: '原因', dataIndex: 'reason', key: 'reason', width: 200, ellipsis: true },
+  { title: '資料來源', dataIndex: 'source', key: 'source', width: 150, ellipsis: true },
   { title: '建立時間', dataIndex: 'createdAt', key: 'createdAt', width: 160, customRender: ({ text }) => formatDate(text) },
   { title: '解封時間', dataIndex: 'expireAt', key: 'expireAt', width: 160, customRender: ({ text }) => formatDate(text) },
   { title: '更新時間', dataIndex: 'updatedAt', key: 'updatedAt', width: 160, customRender: ({ text }) => formatDate(text) },
@@ -291,6 +291,19 @@ onMounted(fetchList)
 </script>
 
 <style scoped>
+:deep(.ant-table) {
+  font-size: 15px;
+}
+
+:deep(.ant-table-thead > tr > th) {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+:deep(.ant-table-tbody > tr > td) {
+  font-size: 15px;
+}
+
 .page-container {
   display: flex;
   flex-direction: column;

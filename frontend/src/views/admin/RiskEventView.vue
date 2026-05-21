@@ -69,26 +69,34 @@
           </div>
         </template>
         <template v-else-if="column.key === 'actionTaken'">
-          <a-tag :color="actionTakenColorMap[record.actionTaken]" class="table-badge">
+          <div :class="['status-tag', `action-${record.actionTaken.toLowerCase()}`]">
             {{ actionTakenMap[record.actionTaken] || record.actionTaken }}
-          </a-tag>
+          </div>
         </template>
         <template v-else-if="column.key === 'eventType'">
-          <a-tag color="blue" class="table-badge">
+          <div>
             {{ eventTypeMap[record.eventType] || record.eventType }}
-          </a-tag>
+          </div>
         </template>
         <template v-else-if="column.key === 'createdAt'">
           {{ formatDate(record.createdAt) }}
         </template>
+        <template v-else-if="column.key === 'businessId'">
+          <a-tooltip :title="record.businessId">
+            <span class="mono-id">{{ record.businessId }}</span>
+          </a-tooltip>
+        </template>
+        <template v-else-if="column.key === 'targetIdentifier'">
+          <a-tooltip :title="record.targetIdentifier">
+            <span class="mono-id">{{ record.targetIdentifier }}</span>
+          </a-tooltip>
+        </template>
       </template>
 
       <template #expandedRowRender="{ record }">
-        <div style="margin-bottom: 12px; font-size: 15px;">
-          <span style="color: #8c8c8c; margin-right: 8px;">觸發原因</span>
-          <a-tag :color="actionTakenColorMap[record.actionTaken] || 'default'" class="table-badge">
-            {{ record.triggerReason || '—' }}
-          </a-tag>
+        <div :class="['status-tag', `action-${record.actionTaken.toLowerCase()}`]"
+             style="display:inline-flex">
+          {{ record.triggerReason || '—' }}
         </div>
       </template>
     </a-table>
@@ -125,13 +133,6 @@ const actionTakenMap = {
   WARNING: '警告'
 }
 
-const actionTakenColorMap = {
-  PASS: 'green',
-  REJECT: 'red',
-  MANUAL_REVIEW: 'gray',
-  WARNING: 'gold',
-}
-
 const eventTypeMap = {
   LOAN_APPLY: '貸款申請',
   TRANSFER_REVIEW: '轉帳審核',
@@ -140,20 +141,27 @@ const eventTypeMap = {
 }
 
 const columns = [
-  {title: '事件 ID', dataIndex: 'logId', key: 'logId', width: 100},
+  {title: '事件 ID', dataIndex: 'logId', key: 'logId', width: 50},
   {
     title: '時間',
     dataIndex: 'createdAt',
     key: 'createdAt',
-    width: 180,
+    width: 120,
     sorter: true,
     sortDirections: ['descend', 'ascend', 'descend'],
     defaultSortOrder: 'descend'
   },
-  {title: '事件類型', dataIndex: 'eventType', key: 'eventType', width: 120},
-  {title: '目標識別碼', dataIndex: 'targetIdentifier', key: 'targetIdentifier', width: 150},
-  {title: '採取行動', dataIndex: 'actionTaken', key: 'actionTaken', width: 120},
-  {title: '風險等級', dataIndex: 'riskLevel', key: 'riskLevel', width: 120, fixed: 'right'},
+  {title: '事件類型', dataIndex: 'eventType', key: 'eventType', width: 100},
+  {title: '業務編號', dataIndex: 'businessId', key: 'businessId', width: 150, ellipsis: true},
+  {
+    title: '目標識別碼',
+    dataIndex: 'targetIdentifier',
+    key: 'targetIdentifier',
+    width: 150,
+    ellipsis: true
+  },
+  {title: '採取行動', dataIndex: 'actionTaken', key: 'actionTaken', width: 100},
+  {title: '風險等級', dataIndex: 'riskLevel', key: 'riskLevel', width: 100, fixed: 'right'},
 ]
 
 const pagination = reactive({
@@ -269,20 +277,16 @@ onMounted(() => loadData())
   font-size: 15px !important;
 }
 
-/* 內嵌狀態與 Tag 樣式微調放大 */
+/* ── 💡 調整：沉穩、專業金融質感的風險藥丸樣式 ── */
 .status-tag {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 4px 12px;
   border-radius: 20px;
-  font-size: 15px; /* 配合大表格調整 */
+  font-size: 15px;
   font-weight: 600;
-}
-
-.table-badge {
-  font-size: 15px !important;
-  padding: 2px 8px !important;
+  line-height: 1.2;
 }
 
 .status-dot {
@@ -291,36 +295,60 @@ onMounted(() => loadData())
   border-radius: 50%;
 }
 
+/* 低風險：從鮮綠色改為「沉穩英倫松針綠」 */
 .risk-low {
-  background-color: rgba(82, 196, 26, 0.1);
-  color: #389e0d;
+  background-color: rgba(47, 122, 70, 0.08); /* 降低明度與飽和度的綠 bg */
+  color: #276339; /* 穩重的深松針綠文字 */
 }
+
 .risk-low .status-dot {
-  background-color: #52c41a;
+  background-color: #2f7a46;
 }
 
+/* 中風險：從亮橘色改為「洗鍊古銅烤漆琥珀」 */
 .risk-medium {
-  background-color: rgba(250, 140, 22, 0.1);
-  color: #fa8c16;
+  background-color: rgba(181, 107, 24, 0.08); /* 偏向木質與皮革的沉穩琥珀 bg */
+  color: #91520f; /* 深古銅橘文字 */
 }
+
 .risk-medium .status-dot {
-  background-color: #fa8c16;
+  background-color: #b56b18;
 }
 
+/* 高風險：從刺眼大紅改為「高級波爾多深磚紅」 */
 .risk-high {
-  background-color: rgba(255, 77, 79, 0.1);
-  color: #d9363e;
-}
-.risk-high .status-dot {
-  background-color: #ff4d4f;
+  background-color: rgba(166, 29, 36, 0.07); /* 帶有灰色調的暗紅 bg */
+  color: #8c1c21; /* 經典金融高風險的深磚紅/酒紅文字 */
 }
 
-.risk-suspended {
-  background-color: rgba(114, 46, 209, 0.1);
-  color: #531dab;
+.risk-high .status-dot {
+  background-color: #a61d24;
 }
-.risk-suspended .status-dot {
-  background-color: #722ed1;
+
+/* 拒絕往來/凍結：從亮紫色改為「午夜深靛紫」 */
+.risk-suspended {
+  background-color: rgba(83, 29, 171, 0.07); /* 深邃的午夜紫 bg */
+  color: #43168c; /* 穩重的深靛紫文字 */
+}
+
+.action-pass {
+  background-color: rgba(47, 122, 70, 0.08); /* 降低明度與飽和度的綠 bg */
+  color: #276339; /* 穩重的深松針綠文字 */
+}
+
+.action-reject {
+  background-color: rgba(166, 29, 36, 0.07); /* 帶有灰色調的暗紅 bg */
+  color: #8c1c21; /* 經典金融高風險的深磚紅/酒紅文字 */
+}
+
+.action-manual_review {
+  background-color: rgba(0, 0, 0, 0.06);
+  color: #595959;
+}
+
+.action-warning {
+  background-color: rgba(250, 173, 20, 0.1);
+  color: #d48806;
 }
 
 .action-bar {
@@ -331,5 +359,12 @@ onMounted(() => loadData())
   display: flex;
   gap: 12px;
   align-items: center;
+}
+
+.mono-id {
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 14px;
+  color: #595959;
+  cursor: default;
 }
 </style>

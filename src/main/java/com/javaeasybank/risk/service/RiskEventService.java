@@ -108,6 +108,7 @@ public class RiskEventService {
                 .logId(rel.getLogId())
                 .eventType(rel.getEventType())
                 .riskLevel(rel.getRiskLevel())
+                .businessId(rel.getBusinessId())
                 .targetIdentifier(rel.getTargetIdentifier())
                 .actionTaken(rel.getDisposition())
                 .triggerReason(rel.getTriggerReason())

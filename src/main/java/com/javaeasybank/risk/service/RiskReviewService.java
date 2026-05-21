@@ -37,13 +37,13 @@ public class RiskReviewService {
         if (!hitTypes.isEmpty()) {
             log.info("[RiskReview] 命中黑名單 businessId={} hitTypes={}",
                     request.getBusinessId(), hitTypes);
-            RiskEventLog log = buildAndSaveLog(
+            RiskEventLog eventLoglog = buildAndSaveLog(
                     request, null, 0,
                     Disposition.REJECT,
                     "命中黑名單：" + hitTypes);
             // 黑名單直接 callback，不需要人審
-            callbackService.notify(request.getCallbackUrl(), Disposition.REJECT, log);
-            return buildResponse(log, Disposition.REJECT, null, 0);
+            callbackService.notify(request.getCallbackUrl(), Disposition.REJECT, eventLoglog);
+            return buildResponse(eventLoglog, Disposition.REJECT, null, 0);
         }
 
         // 2. 同步信用資料並重新評分
@@ -149,7 +149,7 @@ public class RiskReviewService {
         RiskEventLog log = new RiskEventLog();
         log.setEventType(dto.getScene().name());
         log.setBusinessId(dto.getBusinessId());
-        log.setTargetIdentifier(dto.getCustomerId());
+        log.setTargetIdentifier("客戶ID: "+dto.getCustomerId());
         log.setRiskLevel(credit != null ? credit.getRiskLevel() : RiskLevel.HIGH);
         log.setDisposition(disposition);
         log.setTransactionAmount(dto.getAmount());
