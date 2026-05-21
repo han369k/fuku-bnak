@@ -104,14 +104,25 @@ public class BillService {
 
                 List<CardTransaction> txns = cardTransactionRepository
                         .findByCard_CardAccount_IdAndBillIsNull(cardAccount.getId());
-                if (txns.isEmpty()) {
+
+                BigDecimal previousUnpaid = cardBillRepository
+                        .findTopByCardAccountIdAndBillStatusInOrderByBillingMonthDesc(
+                                cardAccount.getId(),
+                                List.of(BillStatus.UNPAID, BillStatus.PARTIAL))
+                        .map(oldBill -> oldBill.getTotalAmount().subtract(oldBill.getPaidAmount()))
+                        .orElse(BigDecimal.ZERO);
+
+                BigDecimal currentTotal = txns.stream()
+                        .map(CardTransaction::getTxnAmount)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                BigDecimal total = previousUnpaid.add(currentTotal);
+
+                // 沒有任何應繳金額才跳過
+                if (total.compareTo(BigDecimal.ZERO) <= 0) {
                     skippedNoTxns++;
                     continue;
                 }
-
-                BigDecimal total = txns.stream()
-                        .map(CardTransaction::getTxnAmount)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add);
 
                 BigDecimal cashbackAmount = txns.stream()
                         .map(CardTransaction::getCashbackAmount)
