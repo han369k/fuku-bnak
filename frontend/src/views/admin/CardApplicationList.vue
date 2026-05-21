@@ -80,9 +80,9 @@ const columns = [
     dataIndex: 'applyDate',
     key: 'applyDate',
     width: 180,
-    customRender: (record) => {
-      return dayjs(record.applyDate).format('YYYY-MM-DD HH:mm')
-    },
+    customRender: ({ text }) => {
+    return text ? dayjs(text).format('YYYY-MM-DD HH:mm') : '-'
+  },
   },
   { title: '狀態', dataIndex: 'status', key: 'status', width: 120 },
   { title: '備註', dataIndex: 'remark', key: 'remark' , width: 120},
