@@ -2,6 +2,7 @@ package com.javaeasybank.creditcard.dto;
 
 import java.time.LocalDateTime;
 
+import com.javaeasybank.creditcard.enums.CardApplicationItemResult;
 import com.javaeasybank.creditcard.enums.CardApplicationStatus;
 
 import lombok.Data;
@@ -16,4 +17,6 @@ public class CardApplicationResponseDto {
     private LocalDateTime applyDate;
     private CardApplicationStatus status;
     private String remark;
+
+    private CardApplicationItemResult itemResult;
 }

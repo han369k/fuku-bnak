@@ -158,6 +158,7 @@ public class CardAppService {
                         dto.setCardTypeId(cardType.getCardTypeId());
                         dto.setCardTypeName(cardType.getCardTypeName());
                     }
+                    dto.setItemResult(item.getResult());
                 });
 
         return dto;

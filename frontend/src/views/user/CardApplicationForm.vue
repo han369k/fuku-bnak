@@ -35,6 +35,10 @@ const columns = [
     key: 'remark',
     label: '備註',
   },
+  {
+    key: 'itemResult',
+    label: '審核結果',
+  },
 ]
 
 const getStatusType = (status) => {
@@ -54,6 +58,18 @@ const getStatusText = (status) => {
       return '拒絕'
     default:
       return '審核中'
+  }
+}
+const getItemResultText = (result) => {
+  switch (result) {
+    case 'APPROVED':
+      return '核准'
+    case 'REJECTED':
+      return '拒絕'
+    case 'PENDING':
+      return '待審核'
+    default:
+      return '-'
   }
 }
 
@@ -183,6 +199,9 @@ onMounted(() => {
                   :class="`status-${getStatusType(app.status)}`"
                 >
                   {{ getStatusText(app.status) }}
+                </span>
+                <span v-else-if="column.key === 'itemResult'">
+                  {{ getItemResultText(app.itemResult) }}
                 </span>
 
                 <template v-else>
