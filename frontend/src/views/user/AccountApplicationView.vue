@@ -854,7 +854,7 @@ onMounted(async () => {
       <h2 class="step-title" style="text-align:center">申請已送出</h2>
       <p class="result-desc">
         您的開戶申請已成功送出，申請編號為
-        <strong>#{{ submitResult?.id }}</strong>。
+        <strong>{{ submitResult?.applicationNo }}</strong>。
         我們將於 1-3 個工作天內完成審核，屆時將通知您審核結果。
       </p>
       <div class="step-actions" style="justify-content:center">
@@ -883,7 +883,7 @@ onMounted(async () => {
           </thead>
           <tbody>
             <tr v-for="app in existingApplications" :key="app.id">
-              <td>#{{ app.id }}</td>
+              <td>{{ app.applicationNo }}</td>
               <td>{{ getAccountTypeLabel(app) }}</td>
               <td>{{ app.createdAt?.substring(0, 10) || '-' }}</td>
               <td class="application-status-cell">
