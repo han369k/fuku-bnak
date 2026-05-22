@@ -163,4 +163,15 @@ public class CardAppService {
 
         return dto;
     }
+    public void needSupplement(Integer applicationId, String remark) {
+
+    CardApplication application = cardAppRepository.findById(applicationId)
+            .orElseThrow(() -> new BusinessException("找不到信用卡申請單"));
+
+    application.setStatus(CardApplicationStatus.NEED_SUPPLEMENT);
+
+    application.setRemark(remark);
+
+    cardAppRepository.save(application);
+}
 }

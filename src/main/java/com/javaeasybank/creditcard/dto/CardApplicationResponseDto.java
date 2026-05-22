@@ -1,6 +1,7 @@
 package com.javaeasybank.creditcard.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import com.javaeasybank.creditcard.enums.CardApplicationItemResult;
 import com.javaeasybank.creditcard.enums.CardApplicationStatus;
@@ -19,4 +20,6 @@ public class CardApplicationResponseDto {
     private String remark;
 
     private CardApplicationItemResult itemResult;
+
+    private List<CardApplicationDocumentResponseDto> documents;
 }

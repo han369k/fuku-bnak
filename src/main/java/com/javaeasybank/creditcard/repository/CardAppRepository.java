@@ -1,5 +1,7 @@
 package com.javaeasybank.creditcard.repository;
 
+import java.util.Optional;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -30,4 +32,9 @@ public interface CardAppRepository extends JpaRepository<CardApplication, Intege
             @Param("status") CardApplicationStatus status);
 
     Page<CardApplication> findByCustomer_CustomerId(String customerId, Pageable pageable);
+
+    Optional<CardApplication> findByApplicationIdAndCustomerCustomerId(
+        Integer applicationId,
+        String customerId
+);
 }
