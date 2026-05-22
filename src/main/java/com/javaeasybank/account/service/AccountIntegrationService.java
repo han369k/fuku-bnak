@@ -266,6 +266,7 @@ public class AccountIntegrationService {
 
     @Transactional
     public LoanAccountTransactionResponse repayLoan(String customerId, LoanRepaymentRequest request) {
+        validateIntegerLoanRepaymentAmount(request.getAmount());
         BigDecimal amount = normalizePositiveAmount(request.getAmount(), "還款金額");
         String fromAccountNumber = normalizeAccountNumber(request.getFromAccountNumber());
         String loanAccountNumber = normalizeAccountNumber(request.getLoanAccountNumber());
@@ -875,6 +876,14 @@ public class AccountIntegrationService {
             throw new AccountException("INVALID_AMOUNT", label + "必須大於 0");
         }
         return amount.setScale(Currency.TWD.getDecimalPlaces(), RoundingMode.HALF_UP);
+    }
+
+    private void validateIntegerLoanRepaymentAmount(BigDecimal amount) {
+        if (amount != null && amount.stripTrailingZeros().scale() > 0) {
+            throw new AccountException(
+                    "LOAN_REPAYMENT_AMOUNT_NOT_INTEGER",
+                    "貸款還款金額必須為整數");
+        }
     }
 
     private BigDecimal normalizeRate(BigDecimal rate) {

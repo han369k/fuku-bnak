@@ -1,6 +1,6 @@
 <template>
   <div class="transfer-page">
-    <h2>國內轉帳</h2>
+    <a-button type="primary" class="rounded-btn" style="margin-bottom: 20px;" @click="demoTransfer">示範轉帳1000</a-button>
 
     <a-card class="transfer-form-card">
       <a-form :model="form" layout="vertical" @finish="handleTransfer">
@@ -206,6 +206,14 @@ onMounted(async () => {
     form.value.fromAccount = route.query.from
     onFromChange(route.query.from)
   }
+  // prefill toAccount, toBankCode, amount if provided
+  if (route.query.toAccount) {
+    form.value.toAccount = route.query.toAccount
+    if (route.query.toBankCode) form.value.toBankCode = route.query.toBankCode
+    if (route.query.amount) form.value.amount = Number(route.query.amount)
+    // normalize after setting
+    normalizeToAccount()
+  }
   loadFavorites()
 })
 
@@ -329,6 +337,20 @@ async function handleTransfer() {
   }
 }
 
+function demoTransfer() {
+  const checkingAccount = twdAccounts.value.find(a => a.accountType === 'CHECKING') || twdAccounts.value[0]
+  if (checkingAccount) {
+    form.value.fromAccount = checkingAccount.accountNumber
+    onFromChange(form.value.fromAccount)
+    form.value.amount = 1000
+    form.value.toAccount = ''
+    form.value.toBankCode = undefined
+    form.value.note = ''
+  } else {
+    message.warning('目前沒有可用的帳號供示範')
+  }
+}
+
 function resetForm() {
   showResult.value = false
   form.value = {
@@ -339,6 +361,7 @@ function resetForm() {
     note: '',
   }
 }
+
 
 function formatNum(v) {
   return Number(v || 0).toLocaleString('en-US', {

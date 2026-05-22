@@ -65,7 +65,21 @@
           <tbody v-if="pagedTransactions.length">
             <tr v-for="(record, index) in pagedTransactions" :key="transactionKey(record, index)">
               <td>{{ formatDate(record.createdAt) }}</td>
-              <td class="mono-cell">{{ record.referenceId || '-' }}</td>
+              <td class="mono-cell">
+                <span class="reference-cell">
+                  <span class="reference-text">{{ record.referenceId || '-' }}</span>
+                  <button
+                    v-if="record.referenceId"
+                    type="button"
+                    class="copy-reference-btn"
+                    aria-label="複製交易編號"
+                    title="複製交易編號"
+                    @click="copyReferenceId(record.referenceId)"
+                  >
+                    複製
+                  </button>
+                </span>
+              </td>
               <td class="mono-cell">{{ record.accountNumber || '-' }}</td>
               <td class="mono-cell">{{ formatCounterpartAccount(record) }}</td>
               <td>{{ txTypeLabel(record.transactionType) }}</td>
@@ -138,11 +152,15 @@
         <button type="button" :disabled="currentPage === totalPages" @click="currentPage++">下一頁</button>
       </div>
     </section>
+
+    <div v-if="copyNotice" class="copy-toast" role="status" aria-live="polite">
+      {{ copyNotice }}
+    </div>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { getMyAccounts, getMyTransactions } from '@/api/customerAccount'
 
@@ -157,6 +175,8 @@ const txType = ref('')
 const currentPage = ref(1)
 const pageSize = ref(20)
 const pageSizeOptions = [10, 20, 50]
+const copyNotice = ref('')
+let copyNoticeTimer
 
 const totalPages = computed(() => Math.max(1, Math.ceil(transactions.value.length / pageSize.value)))
 const pagedTransactions = computed(() => {
@@ -188,6 +208,10 @@ onMounted(async () => {
   } catch (e) {
     console.error(e)
   }
+})
+
+onUnmounted(() => {
+  window.clearTimeout(copyNoticeTimer)
 })
 
 async function fetchTransactions() {
@@ -257,6 +281,36 @@ function formatCounterpartAccount(record) {
 
 function formatNum(value) {
   return Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+async function copyReferenceId(referenceId) {
+  if (!referenceId) return
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(referenceId)
+    } else {
+      const textarea = document.createElement('textarea')
+      textarea.value = referenceId
+      textarea.setAttribute('readonly', '')
+      textarea.style.position = 'fixed'
+      textarea.style.opacity = '0'
+      document.body.appendChild(textarea)
+      textarea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textarea)
+    }
+    showCopyNotice('交易編號已複製')
+  } catch (error) {
+    showCopyNotice('複製失敗，請手動複製')
+  }
+}
+
+function showCopyNotice(text) {
+  copyNotice.value = text
+  window.clearTimeout(copyNoticeTimer)
+  copyNoticeTimer = window.setTimeout(() => {
+    copyNotice.value = ''
+  }, 1800)
 }
 </script>
 
@@ -421,6 +475,42 @@ h2 {
   color: var(--text-secondary);
 }
 
+.reference-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 250px;
+}
+
+.reference-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.copy-reference-btn {
+  flex: 0 0 auto;
+  min-height: 26px;
+  padding: 2px 8px;
+  color: var(--primary-dark);
+  background: rgba(255, 249, 239, 0.7);
+  border: 1px solid rgba(92, 107, 95, 0.24);
+  border-radius: 8px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.copy-reference-btn:hover,
+.copy-reference-btn:focus-visible {
+  color: var(--text-primary);
+  background: rgba(92, 107, 95, 0.09);
+  border-color: rgba(92, 107, 95, 0.38);
+  outline: none;
+}
+
 .note-cell {
   max-width: 210px;
   color: var(--text-secondary);
@@ -544,6 +634,44 @@ h2 {
 .transactions-pagination button:disabled {
   color: var(--text-disabled);
   cursor: not-allowed;
+}
+
+.copy-toast {
+  position: fixed;
+  z-index: 1300;
+  top: 88px;
+  left: 50%;
+  padding: 10px 18px;
+  color: var(--primary-dark);
+  background:
+    linear-gradient(180deg, rgba(255, 249, 239, 0.94), rgba(249, 244, 235, 0.88)),
+    url('/washi-texture.png');
+  background-size: auto, 220px 220px;
+  border: 1px solid rgba(214, 206, 195, 0.92);
+  border-radius: 999px;
+  box-shadow: 0 12px 28px rgba(63, 74, 66, 0.1);
+  font-size: 14px;
+  font-weight: 700;
+  transform: translateX(-50%);
+  animation: copyToastBreath 1.8s ease-in-out both;
+}
+
+@keyframes copyToastBreath {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -8px) scale(0.98);
+  }
+
+  18%,
+  82% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -6px) scale(0.99);
+  }
 }
 
 @media (max-width: 680px) {
