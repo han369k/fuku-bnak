@@ -8,12 +8,22 @@
           <div class="modal-header">
             <div class="header-left">
               <span class="modal-icon"><i class="fa-solid fa-square-phone"></i></span>
-              <div>
+              <div class="header-info">
                 <div class="modal-title">聯繫紀錄</div>
                 <div class="modal-sub">
                   <span class="id-chip">{{ app?.applicationId }}</span>
                   <span class="applicant-hint">
                     {{ app?.applicantName || (app?.cif ? `CIF: ${app.cif}` : (app?.customerId ? `#${app.customerId}` : '')) }}
+                  </span>
+                </div>
+                <div class="contact-line">
+                  <span class="contact-item">
+                    <i class="fa-solid fa-phone"></i>
+                    {{ app?.phone || '未提供電話' }}
+                  </span>
+                  <span class="contact-item">
+                    <i class="fa-solid fa-envelope"></i>
+                    {{ app?.email || '未提供 Email' }}
                   </span>
                 </div>
               </div>
@@ -372,7 +382,8 @@ function formatDateTime(d) {
   background: var(--surface);
   flex-shrink: 0;
 }
-.header-left { display: flex; align-items: center; gap: 12px; }
+.header-left { display: flex; align-items: flex-start; gap: 12px; }
+.header-info { min-width: 0; }
 .modal-icon  { font-size: 22px; }
 .modal-title {
   font-family: 'Noto Serif TC', serif;
@@ -385,6 +396,27 @@ function formatDateTime(d) {
   border: 1px solid var(--accent-lt); padding: 2px 8px; border-radius: 4px;
 }
 .applicant-hint { font-size: 14px; color: var(--muted-2); }
+.contact-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 8px;
+}
+.contact-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted-2);
+  font-family: 'IBM Plex Mono', monospace;
+  min-width: 0;
+  word-break: break-all;
+}
+.contact-item i {
+  color: var(--accent);
+  font-size: 12px;
+  flex-shrink: 0;
+}
 .close-btn {
   width: 30px; height: 30px; border-radius: 8px;
   border: 1px solid var(--border); background: transparent;

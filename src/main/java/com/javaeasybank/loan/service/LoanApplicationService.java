@@ -788,6 +788,8 @@ public class LoanApplicationService {
         customerProfileRepository.findById(loan.getCustomerId()).ifPresent(p -> {
             dto.setCif(p.getCif());
             dto.setMemberName(p.getName());
+            dto.setPhone(p.getPhone());
+            dto.setEmail(p.getEmail());
         });
         dto.setApplyType(loan.getApplyType());
         dto.setApplyAmount(loan.getApplyAmount());
