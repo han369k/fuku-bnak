@@ -8,7 +8,6 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -106,14 +105,14 @@ public class BillService {
                 List<CardTransaction> txns = cardTransactionRepository
                         .findByCard_CardAccount_IdAndBillIsNull(cardAccount.getId());
 
-                Optional<CardBill> previousBillOpt = cardBillRepository
-                        .findTopByCardAccountIdAndBillStatusInOrderByBillingMonthDesc(
+                List<CardBill> previousBills = cardBillRepository
+                        .findByCardAccountIdAndBillStatusInOrderByBillingMonthAsc(
                                 cardAccount.getId(),
                                 List.of(BillStatus.UNPAID, BillStatus.PARTIAL));
 
-                BigDecimal previousUnpaid = previousBillOpt
+                BigDecimal previousUnpaid = previousBills.stream()
                         .map(oldBill -> oldBill.getTotalAmount().subtract(oldBill.getPaidAmount()))
-                        .orElse(BigDecimal.ZERO);
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
 
                 BigDecimal currentTotal = txns.stream()
                         .map(CardTransaction::getTxnAmount)
@@ -152,10 +151,8 @@ public class BillService {
                 CardBill savedBill = cardBillRepository.save(bill);
 
                 if (previousUnpaid.compareTo(BigDecimal.ZERO) > 0) {
-                    previousBillOpt.ifPresent(oldBill -> {
-                        oldBill.setBillStatus(BillStatus.ROLLED_OVER);
-                        cardBillRepository.save(oldBill);
-                    });
+                    previousBills.forEach(oldBill -> oldBill.setBillStatus(BillStatus.ROLLED_OVER));
+                    cardBillRepository.saveAll(previousBills);
                 }
 
                 /*

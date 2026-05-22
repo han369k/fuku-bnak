@@ -29,7 +29,7 @@ public interface CardBillRepository extends JpaRepository<CardBill, Integer>, Jp
                         Integer cardAccountId,
                         String billingMonth);
         //最近一期未繳狀態
-        Optional<CardBill> findTopByCardAccountIdAndBillStatusInOrderByBillingMonthDesc(
+        List<CardBill> findByCardAccountIdAndBillStatusInOrderByBillingMonthAsc(
                         Integer cardAccountId,
                         List<BillStatus> statuses);
 

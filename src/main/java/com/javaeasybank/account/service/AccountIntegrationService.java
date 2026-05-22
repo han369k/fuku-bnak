@@ -545,47 +545,20 @@ public class AccountIntegrationService {
         return account.getAccountNumber();
     }
 
-    private List<CardBill> resolveCreditCardPaymentBills(String customerId, CreditCardPaymentRequest request) {
-        List<Integer> billIds = request.getBillIds();
-
-        if (billIds != null && !billIds.isEmpty()) {
-            List<CardBill> bills = billIds.stream()
-                    .map(billId -> cardBillRepository
-                            .findByBillIdAndCardAccountCustomerCustomerId(billId, customerId)
-                            .orElseThrow(() -> new AccountException("BILL_NOT_FOUND", "找不到指定帳單")))
-                    .filter(bill -> PAYABLE_BILL_STATUSES.contains(bill.getBillStatus()))
-                    .sorted((a, b) -> String.valueOf(a.getBillingMonth())
-                            .compareTo(String.valueOf(b.getBillingMonth())))
-                    .toList();
-
-            if (bills.isEmpty()) {
-                throw new AccountException("BILL_NOT_FOUND", "找不到可繳帳單");
-            }
-
-            return bills;
-        }
-
-        CardBill bill = resolveCreditCardPaymentBill(customerId, request.getBillId());
-        return List.of(bill);
-    }
+    
 
     private CardBill resolveCreditCardPaymentBill(String customerId, Integer billId) {
-        CardBill bill;
-        if (billId != null) {
-            bill = cardBillRepository
-                    .findByBillIdAndCardAccountCustomerCustomerId(billId, customerId)
-                    .orElseThrow(() -> new AccountException("BILL_NOT_FOUND", "找不到指定帳單"));
-        } else {
-            bill = cardBillRepository
-                    .findTopByCardAccountCustomerCustomerIdAndBillStatusInOrderByDueDateAsc(
-                            customerId,
-                            PAYABLE_BILL_STATUSES)
-                    .orElseThrow(() -> new AccountException("BILL_NOT_FOUND", "找不到未繳帳單"));
-        }
+        if (billId == null) {
+        throw new AccountException("MISSING_BILL_ID", "請指定要繳費的帳單");
+    }
 
-        if (!PAYABLE_BILL_STATUSES.contains(bill.getBillStatus())) {
-            throw new AccountException("BILL_NOT_PAYABLE", "此帳單狀態不可繳費");
-        }
+    CardBill bill = cardBillRepository
+            .findByBillIdAndCardAccountCustomerCustomerId(billId, customerId)
+            .orElseThrow(() -> new AccountException("BILL_NOT_FOUND", "找不到指定帳單"));
+
+    if (!PAYABLE_BILL_STATUSES.contains(bill.getBillStatus())) {
+        throw new AccountException("BILL_NOT_PAYABLE", "此帳單狀態不可繳費");
+    }
 
         return bill;
     }
