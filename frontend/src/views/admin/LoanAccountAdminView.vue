@@ -106,7 +106,7 @@
             <thead>
               <tr>
                 <th>帳戶編號</th>
-                <th>客戶 CIF</th>
+                <th>客戶</th>
                 <th>類型</th>
                 <th class="text-right">本金</th>
                 <th class="text-right">月繳</th>
@@ -130,7 +130,10 @@
                   <span class="mono text-sm">{{ acc.accountId }}</span>
                 </td>
                 <td>
-                  <span class="mono cif-tag">{{ acc.cif || '—' }}</span>
+                  <div class="applicant-cell">
+                    <span class="mono cif-tag">{{ acc.cif || '—' }}</span>
+                    <span class="member-name" v-if="acc.memberName">{{ acc.memberName }}</span>
+                  </div>
                 </td>
                 <td>
                   <span class="type-badge" :class="'tb-' + acc.applyType">
@@ -729,14 +732,27 @@ onMounted(fetchAccounts)
 .muted   { color: var(--muted-2); }
 .overdue-text { color: var(--red); font-weight: 600; }
 
+/* 客戶欄 */
+.applicant-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.member-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
 /* CIF tag */
 .cif-tag {
-  font-size: 13px;
+  font-size: 12px;
   background: rgba(234, 228, 218, 0.62);
   border: 1px solid var(--border);
   padding: 2px 7px;
   border-radius: 8px;
   color: var(--muted-2);
+  align-self: flex-start;
 }
 
 /* 類型標籤 */

@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -68,7 +69,7 @@ public class LoanAccountService {
         LoanReviewDetail detail = reviewDetailRepo.findByApplicationId(applicationId)
                 .orElseThrow(() -> new BusinessException("找不到二次填單：" + applicationId));
 
-        BigDecimal principal  = detail.getConfirmedAmount();
+        BigDecimal principal  = detail.getConfirmedAmount().setScale(0, RoundingMode.HALF_UP);
         Integer    periods    = detail.getConfirmedPeriod();
         BigDecimal annualRate = detail.getConfirmedRate();
         log.info("[Disbursement] Step-B 計算月付金 principal={} annualRate={} periods={}",
@@ -156,10 +157,10 @@ public class LoanAccountService {
         dto.setAccountNumber(account.getAccountNumber());
         dto.setApplicationId(account.getApplicationId());
         dto.setCustomerId(account.getCustomerId());
-        String cif = customerProfileRepository.findById(account.getCustomerId())
-                .map(p -> p.getCif())
-                .orElse(null);
-        dto.setCif(cif);
+        customerProfileRepository.findById(account.getCustomerId()).ifPresent(p -> {
+            dto.setCif(p.getCif());
+            dto.setMemberName(p.getName());
+        });
         dto.setApplyType(account.getApplyType());
         dto.setPrincipalAmount(account.getPrincipalAmount());
         dto.setConfirmedPeriod(account.getConfirmedPeriod());
