@@ -146,9 +146,12 @@ public class RiskCheckService {
         if (request.getTargetIdentifier() == null) {
             return null;
         }
+
+        String raw = request.getTargetIdentifier().replace("轉入帳戶: ","");
+
         boolean hit = blackListService.isBlacklisted(
                 BlacklistType.ACCOUNT_NO,
-                request.getTargetIdentifier());
+                raw);
         if (hit) {
             // 1. 準備內部理由（存資料庫用）
             String internalDetail = "收款帳號命中黑名單：" + request.getTargetIdentifier();

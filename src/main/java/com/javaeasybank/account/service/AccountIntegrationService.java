@@ -803,17 +803,17 @@ public class AccountIntegrationService {
             cumulativeAmount = cumulativeAmount.add(zeroIfNull(repayment.getTotalAmount()))
                     .setScale(Currency.TWD.getDecimalPlaces(), RoundingMode.HALF_UP);
             periodsToPay++;
-            if (amount.compareTo(cumulativeAmount) == 0) {
+            if (amount.compareTo(roundToWholeTwd(cumulativeAmount)) == 0) {
                 return new LoanRepaymentPlan(loanModuleAccount.getApplicationId(), periodsToPay);
             }
-            if (amount.compareTo(cumulativeAmount) < 0) {
+            if (amount.compareTo(roundToWholeTwd(cumulativeAmount)) < 0) {
                 break;
             }
         }
 
         BigDecimal remainingPrincipal = zeroIfNull(loanModuleAccount.getRemainingPrincipal())
                 .setScale(Currency.TWD.getDecimalPlaces(), RoundingMode.HALF_UP);
-        if (pendingRepayments.size() == 1 && amount.compareTo(remainingPrincipal) == 0) {
+        if (pendingRepayments.size() == 1 && amount.compareTo(roundToWholeTwd(remainingPrincipal)) == 0) {
             return new LoanRepaymentPlan(loanModuleAccount.getApplicationId(), 1);
         }
 
@@ -822,7 +822,7 @@ public class AccountIntegrationService {
                 RoundingMode.HALF_UP);
         throw new AccountException(
                 "LOAN_REPAYMENT_AMOUNT_MISMATCH",
-                "還款金額必須等於本期或連續多期應繳總額，目前本期應繳 " + currentAmount.toPlainString());
+                "還款金額必須等於本期或連續多期應繳總額，目前本期應繳 " + roundToWholeTwd(currentAmount).toPlainString());
     }
 
     private record LoanRepaymentPlan(String applicationId, int periodsToPay) {
@@ -845,7 +845,7 @@ public class AccountIntegrationService {
                 .map(remainingPrincipal -> remainingPrincipal.setScale(
                         Currency.TWD.getDecimalPlaces(),
                         RoundingMode.HALF_UP))
-                .filter(remainingPrincipal -> amount.compareTo(remainingPrincipal) == 0)
+                .filter(remainingPrincipal -> amount.compareTo(roundToWholeTwd(remainingPrincipal)) == 0)
                 .isPresent();
     }
 
@@ -866,9 +866,13 @@ public class AccountIntegrationService {
                             .map(rp -> zeroIfNull(rp.getTotalAmount()))
                             .reduce(BigDecimal.ZERO, BigDecimal::add)
                             .setScale(Currency.TWD.getDecimalPlaces(), RoundingMode.HALF_UP);
-                    return amount.compareTo(totalDue) == 0;
+                    return amount.compareTo(roundToWholeTwd(totalDue)) == 0;
                 })
                 .orElse(false);
+    }
+
+    private BigDecimal roundToWholeTwd(BigDecimal amount) {
+        return zeroIfNull(amount).setScale(0, RoundingMode.HALF_UP);
     }
 
     private BigDecimal normalizePositiveAmount(BigDecimal amount, String label) {

@@ -2,9 +2,9 @@
   <div class="favorite-accounts-page">
     <h2>常用帳號管理</h2>
     <div style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
-      <a-button @click="fillTemplate1">帶入 8120007000000001 (常用轉帳對象)</a-button>
-      <a-button @click="fillTemplate2">帶入db內任意已經存在的帳號 (黑名單測試對象)</a-button>
-      <a-button @click="fillTemplate3">帶入 070100662595 (凍結測試對象)</a-button>
+      <a-button @click="fillTemplate1">常用轉帳對象</a-button>
+      <a-button @click="fillTemplate2">黑單測試對象</a-button>
+      <a-button @click="fillTemplate3">凍結測試對象</a-button>
     </div>
 
     <!-- 新增常用帳號 -->
