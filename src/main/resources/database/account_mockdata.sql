@@ -184,7 +184,9 @@ INSERT INTO #mock_accounts (
     interest_rate, status, parent_account_number, created_at, changed_at, created_by, changed_by
 )
 SELECT
-    '901' + RIGHT(REPLICATE('0', 11) + CAST(rn AS VARCHAR(11)), 11),
+    '901'
+        + RIGHT('00' + CAST(ASCII(UPPER(LEFT(id_number, 1))) - ASCII('A') + 1 AS VARCHAR(2)), 2)
+        + SUBSTRING(id_number, 2, LEN(id_number)),
     customer_id,
     'LOAN',
     'TWD',
@@ -198,7 +200,18 @@ SELECT
     N'總行',
     N'總行'
 FROM #customers
-WHERE (rn <= 5 OR (rn >= 51 AND rn <= 55)) AND status = 'ACTIVE';
+WHERE customer_id IN (
+    'A6R3M8J2',
+    'B3N8T5P9',
+    'B9P5N2W6',
+    'C6T8R4J3',
+    'C9W2M6R4',
+    'D5Q9T2W7',
+    'E2V7D9M5',
+    'E5J7Q3D8',
+    'F2P9V4K6',
+    'F7V4C8N2'
+) AND status = 'ACTIVE';
 
 IF NOT EXISTS (SELECT 1 FROM [ACCOUNT])
 INSERT INTO [ACCOUNT] (

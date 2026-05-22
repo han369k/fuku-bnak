@@ -524,7 +524,7 @@ INSERT INTO LOAN_ACCOUNT (
 )
 SELECT
     CONCAT('LAC20260521', RIGHT(CONCAT('00', CAST(ROW_NUMBER() OVER (ORDER BY a.seq) AS VARCHAR(2))), 2)) AS account_id,
-    a.disbursement_account AS account_number,
+    loan_account.account_number AS account_number,
     a.application_id,
     a.customer_id,
     a.apply_type,
@@ -552,6 +552,17 @@ SELECT
     DATEADD(HOUR, 1, a.create_time) AS create_time,
     DATEADD(HOUR, 2, a.create_time) AS update_time
 FROM @apps a
+INNER JOIN CUSTOMER_PROFILE cp
+    ON cp.customer_id = a.customer_id
+CROSS APPLY (
+    SELECT '901'
+        + RIGHT('00' + CAST(ASCII(UPPER(LEFT(cp.id_number, 1))) - ASCII('A') + 1 AS VARCHAR(2)), 2)
+        + SUBSTRING(cp.id_number, 2, LEN(cp.id_number)) AS expected_account_number
+) encoded
+INNER JOIN [ACCOUNT] loan_account
+    ON loan_account.customer_id = a.customer_id
+   AND loan_account.account_type = 'LOAN'
+   AND loan_account.account_number = encoded.expected_account_number
 WHERE a.application_status = 'DISBURSED';
 
 ;WITH period_numbers AS (

@@ -29,6 +29,9 @@ public class LoanAccountResponseDTO {
     // 客戶對外識別碼（CIF），前端顯示用
     private String cif;
 
+    // 客戶姓名，前端列表直接顯示用
+    private String memberName;
+
     // ── 核准條件 ─────────────────────────────────────────────────────
 
     // 貸款種類，例如 "PERSONAL"（信貸）、"HOUSE"（房貸）
