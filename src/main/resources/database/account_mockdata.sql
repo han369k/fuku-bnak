@@ -213,6 +213,30 @@ WHERE customer_id IN (
     'F7V4C8N2'
 ) AND status = 'ACTIVE';
 
+INSERT INTO #mock_accounts (
+    account_number, customer_id, account_type, currency, balance, liability,
+    interest_rate, status, parent_account_number, created_at, changed_at, created_by, changed_by
+)
+SELECT
+    '901'
+        + RIGHT('00' + CAST(ASCII(UPPER(LEFT(id_number, 1))) - ASCII('A') + 1 AS VARCHAR(2)), 2)
+        + SUBSTRING(id_number, 2, LEN(id_number)),
+    customer_id,
+    'LOAN',
+    'TWD',
+    0.0000,
+    CAST(2500000 AS DECIMAL(19,4)),
+    0.01800,
+    'ACTIVE',
+    NULL,
+    CAST('2026-05-21 15:00:00' AS DATETIME2),
+    CAST('2026-05-21 16:00:00' AS DATETIME2),
+    N'總行',
+    N'總行'
+FROM #customers
+WHERE customer_id = 'Q8M4T7K2'
+  AND status = 'ACTIVE';
+
 IF NOT EXISTS (SELECT 1 FROM [ACCOUNT])
 INSERT INTO [ACCOUNT] (
     account_number, customer_id, account_type, currency, balance, liability,

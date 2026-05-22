@@ -1,7 +1,7 @@
 -- ============================================================
 -- Loan Module Demo Mock Data
 -- Targets:
--- - Wang Daming: 5 new applications + 1 abandoned application
+-- - Wang Daming: 4 new applications + 1 disbursed application + 1 abandoned application
 -- - 45 more new applications
 -- - 10 in-contact applications
 -- - 10 under review applications
@@ -9,7 +9,7 @@
 -- - 15 approved applications
 -- - 2 rejected applications
 -- - 2 cancelled applications
--- - 10 disbursed applications with loan accounts
+-- - 11 disbursed applications with loan accounts
 -- - Risk review queue and credit-visible demo rows stay aligned
 -- ============================================================
 
@@ -30,51 +30,17 @@ DECLARE @customerPool TABLE (
     checking_account_number VARCHAR(14) NOT NULL
 );
 
-INSERT INTO @customerPool (seq, customer_id, checking_account_number) VALUES
-(1,  'A6R3M8J2', '070000000001'),
-(2,  'B3N8T5P9', '070000000002'),
-(3,  'B9P5N2W6', '070000000003'),
-(4,  'C6T8R4J3', '070000000004'),
-(5,  'C9W2M6R4', '070000000005'),
-(6,  'D5Q9T2W7', '070000000006'),
-(7,  'E2V7D9M5', '070000000007'),
-(8,  'E5J7Q3D8', '070000000008'),
-(9,  'F2P9V4K6', '070000000009'),
-(10, 'F7V4C8N2', '070000000010'),
-(11, 'G3K6P9M5', '070000000011'),
-(12, 'G8A5C2N7', '070000000012'),
-(13, 'H4D7R9M3', '070000000013'),
-(14, 'H7C2P8D4', '070000000014'),
-(15, 'J6K3W8Q5', '070000000015'),
-(16, 'J8R2D5A7', '070000000016'),
-(17, 'K2T8B4R7', '070000000017'),
-(18, 'L4N9T6Q3', '070000000018'),
-(19, 'L9M2T7A4', '070000000019'),
-(20, 'M9A5D2Q8', '070000000020'),
-(21, 'N5V8C3P6', '070000000022'),
-(22, 'P4W7N6C3', '070000000023'),
-(23, 'P7Q4J9D2', '070000000024'),
-(24, 'Q2R6M8W5', '070000000025'),
-(25, 'Q5H3K8A7', '070000000026'),
-(26, 'R5N9W3A6', '070000000028'),
-(27, 'R8J6N2C4', '070000000029'),
-(28, 'S4C8N5V2', '070000000031'),
-(29, 'S7A3K9P6', '070000000032'),
-(30, 'T3M9P5W7', '070000000033'),
-(31, 'T6D2P9M7', '070000000034'),
-(32, 'T8H2K5V9', '070000000035'),
-(33, 'U5D8M2R4', '070000000036'),
-(34, 'U8H5Q3R6', '070000000037'),
-(35, 'V3K7W4A9', '070000000038'),
-(36, 'V6J3X9M5', '070000000039'),
-(37, 'V7A4D8Q2', '070000000040'),
-(38, 'W2K6T9N5', '070000000041'),
-(39, 'W6M2C8D5', '070000000042'),
-(40, 'W9F4T7N2', '070000000043'),
-(41, 'X3J6Q8C5', '070000000044'),
-(42, 'X8C3R7M4', '070000000045'),
-(43, 'X9N5T3Q7', '070000000046'),
-(44, 'Y8L2V5D9', '070000000048');
+INSERT INTO @customerPool (seq, customer_id, checking_account_number)
+SELECT
+    ROW_NUMBER() OVER (ORDER BY a.account_number) AS seq,
+    a.customer_id,
+    a.account_number
+FROM [ACCOUNT] a
+WHERE a.account_type = 'CHECKING'
+  AND a.currency = 'TWD'
+  AND a.customer_id <> 'Q8M4T7K2'
+ORDER BY a.account_number
+OFFSET 0 ROWS FETCH NEXT 44 ROWS ONLY;
 
 DECLARE @typeRules TABLE (
     seq INT PRIMARY KEY,
@@ -133,12 +99,12 @@ INSERT INTO @apps (
     required_documents,
     review_comment
 ) VALUES
-('LA2026052001', 'Q8M4T7K2', 'PERSONAL', 120000.00, 12, 0.040000, NULL, 'PENDING_CONTACT', '2026-05-21 09:00:00', NULL, NULL, NULL, NULL, 0, NULL, NULL, 'NEW'),
-('LA2026052002', 'Q8M4T7K2', 'CAR',      380000.00, 36, 0.025000, NULL, 'PENDING_CONTACT', '2026-05-21 10:00:00', NULL, NULL, NULL, NULL, 0, NULL, NULL, 'NEW'),
-('LA2026052003', 'Q8M4T7K2', 'STUDENT',  220000.00, 84, 0.015000, NULL, 'PENDING_CONTACT', '2026-05-21 11:00:00', NULL, NULL, NULL, NULL, 0, NULL, NULL, 'NEW'),
-('LA2026052004', 'Q8M4T7K2', 'BUSINESS', 600000.00, 60, 0.020000, NULL, 'PENDING_CONTACT', '2026-05-21 13:00:00', NULL, NULL, NULL, NULL, 0, NULL, NULL, 'NEW'),
-('LA2026052005', 'Q8M4T7K2', 'HOUSE',   2500000.00, 120, 0.018000, NULL, 'PENDING_CONTACT', '2026-05-21 14:00:00', NULL, NULL, NULL, NULL, 0, NULL, NULL, 'NEW'),
-('LA2026052006', 'Q8M4T7K2', 'PERSONAL',  80000.00, 24, 0.040000, NULL, 'CANCELLED',      '2026-05-16 16:00:00', 'DECLINED', '2026-05-16 16:30:00', NULL, '2026-05-16 16:30:00', 0, 'CUSTOMER_WITHDREW', NULL, 'CANCELLED');
+('LA202605210900000001', 'Q8M4T7K2', 'PERSONAL', 120000.00, 12, 0.040000, '070000000027', 'PENDING_CONTACT', '2026-05-21 09:00:00', NULL, NULL, NULL, NULL, 0, NULL, NULL, 'NEW'),
+('LA202605211000000002', 'Q8M4T7K2', 'CAR',      380000.00, 36, 0.025000, '070000000027', 'PENDING_CONTACT', '2026-05-21 10:00:00', NULL, NULL, NULL, NULL, 0, NULL, NULL, 'NEW'),
+('LA202605211100000003', 'Q8M4T7K2', 'STUDENT',  220000.00, 84, 0.015000, '070000000027', 'PENDING_CONTACT', '2026-05-21 11:00:00', NULL, NULL, NULL, NULL, 0, NULL, NULL, 'NEW'),
+('LA202605211300000004', 'Q8M4T7K2', 'BUSINESS', 600000.00, 60, 0.020000, '070000000027', 'PENDING_CONTACT', '2026-05-21 13:00:00', NULL, NULL, NULL, NULL, 0, NULL, NULL, 'NEW'),
+('LA202605211400000005', 'Q8M4T7K2', 'HOUSE',   2500000.00, 120, 0.018000, '070000000027', 'DISBURSED',      '2026-05-21 14:00:00', 'CONFIRMED', '2026-05-21 15:00:00', '2026-05-21 15:30:00', '2026-05-21 16:00:00', 0, 'HOUSE_COLLATERAL', 'DISBURSED', 'DISBURSED'),
+('LA202605161600000006', 'Q8M4T7K2', 'PERSONAL',  80000.00, 24, 0.040000, '070000000027', 'CANCELLED',      '2026-05-16 16:00:00', 'DECLINED', '2026-05-16 16:30:00', NULL, '2026-05-16 16:30:00', 0, 'CUSTOMER_WITHDREW', NULL, 'CANCELLED');
 
 ;WITH nums AS (
     SELECT TOP (98) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS rn
@@ -215,13 +181,18 @@ INSERT INTO @apps (
     review_comment
 )
 SELECT
-    CONCAT('LA20260521', RIGHT(CONCAT('000', CAST(rn AS VARCHAR(3))), 3)) AS application_id,
+    CONCAT(
+        'LA',
+        CONVERT(char(8), base_time, 112),
+        REPLACE(CONVERT(char(8), base_time, 108), ':', ''),
+        RIGHT(CONCAT('0000', CAST(rn AS VARCHAR(4))), 4)
+    ) AS application_id,
     customer_id,
     apply_type,
     apply_amount,
     apply_period,
     rate,
-    CASE WHEN application_status = 'PENDING_CONTACT' THEN NULL ELSE checking_account_number END AS disbursement_account,
+    checking_account_number AS disbursement_account,
     application_status,
     base_time AS create_time,
     CASE
@@ -523,7 +494,12 @@ INSERT INTO LOAN_ACCOUNT (
     update_time
 )
 SELECT
-    CONCAT('LAC20260521', RIGHT(CONCAT('00', CAST(ROW_NUMBER() OVER (ORDER BY a.seq) AS VARCHAR(2))), 2)) AS account_id,
+    CONCAT(
+        'LAC',
+        CONVERT(char(8), DATEADD(HOUR, 1, a.create_time), 112),
+        REPLACE(CONVERT(char(8), DATEADD(HOUR, 1, a.create_time), 108), ':', ''),
+        RIGHT(CONCAT('0000', CAST(ROW_NUMBER() OVER (ORDER BY a.seq) AS VARCHAR(4))), 4)
+    ) AS account_id,
     loan_account.account_number AS account_number,
     a.application_id,
     a.customer_id,
@@ -630,4 +606,70 @@ SELECT
     NULL AS update_time
 FROM repayment_rows;
 
-PRINT 'loan_mockdata.sql completed: seeded 104 applications, 42 risk review tasks, 10 loan accounts, and repayment schedules.';
+IF NOT EXISTS (SELECT 1 FROM TRANS_LOG WHERE reference_id = 'LOAN-DISB-202605211400000005')
+BEGIN
+    DECLARE @damingDisbursementBefore DECIMAL(19, 4);
+    DECLARE @damingDisbursementAmount DECIMAL(19, 4) = 2500000.0000;
+
+    SELECT @damingDisbursementBefore = balance
+    FROM [ACCOUNT]
+    WHERE account_number = '070000000027'
+      AND customer_id = 'Q8M4T7K2'
+      AND account_type = 'CHECKING'
+      AND currency = 'TWD'
+      AND status = 'ACTIVE';
+
+    IF @damingDisbursementBefore IS NOT NULL
+    BEGIN
+        INSERT INTO TRANS_LOG (
+            transaction_id,
+            reference_id,
+            account_number,
+            counterpart_account,
+            bank_code,
+            bank_name,
+            counterpart_bank_code,
+            counterpart_bank_name,
+            is_interbank,
+            entry_type,
+            transaction_type,
+            amount,
+            fee_amount,
+            total_debit_amount,
+            balance_before,
+            balance_after,
+            currency,
+            note,
+            created_at
+        ) VALUES (
+            '00000000-0000-0000-0000-202605211400',
+            'LOAN-DISB-202605211400000005',
+            '070000000027',
+            '909000000001',
+            '909',
+            N'爪哇銀行',
+            '909',
+            N'爪哇銀行撥款帳戶',
+            0,
+            'CREDIT',
+            'LOAN_DISBURSEMENT',
+            @damingDisbursementAmount,
+            0.0000,
+            @damingDisbursementAmount,
+            @damingDisbursementBefore,
+            @damingDisbursementBefore + @damingDisbursementAmount,
+            'TWD',
+            N'貸款撥款 applicationId=LA202605211400000005',
+            '2026-05-21 16:00:00.000'
+        );
+
+        UPDATE [ACCOUNT]
+        SET
+            balance = @damingDisbursementBefore + @damingDisbursementAmount,
+            changed_at = '2026-05-21 16:00:00',
+            changed_by = 'loan-mock'
+        WHERE account_number = '070000000027';
+    END
+END;
+
+PRINT 'loan_mockdata.sql completed: seeded 104 applications, 43 risk review tasks, 11 loan accounts, and repayment schedules.';
