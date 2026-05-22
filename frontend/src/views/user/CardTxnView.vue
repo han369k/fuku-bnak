@@ -17,8 +17,12 @@
           <select v-model="form.cardId" class="field-control">
             <option disabled value="">請選擇信用卡</option>
             <option v-for="card in cards" :key="card.cardId" :value="card.cardId">
-              {{ card.cardTypeName || card.cardType?.cardTypeName || '信用卡' }} - {{ card.cardNumber }}
-            </option>
+  {{
+    `${card.cardTypeName || card.cardType?.cardTypeName || '信用卡'}
+    - ${card.cardNumber}
+    ${card.status === 'ACTIVE' ? '🟢 已開卡' : '🔴 未開卡'}`
+  }}
+</option>
           </select>
         </label>
 

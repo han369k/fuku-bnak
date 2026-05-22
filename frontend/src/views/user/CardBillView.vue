@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue'
 import dayjs from 'dayjs'
-import { getBills, getUnbilledBills } from '@/api/userCardBill'
+import { getBills, getUnbilledBills,getBilledTransactions } from '@/api/userCardBill'
 import { payCard, getPaymentAccounts } from '@/api/userCardPayment'
 import { message } from 'ant-design-vue'
 
@@ -11,6 +11,9 @@ const paymentAccounts = ref([])
 const selectedAccount = ref('')
 const selectedHistoryBill = ref(null)
 const payAmount = ref('')
+
+const selectedCardId = ref(null)
+const billedTransactions = ref([])
 
 const pagination = ref({
   current: 1,
@@ -45,37 +48,9 @@ const historyBills = computed(() => {
 const displayBill = computed(() => {
   if (bills.value.length === 0) return null
 
-  const unpaidBills = bills.value.filter((bill) => getRemainingAmount(bill) > 0)
-
-  // 如果有未繳帳單：顯示未繳合併
-  if (unpaidBills.length > 0) {
-    const sortedUnpaidBills = [...unpaidBills].sort((a, b) =>
-      String(b.billingMonth).localeCompare(String(a.billingMonth)),
-    )
-
-    const latestBill = sortedUnpaidBills[0]
-
-    const totalRemainingAmount = unpaidBills.reduce((sum, bill) => {
-      return sum + getRemainingAmount(bill)
-    }, 0)
-
-    const totalMinimumPayment = unpaidBills.reduce((sum, bill) => {
-      return sum + getMinimumDueAmount(bill)
-    }, 0)
-
-    return {
-      ...latestBill,
-      billIds: unpaidBills.map((bill) => bill.billId),
-      totalAmount: totalRemainingAmount,
-      minimumPayment: totalMinimumPayment,
-      paidAmount: 0,
-      billStatus: unpaidBills.some((bill) => bill.billStatus === 'PARTIAL') ? 'PARTIAL' : 'UNPAID',
-    }
-  }
-
-  // 如果全部繳清：顯示最新一期帳單
   return historyBills.value[0]
 })
+  
 
 const currentBill = computed(() => {
   if (selectedHistoryBill.value) {
@@ -160,7 +135,7 @@ const handlePayment = async (bill) => {
     }
 
     await payCard({
-      billIds: bill.billIds || [bill.billId],
+      billId: bill.billId,
       fromAccountNumber: selectedAccount.value,
       creditCardAccountNumber: bill.creditCardAccountNumber,
       amount,
@@ -195,6 +170,23 @@ const fetchAccounts = async () => {
   }
 }
 
+const fetchBilledTransactions = async () => {
+  if (!currentBill.value?.billId || !selectedCardId.value) {
+    billedTransactions.value = []
+    return
+  }
+
+  const res = await getBilledTransactions(
+    currentBill.value.billId,
+    selectedCardId.value
+  )
+
+  billedTransactions.value = res
+}
+
+watch([currentBill, selectedCardId], fetchBilledTransactions)
+
+
 watch(activeTab, async (newTab) => {
   if (newTab === 'BILLED') {
     await fetchBills()
@@ -212,7 +204,6 @@ onMounted(() => {
   fetchAccounts()
 })
 </script>
-
 <template>
   <div class="bill-page">
     <h2 class="page-title">我的帳單</h2>
@@ -243,14 +234,14 @@ onMounted(() => {
       尚無未出帳交易
     </div>
 
-    <div v-if="activeTab === 'BILLED'" class="bill-list">
-      <div v-if="currentBill" class="bill-card">
+    <!-- 已出帳單 -->
+    <div v-if="activeTab === 'BILLED' && currentBill" class="bill-layout">
+      <!-- 左邊：帳單資訊 -->
+      <div class="bill-card">
         <div class="bill-header">
           <div>
             <div class="label">帳單月份</div>
-            <div class="value">
-              {{ currentBill.billingMonth }}
-            </div>
+            <div class="value">{{ currentBill.billingMonth }}</div>
           </div>
 
           <div class="status" :class="currentBill.billStatus">
@@ -267,17 +258,12 @@ onMounted(() => {
         </div>
 
         <div class="bill-body">
-          <div class="history-section">
+          <div class="form-section">
+            <label>選擇帳單</label>
             <select v-model="selectedHistoryBill" class="history-select">
-              <option :value="null">最新應繳帳單</option>
-
-              <option
-                v-for="bill in historyBills"
-                :key="bill.billId"
-                :value="bill.billId"
-              >
-                {{ bill.billingMonth }}
-                -
+              <option :value="null">目前帳單</option>
+              <option v-for="bill in historyBills" :key="bill.billId" :value="bill.billId">
+                {{ bill.billingMonth }} -
                 {{
                   bill.billStatus === 'PAID'
                     ? '已繳清'
@@ -285,6 +271,20 @@ onMounted(() => {
                       ? '部分繳款'
                       : '未繳費'
                 }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-section">
+            <label>選擇卡片查看交易明細</label>
+            <select v-model="selectedCardId" class="history-select">
+              <option :value="null">請選擇卡片</option>
+              <option
+                v-for="card in currentBill.cards || []"
+                :key="card.cardId"
+                :value="card.cardId"
+              >
+                {{ card.cardNumber }}
               </option>
             </select>
           </div>
@@ -360,17 +360,11 @@ onMounted(() => {
           class="payment-section"
         >
           <div class="quick-actions">
-            <button
-              class="quick-btn"
-              @click="payAmount = getMinimumDueAmount(currentBill)"
-            >
+            <button class="quick-btn" @click="payAmount = getMinimumDueAmount(currentBill)">
               最低應繳
             </button>
 
-            <button
-              class="quick-btn"
-              @click="payAmount = getRemainingAmount(currentBill)"
-            >
+            <button class="quick-btn" @click="payAmount = getRemainingAmount(currentBill)">
               全額繳清
             </button>
           </div>
@@ -392,14 +386,47 @@ onMounted(() => {
           </div>
         </div>
       </div>
+
+      <!-- 右邊：交易明細 -->
+      <div class="txn-card">
+        <div class="txn-header">
+          <div>
+            <div class="label">已出帳交易</div>
+            <h3>交易明細</h3>
+          </div>
+        </div>
+
+        <div v-if="!selectedCardId" class="txn-empty">
+          請先選擇左側卡片
+        </div>
+
+        <div v-else-if="billedTransactions.length === 0" class="txn-empty">
+          此卡片本期沒有交易
+        </div>
+
+        <table v-else class="txn-table">
+          <thead>
+            <tr>
+              <th>日期</th>
+              <th>商店</th>
+              <th class="amount-col">金額</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr v-for="txn in billedTransactions" :key="txn.txnId">
+              <td>{{ dayjs(txn.txnDate).format('YYYY-MM-DD') }}</td>
+              <td>{{ txn.merchantName }}</td>
+              <td class="amount-col">NT$ {{ formatMoney(txn.txnAmount) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
-    <div v-else class="bill-list">
-      <div
-        v-for="txn in unbilledTransactions"
-        :key="txn.txnId"
-        class="bill-card"
-      >
+    <!-- 未出帳交易 -->
+    <div v-else-if="activeTab === 'UNBILLED'" class="bill-list">
+      <div v-for="txn in unbilledTransactions" :key="txn.txnId" class="bill-card">
         <div class="bill-body">
           <div class="info-row">
             <span>商店</span>
@@ -408,9 +435,7 @@ onMounted(() => {
 
           <div class="info-row">
             <span>刷卡時間</span>
-            <strong>
-              {{ dayjs(txn.txnDate).format('YYYY-MM-DD HH:mm') }}
-            </strong>
+            <strong>{{ dayjs(txn.txnDate).format('YYYY-MM-DD HH:mm') }}</strong>
           </div>
 
           <div class="info-row">
@@ -427,10 +452,9 @@ onMounted(() => {
     </div>
   </div>
 </template>
-
 <style scoped>
 .bill-page {
-  max-width: 960px;
+  max-width: 1320px;
   margin: 0 auto;
   padding: 24px;
 }
@@ -441,7 +465,51 @@ onMounted(() => {
   font-family: var(--font-heading);
   font-size: var(--text-h2);
   font-weight: 600;
-  line-height: var(--leading-heading);
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding: 6px;
+  width: fit-content;
+  border: 1px solid rgba(214, 206, 195, 0.86);
+  border-radius: 12px;
+  background: rgba(255, 249, 239, 0.72);
+}
+
+.tab-btn {
+  border: 1px solid transparent;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.tab-btn.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+
+.loading,
+.empty {
+  text-align: center;
+  margin-top: 16px;
+  padding: 32px 20px;
+  color: var(--text-secondary);
+  border: 1px solid rgba(214, 206, 195, 0.86);
+  border-radius: 12px;
+  background: rgba(255, 249, 239, 0.92);
+}
+
+.bill-layout {
+  display: grid;
+  grid-template-columns: minmax(520px, 1fr) minmax(420px, 0.9fr);
+  gap: 20px;
+  align-items: start;
 }
 
 .bill-list {
@@ -450,7 +518,8 @@ onMounted(() => {
   gap: 16px;
 }
 
-.bill-card {
+.bill-card,
+.txn-card {
   border-radius: 12px;
   background: rgba(255, 249, 239, 0.92);
   border: 1px solid rgba(214, 206, 195, 0.86);
@@ -458,7 +527,13 @@ onMounted(() => {
   padding: 20px;
 }
 
-.bill-header {
+.txn-card {
+  position: sticky;
+  top: 24px;
+}
+
+.bill-header,
+.txn-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -466,6 +541,12 @@ onMounted(() => {
   margin-bottom: 18px;
   padding-bottom: 16px;
   border-bottom: 1px solid rgba(214, 206, 195, 0.8);
+}
+
+.txn-header h3 {
+  margin: 4px 0 0;
+  color: var(--text-primary);
+  font-size: 22px;
 }
 
 .label {
@@ -483,6 +564,19 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.form-section label {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .info-row {
@@ -530,18 +624,6 @@ onMounted(() => {
   color: var(--accent);
 }
 
-.loading,
-.empty {
-  text-align: center;
-  margin-top: 16px;
-  padding: 32px 20px;
-  color: var(--text-secondary);
-  border: 1px solid rgba(214, 206, 195, 0.86);
-  border-radius: 12px;
-  background: rgba(255, 249, 239, 0.92);
-  box-shadow: 0 12px 36px rgba(63, 74, 66, 0.06);
-}
-
 .account-select {
   margin: 18px 0 12px;
 }
@@ -555,16 +637,13 @@ onMounted(() => {
   padding: 10px 14px;
   color: var(--text-primary);
   background: rgba(250, 250, 247, 0.92);
-  font-family: var(--font-body);
   font-size: 15px;
   outline: none;
-  transition:
-    border-color var(--duration) var(--ease),
-    box-shadow var(--duration) var(--ease);
 }
 
 .account-dropdown:focus,
-.history-select:focus {
+.history-select:focus,
+.pay-input:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px var(--primary-light);
 }
@@ -594,11 +673,6 @@ onMounted(() => {
   font-weight: 600;
 }
 
-.quick-btn:hover {
-  border-color: var(--primary);
-  background: var(--primary-light);
-}
-
 .pay-row {
   display: flex;
   gap: 12px;
@@ -610,16 +684,9 @@ onMounted(() => {
   border: 1px solid rgba(214, 206, 195, 0.86);
   border-radius: 8px;
   padding: 10px 14px;
-  color: var(--text-primary);
   background: rgba(250, 250, 247, 0.92);
-  font-family: var(--font-body);
   font-size: 15px;
   outline: none;
-}
-
-.pay-input:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-light);
 }
 
 .pay-btn {
@@ -631,45 +698,6 @@ onMounted(() => {
   border-radius: 8px;
   cursor: pointer;
   font-weight: 600;
-}
-
-.pay-btn:hover {
-  background: var(--primary-dark);
-  border-color: var(--primary-dark);
-}
-
-.tabs {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 20px;
-  padding: 6px;
-  width: fit-content;
-  border: 1px solid rgba(214, 206, 195, 0.86);
-  border-radius: 12px;
-  background: rgba(255, 249, 239, 0.72);
-  box-shadow: 0 12px 36px rgba(63, 74, 66, 0.06);
-}
-
-.tab-btn {
-  border: 1px solid transparent;
-  padding: 10px 20px;
-  border-radius: 8px;
-  cursor: pointer;
-  background: transparent;
-  color: var(--text-secondary);
-  font-family: var(--font-body);
-  font-weight: 600;
-}
-
-.tab-btn:hover {
-  color: var(--primary-dark);
-  background: var(--primary-light);
-}
-
-.tab-btn.active {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: white;
 }
 
 .credit-bar-box {
@@ -703,8 +731,47 @@ onMounted(() => {
   background: #6cd399;
 }
 
-.history-section {
-  margin-bottom: 12px;
+.txn-empty {
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--text-secondary);
+  border: 1px dashed rgba(214, 206, 195, 0.9);
+  border-radius: 10px;
+  background: rgba(250, 250, 247, 0.55);
+}
+
+.txn-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.txn-table th,
+.txn-table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid rgba(214, 206, 195, 0.64);
+  text-align: left;
+  color: var(--text-primary);
+}
+
+.txn-table th {
+  color: var(--text-secondary);
+  font-weight: 700;
+}
+
+.amount-col {
+  text-align: right !important;
+  white-space: nowrap;
+}
+
+@media (max-width: 1024px) {
+  .bill-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .txn-card {
+    position: static;
+  }
 }
 
 @media (max-width: 640px) {

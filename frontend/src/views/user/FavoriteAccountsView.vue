@@ -1,6 +1,11 @@
 <template>
   <div class="favorite-accounts-page">
     <h2>常用帳號管理</h2>
+    <div style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+      <a-button @click="fillTemplate1">帶入 8120007000000001 (常用轉帳對象)</a-button>
+      <a-button @click="fillTemplate2">帶入db內任意已經存在的帳號 (黑名單測試對象)</a-button>
+      <a-button @click="fillTemplate3">帶入 070100662595 (凍結測試對象)</a-button>
+    </div>
 
     <!-- 新增常用帳號 -->
     <a-card class="form-card">
@@ -81,6 +86,13 @@
                     >
                       刪除
                     </button>
+                    <button
+                      type="button"
+                      class="rounded-[8px] border border-[rgba(90,166,77,0.32)] bg-[rgba(90,166,77,0.08)] px-3 py-1.5 text-[13px] font-medium text-[var(--success)] transition hover:bg-[rgba(90,166,77,0.14)]"
+                      @click="goTransfer(record)"
+                    >
+                      轉帳1000
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -119,11 +131,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import { getFavoriteAccounts, addFavoriteAccount, updateFavoriteAccount, deleteFavoriteAccount } from '@/api/favoriteAccount'
-import { getTransferBanks } from '@/api/customerAccount'
+import { getTransferBanks, getMyAccounts } from '@/api/customerAccount'
+import { useRouter } from 'vue-router'
 
 const JAVA_BANK_CODE = '909'
 const fallbackBanks = [{ code: JAVA_BANK_CODE, name: '爪哇銀行', label: '爪哇銀行 909' }]
 
+const router = useRouter()
 const form = ref({ accountNumber: '', bankCode: JAVA_BANK_CODE, alias: '', bankName: '爪哇銀行' })
 const editForm = ref({ id: null, accountNumber: '', bankCode: JAVA_BANK_CODE, alias: '', bankName: '爪哇銀行' })
 const favorites = ref([])
@@ -243,6 +257,27 @@ function confirmDelete(id) {
   if (window.confirm('確定要刪除此常用帳號？')) {
     handleDelete(id)
   }
+}
+
+function fillTemplate1() {
+  form.value.accountNumber = '28887550662101'
+  form.value.bankCode = '812'
+  form.value.alias = '我的台新'
+  syncFormBankName('812')
+}
+
+function fillTemplate2() {
+  form.value.accountNumber = '070101074383'
+  form.value.bankCode = JAVA_BANK_CODE
+  form.value.alias = '黑名單測試對象'
+  syncFormBankName(JAVA_BANK_CODE)
+}
+
+function fillTemplate3() {
+  form.value.accountNumber = '070100662595'
+  form.value.bankCode = JAVA_BANK_CODE
+  form.value.alias = '凍結測試對象'
+  syncFormBankName(JAVA_BANK_CODE)
 }
 </script>
 

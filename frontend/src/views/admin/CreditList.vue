@@ -42,7 +42,7 @@
         </template>
         <template v-if="column.key === 'action'">
           <a-button type="link" class="action-btn" @click="viewDetail(record.customerId)">
-            查看完整評分
+            <FileTextOutlined /> 評估報告
           </a-button>
         </template>
       </template>
@@ -53,6 +53,7 @@
 <script setup>
 import {ref, reactive, onMounted} from 'vue'
 import {message} from 'ant-design-vue'
+import {FileTextOutlined} from '@ant-design/icons-vue'
 import {useRouter} from 'vue-router'
 import axios from 'axios'
 
@@ -75,8 +76,8 @@ const pagination = reactive({
 })
 
 const columns = [
-  {title: '客戶 ID', dataIndex: 'customerId', key: 'customerId', width: 150},
-  {title: '客戶姓名', dataIndex: 'customerName', key: 'customerName', width: 150},
+  {title: 'CIF (客戶代碼)', dataIndex: 'cif', key: 'cif', width: 150},
+  {title: '姓名', dataIndex: 'customerName', key: 'customerName', width: 120},
   {title: '風險等級', dataIndex: 'riskLevel', key: 'riskLevel', width: 120},
   {
     title: '最後更新',

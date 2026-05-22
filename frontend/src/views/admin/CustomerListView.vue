@@ -19,6 +19,7 @@
         </a-input>
         <a-button type="primary" class="rounded-btn" @click="handleSearch">查詢</a-button>
         <a-button class="rounded-btn btn-ghost" @click="handleClear">清除</a-button>
+        <a-button class="rounded-btn btn-ghost" @click="fillWangXiaoMing">帶入王小明</a-button>
         <a-button type="primary" class="rounded-btn" @click="goCreate"> 新增客戶</a-button>
       </div>
     </div>
@@ -827,6 +828,11 @@ function handleSearch() {
 function handleClear() {
   keyword.value = ''
   customers.value = []
+}
+
+function fillWangXiaoMing() {
+  keyword.value = '王小明'
+  handleSearch()
 }
 
 function goCreate() {

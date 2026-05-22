@@ -1,8 +1,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
-import { createCardApplication,getMyApplications } from '@/api/userCardApplication'
+import { createCardApplication, getMyApplications } from '@/api/userCardApplication'
 import { getUserCardTypes } from '@/api/cardtype'
+import dayjs from 'dayjs'
 
 const listLoading = ref(false)
 const submitting = ref(false)
@@ -16,26 +17,25 @@ const form = ref({
 const columns = [
   {
     key: 'applicationId',
-    label: '申請編號'
+    label: '申請編號',
   },
   {
     key: 'applyDate',
-    label: '申請時間'
+    label: '申請時間',
   },
   {
     key: 'cardTypeName',
-    label: '卡別'
+    label: '卡別',
   },
   {
     key: 'status',
-    label: '狀態'
+    label: '狀態',
   },
   {
     key: 'remark',
-    label: '備註'
-  }
+    label: '備註',
+  },
 ]
-
 
 const getStatusType = (status) => {
   switch (status) {
@@ -105,7 +105,7 @@ const submitApplication = async () => {
   }
 }
 
-onMounted(()=>{
+onMounted(() => {
   fetchCardTypes()
   fetchApplications()
 })
@@ -113,7 +113,7 @@ onMounted(()=>{
 
 <template>
   <div class="card-application-page">
-    <section class="application-form-section">
+    <!-- <section class="application-form-section">
       <div class="page-head">
         <div>
           <h2 class="page-title">信用卡申請</h2>
@@ -150,7 +150,7 @@ onMounted(()=>{
           {{ submitting ? '送出中...' : '送出申請' }}
         </button>
       </form>
-    </section>
+    </section> -->
 
     <section class="application-list-section">
       <div class="section-head">
@@ -160,13 +160,9 @@ onMounted(()=>{
         </button>
       </div>
 
-      <div v-if="listLoading" class="state-panel">
-        載入中...
-      </div>
+      <div v-if="listLoading" class="state-panel">載入中...</div>
 
-      <div v-else-if="applications.length === 0" class="state-panel">
-        目前沒有信用卡申請紀錄。
-      </div>
+      <div v-else-if="applications.length === 0" class="state-panel">目前沒有信用卡申請紀錄。</div>
 
       <div v-else class="table-wrap">
         <table>
@@ -190,7 +186,11 @@ onMounted(()=>{
                 </span>
 
                 <template v-else>
-                  {{ app[column.key] || '-' }}
+                  {{
+                    column.key === 'applyDate'
+                      ? dayjs(app.applyDate).format('YYYY/MM/DD HH:mm')
+                      : app[column.key] || '-'
+                  }}
                 </template>
               </td>
             </tr>
