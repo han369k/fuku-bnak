@@ -11,7 +11,7 @@ const loading = ref(false)
 const appliedCardTypeIds = ref([]) // 已申辦的信用卡別 ID 列表
 
 const showApplyModal = ref(false)
-const selectedCardType = ref(null)
+const selectedCards = ref([])
 
 const hasCardTypes = computed(() => cardTypes.value.length > 0)
 
@@ -19,6 +19,36 @@ const proofFiles = ref([])
 const previewVisible = ref(false)
 const previewImage = ref('')
 const previewTitle = ref('')
+
+const cartCardTypeIds = computed(() => selectedCards.value.map((card) => card.cardTypeId))
+
+function addToCart(card) {
+  if (appliedCardTypeIds.value.includes(card.cardTypeId)) {
+    message.warning('此卡已申辦')
+    return
+  }
+
+  if (cartCardTypeIds.value.includes(card.cardTypeId)) {
+    message.warning('此卡已加入申辦清單')
+    return
+  }
+
+  selectedCards.value.push(card)
+}
+
+function removeFromCart(cardTypeId) {
+  selectedCards.value = selectedCards.value.filter((card) => card.cardTypeId !== cardTypeId)
+}
+
+function openApplyModal() {
+  if (selectedCards.value.length === 0) {
+    message.warning('請先加入至少一張卡片')
+    return
+  }
+
+  proofFiles.value = []
+  showApplyModal.value = true
+}
 
 function formatMoney(value) {
   if (value === null || value === undefined || value === '') return '-'
@@ -156,19 +186,13 @@ async function fetchCardTypes() {
     loading.value = false
   }
 }
-//開啟申辦模態框
-function openApplyModal(cardType) {
-  selectedCardType.value = cardType
-  proofFiles.value = []
-  showApplyModal.value = true
-}
+
 //關閉申辦模態框
 function closeApplyModal() {
   revokeProofPreviewUrls()
   proofFiles.value = []
   closeProofPreview()
   showApplyModal.value = false
-  selectedCardType.value = null
 }
 
 async function fetchMyApplications() {
@@ -182,7 +206,10 @@ async function fetchMyApplications() {
 }
 
 async function applyCardType() {
-  if (!selectedCardType.value) return
+  if (selectedCards.value.length === 0) {
+    message.warning('請先選擇卡片')
+    return
+  }
 
   const validFiles = proofFiles.value.filter((file) => file.fileName && file.fileUrl)
 
@@ -198,16 +225,17 @@ async function applyCardType() {
 
   try {
     const application = await createCardApplication({
-      cardTypeId: selectedCardType.value.cardTypeId,
+      cardTypeIds: selectedCards.value.map((card) => card.cardTypeId),
     })
 
     for (const file of validFiles) {
       await addMyApplicationDocument(application.applicationId, file)
     }
 
-    appliedCardTypeIds.value.push(selectedCardType.value.cardTypeId)
+    appliedCardTypeIds.value.push(...selectedCards.value.map((card) => card.cardTypeId))
 
-    message.success(`成功申辦 ${selectedCardType.value.cardTypeName}！`)
+    message.success('信用卡申請已送出')
+    selectedCards.value = []
     closeApplyModal()
   } catch (error) {
     message.error(error.response?.data?.message || '申辦失敗')
@@ -229,95 +257,104 @@ onBeforeUnmount(() => {
     <div class="page-head">
       <div>
         <h2 class="page-title">信用卡別</h2>
-        <p class="page-subtitle">
-          選擇適合你的卡片，查看年費與現金回饋。
-        </p>
+        <p class="page-subtitle">選擇適合你的卡片，查看年費與現金回饋。</p>
       </div>
 
-      <button
-        class="jb-btn jb-btn-secondary jb-btn-sm"
-        type="button"
-        @click="fetchCardTypes"
-      >
+      <button class="jb-btn jb-btn-secondary jb-btn-sm" type="button" @click="fetchCardTypes">
         重新整理
       </button>
     </div>
 
-    <!-- loading -->
     <div v-if="loading" class="state-panel">
       <span class="jb-spinner" aria-hidden="true"></span>
       <span>讀取中...</span>
     </div>
 
-    <!-- 卡片列表 -->
-    <div v-else-if="hasCardTypes" class="card-type-grid">
-      <article
-        v-for="card in cardTypes"
-        :key="card.cardTypeId"
-        class="card-type-card"
-      >
-        <div class="card-image-wrap">
-          <img
-            v-if="card.cardImageUrl"
-            class="card-image"
-            :src="getImageUrl(card.cardImageUrl)"
-            :alt="card.cardTypeName"
-          />
+    <template v-else-if="hasCardTypes">
+      <div class="card-layout">
+        <div class="card-type-grid">
+          <article v-for="card in cardTypes" :key="card.cardTypeId" class="card-type-card">
+            <div class="card-image-wrap">
+              <img
+                v-if="card.cardImageUrl"
+                class="card-image"
+                :src="getImageUrl(card.cardImageUrl)"
+                :alt="card.cardTypeName"
+              />
 
-          <div
-            v-else
-            class="card-image-placeholder"
-            aria-hidden="true"
-          >
-            <span>
-              {{ card.cardTypeName?.slice(0, 2) || '卡片' }}
-            </span>
+              <div v-else class="card-image-placeholder" aria-hidden="true">
+                <span>{{ card.cardTypeName?.slice(0, 2) || '卡片' }}</span>
+              </div>
+            </div>
+
+            <div class="card-info">
+              <p v-if="card.brand" class="card-brand">{{ card.brand }}</p>
+              <h3 class="card-name">{{ card.cardTypeName }}</h3>
+
+              <dl class="card-meta">
+                <div>
+                  <dt>年費</dt>
+                  <dd>{{ formatMoney(card.annualFee) }}</dd>
+                </div>
+
+                <div>
+                  <dt>現金回饋</dt>
+                  <dd>{{ formatRate(card.cashbackRate) }}</dd>
+                </div>
+              </dl>
+
+              <button
+                class="jb-btn jb-btn-primary jb-btn-sm"
+                type="button"
+                :disabled="
+                  appliedCardTypeIds.includes(card.cardTypeId) ||
+                  cartCardTypeIds.includes(card.cardTypeId)
+                "
+                @click="addToCart(card)"
+              >
+                {{
+                  appliedCardTypeIds.includes(card.cardTypeId)
+                    ? '已申辦'
+                    : cartCardTypeIds.includes(card.cardTypeId)
+                      ? '已加入'
+                      : '加入申辦清單'
+                }}
+              </button>
+            </div>
+          </article>
+        </div>
+
+        <aside class="apply-cart">
+          <div class="cart-head">
+            <h3>申辦清單</h3>
+            <span>{{ selectedCards.length }} 張卡</span>
           </div>
-        </div>
 
-        <div class="card-info">
-          <p v-if="card.brand" class="card-brand">
-            {{ card.brand }}
-          </p>
+          <div v-if="selectedCards.length === 0" class="cart-empty">
+            尚未加入卡片
+          </div>
 
-          <h3 class="card-name">
-            {{ card.cardTypeName }}
-          </h3>
+          <div v-else class="cart-list">
+            <div v-for="card in selectedCards" :key="card.cardTypeId" class="cart-item">
+              <span>{{ card.cardTypeName }}</span>
 
-          <dl class="card-meta">
-            <div>
-              <dt>年費</dt>
-              <dd>{{ formatMoney(card.annualFee) }}</dd>
+              <button type="button" class="remove-btn" @click="removeFromCart(card.cardTypeId)">
+                移除
+              </button>
             </div>
 
-            <div>
-              <dt>現金回饋</dt>
-              <dd>{{ formatRate(card.cashbackRate) }}</dd>
-            </div>
-          </dl>
+            <button class="modal-confirm cart-submit" type="button" @click="openApplyModal">
+              立即申辦
+            </button>
+          </div>
+        </aside>
+      </div>
+    </template>
 
-          <button
-            class="jb-btn jb-btn-primary jb-btn-sm"
-            type="button"
-            :disabled="appliedCardTypeIds.includes(card.cardTypeId)"
-            @click="openApplyModal(card)"
-          >
-            {{
-              appliedCardTypeIds.includes(card.cardTypeId)
-                ? '已申辦'
-                : '立即申辦'
-            }}
-          </button>
-        </div>
-      </article>
-    </div>
-
-    <!-- 無資料 -->
     <div v-else class="state-panel">
       <span>目前沒有可申辦的信用卡別。</span>
     </div>
 
-    <!-- 申辦 Modal -->
     <div v-if="showApplyModal" class="modal-overlay">
       <div class="modal-box">
         <h3 class="modal-title">確認申辦</h3>
@@ -325,99 +362,52 @@ onBeforeUnmount(() => {
         <p class="modal-text">
           是否確認申辦
           <span class="font-semibold">
-            {{ selectedCardType?.cardTypeName }}
+            {{ selectedCards.map((card) => card.cardTypeName).join('、') }}
           </span>
           ？
         </p>
 
-        <!-- 財力證明 -->
         <div class="proof-section">
           <div class="proof-head">
             <span>財力證明</span>
           </div>
 
-          <!-- 上傳框 -->
           <label class="upload-box">
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              hidden
-              @change="handleProofImagesChange"
-            />
-
-            <div class="upload-placeholder">
-              點擊上傳財力證明（最多 3 張）
-            </div>
+            <input type="file" accept="image/*" multiple hidden @change="handleProofImagesChange" />
+            <div class="upload-placeholder">點擊上傳財力證明（最多 3 張）</div>
           </label>
 
-          <!-- 預覽 -->
-          <div
-            v-if="proofFiles.length"
-            class="proof-preview-list"
-          >
-            <div
-              v-for="(file, index) in proofFiles"
-              :key="index"
-              class="proof-preview"
-            >
-              <button
-                class="proof-image-button"
-                type="button"
-                @click="openProofPreview(file)"
-              >
-                <img
-                  :src="getProofImageSrc(file)"
-                  :alt="file.fileName || '財力證明預覽'"
-                />
+          <div v-if="proofFiles.length" class="proof-preview-list">
+            <div v-for="(file, index) in proofFiles" :key="index" class="proof-preview">
+              <button class="proof-image-button" type="button" @click="openProofPreview(file)">
+                <img :src="getProofImageSrc(file)" :alt="file.fileName || '財力證明預覽'" />
               </button>
 
               <div class="proof-info">
                 <span>{{ file.fileName }}</span>
 
-                <button
-                  type="button"
-                  class="remove-btn"
-                  @click="removeProofFile(index)"
-                >
+                <button type="button" class="remove-btn" @click="removeProofFile(index)">
                   移除
                 </button>
               </div>
             </div>
           </div>
 
-          <p class="proof-tip">
-            最多上傳 3 個財力證明
-          </p>
+          <p class="proof-tip">最多上傳 3 個財力證明</p>
         </div>
 
-        <!-- footer -->
         <div class="modal-actions">
-          <button
-            class="modal-cancel"
-            @click="closeApplyModal"
-          >
-            取消
-          </button>
-
-          <button
-            class="modal-confirm"
-            @click="applyCardType"
-          >
-            確認申辦
-          </button>
+          <button class="modal-cancel" @click="closeApplyModal">取消</button>
+          <button class="modal-confirm" @click="applyCardType">確認申辦</button>
         </div>
       </div>
     </div>
 
-    <div
-      v-if="previewVisible"
-      class="image-preview-overlay"
-      @click.self="closeProofPreview"
-    >
+    <div v-if="previewVisible" class="image-preview-overlay" @click.self="closeProofPreview">
       <div class="image-preview-dialog" role="dialog" aria-modal="true">
         <div class="image-preview-head">
           <h3>{{ previewTitle }}</h3>
+
           <button
             class="image-preview-close"
             type="button"
@@ -427,6 +417,7 @@ onBeforeUnmount(() => {
             x
           </button>
         </div>
+
         <img :src="previewImage" :alt="previewTitle" />
       </div>
     </div>
@@ -435,7 +426,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .card-type-page {
-  max-width: 960px;
+  max-width: 1080px;
 }
 
 .page-head {
@@ -460,28 +451,40 @@ onBeforeUnmount(() => {
 
 .card-type-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-4);
+  grid-template-columns: repeat(2, minmax(280px, 1fr));
+  gap: 20px;
 }
 
 .card-type-card {
-  display: grid;
-  grid-template-columns: 180px minmax(0, 1fr);
-  gap: var(--space-4);
-  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
   background: var(--bg-card);
   border: 1px solid rgba(214, 206, 195, 0.55);
-  border-radius: var(--radius-md);
-  padding: var(--space-4);
+  border-radius: 16px;
+  padding: 22px;
   box-shadow: var(--shadow-sm);
+  min-width: 0;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.card-type-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(92, 107, 95, 0.28);
+  box-shadow: 0 16px 34px rgba(43, 38, 31, 0.1);
 }
 
 .card-image-wrap {
   width: 100%;
+  max-width: 260px;
   aspect-ratio: 1.58 / 1;
   border-radius: var(--radius-sm);
   overflow: hidden;
   background: var(--bg-secondary);
+  align-self: center;
 }
 
 .card-image {
@@ -506,20 +509,22 @@ onBeforeUnmount(() => {
   color: var(--text-secondary);
   font-size: var(--text-xs);
   margin-bottom: var(--space-1);
+  line-height: 1.4;
 }
 
 .card-name {
-  font-size: var(--text-h3);
-  line-height: 1.25;
-  margin-bottom: var(--space-3);
+  font-size: 22px;
+  line-height: 1.28;
+  margin-bottom: 16px;
   letter-spacing: 0;
+  word-break: keep-all;
 }
 
 .card-meta {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-3);
-  margin: 0;
+  gap: 12px;
+  margin: 0 0 18px;
 }
 
 .card-meta div {
@@ -530,6 +535,7 @@ onBeforeUnmount(() => {
   color: var(--text-secondary);
   font-size: var(--text-xs);
   margin-bottom: 4px;
+  white-space: nowrap;
 }
 
 .card-meta dd {
@@ -537,6 +543,18 @@ onBeforeUnmount(() => {
   font-size: var(--text-body);
   font-weight: 600;
   margin: 0;
+  white-space: nowrap;
+}
+
+.card-info {
+  min-width: 0;
+  width: 100%;
+}
+
+.card-info .jb-btn {
+  width: 100%;
+  justify-content: center;
+  white-space: nowrap;
 }
 
 .state-panel {
@@ -552,18 +570,22 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 900px) {
+  .card-layout {
+    grid-template-columns: 1fr;
+  }
+
   .card-type-grid {
     grid-template-columns: 1fr;
+  }
+
+  .apply-cart {
+    position: static;
   }
 }
 
 @media (max-width: 700px) {
   .page-head {
     flex-direction: column;
-  }
-
-  .card-type-card {
-    grid-template-columns: 1fr;
   }
 
   .card-image-wrap {
@@ -579,8 +601,6 @@ onBeforeUnmount(() => {
   justify-content: center;
   z-index: 999;
 }
-
-
 
 .modal-title {
   font-size: 20px;
@@ -614,8 +634,12 @@ onBeforeUnmount(() => {
 }
 
 .modal-confirm {
-  background: #1d4ed8;
+  background: var(--primary);
   color: white;
+}
+
+.modal-confirm:hover {
+  background: var(--primary-dark);
 }
 .proof-section {
   margin-top: 16px;
@@ -658,11 +682,9 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 
-
-
 .upload-box:hover {
-  border-color: #2563eb;
-  background: #eff6ff;
+  border-color: var(--primary);
+  background: var(--bg-secondary);
 }
 .modal-box {
   width: 520px;
@@ -692,7 +714,6 @@ onBeforeUnmount(() => {
   font-weight: 600;
 }
 
-
 .proof-preview {
   display: grid;
   gap: 8px;
@@ -716,7 +737,7 @@ onBeforeUnmount(() => {
 }
 
 .proof-image-button:focus-visible {
-  outline: 3px solid #93c5fd;
+  outline: 3px solid rgba(92, 107, 95, 0.35);
   outline-offset: 2px;
 }
 
@@ -807,6 +828,90 @@ onBeforeUnmount(() => {
 @media (max-width: 520px) {
   .proof-preview-list {
     grid-template-columns: 1fr;
+  }
+}
+
+
+.cart-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.cart-head h3 {
+  margin: 0;
+  font-size: 18px;
+  letter-spacing: 0;
+}
+
+.cart-head span {
+  flex-shrink: 0;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.cart-empty {
+  color: #6b7280;
+  font-size: 14px;
+  padding: 12px 0 2px;
+}
+
+.cart-list {
+  display: grid;
+  gap: 12px;
+}
+
+.cart-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  background: #f9fafb;
+  border: 1px solid #eef0ee;
+  border-radius: 12px;
+}
+
+.cart-item span {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-primary);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cart-submit {
+  margin-top: 8px;
+  width: 100%;
+}
+.card-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 28px;
+  align-items: start;
+}
+
+.apply-cart {
+  padding: 20px;
+  background: #ffffff;
+  border: 1px solid rgba(214, 206, 195, 0.55);
+  border-radius: 16px;
+  box-shadow: 0 12px 30px rgba(43, 38, 31, 0.08);
+  height: fit-content;
+}
+
+@media (min-width: 901px) {
+  .apply-cart {
+    position: fixed;
+    top: 160px;
+    right: max(24px, calc((100vw - 1080px) / 2));
+    z-index: 20;
+    width: 300px;
+    max-height: calc(100vh - 184px);
+    overflow-y: auto;
   }
 }
 </style>

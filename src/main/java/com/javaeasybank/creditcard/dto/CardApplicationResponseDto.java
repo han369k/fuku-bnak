@@ -22,4 +22,7 @@ public class CardApplicationResponseDto {
     private CardApplicationItemResult itemResult;
 
     private List<CardApplicationDocumentResponseDto> documents;
+
+    // 新欄位：多卡申請用
+    private List<CardApplicationItemResponseDto> items;
 }

@@ -1,6 +1,7 @@
 package com.javaeasybank.creditcard.service;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -66,22 +67,36 @@ public class CardAppService {
 
     // 新增
     public CardApplicationResponseDto create(CardApplicationRequestDto requestDto) {
-        if (requestDto.getCardTypeId() == null) {
+
+        List<Integer> cardTypeIds = requestDto.getCardTypeIds();
+
+        if ((cardTypeIds == null || cardTypeIds.isEmpty()) && requestDto.getCardTypeId() != null) {
+            cardTypeIds = List.of(requestDto.getCardTypeId());
+        }
+
+        if (cardTypeIds == null || cardTypeIds.isEmpty()) {
             throw new BusinessException("Card type is required");
         }
 
-        boolean exists = cardAppItemRepository
-                .existsByApplication_Customer_CustomerIdAndCardType_CardTypeIdAndApplication_Status(
-                        requestDto.getCustomerId(),
-                        requestDto.getCardTypeId(),
-                        CardApplicationStatus.PENDING);
+        // 防止同一次申請重複卡別
+        cardTypeIds = cardTypeIds.stream()
+                .distinct()
+                .toList();
 
-        if (exists) {
-            throw new BusinessException("你已申辦過該卡片");
+        // 檢查是否已有待審核申請
+        for (Integer cardTypeId : cardTypeIds) {
+            boolean exists = cardAppItemRepository
+                    .existsByApplication_Customer_CustomerIdAndCardType_CardTypeIdAndApplication_Status(
+                            requestDto.getCustomerId(),
+                            cardTypeId,
+                            CardApplicationStatus.PENDING);
+
+            if (exists) {
+                throw new BusinessException("你已申辦過其中一張卡片");
+            }
         }
 
         CardApplication entity = cardApplicationMapper.toEntity(requestDto);
-
         entity.setStatus(CardApplicationStatus.PENDING);
 
         CustomerProfile customer = customerRepository.findById(requestDto.getCustomerId())
@@ -90,25 +105,26 @@ public class CardAppService {
 
         CardApplication saved = cardAppRepository.save(entity);
 
-        CardType cardType = cardTypeRepository.findById(requestDto.getCardTypeId())
-                .orElseThrow(() -> new BusinessException("Card type not found"));
-        CardApplicationItem item = new CardApplicationItem();
-        item.setApplication(saved);
-        item.setCardType(cardType);
-        item.setResult(CardApplicationItemResult.PENDING);
-
         // 預設額度
         BigDecimal approvedLimit = cardAccountRepository
                 .findByCustomer_CustomerId(requestDto.getCustomerId())
                 .map(CardAccount::getCreditLimit)
                 .orElse(DEFAULT_CREDIT_LIMIT);
 
-        item.setApprovedLimit(approvedLimit);
+        // 多卡建立多筆 item
+        for (Integer cardTypeId : cardTypeIds) {
+            CardType cardType = cardTypeRepository.findById(cardTypeId)
+                    .orElseThrow(() -> new BusinessException("Card type not found"));
 
-        // 預設年費
-        item.setAnnualFee(cardType.getAnnualFee());
+            CardApplicationItem item = new CardApplicationItem();
+            item.setApplication(saved);
+            item.setCardType(cardType);
+            item.setResult(CardApplicationItemResult.PENDING);
+            item.setApprovedLimit(approvedLimit);
+            item.setAnnualFee(cardType.getAnnualFee());
 
-        cardAppItemRepository.save(item);
+            cardAppItemRepository.save(item);
+        }
 
         return toDtoWithItem(saved);
     }
@@ -163,15 +179,16 @@ public class CardAppService {
 
         return dto;
     }
+
     public void needSupplement(Integer applicationId, String remark) {
 
-    CardApplication application = cardAppRepository.findById(applicationId)
-            .orElseThrow(() -> new BusinessException("找不到信用卡申請單"));
+        CardApplication application = cardAppRepository.findById(applicationId)
+                .orElseThrow(() -> new BusinessException("找不到信用卡申請單"));
 
-    application.setStatus(CardApplicationStatus.NEED_SUPPLEMENT);
+        application.setStatus(CardApplicationStatus.NEED_SUPPLEMENT);
 
-    application.setRemark(remark);
+        application.setRemark(remark);
 
-    cardAppRepository.save(application);
-}
+        cardAppRepository.save(application);
+    }
 }
