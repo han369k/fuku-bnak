@@ -571,7 +571,7 @@ INSERT INTO LOAN_ACCOUNT (
     update_time
 )
 SELECT
-    CONCAT('LAC', CONCAT(CONVERT(VARCHAR(8), a.create_time, 112), REPLACE(CONVERT(VARCHAR(8), a.create_time, 108), ':', '')), RIGHT(CONCAT('0000', CAST(ROW_NUMBER() OVER (ORDER BY a.seq) AS VARCHAR(4))), 4)) AS account_id,
+    loan_account.account_number AS account_id,
     loan_account.account_number AS account_number,
     a.application_id,
     a.customer_id,
@@ -599,19 +599,44 @@ SELECT
     END AS account_status,
     DATEADD(HOUR, 1, a.create_time) AS create_time,
     DATEADD(HOUR, 2, a.create_time) AS update_time
-FROM @apps a
+FROM (
+    SELECT
+        a.*,
+        ROW_NUMBER() OVER (PARTITION BY a.customer_id ORDER BY a.create_time, a.application_id) AS loan_account_ordinal
+    FROM @apps a
+    WHERE a.application_status = 'DISBURSED'
+) a
 INNER JOIN CUSTOMER_PROFILE cp
     ON cp.customer_id = a.customer_id
 CROSS APPLY (
-    SELECT '901'
+    SELECT CAST(900 + a.loan_account_ordinal AS VARCHAR(3))
         + RIGHT('00' + CAST(ASCII(UPPER(LEFT(cp.id_number, 1))) - ASCII('A') + 1 AS VARCHAR(2)), 2)
         + SUBSTRING(cp.id_number, 2, LEN(cp.id_number)) AS expected_account_number
 ) encoded
 INNER JOIN [ACCOUNT] loan_account
     ON loan_account.customer_id = a.customer_id
    AND loan_account.account_type = 'LOAN'
-   AND loan_account.account_number = encoded.expected_account_number
-WHERE a.application_status = 'DISBURSED';
+   AND loan_account.account_number = encoded.expected_account_number;
+
+IF EXISTS (
+    SELECT 1
+    FROM LOAN_ACCOUNT
+    GROUP BY account_number
+    HAVING COUNT(*) > 1
+)
+    THROW 51303, 'loan_mockdata.sql generated duplicated LOAN_ACCOUNT.account_number.', 1;
+
+IF EXISTS (
+    SELECT 1
+    FROM @apps a
+    WHERE a.application_status = 'DISBURSED'
+      AND NOT EXISTS (
+          SELECT 1
+          FROM LOAN_ACCOUNT la
+          WHERE la.application_id = a.application_id
+      )
+)
+    THROW 51304, 'loan_mockdata.sql could not bind each DISBURSED application to a dedicated ACCOUNT loan account.', 1;
 
 ;WITH period_numbers AS (
     SELECT TOP (480) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS period_index
@@ -906,4 +931,3 @@ PRINT 'loan_mockdata.sql completed: seeded 104 applications, 43 risk review task
 
 SET XACT_ABORT OFF;
 SET NOCOUNT OFF;
-

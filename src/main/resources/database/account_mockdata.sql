@@ -221,8 +221,11 @@ SELECT
     'LOAN',
     'TWD',
     0.0000,
-    CAST(80000 + ((rn * 67411) % 3600000) AS DECIMAL(19,4)),
-    0.02100,
+    CASE
+        WHEN customer_id = 'Q8M4T7K2' THEN CAST(2500000.0000 AS DECIMAL(19,4))
+        ELSE CAST(80000 + ((rn * 67411) % 3600000) AS DECIMAL(19,4))
+    END,
+    CASE WHEN customer_id = 'Q8M4T7K2' THEN 0.01800 ELSE 0.02100 END,
     'ACTIVE',
     NULL,
     DATEADD(DAY, -120 + rn, CAST('2026-05-13 09:00:00' AS DATETIME2)),
@@ -244,6 +247,31 @@ WHERE customer_id IN (
     'F7V4C8N2'
 ) AND status = 'ACTIVE';
 
+-- Additional Wang Daming loan account: production logic allocates 902... when 901... already exists.
+INSERT INTO #mock_accounts (
+    account_number, customer_id, account_type, currency, balance, liability,
+    interest_rate, status, parent_account_number, created_at, changed_at, created_by, changed_by
+)
+SELECT
+    '902'
+        + RIGHT('00' + CAST(ASCII(UPPER(LEFT(id_number, 1))) - ASCII('A') + 1 AS VARCHAR(2)), 2)
+        + SUBSTRING(id_number, 2, LEN(id_number)),
+    customer_id,
+    'LOAN',
+    'TWD',
+    0.0000,
+    CAST(150000.0000 AS DECIMAL(19,4)),
+    0.04000,
+    'ACTIVE',
+    NULL,
+    CAST('2026-05-22 11:00:00' AS DATETIME2),
+    CAST('2026-05-22 12:00:00' AS DATETIME2),
+    N'總行',
+    N'總行'
+FROM #customers
+WHERE customer_id = 'Q8M4T7K2'
+  AND status = 'ACTIVE';
+
 IF NOT EXISTS (SELECT 1 FROM [ACCOUNT])
 INSERT INTO [ACCOUNT] (
     account_number, customer_id, account_type, currency, balance, liability,
@@ -255,6 +283,36 @@ SELECT
 FROM #mock_accounts
 WHERE parent_account_number IS NULL
 ORDER BY account_number;
+
+-- Keep Wang Daming's demo loan accounts aligned on repeated mock-data runs.
+UPDATE a
+SET
+    a.liability = m.liability,
+    a.interest_rate = m.interest_rate,
+    a.status = m.status,
+    a.changed_at = m.changed_at,
+    a.changed_by = m.changed_by
+FROM [ACCOUNT] a
+JOIN #mock_accounts m
+  ON m.account_number = a.account_number
+WHERE m.customer_id = 'Q8M4T7K2'
+  AND m.account_type = 'LOAN';
+
+INSERT INTO [ACCOUNT] (
+    account_number, customer_id, account_type, currency, balance, liability,
+    interest_rate, status, parent_account_number, created_at, changed_at, created_by, changed_by
+)
+SELECT
+    m.account_number, m.customer_id, m.account_type, m.currency, m.balance, m.liability,
+    m.interest_rate, m.status, m.parent_account_number, m.created_at, m.changed_at, m.created_by, m.changed_by
+FROM #mock_accounts m
+WHERE m.customer_id = 'Q8M4T7K2'
+  AND m.account_type = 'LOAN'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM [ACCOUNT] a
+      WHERE a.account_number = m.account_number
+  );
 
 IF NOT EXISTS (SELECT 1 FROM [ACCOUNT] WHERE parent_account_number IS NOT NULL)
 INSERT INTO [ACCOUNT] (
@@ -566,8 +624,8 @@ BEGIN
         ELSE @balanceBefore + @amount
     END;
 
-    SET @referenceId = 'TXN-20260513-' + RIGHT(REPLICATE('0', 6) + CAST(@i AS VARCHAR(6)), 6);
     SET @createdAt = DATEADD(MINUTE, -(@i * 43), CAST('2026-05-13 10:00:00' AS DATETIME2(3)));
+    SET @referenceId = 'TXN-' + CONVERT(VARCHAR(8), @createdAt, 112) + '-' + REPLACE(CONVERT(VARCHAR(8), @createdAt, 108), ':', '') + '-' + LOWER(LEFT(CONVERT(CHAR(36), NEWID()), 8));
 
     INSERT INTO TRANS_LOG (
         transaction_id, reference_id, account_number, counterpart_account,

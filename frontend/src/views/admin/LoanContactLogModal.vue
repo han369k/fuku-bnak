@@ -16,6 +16,16 @@
                     {{ app?.applicantName || (app?.cif ? `CIF: ${app.cif}` : (app?.customerId ? `#${app.customerId}` : '')) }}
                   </span>
                 </div>
+                <div class="contact-target">
+                  <span v-if="app?.customerPhone || app?.applicantPhone">
+                    <i class="fa-solid fa-phone"></i>
+                    {{ app?.customerPhone || app?.applicantPhone }}
+                  </span>
+                  <span v-if="app?.customerEmail || app?.applicantEmail">
+                    <i class="fa-solid fa-envelope"></i>
+                    {{ app?.customerEmail || app?.applicantEmail }}
+                  </span>
+                </div>
               </div>
             </div>
             <button class="close-btn" @click="close"><i class="fa-solid fa-x"></i></button>
@@ -385,6 +395,24 @@ function formatDateTime(d) {
   border: 1px solid var(--accent-lt); padding: 2px 8px; border-radius: 4px;
 }
 .applicant-hint { font-size: 14px; color: var(--muted-2); }
+.contact-target {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 7px;
+  color: var(--muted-2);
+  font-size: 13px;
+}
+.contact-target span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.contact-target i { color: var(--accent); }
 .close-btn {
   width: 30px; height: 30px; border-radius: 8px;
   border: 1px solid var(--border); background: transparent;
