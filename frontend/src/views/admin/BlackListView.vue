@@ -10,6 +10,7 @@
           <a-radio-button :value="false">已停用</a-radio-button>
           <a-radio-button :value="null">全部</a-radio-button>
         </a-radio-group>
+        <a-button @click="fillBlacklistTemplate">帶入高風險用戶</a-button>
         <a-button type="primary" @click="openModal('create')">新增黑名單</a-button>
       </div>
     </div>
@@ -285,6 +286,17 @@ function resetForm() {
   formData.expireAt = null
   formData.status = true
   formRef.value?.clearValidate()
+}
+
+function fillBlacklistTemplate() {
+  openModal('create')
+  // override reset defaults
+  formData.listType = 'ACCOUNT_NO'
+  formData.listValue = '070101074383'
+  formData.reason = '高風險用戶'
+  formData.expireAt = null
+  // clear validation since we just changed values
+  setTimeout(() => formRef.value?.clearValidate(), 0)
 }
 
 onMounted(fetchList)

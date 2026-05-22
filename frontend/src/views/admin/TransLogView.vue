@@ -91,7 +91,23 @@
       @resizeColumn="handleResizeColumn"
     >
       <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'entryType'">
+        <template v-if="column.key === 'referenceId'">
+          <span class="reference-cell">
+            <span class="reference-text">{{ record.referenceId || '-' }}</span>
+            <a-tooltip v-if="record.referenceId" title="複製交易編號">
+              <a-button
+                type="text"
+                size="small"
+                class="copy-reference-btn"
+                aria-label="複製交易編號"
+                @click.stop="copyText(record.referenceId, '已複製交易編號')"
+              >
+                <template #icon><CopyOutlined /></template>
+              </a-button>
+            </a-tooltip>
+          </span>
+        </template>
+        <template v-else-if="column.key === 'entryType'">
           <div :class="['status-tag', `entry-${record.entryType.toLowerCase()}`]">
             <span class="status-dot"></span>
             {{ entryTypeMap[record.entryType] || record.entryType }}
@@ -187,7 +203,7 @@
 <script setup>
 import { ref, reactive, computed, h, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
-import { DownOutlined, SearchOutlined, RollbackOutlined } from '@ant-design/icons-vue'
+import { CopyOutlined, DownOutlined, SearchOutlined, RollbackOutlined } from '@ant-design/icons-vue'
 import * as XLSX from 'xlsx'
 import { saveAs } from 'file-saver'
 import {
@@ -526,10 +542,26 @@ async function handleReversalSubmit() {
   }
 }
 
-function copyText(text) {
-  navigator.clipboard.writeText(text).then(() => {
-    message.success('已複製')
-  })
+async function copyText(text, successText = '已複製') {
+  if (!text) return
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text)
+    } else {
+      const textarea = document.createElement('textarea')
+      textarea.value = text
+      textarea.setAttribute('readonly', '')
+      textarea.style.position = 'fixed'
+      textarea.style.opacity = '0'
+      document.body.appendChild(textarea)
+      textarea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textarea)
+    }
+    message.success(successText)
+  } catch (error) {
+    message.error('複製失敗，請手動複製')
+  }
 }
 
 function lookupReferenceId(refId) {
@@ -582,4 +614,30 @@ function isBusinessAccountLabel(value) {
 
 .entry-debit { background-color: rgba(255, 77, 79, 0.1); color: #d9363e; }
 .entry-debit .status-dot { background-color: #ff4d4f; }
+
+.reference-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+}
+
+.reference-text {
+  overflow: hidden;
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.copy-reference-btn {
+  flex: 0 0 auto;
+  color: #5c6b5f;
+  border-radius: 8px;
+}
+
+.copy-reference-btn:hover,
+.copy-reference-btn:focus {
+  color: #3f4a42;
+  background: rgba(92, 107, 95, 0.1);
+}
 </style>

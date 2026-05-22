@@ -123,9 +123,8 @@ import { useRouter } from 'vue-router'
 import { customerRegister } from '@/api/customerAuth'
 import JbLogo from '@/components/JbLogo.vue'
 import {
-  CUSTOMER_DEMO_ACCOUNTS,
-  DEMO_INDEX_KEY,
   LAST_REGISTERED_DEMO_ACCOUNT_KEY,
+  WANG_XIAOMING_DEMO_ACCOUNT,
 } from '@/data/customerDemoAccounts'
 
 const router = useRouter()
@@ -156,14 +155,18 @@ function showToast(text, type = 'error') {
 }
 
 async function fillDemoAccount() {
-  const currentIndex = Number.parseInt(localStorage.getItem(DEMO_INDEX_KEY) || '0', 10)
-  const account = CUSTOMER_DEMO_ACCOUNTS[currentIndex % CUSTOMER_DEMO_ACCOUNTS.length]
-  localStorage.setItem(DEMO_INDEX_KEY, String((currentIndex + 1) % CUSTOMER_DEMO_ACCOUNTS.length))
-  localStorage.setItem(LAST_REGISTERED_DEMO_ACCOUNT_KEY, JSON.stringify(account))
-  // 帶入除 email 以外的所有欄位，email 留空讓使用者自行填入
-  const { email: _email, ...rest } = account
-  Object.assign(form, rest)
-  form.email = ''
+  Object.assign(form, {
+    name: WANG_XIAOMING_DEMO_ACCOUNT.name,
+    birthday: WANG_XIAOMING_DEMO_ACCOUNT.birthday,
+    gender: WANG_XIAOMING_DEMO_ACCOUNT.gender,
+    idNumber: WANG_XIAOMING_DEMO_ACCOUNT.idNumber,
+    username: WANG_XIAOMING_DEMO_ACCOUNT.username,
+    password: WANG_XIAOMING_DEMO_ACCOUNT.password,
+    phone: WANG_XIAOMING_DEMO_ACCOUNT.phone,
+    email: WANG_XIAOMING_DEMO_ACCOUNT.email,
+    address: WANG_XIAOMING_DEMO_ACCOUNT.address,
+  })
+  localStorage.setItem(LAST_REGISTERED_DEMO_ACCOUNT_KEY, JSON.stringify({ ...form }))
   await nextTick()
 }
 
@@ -198,6 +201,7 @@ async function handleRegister() {
       email: form.email,
       address: form.address,
     })
+    localStorage.setItem(LAST_REGISTERED_DEMO_ACCOUNT_KEY, JSON.stringify({ ...form }))
     showToast('註冊成功，驗證信已寄出，請至電子信箱完成認證', 'success')
     setTimeout(() => {
       router.push('/login')

@@ -105,17 +105,18 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th>帳戶編號</th>
-                <th>客戶</th>
-                <th>類型</th>
-                <th class="text-right">本金</th>
-                <th class="text-right">月繳</th>
-                <th class="text-right">年利率</th>
-                <th class="text-center">期數進度</th>
-                <th class="text-right">剩餘本金</th>
-                <th>下次繳款日</th>
-                <th>狀態</th>
-                <th>撥款日</th>
+                <th @click="setSort('applicationId')" class="sortable">業務編號 <span v-if="sortKey === 'applicationId'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span></th>
+                <th @click="setSort('accountNumber')" class="sortable">收款專戶 <span v-if="sortKey === 'accountNumber'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span></th>
+                <th @click="setSort('memberName')" class="sortable">客戶 <span v-if="sortKey === 'memberName'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span></th>
+                <th @click="setSort('applyType')" class="sortable">類型 <span v-if="sortKey === 'applyType'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span></th>
+                <th @click="setSort('principalAmount')" class="sortable text-right">本金 <span v-if="sortKey === 'principalAmount'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span></th>
+                <th @click="setSort('monthlyPayment')" class="sortable text-right">月繳 <span v-if="sortKey === 'monthlyPayment'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span></th>
+                <th @click="setSort('rate')" class="sortable text-right">年利率 <span v-if="sortKey === 'rate'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span></th>
+                <th @click="setSort('paidPeriods')" class="sortable text-center">期數進度 <span v-if="sortKey === 'paidPeriods'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span></th>
+                <th @click="setSort('remainingPrincipal')" class="sortable text-right">剩餘本金 <span v-if="sortKey === 'remainingPrincipal'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span></th>
+                <th @click="setSort('nextPaymentDate')" class="sortable">下次繳款日 <span v-if="sortKey === 'nextPaymentDate'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span></th>
+                <th @click="setSort('accountStatus')" class="sortable">狀態 <span v-if="sortKey === 'accountStatus'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span></th>
+                <th @click="setSort('startDate')" class="sortable">撥款日 <span v-if="sortKey === 'startDate'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span></th>
                 <th class="text-center">還款時間表</th>
               </tr>
             </thead>
@@ -127,7 +128,10 @@
                 :class="{ 'row-overdue': acc.accountStatus === 'OVERDUE' }"
               >
                 <td>
-                  <span class="mono text-sm">{{ acc.accountId }}</span>
+                  <span class="mono text-sm">{{ acc.applicationId }}</span>
+                </td>
+                <td>
+                  <span class="mono text-sm">{{ acc.accountNumber || '—' }}</span>
                 </td>
                 <td>
                   <div class="applicant-cell">
@@ -233,7 +237,7 @@
             <div class="modal-title-group">
               <span class="modal-title">還款時間表</span>
               <span v-if="modalAccount" class="modal-subtitle">
-                帳戶 {{ modalAccount.accountId }}
+                帳戶 {{ modalAccount.accountNumber || modalAccount.accountId }}
                 <span class="type-badge" :class="'tb-' + modalAccount.applyType" style="margin-left:8px;">
                   {{ LOAN_TYPE_NAME[modalAccount.applyType] || modalAccount.applyType }}
                 </span>
@@ -369,6 +373,10 @@ const repaymentLoading = ref(false)
 const currentPage     = ref(1)
 const pageSize        = 15
 
+// 排序狀態
+const sortKey         = ref('nextPaymentDate')
+const sortOrder       = ref('asc') // 'asc' 或 'desc'
+
 // Modal 狀態
 const showModal    = ref(false)
 const modalAccount = ref(null)
@@ -387,9 +395,34 @@ const filteredAccounts = computed(() => {
 
 const totalPages = computed(() => Math.max(1, Math.ceil(filteredAccounts.value.length / pageSize)))
 
+const sortedAccounts = computed(() => {
+  let list = [...filteredAccounts.value]
+  if (!sortKey.value) return list
+  
+  list.sort((a, b) => {
+    let valA = a[sortKey.value]
+    let valB = b[sortKey.value]
+    
+    // 將 null/undefined 放到底部
+    if (valA == null && valB != null) return 1
+    if (valA != null && valB == null) return -1
+    if (valA == null && valB == null) return 0
+
+    if (typeof valA === 'string' && typeof valB === 'string') {
+      const res = valA.localeCompare(valB)
+      return sortOrder.value === 'asc' ? res : -res
+    }
+    
+    if (valA < valB) return sortOrder.value === 'asc' ? -1 : 1
+    if (valA > valB) return sortOrder.value === 'asc' ? 1 : -1
+    return 0
+  })
+  return list
+})
+
 const pagedAccounts = computed(() => {
   const start = (currentPage.value - 1) * pageSize
-  return filteredAccounts.value.slice(start, start + pageSize)
+  return sortedAccounts.value.slice(start, start + pageSize)
 })
 
 const pageList = computed(() => {
@@ -410,6 +443,15 @@ function setStatus(val) {
   currentStatus.value = val
   currentPage.value   = 1
   repayments.value    = []
+}
+
+function setSort(key) {
+  if (sortKey.value === key) {
+    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortKey.value = key
+    sortOrder.value = 'asc'
+  }
 }
 
 async function fetchAccounts() {
@@ -708,6 +750,10 @@ onMounted(fetchAccounts)
 }
 .data-table th.text-right  { text-align: right; }
 .data-table th.text-center { text-align: center; }
+
+.sortable { cursor: pointer; user-select: none; }
+.sortable:hover { color: var(--accent); }
+.sortable span { display: inline-block; width: 14px; text-align: center; }
 
 .data-row {
   border-bottom: 1px solid var(--border);

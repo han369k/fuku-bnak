@@ -123,6 +123,7 @@
                 key="admin-credit-list"
                 @click="$router.push({ name: 'admin-credit-list' })"
               >
+                <template #icon><DashboardOutlined /></template>
                 <span>客戶信用評分</span>
               </a-menu-item>
             </a-menu-item-group>
@@ -201,6 +202,7 @@ import {
   AlertOutlined,
   StopOutlined,
   CheckCircleOutlined,
+  DashboardOutlined,
 } from '@ant-design/icons-vue'
 
 const route = useRoute()

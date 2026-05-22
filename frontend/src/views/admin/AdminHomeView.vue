@@ -140,40 +140,48 @@ const customerCount = ref(0)
 const employeeCount = ref(0)
 const todayTransCount = ref(0)
 const statsLoading = ref(true)
-const mutedIconBg = 'rgba(92, 107, 95, 0.1)'
-const mutedIconColor = '#5C6B5F'
+const iconTones = {
+  account: { bg: 'rgba(92, 107, 95, 0.11)', color: '#5C6B5F' },
+  customer: { bg: 'rgba(78, 102, 92, 0.10)', color: '#4E665C' },
+  employee: { bg: 'rgba(92, 91, 76, 0.10)', color: '#5C5B4C' },
+  transaction: { bg: 'rgba(93, 107, 113, 0.10)', color: '#5D6B71' },
+  loan: { bg: 'rgba(143, 116, 70, 0.11)', color: '#7A6744' },
+  risk: { bg: 'rgba(166, 90, 77, 0.10)', color: '#9A554B' },
+  card: { bg: 'rgba(106, 92, 116, 0.10)', color: '#665A70' },
+  system: { bg: 'rgba(91, 96, 101, 0.10)', color: '#5B6065' },
+}
 
 // ── 統計卡片：依角色切換 ──
 const stats = computed(() => {
   if (isCISO.value) {
     // 資安長視角：稽核數據
     return [
-      { label: '員工總人數', value: employeeCount.value, icon: TeamOutlined,        bg: mutedIconBg, color: mutedIconColor, loading: statsLoading.value },
-      { label: '今日系統登入', value: todayTransCount.value || '—',  icon: AccountBookOutlined, bg: mutedIconBg, color: mutedIconColor, loading: false },
-      { label: '系統可用率',   value: '99.9%',                       icon: AlertOutlined,       bg: mutedIconBg, color: mutedIconColor, loading: false },
-      { label: '高風險操作',   value: '0',                            icon: AuditOutlined,       bg: mutedIconBg, color: mutedIconColor, loading: false },
+      { label: '員工總人數', value: employeeCount.value, icon: TeamOutlined,        ...iconTones.employee, loading: statsLoading.value },
+      { label: '今日系統登入', value: todayTransCount.value || '—',  icon: AccountBookOutlined, ...iconTones.system, loading: false },
+      { label: '系統可用率',   value: '99.9%',                       icon: AlertOutlined,       ...iconTones.account, loading: false },
+      { label: '高風險操作',   value: '0',                            icon: AuditOutlined,       ...iconTones.risk, loading: false },
     ]
   }
   // 業務人員視角：業務數據
   return [
-    { label: '帳戶總數', value: accountCount.value,   icon: BankOutlined,  bg: mutedIconBg, color: mutedIconColor, loading: statsLoading.value },
-    { label: '客戶總數', value: customerCount.value,  icon: UserOutlined,  bg: mutedIconBg, color: mutedIconColor, loading: statsLoading.value },
-    { label: '員工人數', value: employeeCount.value,  icon: TeamOutlined,  bg: mutedIconBg, color: mutedIconColor, loading: statsLoading.value },
-    { label: '最新交易', value: todayTransCount.value, icon: SwapOutlined,  bg: mutedIconBg, color: mutedIconColor, loading: statsLoading.value },
+    { label: '帳戶總數', value: accountCount.value,   icon: BankOutlined,  ...iconTones.account, loading: statsLoading.value },
+    { label: '客戶總數', value: customerCount.value,  icon: UserOutlined,  ...iconTones.customer, loading: statsLoading.value },
+    { label: '員工人數', value: employeeCount.value,  icon: TeamOutlined,  ...iconTones.employee, loading: statsLoading.value },
+    { label: '最新交易', value: todayTransCount.value, icon: SwapOutlined,  ...iconTones.transaction, loading: statsLoading.value },
   ]
 })
 
 // ── 快捷入口：依角色切換 ──
 const businessShortcuts = [
-  { label: '帳戶管理',   desc: '查看與管理帳戶',    route: '/admin/accounts',          icon: BankOutlined,    bg: mutedIconBg, color: mutedIconColor },
-  { label: '交易紀錄',   desc: '查看所有交易紀錄',    route: '/admin/trans-logs',       icon: FileTextOutlined,bg: mutedIconBg, color: mutedIconColor },
-  { label: '貸款管理',   desc: '審核貸款申請',       route: '/admin/loan-applications', icon: AuditOutlined,   bg: mutedIconBg, color: mutedIconColor },
-  { label: '風險事件',   desc: '監控異常風險',       route: '/admin/risk-events',       icon: AlertOutlined,   bg: mutedIconBg, color: mutedIconColor },
-  { label: '信用卡管理', desc: '卡別與申請',         route: '/admin/card-applications', icon: CreditCardOutlined,bg: mutedIconBg, color: mutedIconColor },
+  { label: '帳戶管理',   desc: '查看與管理帳戶',    route: '/admin/accounts',          icon: BankOutlined,     ...iconTones.account },
+  { label: '交易紀錄',   desc: '查看所有交易紀錄',    route: '/admin/trans-logs',       icon: FileTextOutlined, ...iconTones.transaction },
+  { label: '貸款管理',   desc: '審核貸款申請',       route: '/admin/loan-applications', icon: AuditOutlined,    ...iconTones.loan },
+  { label: '風險事件',   desc: '監控異常風險',       route: '/admin/risk-events',       icon: AlertOutlined,    ...iconTones.risk },
+  { label: '信用卡管理', desc: '卡別與申請',         route: '/admin/card-applications', icon: CreditCardOutlined, ...iconTones.card },
 ]
 const cisoShortcuts = [
-  { label: '系統日誌', desc: '查看所有操作日誌', route: '/admin/logs',      icon: FileTextOutlined, bg: mutedIconBg, color: mutedIconColor },
-  { label: '員工管理', desc: '帳號與權限管理',   route: '/admin/employees', icon: TeamOutlined,     bg: mutedIconBg, color: mutedIconColor },
+  { label: '系統日誌', desc: '查看所有操作日誌', route: '/admin/logs',      icon: FileTextOutlined, ...iconTones.system },
+  { label: '員工管理', desc: '帳號與權限管理',   route: '/admin/employees', icon: TeamOutlined,     ...iconTones.employee },
 ]
 const shortcuts = computed(() => isCISO.value ? cisoShortcuts : businessShortcuts)
 

@@ -253,6 +253,8 @@
     <a-modal
       v-model:open="showStatusModal"
       title="變更帳戶狀態"
+      ok-text="確認變更"
+      cancel-text="取消"
       @ok="handleStatusChange"
       :confirm-loading="statusModalLoading"
     >
@@ -282,7 +284,12 @@
           </a-select>
         </a-form-item>
         <a-form-item v-if="statusTarget.newStatus === 'CLOSED'" label="銷戶確認">
-          <a-input v-model:value="closeConfirmText" placeholder="請輸入「我確定」以確認銷戶" />
+          <div class="close-confirm-row">
+            <a-input v-model:value="closeConfirmText" placeholder="請輸入「我確定」以確認銷戶" />
+            <a-button class="close-confirm-fill-btn" @click="fillCloseConfirmText">
+              帶入我確定
+            </a-button>
+          </div>
           <div style="margin-top: 4px; color: #ff4d4f; font-size: 12px">
             銷戶為不可逆操作，請輸入「我確定」後才能執行。
           </div>
@@ -629,6 +636,10 @@ function openStatusModal(record) {
   showStatusModal.value = true
 }
 
+function fillCloseConfirmText() {
+  closeConfirmText.value = '我確定'
+}
+
 async function handleStatusChange() {
   if (!statusTarget.newStatus) {
     message.warning('請選擇目標狀態')
@@ -682,6 +693,42 @@ async function handleStatusChange() {
   background: #fafafa;
   border-radius: 6px;
   border: 1px dashed #d9d9d9;
+}
+
+.close-confirm-row {
+  display: flex;
+  gap: 8px;
+}
+
+.close-confirm-row :deep(.ant-input) {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.close-confirm-fill-btn {
+  flex: 0 0 auto;
+  color: #a65a4d;
+  background: rgba(255, 249, 239, 0.72);
+  border-color: rgba(166, 90, 77, 0.28);
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.close-confirm-fill-btn:hover,
+.close-confirm-fill-btn:focus {
+  color: #8f463d;
+  background: rgba(166, 90, 77, 0.08);
+  border-color: rgba(166, 90, 77, 0.42);
+}
+
+@media (max-width: 560px) {
+  .close-confirm-row {
+    flex-wrap: wrap;
+  }
+
+  .close-confirm-fill-btn {
+    width: 100%;
+  }
 }
 
 /* F-Pattern 專用組件 */

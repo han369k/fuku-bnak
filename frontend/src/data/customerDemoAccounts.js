@@ -1,7 +1,30 @@
 export const DEMO_INDEX_KEY = 'javaBankRegisterDemoIndex'
 export const LAST_REGISTERED_DEMO_ACCOUNT_KEY = 'javaBankLastRegisteredDemoAccount'
 
+export const WANG_XIAOMING_DEMO_ACCOUNT = {
+  name: '王小明',
+  birthday: '1990-06-15',
+  gender: 'M',
+  idNumber: 'A123456789',
+  username: 'wangxiaoming9006',
+  password: '123456',
+  phone: '0912345678',
+  email: 'nnor.0023067@gmail.com',
+  address: '台北市中正區重慶南路一段122號3樓',
+  nationality: 'TW',
+  registeredAddress: '台北市中正區重慶南路一段122號3樓',
+  currentAddress: '台北市中正區重慶南路一段122號3樓',
+}
+
+export const WANG_XIAOMING_DEMO_DOCUMENTS = {
+  idFront: '/demo-documents/wang-xiaoming-id-card-front.png',
+  idBack: '/demo-documents/wang-xiaoming-id-card-back.png',
+  secondId: '/demo-documents/wang-xiaoming-health-card.png',
+  profilePhoto: '/demo-documents/wang-xiaoming-profile-photo.png',
+}
+
 export const CUSTOMER_DEMO_ACCOUNTS = [
+  WANG_XIAOMING_DEMO_ACCOUNT,
   { name: '吳曉明', birthday: '1998-05-15', gender: 'M', idNumber: 'A198765432', username: 'fumic56789', password: '123456', phone: '0912345678', email: 'xiaoming.wu.demo@example.com', address: '台北市信義區松仁路100號8樓' },
   { name: '林芷涵', birthday: '1997-02-18', gender: 'F', idNumber: 'B223490187', username: 'linzhihan9702', password: '123456', phone: '0923456789', email: 'zhihan.lin.demo@example.com', address: '新北市板橋區文化路二段88號6樓' },
   { name: '陳柏宇', birthday: '1995-11-03', gender: 'M', idNumber: 'C134581290', username: 'chenboyu9511', password: '123456', phone: '0934567890', email: 'boyu.chen.demo@example.com', address: '桃園市中壢區中央西路一段120號3樓' },
