@@ -6,6 +6,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 import com.javaeasybank.creditcard.dto.CardBillResponseDto;
+import com.javaeasybank.creditcard.dto.CardSummaryDto;
 import com.javaeasybank.creditcard.entity.CardAccount;
 import com.javaeasybank.creditcard.entity.CardBill;
 import com.javaeasybank.creditcard.entity.CreditCard;
@@ -19,6 +20,7 @@ public interface CardBillMapper {
     @Mapping(target = "creditCardAccountNumber", expression = "java(resolveAccountNumber(bill))")
     @Mapping(target = "creditLimit", expression = "java(resolveCreditLimit(bill))")
     @Mapping(target = "availableCredit", expression = "java(calculateAvailableCredit(resolveCardAccount(bill)))")
+    @Mapping(target = "cards", expression = "java(resolveCards(bill))")
     CardBillResponseDto toDto(CardBill bill);
 
     List<CardBillResponseDto> toDtoList(List<CardBill> bills);
@@ -75,5 +77,21 @@ public interface CardBillMapper {
                 .map(amount -> amount == null ? BigDecimal.ZERO : amount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
+    default List<CardSummaryDto> resolveCards(CardBill bill) {
+    CardAccount cardAccount = resolveCardAccount(bill);
+
+    if (cardAccount == null || cardAccount.getCards() == null) {
+        return List.of();
+    }
+
+    return cardAccount.getCards()
+            .stream()
+            .map(card -> new CardSummaryDto(
+                    card.getCardId(),
+                    card.getCardNumber(),
+                    card.getCardType() == null ? null : card.getCardType().getCardTypeName()
+            ))
+            .toList();
+}
 
 }

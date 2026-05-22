@@ -10,12 +10,14 @@ import org.springframework.transaction.annotation.Transactional;
 import com.javaeasybank.common.exception.BusinessException;
 import com.javaeasybank.creditcard.dto.CardApplicationRequestDto;
 import com.javaeasybank.creditcard.dto.CardApplicationResponseDto;
+import com.javaeasybank.creditcard.entity.CardAccount;
 import com.javaeasybank.creditcard.entity.CardApplication;
 import com.javaeasybank.creditcard.entity.CardApplicationItem;
 import com.javaeasybank.creditcard.entity.CardType;
 import com.javaeasybank.creditcard.enums.CardApplicationItemResult;
 import com.javaeasybank.creditcard.enums.CardApplicationStatus;
 import com.javaeasybank.creditcard.mapper.CardApplicationMapper;
+import com.javaeasybank.creditcard.repository.CardAccountRepository;
 import com.javaeasybank.creditcard.repository.CardAppItemRepository;
 import com.javaeasybank.creditcard.repository.CardAppRepository;
 import com.javaeasybank.creditcard.repository.CardTypeRepository;
@@ -36,6 +38,7 @@ public class CardAppService {
     private final CardApplicationMapper cardApplicationMapper;
     private final CustomerProfileRepository customerRepository;
     private final CardTypeRepository cardTypeRepository;
+    private final CardAccountRepository cardAccountRepository;
 
     // 查全部
     public Page<CardApplicationResponseDto> findAll(Pageable pageable) {
@@ -68,11 +71,10 @@ public class CardAppService {
         }
 
         boolean exists = cardAppItemRepository
-            .existsByApplication_Customer_CustomerIdAndCardType_CardTypeIdAndApplication_Status(
-                    requestDto.getCustomerId(),
-                    requestDto.getCardTypeId(),
-                    CardApplicationStatus.PENDING
-            );
+                .existsByApplication_Customer_CustomerIdAndCardType_CardTypeIdAndApplication_Status(
+                        requestDto.getCustomerId(),
+                        requestDto.getCardTypeId(),
+                        CardApplicationStatus.PENDING);
 
         if (exists) {
             throw new BusinessException("你已申辦過該卡片");
@@ -82,7 +84,6 @@ public class CardAppService {
 
         entity.setStatus(CardApplicationStatus.PENDING);
 
-        
         CustomerProfile customer = customerRepository.findById(requestDto.getCustomerId())
                 .orElseThrow(() -> new BusinessException("Customer not found"));
         entity.setCustomer(customer);
@@ -96,8 +97,13 @@ public class CardAppService {
         item.setCardType(cardType);
         item.setResult(CardApplicationItemResult.PENDING);
 
-        //預設額度
-        item.setApprovedLimit(DEFAULT_CREDIT_LIMIT);
+        // 預設額度
+        BigDecimal approvedLimit = cardAccountRepository
+                .findByCustomer_CustomerId(requestDto.getCustomerId())
+                .map(CardAccount::getCreditLimit)
+                .orElse(DEFAULT_CREDIT_LIMIT);
+
+        item.setApprovedLimit(approvedLimit);
 
         // 預設年費
         item.setAnnualFee(cardType.getAnnualFee());
@@ -108,14 +114,15 @@ public class CardAppService {
     }
 
     // // 更新狀態 已註解 透過Item的Result來判斷狀態
-    // public CardApplicationResponseDto updateStatus(Integer id, CardApplicationStatus status) {
-    //     CardApplication app = getEntityById(id);
+    // public CardApplicationResponseDto updateStatus(Integer id,
+    // CardApplicationStatus status) {
+    // CardApplication app = getEntityById(id);
 
-    //     app.setStatus(status);
+    // app.setStatus(status);
 
-    //     CardApplication saved = cardAppRepository.save(app);
+    // CardApplication saved = cardAppRepository.save(app);
 
-    //     return toDtoWithItem(saved);
+    // return toDtoWithItem(saved);
     // }
 
     public CardApplicationResponseDto updateRemark(Integer id, String remark) {
@@ -135,8 +142,8 @@ public class CardAppService {
 
     public Page<CardApplicationResponseDto> findMyApplications(String customerId, Pageable pageable) {
         return cardAppRepository
-            .findByCustomer_CustomerId(customerId, pageable)
-            .map(this::toDtoWithItem);
+                .findByCustomer_CustomerId(customerId, pageable)
+                .map(this::toDtoWithItem);
     }
 
     private CardApplicationResponseDto toDtoWithItem(CardApplication app) {

@@ -295,7 +295,7 @@ const menus = [
     route: null,
     children: [
       { label: '卡片總覽', desc: '查看所有信用卡', route: 'user-card-types' },
-      { label: '線上申辦', desc: '申請新信用卡', route: 'user-card-applications' },
+      { label: '申辦信用卡紀錄', desc: '查看紀錄', route: 'user-card-applications' },
       {label:'卡片管理', desc:'查看持有信用卡', route:'user-cards'},
       {label:'交易管理', desc:'查看與刷卡交易', route:'user-card-txns'},
       { label: '帳單查詢', desc: '查看信用卡帳單', route: 'user-card-bills' },

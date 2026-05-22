@@ -23,7 +23,8 @@ JOIN CUSTOMER_PROFILE p ON p.customer_id = a.customer_id
 WHERE a.account_type = 'CHECKING'
   AND a.currency = 'TWD'
   AND a.status = 'ACTIVE'
-  AND p.status = 'ACTIVE';
+  AND p.status = 'ACTIVE'
+  AND a.customer_id NOT IN ('DM01NR01', 'DM02NR02');
 
 IF @eligibleCardCustomerCount = 0
     THROW 51201, 'card_mockdata.sql requires customers with ACTIVE TWD CHECKING accounts. Run account_mockdata.sql first.', 1;
@@ -38,6 +39,7 @@ IF @eligibleCardCustomerCount = 0
       AND a.currency = 'TWD'
       AND a.status = 'ACTIVE'
       AND p.status = 'ACTIVE'
+      AND a.customer_id NOT IN ('DM01NR01', 'DM02NR02')
 ),
 card_slots AS (
     SELECT TOP (100)
