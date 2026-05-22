@@ -209,6 +209,7 @@ const typeMap = {
   CARD_SETTLEMENT: '信用卡結算',
   CARD_REWARD: '信用卡回饋',
   REVERSAL: '沖正',
+  TRANSFER_FEE: '轉帳手續費',
 }
 
 function typeLabel(t) { return typeMap[t] || t }

@@ -1,6 +1,7 @@
 <template>
   <div class="scheduled-transfer-page">
     <h2>預約轉帳</h2>
+    <a-button type="primary" class="rounded-btn" style="margin-bottom: 20px;" @click="demoScheduledTransfer">示範預約1000</a-button>
 
     <!-- 新增預約 -->
     <a-card class="form-card" title="新增預約轉帳">
@@ -249,6 +250,19 @@ function statusBadgeClass(s) {
 
 function formatNum(v) {
   return Number(v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+function demoScheduledTransfer() {
+  const checkingAccount = twdAccounts.value.find(a => a.accountType === 'CHECKING') || twdAccounts.value[0]
+  if (checkingAccount) {
+    form.value.fromAccount = checkingAccount.accountNumber
+    form.value.amount = 1000
+    form.value.toAccount = ''
+    form.value.scheduledDate = dayjs().add(1, 'day')
+    form.value.note = ''
+  } else {
+    message.warning('目前沒有可用的帳號供示範')
+  }
 }
 </script>
 

@@ -106,7 +106,7 @@
             <thead>
               <tr>
                 <th @click="setSort('applicationId')" class="sortable">業務編號 <span v-if="sortKey === 'applicationId'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span></th>
-                <th @click="setSort('accountNumber')" class="sortable">收款專戶 <span v-if="sortKey === 'accountNumber'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span></th>
+                <th @click="setSort('accountNumber')" class="sortable">貸款帳戶 <span v-if="sortKey === 'accountNumber'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span></th>
                 <th @click="setSort('memberName')" class="sortable">客戶 <span v-if="sortKey === 'memberName'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span></th>
                 <th @click="setSort('applyType')" class="sortable">類型 <span v-if="sortKey === 'applyType'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span></th>
                 <th @click="setSort('principalAmount')" class="sortable text-right">本金 <span v-if="sortKey === 'principalAmount'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span></th>
@@ -398,11 +398,11 @@ const totalPages = computed(() => Math.max(1, Math.ceil(filteredAccounts.value.l
 const sortedAccounts = computed(() => {
   let list = [...filteredAccounts.value]
   if (!sortKey.value) return list
-  
+
   list.sort((a, b) => {
     let valA = a[sortKey.value]
     let valB = b[sortKey.value]
-    
+
     // 將 null/undefined 放到底部
     if (valA == null && valB != null) return 1
     if (valA != null && valB == null) return -1
@@ -412,7 +412,7 @@ const sortedAccounts = computed(() => {
       const res = valA.localeCompare(valB)
       return sortOrder.value === 'asc' ? res : -res
     }
-    
+
     if (valA < valB) return sortOrder.value === 'asc' ? -1 : 1
     if (valA > valB) return sortOrder.value === 'asc' ? 1 : -1
     return 0

@@ -177,11 +177,12 @@
         >
           <a-descriptions-item label="風險等級">
             <div v-if="drawerTask.riskLevel"
-                   :class="['status-tag', `risk-${drawerTask.riskLevel.toLowerCase()}`]"
+                 :class="['status-tag', `risk-${drawerTask.riskLevel.toLowerCase()}`]"
             ><span class="status-dot"></span>
               {{ riskLabel(drawerTask.riskLevel) }}
             </div>
           </a-descriptions-item>
+
           <a-descriptions-item label="申請金額">
             <span class="highlight-money">
               {{
@@ -191,42 +192,85 @@
               }}
             </span>
           </a-descriptions-item>
-          <template v-if="drawerTrigger">
-            <a-descriptions-item label="綜合評分">
-              {{ drawerTrigger.finalScore ?? '—' }}
-            </a-descriptions-item>
+
+          <a-descriptions-item label="風控原因">
+            {{ drawerTask.triggerReason || '—' }}
+          </a-descriptions-item>
+
+          <template v-if="drawerMeta">
             <a-descriptions-item label="聯徵分數">
-              {{ drawerTrigger.externalScore ?? '—' }}
+              {{ drawerMeta.externalScore ?? '—' }} 分
             </a-descriptions-item>
             <a-descriptions-item label="職業">
-              {{ occupationLabel(drawerTrigger.occupation) }}
+              {{ occupationLabel(drawerMeta.occupation) }}
             </a-descriptions-item>
             <a-descriptions-item label="年收入">
               {{
-                drawerTrigger.annualIncome != null
-                  ? '$ ' + Number(drawerTrigger.annualIncome).toLocaleString('zh-TW')
+                drawerMeta.annualIncome != null
+                  ? '$ ' + Number(drawerMeta.annualIncome).toLocaleString('zh-TW')
                   : '—'
               }}
             </a-descriptions-item>
             <a-descriptions-item label="他行負債">
               {{
-                drawerTrigger.otherBankDebt != null
-                  ? '$ ' + Number(drawerTrigger.otherBankDebt).toLocaleString('zh-TW')
+                drawerMeta.otherBankDebt != null
+                  ? '$ ' + Number(drawerMeta.otherBankDebt).toLocaleString('zh-TW')
                   : '—'
               }}
             </a-descriptions-item>
-            <a-descriptions-item label="有不動產">
-              {{ drawerTrigger.hasRealEstate ? '是' : '否' }}
+
+            <a-descriptions-item label="計算負債比 (DTI)">
+              <span v-if="drawerMeta.annualIncome && drawerMeta.otherBankDebt != null">
+                <strong
+                  :style="{ color: ((drawerMeta.otherBankDebt / drawerMeta.annualIncome) * 100) > 60 ? '#a61d24' : '#262626' }">
+                  {{ ((drawerMeta.otherBankDebt / drawerMeta.annualIncome) * 100).toFixed(2) }} %
+                </strong>
+              </span>
+              <span v-else>—</span>
             </a-descriptions-item>
-            <a-descriptions-item label="PEP 人士">
-              <a-tag :color="drawerTrigger.isPep ? 'red' : 'default'" class="table-badge">
-                {{ drawerTrigger.isPep ? '是' : '否' }}
+            <a-descriptions-item label="貸後負債比">
+<span v-if="drawerMeta && drawerMeta.annualIncome && drawerMeta.otherBankDebt != null && drawerTask.transactionAmount != null">
+  <!-- 貸後負債比 = (他行總負債 + 本次申請金額) ÷ 年收入 × 100% -->
+  <strong
+    :style="{
+      color: ((Number(drawerMeta.otherBankDebt) + Number(drawerTask.transactionAmount)) / drawerMeta.annualIncome * 100) > 100
+        ? '#cf1322'
+        : ((Number(drawerMeta.otherBankDebt) + Number(drawerTask.transactionAmount)) / drawerMeta.annualIncome * 100) >= 70
+          ? '#d46b08'
+          : '#333'
+    }">
+    {{
+      ((Number(drawerMeta.otherBankDebt) + Number(drawerTask.transactionAmount)) / drawerMeta.annualIncome * 100).toFixed(1)
+    }} %
+  </strong>
+</span>
+              <span v-else>—</span>
+            </a-descriptions-item>
+
+            <!-- DBR 22倍法規上限 -->
+            <a-descriptions-item label="DBR 可用額度"
+                                 v-if="drawerMeta.annualIncome && drawerMeta.otherBankDebt != null && drawerTask.scene === 'LOAN_APPLY'">
+              <span v-if="(Math.floor(drawerMeta.annualIncome / 12) * 22 - Number(drawerMeta.otherBankDebt)) > 0">
+                <strong style="color: #135200;">
+                  $ {{ Math.max(0, Math.floor(drawerMeta.annualIncome / 12) * 22 - Number(drawerMeta.otherBankDebt)).toLocaleString('zh-TW') }}
+                </strong>
+                <span style="color: #8c8c8c; font-size: 13px; margin-left: 6px;">
+                  （月收入 ${{ Math.floor(drawerMeta.annualIncome / 12).toLocaleString('zh-TW') }} × 22倍上限）
+                </span>
+              </span>
+              <strong v-else style="color: #cf1322;">已超過 DBR 22倍上限</strong>
+            </a-descriptions-item>
+
+
+            <a-descriptions-item label="有不動產">
+              <a-tag :color="drawerMeta.isPep ? 'red' : 'default'" class="table-badge">
+                {{ drawerMeta.hasRealEstate ? '是' : '否' }}
               </a-tag>
             </a-descriptions-item>
-          </template>
-          <template v-else>
-            <a-descriptions-item label="風控原因">
-              {{ drawerTask.triggerReason || '—' }}
+            <a-descriptions-item label="PEP 人士">
+              <a-tag :color="drawerMeta.isPep ? 'red' : 'default'" class="table-badge">
+                {{ drawerMeta.isPep ? '是' : '否' }}
+              </a-tag>
             </a-descriptions-item>
           </template>
         </a-descriptions>
@@ -373,16 +417,34 @@
             }}
           </a-tag>
         </a-descriptions-item>
+
         <a-descriptions-item label="風控原因" :span="2">
-          <template v-if="currentTrigger">
-            <a-tag class="table-badge">分數 {{ currentTrigger.finalScore }}</a-tag>
-            <a-tag :color="riskColor(currentTrigger.riskLevel)" class="table-badge">{{
-                riskLabel(currentTrigger.riskLevel)
+          {{ currentTask?.triggerReason || '—' }}
+        </a-descriptions-item>
+
+        <a-descriptions-item v-if="currentMeta" label="數據摘要" :span="2">
+          <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+            <a-tag color="purple" class="table-badge">聯徵: {{
+                currentMeta.externalScore
+              }}分
+            </a-tag>
+            <a-tag class="table-badge">{{ occupationLabel(currentMeta.occupation) }}</a-tag>
+            <a-tag v-if="currentMeta.annualIncome" color="volcano" class="table-badge">
+              現有負債比: {{
+                ((currentMeta.otherBankDebt / currentMeta.annualIncome) * 100).toFixed(1)
+              }}%
+            </a-tag>
+            <a-tag v-if="currentMeta.annualIncome && currentTask?.transactionAmount" color="red" class="table-badge">
+              貸後負債比: {{
+                ((Number(currentMeta.otherBankDebt) + Number(currentTask.transactionAmount)) / currentMeta.annualIncome * 100).toFixed(1)
+              }}%
+            </a-tag>
+            <a-tag v-if="currentMeta.annualIncome && currentTask?.scene === 'LOAN_APPLY'" color="green" class="table-badge">
+              DBR剩餘: ${{
+                Math.max(0, Math.floor(currentMeta.annualIncome / 12) * 22 - Number(currentMeta.otherBankDebt)).toLocaleString('zh-TW')
               }}
             </a-tag>
-            <a-tag class="table-badge">{{ occupationLabel(currentTrigger.occupation) }}</a-tag>
-          </template>
-          <span v-else>{{ currentTask?.triggerReason || '—' }}</span>
+          </div>
         </a-descriptions-item>
       </a-descriptions>
 
@@ -693,11 +755,11 @@ function sceneLabel(s) {
 }
 
 function riskLabel(r) {
-  return {HIGH: '高風險', MEDIUM: '中風險', LOW: '低風險'}[r] || r
+  return {HIGH: '高風險', MEDIUM: '中風險', LOW: '低風險', SUSPENDED: '拒絕往來'}[r] || r
 }
 
 function riskColor(r) {
-  return {HIGH: 'red', MEDIUM: 'orange', LOW: 'green'}[r] || 'default'
+  return {HIGH: 'red', MEDIUM: 'orange', LOW: 'green', SUSPENDED: 'purple'}[r] || 'default'
 }
 
 function priorityColor(p) {
@@ -721,6 +783,7 @@ function hasAttachments(task) {
   return parseAttachments(task?.attachments).length > 0
 }
 
+// 1. 保留原本嘗試解析 triggerReason 的邏輯（如果它是純文字，會安全地回傳 null）
 const drawerTrigger = computed(() => {
   if (!drawerTask.value?.triggerReason) return null
   try {
@@ -740,13 +803,40 @@ const currentTrigger = computed(() => {
   }
 })
 
+// 2. ✨ 新增：專門用來安全解析後端 metaData 欄位的屬性
+const drawerMeta = computed(() => {
+  if (!drawerTask.value?.metaData) return null
+  try {
+    const parsed = JSON.parse(drawerTask.value.metaData)
+    return typeof parsed === 'object' ? parsed : null
+  } catch (e) {
+    console.error('解析詳情視窗 metaData 失敗:', e)
+    return null
+  }
+})
+
+const currentMeta = computed(() => {
+  if (!currentTask.value?.metaData) return null
+  try {
+    return JSON.parse(currentTask.value.metaData)
+  } catch (e) {
+    console.error('解析決策視窗 metaData 失敗:', e)
+    return null
+  }
+})
+
 function docLabel(type) {
   return (
     {
       ID_CARD: '身分證',
       INCOME_PROOF: '收入證明',
-      PROPERTY_CERT: '不動產權狀',
+      INCOME_CERT: '收入證明',
+      PROPERTY_CERT: '不動產證明',
       TAX_STATEMENT: '扣繳憑單',
+      BANK_STATEMENT: '銀行存摺',
+      EMPLOYMENT_CERT: '在職證明',
+      TITLE_DEED: '所有權狀',
+      OTHER: '其他文件',
     }[type] || type
   )
 }
@@ -1017,8 +1107,9 @@ function isImage(url) {
 /* 低風險：從鮮綠色改為「沉穩英倫松針綠」 */
 .risk-low {
   background-color: rgba(47, 122, 70, 0.08); /* 降低明度與飽和度的綠 bg */
-  color: #276339;                             /* 穩重的深松針綠文字 */
+  color: #276339; /* 穩重的深松針綠文字 */
 }
+
 .risk-low .status-dot {
   background-color: #2f7a46;
 }
@@ -1026,8 +1117,9 @@ function isImage(url) {
 /* 中風險：從亮橘色改為「洗鍊古銅烤漆琥珀」 */
 .risk-medium {
   background-color: rgba(181, 107, 24, 0.08); /* 偏向木質與皮革的沉穩琥珀 bg */
-  color: #91520f;                             /* 深古銅橘文字 */
+  color: #91520f; /* 深古銅橘文字 */
 }
+
 .risk-medium .status-dot {
   background-color: #b56b18;
 }
@@ -1035,8 +1127,9 @@ function isImage(url) {
 /* 高風險：從刺眼大紅改為「高級波爾多深磚紅」 */
 .risk-high {
   background-color: rgba(166, 29, 36, 0.07); /* 帶有灰色調的暗紅 bg */
-  color: #8c1c21;                            /* 經典金融高風險的深磚紅/酒紅文字 */
+  color: #8c1c21; /* 經典金融高風險的深磚紅/酒紅文字 */
 }
+
 .risk-high .status-dot {
   background-color: #a61d24;
 }
@@ -1044,8 +1137,9 @@ function isImage(url) {
 /* 拒絕往來/凍結：從亮紫色改為「午夜深靛紫」 */
 .risk-suspended {
   background-color: rgba(83, 29, 171, 0.07); /* 深邃的午夜紫 bg */
-  color: #43168c;                            /* 穩重的深靛紫文字 */
+  color: #43168c; /* 穩重的深靛紫文字 */
 }
+
 .risk-suspended .status-dot {
   background-color: #531dab;
 }
