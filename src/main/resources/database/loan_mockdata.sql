@@ -749,7 +749,7 @@ END;
 
 
 -- [Appended] Auto-generate Overdue Mock Data
-SET NOCOUNT ON;
+SET NOCOUNT OFF;
 SET XACT_ABORT ON;
 
 BEGIN TRAN;
@@ -903,3 +903,7 @@ INNER JOIN #target_overdue_accounts t
 COMMIT;
 
 PRINT 'loan_mockdata.sql completed: seeded 104 applications, 43 risk review tasks, 11 loan accounts, and repayment schedules.';
+
+SET XACT_ABORT OFF;
+SET NOCOUNT OFF;
+
