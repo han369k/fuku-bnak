@@ -1,5 +1,6 @@
 package com.javaeasybank.account.entity;
 
+import com.javaeasybank.account.enums.TransferBank;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -25,6 +26,12 @@ public class ScheduledTransfer {
 
     @Column(name = "from_account_number", nullable = false, length = 14)
     private String fromAccountNumber;
+
+    @Column(name = "to_bank_code", nullable = false, length = 3)
+    private String toBankCode = TransferBank.JVB.getCode();
+
+    @Column(name = "to_bank_name", nullable = false, columnDefinition = "NVARCHAR(80)")
+    private String toBankName = TransferBank.JVB.getDisplayName();
 
     @Column(name = "to_account_number", nullable = false, length = 20)
     private String toAccountNumber;
