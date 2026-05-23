@@ -227,4 +227,25 @@ public interface TransLogRepository extends JpaRepository<TransLog, String>, Jpa
             @Param("entryType") EntryType entryType,
             @Param("transactionType") TransactionType transactionType,
             @Param("sinceTime") LocalDateTime sinceTime);
+
+    // ==========================================
+    // 統計用 (Dashboard)
+    // ==========================================
+    @Query("SELECT t.entryType, COUNT(t) FROM TransLog t GROUP BY t.entryType")
+    List<Object[]> countByEntryTypeGroup();
+
+    @Query("SELECT t.transactionType, COUNT(t) FROM TransLog t GROUP BY t.transactionType")
+    List<Object[]> countByTransactionTypeGroup();
+
+    @Query("SELECT t.currency, COUNT(t) FROM TransLog t GROUP BY t.currency")
+    List<Object[]> countByCurrencyGroup();
+
+    @Query("SELECT SUM(t.amount) FROM TransLog t WHERE t.entryType = 'CREDIT'")
+    BigDecimal sumTotalCredit();
+
+    @Query("SELECT SUM(t.amount) FROM TransLog t WHERE t.entryType = 'DEBIT'")
+    BigDecimal sumTotalDebit();
+
+    @Query("SELECT MAX(t.amount) FROM TransLog t")
+    BigDecimal maxTransactionAmount();
 }

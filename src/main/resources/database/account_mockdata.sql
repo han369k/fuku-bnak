@@ -138,6 +138,47 @@ SELECT
 FROM #customers
 WHERE (rn <= 24 OR (rn >= 51 AND rn <= 74)) AND status = 'ACTIVE';
 
+-- Wang Daming demo FX accounts: realistic small travel/investment balances.
+UPDATE #mock_accounts
+SET
+    balance = 3280.5000,
+    changed_at = CAST('2026-05-13 09:00:00' AS DATETIME2),
+    changed_by = N'總行'
+WHERE customer_id = 'Q8M4T7K2'
+  AND account_type = 'SAVINGS'
+  AND currency = 'USD';
+
+INSERT INTO #mock_accounts (
+    account_number, customer_id, account_type, currency, balance, liability,
+    interest_rate, status, parent_account_number, created_at, changed_at, created_by, changed_by
+)
+SELECT
+    v.account_number,
+    v.customer_id,
+    v.account_type,
+    v.currency,
+    v.balance,
+    v.liability,
+    v.interest_rate,
+    v.status,
+    NULL,
+    v.created_at,
+    CAST('2026-05-13 09:00:00' AS DATETIME2),
+    N'總行',
+    N'總行'
+FROM (VALUES
+    ('071260501392', 'Q8M4T7K2', 'SAVINGS', 'JPY', CAST(186000.0000 AS DECIMAL(19,4)), 0.0000, 0.00100, 'ACTIVE', CAST('2026-02-16 09:00:00' AS DATETIME2)),
+    ('071260501840', 'Q8M4T7K2', 'SAVINGS', 'EUR', CAST(950.7500 AS DECIMAL(19,4)), 0.0000, 0.00250, 'ACTIVE', CAST('2026-03-04 09:00:00' AS DATETIME2)),
+    ('071260501826', 'Q8M4T7K2', 'SAVINGS', 'GBP', CAST(420.2500 AS DECIMAL(19,4)), 0.0000, 0.00250, 'ACTIVE', CAST('2026-03-18 09:00:00' AS DATETIME2))
+) AS v(account_number, customer_id, account_type, currency, balance, liability, interest_rate, status, created_at)
+JOIN #customers c ON c.customer_id = v.customer_id
+WHERE c.status = 'ACTIVE'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM #mock_accounts m
+      WHERE m.account_number = v.account_number
+  );
+
 -- Time deposits: fewer, larger, and lower activity.
 INSERT INTO #mock_accounts (
     account_number, customer_id, account_type, currency, balance, liability,
@@ -516,7 +557,7 @@ DECLARE
 
 IF NOT EXISTS (SELECT 1 FROM TRANS_LOG)
 BEGIN
-WHILE @i <= 500
+WHILE @i <= 9880
 BEGIN
     SET @slot = ((@i - 1) % @accountCount) + 1;
     SET @counterpartSlot = (@slot % @accountCount) + 1;
@@ -666,6 +707,184 @@ BEGIN
 
     SET @i += 1;
 END;
+
+DECLARE @wangTransactions TABLE (
+    tx_rn INT IDENTITY(1,1) PRIMARY KEY,
+    account_type VARCHAR(20) NOT NULL,
+    currency CHAR(3) NOT NULL,
+    entry_type VARCHAR(10) NOT NULL,
+    transaction_type VARCHAR(25) NOT NULL,
+    amount DECIMAL(19,4) NOT NULL,
+    fee_amount DECIMAL(19,4) NOT NULL,
+    counterpart_account VARCHAR(20) NULL,
+    counterpart_bank_code VARCHAR(10) NULL,
+    counterpart_bank_name NVARCHAR(50) NULL,
+    is_interbank BIT NOT NULL,
+    note NVARCHAR(200) NOT NULL,
+    created_at DATETIME2(3) NOT NULL
+);
+
+DECLARE
+    @wangMonth INT = 0,
+    @wangBaseDate DATETIME2(3),
+    @vipFxCurrency CHAR(3),
+    @vipFxAmount DECIMAL(19,4),
+    @vipFxNote NVARCHAR(200);
+
+WHILE @wangMonth < 12
+BEGIN
+    SET @wangBaseDate = DATEADD(MONTH, @wangMonth, CAST('2025-06-01 00:00:00.000' AS DATETIME2(3)));
+
+    INSERT INTO @wangTransactions (
+        account_type, currency, entry_type, transaction_type, amount, fee_amount,
+        counterpart_account, counterpart_bank_code, counterpart_bank_name,
+        is_interbank, note, created_at
+    )
+    VALUES
+    ('CHECKING', 'TWD', 'CREDIT', 'DEPOSIT', CAST(82000 + (@wangMonth % 4) * 1500 AS DECIMAL(19,4)), 0.0000, NULL, NULL, NULL, 0, N'薪資入帳', DATEADD(HOUR, 9, DATEADD(DAY, 5, @wangBaseDate))),
+    ('CHECKING', 'TWD', 'DEBIT', 'LOAN_REPAYMENT', CAST(23500 + (@wangMonth % 3) * 500 AS DECIMAL(19,4)), 0.0000, '90101100260501', '909', N'福庫銀行', 0, N'房貸自動扣繳', DATEADD(HOUR, 8, DATEADD(DAY, 8, @wangBaseDate))),
+    ('CHECKING', 'TWD', 'DEBIT', 'CARD_PAYMENT', CAST(12800 + (@wangMonth % 5) * 920 AS DECIMAL(19,4)), 0.0000, '80100000000001', '909', N'福庫銀行', 0, N'信用卡自動扣款', DATEADD(HOUR, 8, DATEADD(DAY, 12, @wangBaseDate))),
+    ('CHECKING', 'TWD', 'DEBIT', 'TRANSFER', CAST(12000 + (@wangMonth % 4) * 1000 AS DECIMAL(19,4)), 15.0000, '812000070000001', '812', N'台新國際商業銀行', 1, N'家庭生活費轉帳', DATEADD(HOUR, 20, DATEADD(DAY, 15, @wangBaseDate))),
+    ('CHECKING', 'TWD', 'DEBIT', 'TRANSFER', CAST(15000 + (@wangMonth % 3) * 2000 AS DECIMAL(19,4)), 0.0000, '071260501840', '909', N'福庫銀行', 0, N'理財資金調撥', DATEADD(HOUR, 10, DATEADD(DAY, 18, @wangBaseDate))),
+    ('CHECKING', 'TWD', 'CREDIT', 'INTEREST', CAST(18 + (@wangMonth % 6) AS DECIMAL(19,4)), 0.0000, NULL, NULL, NULL, 0, N'活存利息入帳', DATEADD(HOUR, 1, DATEADD(DAY, 22, @wangBaseDate))),
+    ('SAVINGS', 'USD', 'CREDIT', 'EXCHANGE', CAST(220 + (@wangMonth % 5) * 35 + 0.50 AS DECIMAL(19,4)), 0.0000, NULL, NULL, NULL, 0, N'美元定期換匯入帳', DATEADD(HOUR, 10, DATEADD(DAY, 19, @wangBaseDate))),
+    ('SAVINGS', 'JPY', 'CREDIT', 'EXCHANGE', CAST(30000 + (@wangMonth % 6) * 3000 AS DECIMAL(19,4)), 0.0000, NULL, NULL, NULL, 0, N'日圓旅遊基金換匯', DATEADD(HOUR, 10, DATEADD(DAY, 20, @wangBaseDate))),
+    ('SAVINGS',
+     CASE WHEN @wangMonth % 2 = 0 THEN 'EUR' ELSE 'GBP' END,
+     'CREDIT',
+     'EXCHANGE',
+     CASE WHEN @wangMonth % 2 = 0
+          THEN CAST(160 + (@wangMonth % 4) * 18 + 0.75 AS DECIMAL(19,4))
+          ELSE CAST(90 + (@wangMonth % 4) * 12 + 0.25 AS DECIMAL(19,4))
+     END,
+     0.0000, NULL, NULL, NULL, 0,
+     CASE WHEN @wangMonth % 2 = 0 THEN N'歐元分批換匯入帳' ELSE N'英鎊分批換匯入帳' END,
+     DATEADD(HOUR, 14, DATEADD(DAY, 21, @wangBaseDate)));
+
+    SET @vipFxCurrency = CASE @wangMonth % 4 WHEN 0 THEN 'USD' WHEN 1 THEN 'JPY' WHEN 2 THEN 'EUR' ELSE 'GBP' END;
+    SET @vipFxAmount = CASE @vipFxCurrency
+        WHEN 'USD' THEN CAST(80 + (@wangMonth % 3) * 20 AS DECIMAL(19,4))
+        WHEN 'JPY' THEN CAST(12000 + (@wangMonth % 3) * 4000 AS DECIMAL(19,4))
+        WHEN 'EUR' THEN CAST(70 + (@wangMonth % 3) * 15 + 0.25 AS DECIMAL(19,4))
+        ELSE CAST(45 + (@wangMonth % 3) * 10 AS DECIMAL(19,4))
+    END;
+    SET @vipFxNote = CASE @vipFxCurrency
+        WHEN 'USD' THEN N'美元現鈔提領'
+        WHEN 'JPY' THEN N'日圓旅遊現鈔提領'
+        WHEN 'EUR' THEN N'歐元資金調撥'
+        ELSE N'英鎊資金調撥'
+    END;
+
+    INSERT INTO @wangTransactions (
+        account_type, currency, entry_type, transaction_type, amount, fee_amount,
+        counterpart_account, counterpart_bank_code, counterpart_bank_name,
+        is_interbank, note, created_at
+    )
+    VALUES (
+        'SAVINGS',
+        @vipFxCurrency,
+        'DEBIT',
+        CASE WHEN @vipFxCurrency IN ('USD', 'JPY') THEN 'WITHDRAW' ELSE 'TRANSFER' END,
+        @vipFxAmount,
+        0.0000,
+        CASE WHEN @vipFxCurrency IN ('USD', 'JPY') THEN NULL ELSE '071260501840' END,
+        CASE WHEN @vipFxCurrency IN ('USD', 'JPY') THEN NULL ELSE '909' END,
+        CASE WHEN @vipFxCurrency IN ('USD', 'JPY') THEN NULL ELSE N'福庫銀行' END,
+        0,
+        @vipFxNote,
+        DATEADD(HOUR, 16, DATEADD(DAY, 22, @wangBaseDate))
+    );
+
+    SET @wangMonth += 1;
+END;
+
+DECLARE
+    @wangTxIndex INT = 1,
+    @wangTxCount INT = (SELECT COUNT(*) FROM @wangTransactions),
+    @wangAccountType VARCHAR(20);
+
+IF @wangTxCount <> 120
+    THROW 51108, 'account_mockdata.sql expected exactly 120 Wang Daming VIP transaction rows.', 1;
+
+WHILE @wangTxIndex <= @wangTxCount
+BEGIN
+    SET @accountNumber = NULL;
+
+    SELECT
+        @wangAccountType = account_type,
+        @currency = currency,
+        @entryType = entry_type,
+        @transactionType = transaction_type,
+        @amount = amount,
+        @fee = fee_amount,
+        @counterpartAccount = counterpart_account,
+        @counterpartBankCode = counterpart_bank_code,
+        @counterpartBankName = counterpart_bank_name,
+        @isInterbank = is_interbank,
+        @note = note,
+        @createdAt = created_at
+    FROM @wangTransactions
+    WHERE tx_rn = @wangTxIndex;
+
+    SELECT TOP 1
+        @accountNumber = account_number,
+        @currentBalance = balance
+    FROM #tx_accounts
+    WHERE customer_id = 'Q8M4T7K2'
+      AND account_type = @wangAccountType
+      AND currency = @currency
+    ORDER BY account_number;
+
+    IF @accountNumber IS NULL
+        THROW 51107, 'account_mockdata.sql expected Wang Daming demo transaction account.', 1;
+
+    SET @balanceBefore = @currentBalance;
+    SET @totalDebit = CASE WHEN @entryType = 'DEBIT' THEN @amount + @fee ELSE NULL END;
+    SET @balanceAfter = CASE
+        WHEN @entryType = 'DEBIT' THEN @balanceBefore - @totalDebit
+        ELSE @balanceBefore + @amount
+    END;
+    SET @referenceId = 'TXN-' + CONVERT(VARCHAR(8), @createdAt, 112) + '-' + REPLACE(CONVERT(VARCHAR(8), @createdAt, 108), ':', '') + '-' + LOWER(LEFT(CONVERT(CHAR(36), NEWID()), 8));
+
+    INSERT INTO TRANS_LOG (
+        transaction_id, reference_id, account_number, counterpart_account,
+        bank_code, bank_name, counterpart_bank_code, counterpart_bank_name,
+        is_interbank, entry_type, transaction_type, amount, fee_amount,
+        total_debit_amount, balance_before, balance_after, currency, note, created_at
+    ) VALUES (
+        LOWER(CONVERT(CHAR(36), NEWID())),
+        @referenceId,
+        @accountNumber,
+        @counterpartAccount,
+        '909',
+        N'福庫銀行',
+        @counterpartBankCode,
+        @counterpartBankName,
+        @isInterbank,
+        @entryType,
+        @transactionType,
+        @amount,
+        @fee,
+        @totalDebit,
+        @balanceBefore,
+        @balanceAfter,
+        @currency,
+        @note,
+        @createdAt
+    );
+
+    UPDATE #tx_accounts
+    SET balance = @balanceAfter
+    WHERE account_number = @accountNumber;
+
+    UPDATE #mock_accounts
+    SET balance = @balanceAfter,
+        changed_at = @createdAt,
+        changed_by = 'mock'
+    WHERE account_number = @accountNumber;
+
+    SET @wangTxIndex += 1;
+END;
 END; -- IF NOT EXISTS TRANS_LOG
 
 UPDATE a
@@ -676,8 +895,15 @@ SET
 FROM [ACCOUNT] a
 JOIN #mock_accounts m ON m.account_number = a.account_number;
 
-IF (SELECT COUNT(*) FROM TRANS_LOG) <> 500
-    THROW 51103, 'account_mockdata.sql expected exactly 500 TRANS_LOG rows.', 1;
+IF (SELECT COUNT(*) FROM TRANS_LOG) <> 10000
+    THROW 51103, 'account_mockdata.sql expected exactly 10000 TRANS_LOG rows.', 1;
+
+IF EXISTS (
+    SELECT 1
+    FROM TRANS_LOG
+    WHERE created_at >= CAST('2026-05-24 00:00:00.000' AS DATETIME2(3))
+)
+    THROW 51109, 'account_mockdata.sql generated future-dated transactions.', 1;
 
 IF EXISTS (
     SELECT 1
@@ -704,7 +930,7 @@ IF EXISTS (
 IF EXISTS (SELECT 1 FROM TRANS_LOG WHERE LEN(reference_id) > 30 OR LEN(account_number) > 14 OR LEN(ISNULL(counterpart_account, '')) > 20)
     THROW 51106, 'account_mockdata.sql generated data longer than account transaction column limits.', 1;
 
-PRINT N'account_mockdata.sql completed: customer accounts and 500 transaction log rows generated.';
+PRINT N'account_mockdata.sql completed: customer accounts and 10000 transaction log rows generated.';
 
 DROP TABLE #tx_accounts;
 DROP TABLE #mock_accounts;

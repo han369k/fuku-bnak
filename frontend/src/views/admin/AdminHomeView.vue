@@ -287,6 +287,7 @@ onUnmounted(() => {
 <style scoped>
 .dashboard {
   max-width: 1200px;
+  margin: 0 auto;
 }
 
 /* ── 歡迎區 ── */

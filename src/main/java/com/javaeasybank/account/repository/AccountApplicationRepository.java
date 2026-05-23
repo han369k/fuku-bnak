@@ -30,4 +30,16 @@ public interface AccountApplicationRepository extends JpaRepository<AccountAppli
 
     /** 檢查客戶是否有 PENDING 狀態的申請 */
     boolean existsByCustomerIdAndStatus(String customerId, ApplicationStatus status);
+
+    // ==========================================
+    // 統計用 (Dashboard)
+    // ==========================================
+    @org.springframework.data.jpa.repository.Query("SELECT a.status, COUNT(a) FROM AccountApplication a GROUP BY a.status")
+    List<Object[]> countByStatus();
+
+    @org.springframework.data.jpa.repository.Query("SELECT a.riskFlag, COUNT(a) FROM AccountApplication a GROUP BY a.riskFlag")
+    List<Object[]> countByRiskFlag();
+
+    @org.springframework.data.jpa.repository.Query("SELECT a.accountType, COUNT(a) FROM AccountApplication a GROUP BY a.accountType")
+    List<Object[]> countByAccountType();
 }

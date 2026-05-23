@@ -4,51 +4,10 @@
       <h2 class="page-title">帳戶管理</h2>
     </div>
 
-    <section class="analysis-panel" aria-label="帳戶圖表分析">
-      <div class="metric-card">
-        <span>本頁帳戶</span>
-        <strong>{{ accountsOnPage }}</strong>
-        <small>總查詢 {{ total }} 筆</small>
-      </div>
-      <div class="metric-card">
-        <span>正常帳戶</span>
-        <strong>{{ activeAccounts }}</strong>
-        <small>可正常交易</small>
-      </div>
-      <div class="metric-card risk">
-        <span>凍結帳戶</span>
-        <strong>{{ frozenAccounts }}</strong>
-        <small>需追蹤處理</small>
-      </div>
-      <div class="metric-card">
-        <span>本頁餘額</span>
-        <strong>{{ formatCompactAmount(pageBalanceTotal) }}</strong>
-        <small>依目前頁面加總</small>
-      </div>
-      <div class="chart-card">
-        <div class="chart-title">狀態分布</div>
-        <div class="chart-body">
-          <Doughnut :data="statusChartData" :options="compactChartOptions" />
-        </div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-title">幣別分布</div>
-        <div class="chart-body">
-          <Doughnut :data="currencyChartData" :options="compactChartOptions" />
-        </div>
-      </div>
-      <div class="chart-card wide">
-        <div class="chart-title">帳戶型別</div>
-        <div class="chart-body">
-          <Bar :data="typeChartData" :options="barChartOptions" />
-        </div>
-      </div>
-    </section>
-
     <!-- 頂部 F 橫劃：搜尋與主操作 -->
-    <div class="action-bar">
-      <!-- 左側搜尋區 -->
-      <div class="search-group account-search-group" style="flex-wrap: wrap; max-width: 980px;">
+    <section class="filter-panel" aria-label="帳戶查詢工具列">
+      <div class="filter-toolbar accounts-toolbar">
+        <div class="filter-main">
         <a-form-item
           class="filter-form-item"
           :validate-status="filterErrors.customerName ? 'error' : ''"
@@ -56,9 +15,8 @@
         >
           <a-input
             v-model:value="customerNameSearch"
-            placeholder="顧客姓名..."
-            class="rounded-input"
-            style="width: 150px"
+            placeholder="顧客姓名"
+            class="rounded-input filter-input"
             allow-clear
             @blur="validateCustomerName"
           />
@@ -71,9 +29,8 @@
         >
           <a-input
             v-model:value="accountNumberSearch"
-            placeholder="搜尋帳號..."
-            class="rounded-input"
-            style="width: 150px"
+            placeholder="搜尋帳號"
+            class="rounded-input filter-input"
             allow-clear
             @blur="validateAccountNumber"
           />
@@ -86,9 +43,8 @@
         >
           <a-input
             v-model:value="customerId"
-            placeholder="客戶 ID..."
-            class="rounded-input"
-            style="width: 150px"
+            placeholder="客戶ID"
+            class="rounded-input filter-input"
             allow-clear
             @blur="validateCustomerId"
           />
@@ -97,7 +53,7 @@
         <a-select
           v-model:value="statusFilter"
           placeholder="帳戶狀態"
-          style="width: 120px"
+          class="filter-select"
           allow-clear
         >
           <a-select-option value="PENDING">待啟用</a-select-option>
@@ -110,7 +66,7 @@
         <a-select
           v-model:value="typeFilter"
           placeholder="帳戶型別"
-          style="width: 120px"
+          class="filter-select"
           allow-clear
         >
           <a-select-option value="CHECKING">活存</a-select-option>
@@ -124,7 +80,7 @@
         <a-select
           v-model:value="currencyFilter"
           placeholder="幣別"
-          style="width: 100px"
+          class="filter-select currency-select"
           allow-clear
         >
           <a-select-option value="TWD">TWD</a-select-option>
@@ -139,16 +95,57 @@
           查詢
         </a-button>
         <a-button class="rounded-btn btn-ghost" @click="handleClear">清除</a-button>
-      </div>
+        </div>
 
-      <!-- 右側全域操作區 -->
-      <div class="global-actions">
+        <div class="filter-side">
         <a-button v-if="canCreateAccounts" type="primary" class="rounded-btn" @click="showCreateModal = true">
           <template #icon><PlusOutlined /></template>
           建立帳戶
         </a-button>
+        </div>
       </div>
-    </div>
+    </section>
+
+    <section class="analysis-panel" aria-label="帳戶圖表分析">
+      <div class="metric-card">
+        <span>總帳戶數</span>
+        <strong>{{ formatCompactAmount(statsData.totalAccounts) }}</strong>
+        <small>全站總量</small>
+      </div>
+      <div class="metric-card">
+        <span>正常帳戶</span>
+        <strong>{{ formatCompactAmount(statsData.status?.ACTIVE || 0) }}</strong>
+        <small>全站正常交易</small>
+      </div>
+      <div class="metric-card risk">
+        <span>凍結帳戶</span>
+        <strong>{{ formatCompactAmount(statsData.status?.FROZEN || 0) }}</strong>
+        <small>需追蹤處理</small>
+      </div>
+      <div class="metric-card">
+        <span>全站總餘額</span>
+        <strong>{{ formatCompactAmount(statsData.totalBalance) }}</strong>
+        <small>跨幣別等值(示意)</small>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">狀態分布</div>
+        <div class="chart-body" style="cursor: pointer;">
+          <Doughnut :data="statusChartData" :options="statusChartOptions" />
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">幣別分布</div>
+        <div class="chart-body" style="cursor: pointer;">
+          <Doughnut :data="currencyChartData" :options="currencyChartOptions" />
+        </div>
+      </div>
+      <div class="chart-card wide">
+        <div class="chart-title">帳戶型別</div>
+        <div class="chart-body" style="cursor: pointer;">
+          <Bar :data="typeChartData" :options="typeChartOptions" />
+        </div>
+      </div>
+    </section>
 
     <!-- 表格 -->
     <a-table
@@ -361,6 +358,7 @@ import {
   createAccount,
   updateAccountStatus,
   getAccount,
+  getAccountsStats,
 } from '@/api/account'
 
 ChartJS.register(ArcElement, BarElement, CategoryScale, LinearScale, Tooltip, Legend)
@@ -430,7 +428,7 @@ const compactChartOptions = {
   plugins: {
     legend: {
       position: 'bottom',
-      labels: { boxWidth: 10, usePointStyle: true },
+      labels: { boxWidth: 8, usePointStyle: true, font: { size: 11 } },
     },
   },
 }
@@ -444,6 +442,69 @@ const barChartOptions = {
     },
     x: { grid: { display: false } },
   },
+}
+
+const statusChartOptions = {
+  ...compactChartOptions,
+  plugins: {
+    ...compactChartOptions.plugins,
+    legend: {
+      ...compactChartOptions.plugins.legend,
+      labels: { boxWidth: 8, usePointStyle: true, font: { size: 11 } },
+    },
+  },
+  onClick: (event, elements, chart) => {
+    if (elements.length > 0) {
+      const index = elements[0].index
+      const label = chart.data.labels[index]
+      const entry = Object.entries(statusMap).find(([, val]) => val === label)
+      if (entry) {
+        statusFilter.value = entry[0]
+        handleSearch()
+      }
+    }
+  }
+}
+
+const currencyChartOptions = {
+  ...compactChartOptions,
+  plugins: {
+    ...compactChartOptions.plugins,
+    legend: {
+      ...compactChartOptions.plugins.legend,
+      labels: { boxWidth: 8, usePointStyle: true, font: { size: 11 } },
+    },
+  },
+  onClick: (event, elements, chart) => {
+    if (elements.length > 0) {
+      const index = elements[0].index
+      const label = chart.data.labels[index]
+      currencyFilter.value = label
+      handleSearch()
+    }
+  }
+}
+
+const typeChartOptions = {
+  ...barChartOptions,
+  plugins: {
+    ...barChartOptions.plugins,
+    legend: {
+      ...barChartOptions.plugins.legend,
+      labels: { boxWidth: 8, usePointStyle: true, font: { size: 11 } },
+    },
+  },
+  onClick: (event, elements, chart) => {
+    if (elements.length > 0) {
+      const index = elements[0].index
+      const label = chart.data.labels[index]
+      const entry = Object.entries(typeMap).find(([, val]) => val === label)
+      if (entry) {
+        typeFilter.value = entry[0]
+        handleSearch()
+      }
+    }
+  }
 }
 
 function countBy(items, getter) {
@@ -472,25 +533,57 @@ const accountsOnPage = computed(() => accounts.value.length)
 const activeAccounts = computed(() => accounts.value.filter(account => account.status === 'ACTIVE').length)
 const frozenAccounts = computed(() => accounts.value.filter(account => account.status === 'FROZEN').length)
 const pageBalanceTotal = computed(() => accounts.value.reduce((sum, account) => sum + Number(account.balance || 0), 0))
-const statusChartData = computed(() => buildChartData(
-  countBy(accounts.value, account => statusMap[account.status] || account.status),
-  '帳戶狀態',
-))
-const currencyChartData = computed(() => buildChartData(
-  countBy(accounts.value, account => account.currency),
-  '幣別',
-))
-const typeChartData = computed(() => buildChartData(
-  countBy(accounts.value, account => typeMap[account.accountType] || account.accountType),
-  '帳戶型別',
-))
+
+const statsData = ref({
+  status: {},
+  currency: {},
+  accountType: {},
+})
+
+const statusChartData = computed(() => {
+  const source = {}
+  Object.entries(statsData.value.status).forEach(([key, val]) => {
+    const label = statusMap[key] || key
+    source[label] = (source[label] || 0) + val
+  })
+  return buildChartData(source, '帳戶狀態')
+})
+
+const currencyChartData = computed(() => {
+  const source = {}
+  Object.entries(statsData.value.currency).forEach(([key, val]) => {
+    source[key] = (source[key] || 0) + val
+  })
+  return buildChartData(source, '幣別')
+})
+
+const typeChartData = computed(() => {
+  const source = {}
+  Object.entries(statsData.value.accountType).forEach(([key, val]) => {
+    const label = typeMap[key] || key
+    source[label] = (source[label] || 0) + val
+  })
+  return buildChartData(source, '帳戶型別')
+})
 
 // 記錄當前用哪種查詢，換頁時要用
 const lastSearchType = ref('')
 
 const hasFilterErrors = computed(() => Object.values(filterErrors).some(Boolean))
 
-onMounted(fetchData)
+const fetchStats = async () => {
+  try {
+    const res = await getAccountsStats()
+    statsData.value = res.data.data || { status: {}, currency: {}, accountType: {} }
+  } catch (error) {
+    console.error('Failed to fetch stats:', error)
+  }
+}
+
+onMounted(() => {
+  fetchData()
+  fetchStats()
+})
 
 const baseColumns = [
   { title: '客戶資訊', dataIndex: 'customerName', key: 'customer', width: 160, fixed: 'left', resizable: true, sorter: (a, b) => (a.customerName || '').localeCompare(b.customerName || '') },
@@ -840,8 +933,8 @@ async function handleStatusChange() {
 }
 
 .chart-card {
-  min-height: 260px;
-  padding: 16px;
+  min-height: 226px;
+  padding: 12px 14px;
 }
 
 .chart-card.wide {
@@ -850,8 +943,8 @@ async function handleStatusChange() {
 
 .chart-body {
   position: relative;
-  height: 205px;
-  margin-top: 10px;
+  height: 176px;
+  margin-top: 8px;
 }
 
 .chart-body :deep(canvas) {
@@ -859,18 +952,74 @@ async function handleStatusChange() {
   height: 100% !important;
 }
 
-.filter-form-item {
+.filter-panel {
+  margin-bottom: 16px;
+}
+
+.filter-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+  padding: 16px;
+  border: 1px solid rgba(214, 206, 195, 0.82);
+  border-radius: 12px;
+  background: rgba(255, 249, 239, 0.72);
+  box-shadow: 0 6px 16px rgba(63, 74, 66, 0.05);
+}
+
+.filter-main {
+  display: grid;
+  grid-template-columns:
+    minmax(150px, 1fr)
+    minmax(150px, 1fr)
+    minmax(150px, 1fr)
+    minmax(132px, 0.78fr)
+    minmax(132px, 0.78fr)
+    minmax(112px, 0.62fr)
+    auto
+    auto;
+  gap: 12px;
+  align-items: start;
+  min-width: 0;
+}
+
+.filter-side {
+  display: flex;
+  align-items: start;
+  justify-content: flex-end;
+}
+
+.filter-input,
+.filter-select,
+.filter-main :deep(.ant-input-affix-wrapper),
+.filter-main :deep(.ant-select) {
+  width: 100%;
+  min-width: 0;
+}
+
+.filter-main :deep(.ant-input),
+.filter-main :deep(.ant-select-selector) {
+  min-width: 0;
+}
+
+.filter-main :deep(.ant-form-item) {
   margin-bottom: 0;
 }
 
-.account-search-group {
-  align-items: flex-start;
-}
-
-.filter-form-item :deep(.ant-form-item-explain-error) {
+.filter-main :deep(.ant-form-item-explain-error) {
   font-size: 12px;
   line-height: 1.3;
   margin-top: 4px;
+}
+
+.accounts-toolbar .filter-side :deep(.ant-btn) {
+  min-width: 120px;
+}
+
+.filter-form-item {
+  margin-bottom: 0;
+  min-width: 0;
 }
 
 .demo-fill-section {
@@ -914,6 +1063,18 @@ async function handleStatusChange() {
   .analysis-panel {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .filter-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-main {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+
+  .filter-side {
+    justify-content: flex-start;
+  }
 }
 
 @media (max-width: 560px) {
@@ -921,6 +1082,21 @@ async function handleStatusChange() {
   .chart-card.wide {
     grid-template-columns: 1fr;
     grid-column: auto;
+  }
+
+  .filter-main :deep(.ant-input),
+  .filter-main :deep(.ant-select-selector) {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .filter-main {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-side,
+  .filter-side :deep(.ant-btn) {
+    width: 100%;
   }
 
   .close-confirm-row {

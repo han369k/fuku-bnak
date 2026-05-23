@@ -134,4 +134,12 @@ public class TransLogController {
                 transLogPage.getTotalElements());
         return ResponseEntity.ok(ApiResponse.success(pageResponse));
     }
+
+    /**
+     * 查詢全站交易紀錄統計數據
+     */
+    @GetMapping("/stats")
+    public ResponseEntity<ApiResponse<java.util.Map<String, Object>>> getStats() {
+        return ResponseEntity.ok(ApiResponse.success(transLogService.getStatistics()));
+    }
 }

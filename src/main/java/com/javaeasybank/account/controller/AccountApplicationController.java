@@ -115,6 +115,14 @@ public class AccountApplicationController {
     }
 
     /**
+     * 查詢全站開戶申請統計數據
+     */
+    @GetMapping("/api/admin/account-applications/stats")
+    public ResponseEntity<ApiResponse<java.util.Map<String, Object>>> getStats() {
+        return ResponseEntity.ok(ApiResponse.success(applicationService.getStatistics()));
+    }
+
+    /**
      * 查詢單筆申請詳情
      */
     @GetMapping("/api/admin/account-applications/{id}")

@@ -106,3 +106,13 @@ export function withdraw(data) {
 export function reversal(data) {
   return api.post('/api/admin/transfers/reversal', data)
 }
+
+// 查詢全站帳戶統計
+export function getAccountsStats() {
+  return api.get('/api/accounts/stats')
+}
+
+// 查詢全站交易紀錄統計
+export function getTransLogsStats() {
+  return api.get('/api/trans-logs/stats')
+}

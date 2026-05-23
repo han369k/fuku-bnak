@@ -23,6 +23,8 @@
               v-model:value="form.fromAccountNumber"
               placeholder="選擇扣款帳戶"
               :options="fromAccountOptions"
+              :dropdown-match-select-width="false"
+              popup-class-name="exchange-account-dropdown"
               @change="handleFromChange"
             />
           </a-form-item>
@@ -32,6 +34,8 @@
               v-model:value="form.toAccountNumber"
               placeholder="選擇入帳帳戶"
               :options="toAccountOptions"
+              :dropdown-match-select-width="false"
+              popup-class-name="exchange-account-dropdown"
               @change="handleToChange"
             />
           </a-form-item>
@@ -297,7 +301,7 @@ function wait(ms) {
 function accountOption(a) {
   return {
     value: a.accountNumber,
-    label: `${a.accountNumber} — ${currencyNames[a.currency] || a.currency} ${formatPlain(a.balance)}`,
+    label: `${a.accountNumber} — ${currencyNames[a.currency] || a.currency} ${formatPlain(a.balance, a.currency)}`,
   }
 }
 
@@ -375,14 +379,19 @@ function formatAmount(value, currency) {
   return `${Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits })} ${currency}`
 }
 
-function formatPlain(value) {
-  return Number(value || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })
+function formatPlain(value, currency) {
+  const digits = currency === 'JPY' || currency === 'TWD' ? 0 : 2
+  return Number(value || 0).toLocaleString('en-US', {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  })
 }
 </script>
 
 <style scoped>
 .exchange-page {
-  max-width: 1080px;
+  width: min(1240px, calc(100vw - 48px));
+  max-width: none;
   margin: 0 auto;
   padding: 28px 24px 48px;
 }
@@ -411,7 +420,7 @@ h2 {
 
 .exchange-shell {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
+  grid-template-columns: minmax(760px, 1fr) 320px;
   gap: 24px;
 }
 
@@ -455,6 +464,20 @@ h2 {
   font-size: 16px;
 }
 
+.exchange-form :deep(.ant-input-number) {
+  display: flex;
+  align-items: center;
+}
+
+.exchange-form :deep(.ant-input-number-input-wrap) {
+  width: 100%;
+}
+
+.exchange-form :deep(.ant-input-number-input) {
+  height: 46px;
+  line-height: 46px;
+}
+
 .exchange-form :deep(.ant-select-single .ant-select-selector) {
   align-items: center;
 }
@@ -470,8 +493,13 @@ h2 {
 
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(300px, 1fr));
   gap: 18px;
+  min-width: 0;
+}
+
+.form-grid :deep(.ant-form-item) {
+  min-width: 0;
 }
 
 .hint {
@@ -609,6 +637,18 @@ h2 {
   opacity: 0.7;
 }
 
+:global(.exchange-account-dropdown) {
+  min-width: 360px;
+}
+
+:global(.exchange-account-dropdown .ant-select-item-option-content) {
+  overflow: visible;
+  color: var(--text-primary);
+  font-size: 14px;
+  white-space: nowrap;
+  text-overflow: clip;
+}
+
 .spinning {
   display: inline-block;
   animation: spin 0.8s linear infinite;
@@ -722,8 +762,23 @@ h2 {
   color: var(--text-primary);
 }
 
+@media (max-width: 1220px) {
+  .exchange-page {
+    width: min(920px, calc(100vw - 48px));
+  }
+
+  .exchange-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .rate-panel {
+    width: 100%;
+  }
+}
+
 @media (max-width: 860px) {
   .exchange-page {
+    width: auto;
     padding: 20px 0 36px;
   }
 
@@ -732,7 +787,6 @@ h2 {
     flex-direction: column;
   }
 
-  .exchange-shell,
   .form-grid {
     grid-template-columns: 1fr;
   }

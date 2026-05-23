@@ -6,17 +6,23 @@
     <!-- 新增預約 -->
     <a-card class="form-card" title="新增預約轉帳">
       <a-form :model="form" layout="vertical" @finish="handleCreate">
-        <a-row :gutter="16">
-          <a-col :span="8">
+        <div class="scheduled-form-grid">
+          <div class="form-field from-account-field">
             <a-form-item label="轉出帳戶" name="fromAccount" :rules="[{ required: true, message: '請選擇轉出帳戶' }]">
-              <a-select v-model:value="form.fromAccount" placeholder="選擇轉出帳戶" @change="onFromChange">
+              <a-select
+                v-model:value="form.fromAccount"
+                placeholder="選擇轉出帳戶"
+                :dropdown-match-select-width="false"
+                popup-class-name="scheduled-account-dropdown"
+                @change="onFromChange"
+              >
                 <a-select-option v-for="a in twdAccounts" :key="a.accountNumber" :value="a.accountNumber">
-                  {{ a.accountNumber }} — 餘額 {{ formatNum(a.balance) }} TWD
+                  {{ scheduledAccountLabel(a) }}
                 </a-select-option>
               </a-select>
             </a-form-item>
-          </a-col>
-          <a-col :span="8">
+          </div>
+          <div class="form-field">
             <a-form-item label="轉入銀行" name="toBankCode" :rules="[{ required: true, message: '請選擇轉入銀行' }]">
               <a-select
                 v-model:value="form.toBankCode"
@@ -27,37 +33,34 @@
                 option-filter-prop="label"
               />
             </a-form-item>
-          </a-col>
-          <a-col :span="8">
+          </div>
+          <div class="form-field">
             <a-form-item label="轉入帳號" name="toAccount" :rules="[{ required: true, message: '請輸入轉入帳號' }]">
-              <div style="display: flex; gap: 8px;">
-                <a-input v-model:value="form.toAccount" placeholder="12碼帳號" style="flex: 1" />
+              <div class="account-input-row">
+                <a-input v-model:value="form.toAccount" placeholder="12碼帳號" />
                 <a-button @click="showFavPicker = true">常用帳號</a-button>
               </div>
             </a-form-item>
-          </a-col>
-        </a-row>
-
-        <a-row :gutter="16">
-          <a-col :span="8">
+          </div>
+          <div class="form-field">
             <a-form-item label="轉帳金額" name="amount" :rules="[{ required: true, message: '請輸入金額' }]">
               <a-input-number v-model:value="form.amount" :min="1" style="width: 100%"
                               :formatter="v => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')"
                               :parser="v => v.replace(/,/g, '')" placeholder="金額" />
             </a-form-item>
-          </a-col>
-          <a-col :span="8">
+          </div>
+          <div class="form-field">
             <a-form-item label="預約日期" name="scheduledDate" :rules="[{ required: true, message: '請選擇日期' }]">
               <a-date-picker v-model:value="form.scheduledDate" style="width: 100%"
                              :disabled-date="disabledDate" placeholder="選擇日期" />
             </a-form-item>
-          </a-col>
-          <a-col :span="8">
+          </div>
+          <div class="form-field note-field">
             <a-form-item label="備註">
               <a-input v-model:value="form.note" placeholder="選填" :maxlength="100" />
             </a-form-item>
-          </a-col>
-        </a-row>
+          </div>
+        </div>
 
         <a-form-item>
           <a-button type="primary" html-type="submit" :loading="creating" size="large">
@@ -300,6 +303,14 @@ function statusBadgeClass(s) {
   return `${base} ${map[s] || 'bg-[rgba(214,206,195,0.45)] text-[var(--text-secondary)]'}`
 }
 
+function scheduledAccountLabel(account) {
+  return `${account.accountNumber} — ${formatTwd(account.balance)} TWD`
+}
+
+function formatTwd(v) {
+  return Number(v || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })
+}
+
 function formatNum(v) {
   return Number(v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
@@ -321,7 +332,7 @@ function demoScheduledTransfer() {
 
 <style scoped>
 .scheduled-transfer-page {
-  max-width: 960px;
+  max-width: 1180px;
   margin: 0 auto;
   padding: 24px;
 }
@@ -348,7 +359,7 @@ h2 {
 }
 
 .form-card :deep(.ant-card-body) {
-  padding: 28px;
+  padding: 28px 32px;
 }
 
 .form-card :deep(.ant-form-item) {
@@ -391,6 +402,32 @@ h2 {
   font-weight: 600;
 }
 
+.scheduled-form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0 18px;
+  min-width: 0;
+}
+
+.form-field {
+  min-width: 0;
+}
+
+.account-input-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  min-width: 0;
+}
+
+.account-input-row :deep(.ant-input) {
+  min-width: 0;
+}
+
+.account-input-row :deep(.ant-btn) {
+  flex: 0 0 auto;
+}
+
 .form-card :deep(.ant-select-selector),
 .form-card :deep(.ant-input),
 .form-card :deep(.ant-input-number),
@@ -409,6 +446,20 @@ h2 {
 .form-card :deep(.ant-select-selection-placeholder) {
   color: var(--text-primary);
   font-size: 16px;
+}
+
+.form-card :deep(.ant-input-number) {
+  display: flex;
+  align-items: center;
+}
+
+.form-card :deep(.ant-input-number-input-wrap) {
+  width: 100%;
+}
+
+.form-card :deep(.ant-input-number-input) {
+  height: 46px;
+  line-height: 46px;
 }
 
 .form-card :deep(.ant-select-single .ant-select-selector),
@@ -442,6 +493,18 @@ h2 {
   background: var(--primary-dark);
 }
 
+:global(.scheduled-account-dropdown) {
+  min-width: 360px;
+}
+
+:global(.scheduled-account-dropdown .ant-select-item-option-content) {
+  overflow: visible;
+  color: var(--text-primary);
+  font-size: 14px;
+  white-space: nowrap;
+  text-overflow: clip;
+}
+
 .scheduled-transfer-page table {
   font-size: 13px;
 }
@@ -471,9 +534,35 @@ h2 {
   font-size: 13px;
 }
 
-@media (max-width: 640px) {
+@media (min-width: 760px) {
+  .scheduled-form-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 20px;
+  }
+
+  .from-account-field,
+  .note-field {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 1280px) {
+  .scheduled-form-grid {
+    grid-template-columns: minmax(360px, 1.35fr) minmax(260px, 1fr) minmax(360px, 1.2fr);
+    column-gap: 24px;
+  }
+
+  .from-account-field,
+  .note-field {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 1199px) {
   .scheduled-transfer-page {
-    padding: 16px 0;
+    width: min(920px, calc(100vw - 48px));
+    max-width: none;
+    padding: 16px;
   }
 
   h2 {
@@ -494,11 +583,6 @@ h2 {
     padding: 20px 16px;
   }
 
-  .form-card :deep(.ant-col) {
-    flex: 0 0 100%;
-    max-width: 100%;
-  }
-
   .form-card :deep(.ant-form-item-label > label),
   .form-card :deep(.ant-input),
   .form-card :deep(.ant-input-number-input),
@@ -506,6 +590,21 @@ h2 {
   .form-card :deep(.ant-select-selection-item),
   .form-card :deep(.ant-select-selection-placeholder) {
     font-size: 15px;
+  }
+}
+
+@media (max-width: 520px) {
+  .scheduled-transfer-page {
+    width: auto;
+    padding: 14px 10px;
+  }
+
+  .account-input-row {
+    grid-template-columns: 1fr;
+  }
+
+  .account-input-row :deep(.ant-btn) {
+    width: 100%;
   }
 }
 </style>
