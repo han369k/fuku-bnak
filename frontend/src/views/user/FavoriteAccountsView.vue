@@ -135,11 +135,11 @@ import { getTransferBanks, getMyAccounts } from '@/api/customerAccount'
 import { useRouter } from 'vue-router'
 
 const JAVA_BANK_CODE = '909'
-const fallbackBanks = [{ code: JAVA_BANK_CODE, name: '爪哇銀行', label: '爪哇銀行 909' }]
+const fallbackBanks = [{ code: JAVA_BANK_CODE, name: '福庫銀行', label: '福庫銀行 909' }]
 
 const router = useRouter()
-const form = ref({ accountNumber: '', bankCode: JAVA_BANK_CODE, alias: '', bankName: '爪哇銀行' })
-const editForm = ref({ id: null, accountNumber: '', bankCode: JAVA_BANK_CODE, alias: '', bankName: '爪哇銀行' })
+const form = ref({ accountNumber: '', bankCode: JAVA_BANK_CODE, alias: '', bankName: '福庫銀行' })
+const editForm = ref({ id: null, accountNumber: '', bankCode: JAVA_BANK_CODE, alias: '', bankName: '福庫銀行' })
 const favorites = ref([])
 const banks = ref(fallbackBanks)
 const loading = ref(false)
@@ -151,7 +151,7 @@ const showEdit = ref(false)
 const bankSelectOptions = computed(() =>
   banks.value.map((bank) => ({
     value: bank.code,
-    label: `${bank.name} ${bank.code}`,
+    label: bankOptionLabel(bank),
   })),
 )
 
@@ -180,7 +180,11 @@ async function loadBanks() {
 }
 
 function findBankName(code) {
-  return banks.value.find((bank) => bank.code === code)?.name || ''
+  return banks.value.find((bank) => bank.code === code)?.name || (code === JAVA_BANK_CODE ? '福庫銀行' : '')
+}
+
+function bankOptionLabel(bank) {
+  return bank.label || `${bank.name} ${bank.code}`
 }
 
 function syncFormBankName(code) {
@@ -289,8 +293,12 @@ function fillTemplate3() {
 }
 
 h2 {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   color: var(--text-primary);
+  font-family: var(--font-heading);
+  font-size: 42px;
+  font-weight: 700;
+  line-height: 1.2;
 }
 
 .form-card {
@@ -301,15 +309,15 @@ h2 {
 }
 
 .form-card :deep(.ant-card-body) {
-  padding: 28px;
+  padding: 32px;
 }
 
 .favorite-form {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  column-gap: 24px;
-  row-gap: 18px;
+  column-gap: 28px;
+  row-gap: 20px;
 }
 
 .favorite-form :deep(.ant-form-item) {
@@ -323,14 +331,17 @@ h2 {
 
 .favorite-form :deep(.ant-form-item-label > label) {
   color: var(--text-primary);
+  font-size: 16px;
   font-weight: 600;
 }
 
 .favorite-form :deep(.ant-input),
 .favorite-form :deep(.ant-select-selector) {
+  min-height: 48px;
   border-color: rgba(198, 188, 174, 0.92);
   border-radius: 8px;
   background: rgba(250, 250, 247, 0.84);
+  font-size: 16px;
 }
 
 .favorite-form :deep(.ant-input:focus),
@@ -347,6 +358,11 @@ h2 {
   box-shadow: 0 6px 14px rgba(63, 74, 66, 0.14);
 }
 
+.favorite-form :deep(.ant-btn) {
+  min-height: 44px;
+  font-size: 15px;
+}
+
 .favorite-form :deep(.ant-btn-primary:hover),
 .favorite-accounts-page :deep(.ant-modal .ant-btn-primary:hover) {
   border-color: var(--primary-dark);
@@ -358,12 +374,43 @@ h2 {
 }
 
 .list-card {
-  margin-top: 24px;
-  padding: 24px;
+  margin-top: 28px;
+  padding: 28px;
   border-radius: 12px;
   background: rgba(255, 249, 239, 0.92);
   border: 1px solid rgba(214, 206, 195, 0.86);
   box-shadow: 0 12px 36px rgba(63, 74, 66, 0.08);
+}
+
+.list-card table {
+  font-size: 15px;
+}
+
+.list-card th {
+  font-size: 15px;
+}
+
+.list-card td {
+  font-size: 15px;
+}
+
+.list-card td button {
+  font-size: 14px;
+}
+
+@media (max-width: 640px) {
+  h2 {
+    font-size: 34px;
+    margin-bottom: 20px;
+  }
+
+  .form-card :deep(.ant-card-body) {
+    padding: 24px;
+  }
+
+  .list-card {
+    padding: 20px;
+  }
 }
 
 @media (max-width: 640px) {
