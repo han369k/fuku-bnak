@@ -8,7 +8,7 @@
         <select v-model="selectedAccount" class="filter-control" @change="fetchTransactions">
           <option value="">全部帳戶</option>
           <option v-for="account in accounts" :key="account.accountNumber" :value="account.accountNumber">
-            {{ account.accountNumber }}（{{ account.currency }}）
+            {{ accountFilterLabel(account) }}
           </option>
         </select>
       </label>
@@ -263,6 +263,69 @@ function txTypeLabel(type) {
   return map[type] || type || '-'
 }
 
+function accountFilterLabel(account) {
+  if (!account) return '-'
+  return `${account.accountNumber} — ${accountDisplayType(account)}`
+}
+
+function accountDisplayType(account) {
+  const currencyName = currencyLabel(account.currency)
+
+  if (account.accountType === 'SUB_ACCOUNT') {
+    return `${currencyName}子帳戶`
+  }
+
+  if (account.accountType === 'TIME_DEPOSIT') {
+    return `${currencyName}定期存款帳戶`
+  }
+
+  if (account.accountType === 'LOAN') {
+    return `${currencyName}貸款帳戶`
+  }
+
+  if (account.accountType === 'CHECKING') {
+    return account.currency === 'TWD'
+      ? '台幣活期存款帳戶'
+      : `${currencyName}外幣活期存款帳戶`
+  }
+
+  if (account.accountType === 'SAVINGS') {
+    return account.currency === 'TWD'
+      ? '台幣儲蓄存款帳戶'
+      : `${currencyName}外幣存款帳戶`
+  }
+
+  return `${currencyName}${accountTypeLabel(account.accountType)}`
+}
+
+function currencyLabel(currency) {
+  const map = {
+    TWD: '台幣',
+    USD: '美元',
+    JPY: '日圓',
+    EUR: '歐元',
+    GBP: '英鎊',
+    CNY: '人民幣',
+    HKD: '港幣',
+    AUD: '澳幣',
+    CAD: '加幣',
+    CHF: '瑞郎',
+    SGD: '新加坡幣',
+  }
+  return map[currency] || currency || ''
+}
+
+function accountTypeLabel(type) {
+  const map = {
+    CHECKING: '活期存款帳戶',
+    SAVINGS: '存款帳戶',
+    TIME_DEPOSIT: '定期存款帳戶',
+    SUB_ACCOUNT: '子帳戶',
+    LOAN: '貸款帳戶',
+  }
+  return map[type] || '帳戶'
+}
+
 function displayNote(record) {
   if (!record) return '-'
   if (record.transactionType === 'LOAN_DISBURSEMENT') return '貸款核准撥款'
@@ -358,7 +421,7 @@ h2 {
 
 .select-shell {
   position: relative;
-  width: 240px;
+  width: 360px;
 }
 
 .type-shell {

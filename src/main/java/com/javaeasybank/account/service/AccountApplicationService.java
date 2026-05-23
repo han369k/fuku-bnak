@@ -246,6 +246,24 @@ public class AccountApplicationService {
         return AccountApplicationResponse.fromEntityForAdmin(app);
     }
 
+    @Transactional(readOnly = true)
+    public java.util.Map<String, Object> getStatistics() {
+        java.util.Map<String, Object> stats = new java.util.HashMap<>();
+        stats.put("status", convertToMap(applicationRepository.countByStatus()));
+        stats.put("riskFlag", convertToMap(applicationRepository.countByRiskFlag()));
+        stats.put("accountType", convertToMap(applicationRepository.countByAccountType()));
+        stats.put("totalApplications", applicationRepository.count());
+        return stats;
+    }
+
+    private java.util.Map<String, Long> convertToMap(List<Object[]> results) {
+        return results.stream()
+                .collect(Collectors.toMap(
+                        row -> row[0] != null ? row[0].toString() : "UNKNOWN",
+                        row -> ((Number) row[1]).longValue()
+                ));
+    }
+
     // =========================================================
     // 管理端：審核 — 通過
     // =========================================================

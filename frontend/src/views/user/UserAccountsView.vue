@@ -172,7 +172,8 @@ function statusLabel(s) {
 
 function formatBalance(val, currency) {
   const num = Number(val) || 0
-  if (currency === 'JPY') return num.toLocaleString('ja-JP', { minimumFractionDigits: 0 })
+  if (currency === 'TWD') return num.toLocaleString('zh-TW', { maximumFractionDigits: 0 })
+  if (currency === 'JPY') return num.toLocaleString('ja-JP', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
   return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 

@@ -460,6 +460,20 @@ h2 {
   font-size: 16px;
 }
 
+.transfer-form-card :deep(.ant-input-number) {
+  display: flex;
+  align-items: center;
+}
+
+.transfer-form-card :deep(.ant-input-number-input-wrap) {
+  width: 100%;
+}
+
+.transfer-form-card :deep(.ant-input-number-input) {
+  height: 46px;
+  line-height: 46px;
+}
+
 .transfer-form-card :deep(.ant-select-single .ant-select-selector) {
   align-items: center;
 }

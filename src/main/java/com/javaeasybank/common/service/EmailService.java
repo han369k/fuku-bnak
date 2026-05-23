@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
-import org.springframework.mail.javamail.MimeMessagePreparator;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
@@ -41,10 +40,15 @@ public class EmailService {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom(fromEmail);
+            helper.setFrom(fromEmail, "Fuku Bank-福庫銀行");
             helper.setTo(to);
             helper.setSubject(subject);
             helper.setText(content, true);
+
+            // 加入內嵌圖片 (Content-ID) 解決 Gmail 破圖問題
+            helper.addInline("logoImage", new org.springframework.core.io.ClassPathResource("static/images/logo.png"));
+            helper.addInline("sealImage", new org.springframework.core.io.ClassPathResource("static/images/fukubank-seal.png"));
+
             mailSender.send(message);
             log.info("Email sent to {}: {}", to, subject);
         } catch (Exception e) {
@@ -57,7 +61,7 @@ public class EmailService {
         Context context = new Context();
         context.setVariable("link", link);
         String html = templateEngine.process("mail/verification-email", context);
-        sendEmail(to, "Java Easy Bank - 電子郵件驗證", html);
+        sendEmail(to, "Fuku Bank - 電子郵件驗證", html);
     }
 
     public void sendLoginNotification(String to, String username, boolean success, String ipAddress) {
@@ -70,7 +74,7 @@ public class EmailService {
         context.setVariable("ipAddress", ipAddress);
         context.setVariable("success", success);
         String html = templateEngine.process("mail/login-notification", context);
-        sendEmail(to, "Java Easy Bank - 登入通知", html);
+        sendEmail(to, "Fuku Bank - 登入通知", html);
     }
 
     public void sendTransferNotification(String to, String fromAccount, String toAccount, BigDecimal amount, String currency, String referenceId) {
@@ -83,14 +87,14 @@ public class EmailService {
         context.setVariable("amount", amount);
         context.setVariable("currency", currency);
         String html = templateEngine.process("mail/transfer-notification", context);
-        sendEmail(to, "Java Easy Bank - 轉帳交易通知", html);
+        sendEmail(to, "Fuku Bank - 轉帳交易通知", html);
     }
 
     public void sendPasswordResetEmail(String to, String link) {
         Context context = new Context();
         context.setVariable("link", link);
         String html = templateEngine.process("mail/password-reset", context);
-        sendEmail(to, "Java Easy Bank - 密碼重設連結", html);
+        sendEmail(to, "Fuku Bank - 密碼重設連結", html);
     }
 
     /**
@@ -111,7 +115,7 @@ public class EmailService {
         String html = templateEngine.process("mail/transfer-pending", context);
 
         // 使用溫和的主旨，不使用「風控」、「審核」、「攔截」等字眼
-        sendEmail(to, "Java Easy Bank - 轉帳交易處理進度通知", html);
+        sendEmail(to, "Fuku Bank - 轉帳交易處理進度通知", html);
     }
     //月結信用卡帳單
     @Async
@@ -140,7 +144,7 @@ public class EmailService {
 
     sendEmail(
             to,
-            "Java Easy Bank - 信用卡月結帳單通知",
+            "Fuku Bank - 信用卡月結帳單通知",
             html
     );
 }
@@ -172,7 +176,7 @@ public class EmailService {
 
         String html = templateEngine.process("mail/loan-document-required", context);
 
-        sendEmail(to, "Java Easy Bank - 貸款申請補件通知", html);
+        sendEmail(to, "Fuku Bank - 貸款申請補件通知", html);
     }
 
     public void sendAccountLockedNotification(String to, String username,String ipAddress) {
@@ -182,7 +186,7 @@ public class EmailService {
         context.setVariable("time", time);
         context.setVariable("ipAddress", ipAddress);
         String html = templateEngine.process("mail/account-locked-notification", context);
-        sendEmail(to, "Java Easy Bank - 登入通知", html);
+        sendEmail(to, "Fuku Bank - 登入通知", html);
     }
     //郵件附件
     @Async
@@ -197,7 +201,7 @@ public class EmailService {
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-        helper.setFrom(fromEmail);
+        helper.setFrom(fromEmail, "FukuBank-福庫銀行");
         helper.setTo(to);
         helper.setSubject(subject);
         helper.setText(content, true);
@@ -270,7 +274,7 @@ public class EmailService {
         context.setVariable("period", period);
 
         String html = templateEngine.process("mail/loan-applied", context);
-        sendEmail(to, "Java Easy Bank - 貸款申請受理通知", html);
+        sendEmail(to, "Fuku Bank - 貸款申請受理通知", html);
     }
 
     /** 風控拒絕：風控回傳 REJECTED 後通知 */
@@ -288,7 +292,7 @@ public class EmailService {
         context.setVariable("amount", amount);
 
         String html = templateEngine.process("mail/loan-rejected", context);
-        sendEmail(to, "Java Easy Bank - 貸款申請審核結果通知", html);
+        sendEmail(to, "Fuku Bank - 貸款申請審核結果通知", html);
     }
 
     /** 核准暨撥款：ACCOUNT 回調確認 DISBURSED、貸款帳號建立後通知 */
@@ -316,7 +320,7 @@ public class EmailService {
         context.setVariable("firstPaymentDate", firstPaymentDate);
 
         String html = templateEngine.process("mail/loan-disbursed", context);
-        sendEmail(to, "Java Easy Bank - 貸款核准暨撥款通知", html);
+        sendEmail(to, "Fuku Bank - 貸款核准暨撥款通知", html);
     }
 
     /** 還款成功：每次繳款完成後通知 */
@@ -344,7 +348,7 @@ public class EmailService {
         context.setVariable("nextAmount", nextAmount);
 
         String html = templateEngine.process("mail/loan-repayment-paid", context);
-        sendEmail(to, "Java Easy Bank - 還款成功通知", html);
+        sendEmail(to, "Fuku Bank - 還款成功通知", html);
     }
 
     /** 全數結清：所有期數繳完、closeApplication 完成後通知 */
@@ -364,7 +368,7 @@ public class EmailService {
         context.setVariable("totalPeriods", totalPeriods);
 
         String html = templateEngine.process("mail/loan-paid-off", context);
-        sendEmail(to, "Java Easy Bank - 貸款結清通知", html);
+        sendEmail(to, "Fuku Bank - 貸款結清通知", html);
     }
 
     /** 逾期通知：排程掃到逾期期數時逐筆觸發 */
@@ -384,7 +388,7 @@ public class EmailService {
         context.setVariable("overdueAmount", overdueAmount);
 
         String html = templateEngine.process("mail/loan-overdue", context);
-        sendEmail(to, "Java Easy Bank - 貸款逾期繳款通知", html);
+        sendEmail(to, "Fuku Bank - 貸款逾期繳款通知", html);
     }
 
     /** 繳款到期提醒：排程掃到距應繳日 3 天內的期數時逐筆觸發 */
@@ -406,7 +410,7 @@ public class EmailService {
         context.setVariable("amount", amount);
 
         String html = templateEngine.process("mail/loan-repayment-reminder", context);
-        sendEmail(to, "Java Easy Bank - 貸款繳款到期提醒", html);
+        sendEmail(to, "Fuku Bank - 貸款繳款到期提醒", html);
     }
 
 

@@ -1,64 +1,59 @@
 <template>
   <div class="page-container">
-    <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
-      <h2 class="page-title">交易紀錄查詢</h2>
-      <!-- 查詢方式切換置於右上角 -->
-      <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 10px;">
-        <a-radio-group v-model:value="searchType" button-style="solid" @change="handleSearchTypeChange">
-          <a-radio-button value="referenceId">依交易編號</a-radio-button>
-          <a-radio-button value="accountNumber">依帳號</a-radio-button>
-          <a-radio-button value="customerId">依客戶 ID</a-radio-button>
-          <a-radio-button value="customerIdDateRange">依客戶 ID + 日期</a-radio-button>
-        </a-radio-group>
-        <a-button danger class="rounded-btn" @click="showReversalModal = true">
-          <template #icon><RollbackOutlined /></template>
-          沖正
-        </a-button>
+    <div class="page-header admin-translog-header">
+      <div class="header-copy">
+        <h2 class="page-title">交易紀錄查詢</h2>
+        <p class="page-subtitle">查詢、篩選與檢視所有帳戶交易紀錄</p>
       </div>
+      <a-button danger class="rounded-btn" @click="showReversalModal = true">
+        <template #icon><RollbackOutlined /></template>
+        沖正
+      </a-button>
     </div>
 
-    <!-- 頂部 F 橫劃：搜尋與主操作 -->
-    <div class="action-bar">
-      <!-- 左側搜尋區 -->
-      <div class="search-group">
-        <a-input
-          v-model:value="searchValue"
-          :placeholder="placeholderText"
-          class="rounded-input search-input"
-          style="width: 280px;"
-          allow-clear
-          @press-enter="handleSearch"
-        />
-
-        <template v-if="searchType === 'customerIdDateRange'">
-          <a-date-picker
-            v-model:value="startDate"
-            show-time
-            placeholder="開始時間"
-            format="YYYY-MM-DD HH:mm:ss"
-            style="width: 180px"
+    <section class="filter-panel" aria-label="交易紀錄查詢工具列">
+      <div class="filter-toolbar">
+        <div class="filter-main">
+          <a-input
+            v-model:value="searchValue"
+            :placeholder="placeholderText"
+            class="rounded-input search-input"
+            allow-clear
+            @press-enter="handleSearch"
           />
-          <a-date-picker
-            v-model:value="endDate"
-            show-time
-            placeholder="結束時間"
-            format="YYYY-MM-DD HH:mm:ss"
-            style="width: 180px"
-          />
-        </template>
 
-        <a-button type="primary" class="rounded-btn" @click="handleSearch">
-          <template #icon><SearchOutlined /></template>
-          查詢
-        </a-button>
-        <a-button class="rounded-btn btn-ghost" @click="handleClear">清除</a-button>
-      </div>
+          <template v-if="searchType === 'customerIdDateRange'">
+            <a-date-picker
+              v-model:value="startDate"
+              show-time
+              placeholder="開始時間"
+              format="YYYY-MM-DD HH:mm:ss"
+            />
+            <a-date-picker
+              v-model:value="endDate"
+              show-time
+              placeholder="結束時間"
+              format="YYYY-MM-DD HH:mm:ss"
+            />
+          </template>
 
-      <!-- 右側全域操作區 -->
-      <div class="global-actions">
-        <a-dropdown v-if="logs.length > 0">
-          <a-button class="rounded-btn btn-ghost">
-            匯出 <DownOutlined />
+          <a-button type="primary" class="rounded-btn" @click="handleSearch">
+            <template #icon><SearchOutlined /></template>
+            查詢
+          </a-button>
+          <a-button class="rounded-btn btn-ghost" @click="handleClear">清除</a-button>
+        </div>
+
+        <div class="filter-side">
+          <a-radio-group v-model:value="searchType" button-style="solid" @change="handleSearchTypeChange">
+            <a-radio-button value="referenceId">依交易編號</a-radio-button>
+            <a-radio-button value="accountNumber">依帳號</a-radio-button>
+            <a-radio-button value="customerId">依客戶 ID</a-radio-button>
+            <a-radio-button value="customerIdDateRange">依客戶 ID + 日期</a-radio-button>
+          </a-radio-group>
+          <a-dropdown v-if="logs.length > 0">
+            <a-button class="rounded-btn btn-ghost">
+              匯出 <DownOutlined />
           </a-button>
           <template #overlay>
             <a-menu @click="handleExport">
@@ -66,46 +61,47 @@
               <a-menu-item key="json">JSON (.json)</a-menu-item>
               <a-menu-item key="xml">XML (.xml)</a-menu-item>
             </a-menu>
-          </template>
-        </a-dropdown>
+              </template>
+            </a-dropdown>
+        </div>
       </div>
-    </div>
+    </section>
 
     <section class="analysis-panel" aria-label="交易紀錄圖表分析">
       <div class="metric-card">
-        <span>本頁交易</span>
-        <strong>{{ logsOnPage }}</strong>
-        <small>總查詢 {{ total }} 筆</small>
+        <span>總交易數</span>
+        <strong>{{ formatCompactAmount(statsData.totalTransactions) }}</strong>
+        <small>全站總紀錄</small>
       </div>
       <div class="metric-card risk">
-        <span>轉出金額</span>
-        <strong>{{ formatCompactAmount(debitTotal) }}</strong>
-        <small>DEBIT 加總</small>
+        <span>總轉出金額</span>
+        <strong>{{ formatCompactAmount(statsData.totalDebit) }}</strong>
+        <small>全站資金流出</small>
       </div>
       <div class="metric-card">
-        <span>轉入金額</span>
-        <strong>{{ formatCompactAmount(creditTotal) }}</strong>
-        <small>CREDIT 加總</small>
+        <span>總轉入金額</span>
+        <strong>{{ formatCompactAmount(statsData.totalCredit) }}</strong>
+        <small>全站資金流入</small>
       </div>
       <div class="metric-card">
-        <span>最大單筆</span>
-        <strong>{{ formatCompactAmount(maxTransactionAmount) }}</strong>
-        <small>目前頁面最大值</small>
+        <span>單筆最大</span>
+        <strong>{{ formatCompactAmount(statsData.maxTransactionAmount) }}</strong>
+        <small>歷史最大金額</small>
       </div>
       <div class="chart-card">
-        <div class="chart-title">收支方向</div>
+        <div class="chart-title">收支比例</div>
         <div class="chart-body">
           <Doughnut :data="entryChartData" :options="compactChartOptions" />
         </div>
       </div>
       <div class="chart-card">
-        <div class="chart-title">幣別分布</div>
+        <div class="chart-title">幣別占比</div>
         <div class="chart-body">
           <Doughnut :data="currencyChartData" :options="compactChartOptions" />
         </div>
       </div>
       <div class="chart-card wide">
-        <div class="chart-title">交易類型</div>
+        <div class="chart-title">交易類型統計</div>
         <div class="chart-body">
           <Bar :data="transactionTypeChartData" :options="barChartOptions" />
         </div>
@@ -265,6 +261,7 @@ import {
   getLatestTransLogs,
   getAccount,
   reversal,
+  getTransLogsStats,
 } from '@/api/account'
 
 ChartJS.register(ArcElement, BarElement, CategoryScale, LinearScale, Tooltip, Legend)
@@ -283,7 +280,19 @@ const showAccountModal = ref(false)
 const accountDetail = ref(null)
 const accountLoading = ref(false)
 
-onMounted(fetchData)
+const fetchStats = async () => {
+  try {
+    const res = await getTransLogsStats()
+    statsData.value = res.data.data || { entryType: {}, transactionType: {}, currency: {} }
+  } catch (error) {
+    console.error('Failed to fetch stats:', error)
+  }
+}
+
+onMounted(() => {
+  fetchData()
+  fetchStats()
+})
 
 const placeholderText = computed(() => {
   const map = {
@@ -400,18 +409,40 @@ const creditTotal = computed(() => logs.value
   .filter(log => log.entryType === 'CREDIT')
   .reduce((sum, log) => sum + Number(log.amount || 0), 0))
 const maxTransactionAmount = computed(() => logs.value.reduce((max, log) => Math.max(max, Number(log.amount || 0)), 0))
-const entryChartData = computed(() => buildChartData(
-  countBy(logs.value, log => entryTypeMap[log.entryType] || log.entryType),
-  '交易方向',
-))
-const transactionTypeChartData = computed(() => buildChartData(
-  countBy(logs.value, log => transactionTypeMap[log.transactionType] || log.transactionType),
-  '交易類型',
-))
-const currencyChartData = computed(() => buildChartData(
-  countBy(logs.value, log => log.currency),
-  '幣別',
-))
+
+
+
+const statsData = ref({
+  entryType: {},
+  transactionType: {},
+  currency: {},
+})
+
+const entryChartData = computed(() => {
+  const source = {}
+  Object.entries(statsData.value.entryType).forEach(([key, val]) => {
+    const label = entryTypeMap[key] || key
+    source[label] = (source[label] || 0) + val
+  })
+  return buildChartData(source, '交易方向')
+})
+
+const transactionTypeChartData = computed(() => {
+  const source = {}
+  Object.entries(statsData.value.transactionType).forEach(([key, val]) => {
+    const label = transactionTypeMap[key] || key
+    source[label] = (source[label] || 0) + val
+  })
+  return buildChartData(source, '交易類型')
+})
+
+const currencyChartData = computed(() => {
+  const source = {}
+  Object.entries(statsData.value.currency).forEach(([key, val]) => {
+    source[key] = (source[key] || 0) + val
+  })
+  return buildChartData(source, '幣別')
+})
 
 const columns = ref([
   { title: '交易編號', dataIndex: 'referenceId', key: 'referenceId', width: 260, resizable: true, sorter: (a, b) => (a.referenceId || '').localeCompare(b.referenceId || '') },
@@ -456,6 +487,11 @@ const columns = ref([
     width: 100,
     resizable: true,
     sorter: (a, b) => (a.transactionType || '').localeCompare(b.transactionType || ''),
+    customRender: ({ text, record }) => {
+      const type = record?.transactionType || text
+      const cls = `transaction-badge type-${String(type || '').toLowerCase()}`
+      return h('span', { class: cls }, transactionTypeMap[type] || type || '-')
+    },
   },
   {
     title: '金額',
@@ -487,8 +523,18 @@ const columns = ref([
     sorter: (a, b) => (a.balanceAfter || 0) - (b.balanceAfter || 0),
     customRender: ({ text }) => formatAmount(text),
   },
-  { title: '幣別', dataIndex: 'currency', key: 'currency', width: 60, resizable: true, sorter: (a, b) => (a.currency || '').localeCompare(b.currency || '') },
-  { title: '備註', dataIndex: 'note', key: 'note', width: 120, resizable: true },
+  {
+    title: '幣別',
+    dataIndex: 'currency',
+    key: 'currency',
+    width: 72,
+    minWidth: 72,
+    resizable: true,
+    align: 'center',
+    className: 'currency-column',
+    sorter: (a, b) => (a.currency || '').localeCompare(b.currency || ''),
+  },
+  { title: '備註', dataIndex: 'note', key: 'note', width: 150, resizable: true, ellipsis: true },
   {
     title: '時間',
     dataIndex: 'createdAt',
@@ -719,22 +765,98 @@ function isBusinessAccountLabel(value) {
 </script>
 
 <style scoped>
+.admin-translog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.header-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.page-subtitle {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.filter-panel {
+  margin-bottom: 16px;
+}
+
+.filter-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid rgba(214, 206, 195, 0.82);
+  border-radius: 12px;
+  background: rgba(255, 249, 239, 0.72);
+  box-shadow: 0 6px 16px rgba(63, 74, 66, 0.05);
+}
+
+.filter-main,
+.filter-side {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.filter-main {
+  justify-content: flex-start;
+}
+
+.filter-side {
+  justify-content: space-between;
+}
+
+.filter-main :deep(.ant-input),
+.filter-main :deep(.ant-picker) {
+  min-width: 180px;
+}
+
+.filter-side :deep(.ant-radio-group) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filter-side :deep(.ant-radio-button-wrapper) {
+  border-color: rgba(214, 206, 195, 0.86);
+  color: var(--text-secondary);
+  background: rgba(250, 247, 240, 0.88);
+  box-shadow: none;
+}
+
+.filter-side :deep(.ant-radio-button-wrapper-checked) {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--bg-primary);
+}
+
 .analysis-panel {
   display: grid;
   grid-template-columns: repeat(4, minmax(140px, 1fr));
   gap: 14px;
   margin-bottom: 20px;
+  align-items: start;
 }
 
 .metric-card,
 .chart-card {
-  border: 1px solid rgba(214, 206, 195, 0.72);
+  border: 1px solid rgba(214, 206, 195, 0.82);
   border-radius: 8px;
   background:
-    linear-gradient(180deg, rgba(255, 249, 239, 0.92), rgba(249, 244, 235, 0.82)),
+    linear-gradient(180deg, rgba(255, 250, 243, 0.95), rgba(248, 244, 236, 0.9)),
     url('/washi-texture.png');
   background-size: auto, 260px 260px;
-  box-shadow: 0 10px 28px rgba(63, 74, 66, 0.08);
+  box-shadow: 0 6px 16px rgba(63, 74, 66, 0.05);
 }
 
 .metric-card {
@@ -753,7 +875,7 @@ function isBusinessAccountLabel(value) {
 
 .metric-card strong {
   color: #2B2B2B;
-  font-size: 30px;
+  font-size: 28px;
   line-height: 1;
 }
 
@@ -767,8 +889,8 @@ function isBusinessAccountLabel(value) {
 }
 
 .chart-card {
-  min-height: 260px;
-  padding: 16px;
+  min-height: 230px;
+  padding: 14px;
 }
 
 .chart-card.wide {
@@ -777,7 +899,7 @@ function isBusinessAccountLabel(value) {
 
 .chart-body {
   position: relative;
-  height: 205px;
+  height: 185px;
   margin-top: 10px;
 }
 
@@ -804,10 +926,43 @@ function isBusinessAccountLabel(value) {
 }
 
 .entry-credit { background-color: rgba(82, 196, 26, 0.1); color: #389e0d; }
-.entry-credit .status-dot { background-color: #52c41a; }
+.entry-credit .status-dot { background-color: #5C6B5F; }
 
-.entry-debit { background-color: rgba(255, 77, 79, 0.1); color: #d9363e; }
-.entry-debit .status-dot { background-color: #ff4d4f; }
+.entry-debit { background-color: rgba(166, 90, 77, 0.1); color: #A65A4D; }
+.entry-debit .status-dot { background-color: #A65A4D; }
+
+.transaction-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(92, 107, 95, 0.08);
+  color: var(--primary-dark);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.transaction-badge.type-transfer,
+.transaction-badge.type-reversal,
+.transaction-badge.type-withdraw {
+  background: rgba(166, 90, 77, 0.08);
+  color: #A65A4D;
+}
+
+.transaction-badge.type-loan_disbursement,
+.transaction-badge.type-interest,
+.transaction-badge.type-deposit {
+  background: rgba(92, 107, 95, 0.08);
+  color: var(--primary-dark);
+}
+
+.transaction-badge.type-card_payment,
+.transaction-badge.type-card_settlement,
+.transaction-badge.type-card_reward,
+.transaction-badge.type-transfer_fee {
+  background: rgba(196, 164, 124, 0.16);
+  color: #7b5a2f;
+}
 
 .reference-cell {
   display: inline-flex;
@@ -821,6 +976,16 @@ function isBusinessAccountLabel(value) {
   font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace);
   text-overflow: ellipsis;
   white-space: nowrap;
+  max-width: 190px;
+}
+
+.currency-column {
+  white-space: nowrap;
+}
+
+.currency-column :deep(.ant-table-cell-content),
+.currency-code {
+  white-space: nowrap;
 }
 
 .copy-reference-btn {
@@ -832,7 +997,101 @@ function isBusinessAccountLabel(value) {
 .copy-reference-btn:hover,
 .copy-reference-btn:focus {
   color: #3f4a42;
-  background: rgba(92, 107, 95, 0.1);
+  background: rgba(92, 107, 95, 0.08);
+}
+
+:deep(.custom-table .ant-table-thead > tr > th) {
+  background: rgba(244, 238, 229, 0.92);
+  color: var(--text-primary);
+  border-bottom-color: rgba(214, 206, 195, 0.82);
+}
+
+:deep(.custom-table .ant-table-tbody > tr > td) {
+  border-bottom-color: rgba(214, 206, 195, 0.45);
+}
+
+:deep(.custom-table .ant-table-tbody > tr:hover > td) {
+  background: rgba(92, 107, 95, 0.035);
+}
+
+:deep(.custom-table .ant-table-cell) {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+:deep(.custom-table .ant-table-cell-ellipsis) {
+  white-space: nowrap;
+}
+
+@media (max-width: 1200px) {
+  .analysis-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .chart-card.wide {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 860px) {
+  .admin-translog-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .filter-main :deep(.ant-input),
+  .filter-main :deep(.ant-picker) {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .filter-side {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-side :deep(.ant-radio-group) {
+    width: 100%;
+  }
+
+  .filter-side :deep(.ant-radio-button-wrapper) {
+    flex: 1 1 calc(50% - 8px);
+    text-align: center;
+  }
+
+  .filter-side :deep(.ant-dropdown) {
+    width: 100%;
+  }
+
+  .filter-side :deep(.ant-btn) {
+    width: 100%;
+  }
+
+  .analysis-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-card.wide {
+    grid-column: auto;
+  }
+
+  .chart-body {
+    height: 170px;
+  }
+}
+
+@media (max-width: 560px) {
+  .filter-toolbar {
+    padding: 12px;
+  }
+
+  .filter-side :deep(.ant-radio-button-wrapper) {
+    flex: 1 1 100%;
+  }
+
+  .reference-text {
+    max-width: 140px;
+  }
 }
 
 @media (max-width: 980px) {

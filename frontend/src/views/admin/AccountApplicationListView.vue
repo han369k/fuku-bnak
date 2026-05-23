@@ -19,6 +19,7 @@ import {
   approveAccountApplication,
   rejectAccountApplication,
   supplementAccountApplication,
+  getAccountApplicationsStats,
 } from '@/api/accountApplication'
 import dayjs from 'dayjs'
 
@@ -72,12 +73,19 @@ const compactChartOptions = {
   plugins: {
     legend: {
       position: 'bottom',
-      labels: { boxWidth: 10, usePointStyle: true },
+      labels: { boxWidth: 8, usePointStyle: true, font: { size: 11 } },
     },
   },
 }
 const barChartOptions = {
   ...compactChartOptions,
+  plugins: {
+    ...compactChartOptions.plugins,
+    legend: {
+      ...compactChartOptions.plugins.legend,
+      labels: { boxWidth: 8, usePointStyle: true, font: { size: 11 } },
+    },
+  },
   scales: {
     y: {
       beginAtZero: true,
@@ -88,19 +96,34 @@ const barChartOptions = {
   },
 }
 
+const statusChartOptions = {
+  ...compactChartOptions,
+  plugins: {
+    ...compactChartOptions.plugins,
+    legend: {
+      ...compactChartOptions.plugins.legend,
+      labels: { boxWidth: 8, usePointStyle: true, font: { size: 11 } },
+    },
+  },
+  onClick: (event, elements, chart) => {
+    if (elements.length > 0) {
+      const index = elements[0].index
+      const label = chart.data.labels[index]
+      const option = statusOptions.find(o => o.label === label)
+      if (option) {
+        status.value = option.value
+        pagination.value.current = 1
+        fetchData()
+      }
+    }
+  }
+}
+
 const pagination = ref({
   current: 1,
   pageSize: 10,
   total: 0,
 })
-
-function countBy(items, getter) {
-  return items.reduce((acc, item) => {
-    const key = getter(item) || '未分類'
-    acc[key] = (acc[key] || 0) + 1
-    return acc
-  }, {})
-}
 
 function buildChartData(source, label) {
   const entries = Object.entries(source)
@@ -120,18 +143,45 @@ const totalApplicationsOnPage = computed(() => applications.value.length)
 const pendingApplications = computed(() => applications.value.filter(item => item.status === 'PENDING').length)
 const approvedApplications = computed(() => applications.value.filter(item => item.status === 'APPROVED').length)
 const watchedApplications = computed(() => applications.value.filter(item => item.riskFlag && item.riskFlag !== 'NORMAL').length)
-const statusChartData = computed(() => buildChartData(
-  countBy(applications.value, item => statusOptions.find(option => option.value === item.status)?.label || item.status),
-  '申請狀態',
-))
-const riskChartData = computed(() => buildChartData(
-  countBy(applications.value, item => riskFlagMap[item.riskFlag]?.label || item.riskFlag || '未標記'),
-  '風險標記',
-))
-const accountTypeChartData = computed(() => buildChartData(
-  countBy(applications.value, item => accountTypeMap[item.accountType] || item.accountType),
-  '帳戶類型',
-))
+
+function formatCompactAmount(value) {
+  const amount = Number(value || 0)
+  if (amount >= 10000) return `${(amount / 10000).toFixed(1)} 萬`
+  return amount.toLocaleString()
+}
+
+const statsData = ref({
+  status: {},
+  riskFlag: {},
+  accountType: {},
+})
+
+const statusChartData = computed(() => {
+  const source = {}
+  Object.entries(statsData.value.status).forEach(([key, val]) => {
+    const label = statusOptions.find(o => o.value === key)?.label || key
+    source[label] = (source[label] || 0) + val
+  })
+  return buildChartData(source, '申請狀態')
+})
+
+const riskChartData = computed(() => {
+  const source = {}
+  Object.entries(statsData.value.riskFlag).forEach(([key, val]) => {
+    const label = riskFlagMap[key]?.label || key || '未標記'
+    source[label] = (source[label] || 0) + val
+  })
+  return buildChartData(source, '風險標記')
+})
+
+const accountTypeChartData = computed(() => {
+  const source = {}
+  Object.entries(statsData.value.accountType).forEach(([key, val]) => {
+    const label = accountTypeMap[key] || key
+    source[label] = (source[label] || 0) + val
+  })
+  return buildChartData(source, '帳戶類型')
+})
 
 // === 表格欄位 ===
 const columns = ref([
@@ -177,6 +227,15 @@ const fetchData = async () => {
     message.error('載入申請列表失敗')
   } finally {
     loading.value = false
+  }
+}
+
+const fetchStats = async () => {
+  try {
+    const data = await getAccountApplicationsStats()
+    statsData.value = data || { status: {}, riskFlag: {}, accountType: {} }
+  } catch (error) {
+    console.error('Failed to fetch stats:', error)
   }
 }
 
@@ -294,7 +353,10 @@ const formatDate = (val) => {
   return dayjs(val).format('YYYY-MM-DD HH:mm')
 }
 
-onMounted(fetchData)
+onMounted(() => {
+  fetchData()
+  fetchStats()
+})
 </script>
 
 <template>
@@ -305,29 +367,29 @@ onMounted(fetchData)
 
     <section class="analysis-panel" aria-label="開戶申請圖表分析">
       <div class="metric-card">
-        <span>本頁申請</span>
-        <strong>{{ totalApplicationsOnPage }}</strong>
-        <small>目前查詢結果</small>
+        <span>總申請數</span>
+        <strong>{{ formatCompactAmount(statsData.totalApplications) }}</strong>
+        <small>全站總量</small>
       </div>
       <div class="metric-card">
         <span>待審核</span>
-        <strong>{{ pendingApplications }}</strong>
-        <small>需要主管處理</small>
+        <strong>{{ formatCompactAmount(statsData.status?.PENDING || 0) }}</strong>
+        <small>全站待處理</small>
+      </div>
+      <div class="metric-card risk">
+        <span>需關注</span>
+        <strong>{{ formatCompactAmount(Object.entries(statsData.riskFlag || {}).filter(([k]) => k !== 'NORMAL').reduce((acc, [, v]) => acc + v, 0)) }}</strong>
+        <small>全站高風險</small>
       </div>
       <div class="metric-card">
         <span>已核准</span>
-        <strong>{{ approvedApplications }}</strong>
-        <small>完成建帳流程</small>
-      </div>
-      <div class="metric-card risk">
-        <span>風險關注</span>
-        <strong>{{ watchedApplications }}</strong>
-        <small>非正常風險標記</small>
+        <strong>{{ formatCompactAmount(statsData.status?.APPROVED || 0) }}</strong>
+        <small>全站總核准</small>
       </div>
       <div class="chart-card">
         <div class="chart-title">狀態分布</div>
-        <div class="chart-body">
-          <Doughnut :data="statusChartData" :options="compactChartOptions" />
+        <div class="chart-body" style="cursor: pointer;">
+          <Doughnut :data="statusChartData" :options="statusChartOptions" />
         </div>
       </div>
       <div class="chart-card">
@@ -655,8 +717,8 @@ onMounted(fetchData)
 }
 
 .chart-card {
-  min-height: 260px;
-  padding: 16px;
+  min-height: 226px;
+  padding: 12px 14px;
 }
 
 .chart-card.wide {
@@ -665,8 +727,8 @@ onMounted(fetchData)
 
 .chart-body {
   position: relative;
-  height: 205px;
-  margin-top: 10px;
+  height: 176px;
+  margin-top: 8px;
 }
 
 .chart-body :deep(canvas) {
