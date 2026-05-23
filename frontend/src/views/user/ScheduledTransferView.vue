@@ -63,8 +63,11 @@
         </div>
 
         <a-form-item>
-          <a-button type="primary" html-type="submit" :loading="creating" size="large">
-            {{ step === 'otp' ? '建立預約' : '下一步 (發送驗證碼)' }}
+          <a-button type="primary" html-type="submit" :loading="creating" block size="large">
+            下一步 (發送驗證碼)
+          </a-button>
+          <a-button @click="handleCreateBypassOtp" html-type="button" :loading="creating" block size="large" style="margin-top: 10px;">
+            直接預約（免驗證碼，For Demo）
           </a-button>
         </a-form-item>
       </a-form>
@@ -182,7 +185,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { message } from 'ant-design-vue'
+import { message, Modal } from 'ant-design-vue'
 import { CheckCircleFilled } from '@ant-design/icons-vue'
 import dayjs from 'dayjs'
 import { getMyAccounts, getTransferBanks } from '@/api/customerAccount'
@@ -277,6 +280,19 @@ async function handleCreate() {
   }
 }
 
+async function handleCreateBypassOtp() {
+  if (!form.value.fromAccount || !form.value.toAccount || !form.value.amount || !form.value.scheduledDate) {
+    message.warning('請先填寫完整預約資訊')
+    return
+  }
+  if (form.value.toBankCode === JAVA_BANK_CODE && form.value.fromAccount === form.value.toAccount) {
+    message.error('轉出與轉入帳戶不可相同')
+    return
+  }
+  otpCode.value = '000000'
+  await submitOtpAndCreate()
+}
+
 function fillDemoOtp() {
   if (demoOtp.value) {
     otpCode.value = demoOtp.value
@@ -338,9 +354,16 @@ async function handleCancel(id) {
 }
 
 function confirmCancel(id) {
-  if (window.confirm('確定要取消此預約？')) {
-    handleCancel(id)
-  }
+  Modal.confirm({
+    title: '取消預約',
+    content: '確定要取消此預約轉帳嗎？',
+    okText: '確認',
+    cancelText: '保留',
+    okType: 'danger',
+    onOk() {
+      handleCancel(id)
+    }
+  })
 }
 
 function pickFavorite(item) {
