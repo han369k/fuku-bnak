@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onBeforeUnmount, onMounted } from 'vue'
+import { ref, computed, onBeforeUnmount, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import { createCardApplication, getMyApplications } from '@/api/userCardApplication'
 import { getUserCardTypes, uploadImage } from '@/api/cardtype'
@@ -27,6 +27,20 @@ const proofFiles = ref([])
 const previewVisible = ref(false)
 const previewImage = ref('')
 const previewTitle = ref('')
+
+const applicationRows = computed(() =>
+  applications.value.flatMap((app) => {
+    if (!app.items?.length) return [app]
+
+    return app.items.map((item) => ({
+      ...app,
+      ...item,
+      rowKey: `${app.applicationId}-${item.itemId}`,
+      itemResult: item.result,
+      remark: app.remark,
+    }))
+  }),
+)
 
 const columns = [
   {
@@ -350,7 +364,7 @@ onBeforeUnmount(() => {
 
       <div v-if="listLoading" class="state-panel">載入中...</div>
 
-      <div v-else-if="applications.length === 0" class="state-panel">目前沒有信用卡申請紀錄。</div>
+      <div v-else-if="applicationRows.length === 0" class="state-panel">目前沒有信用卡申請紀錄。</div>
 
       <div v-else class="table-wrap">
         <table>
@@ -363,7 +377,7 @@ onBeforeUnmount(() => {
           </thead>
 
           <tbody>
-            <tr v-for="app in applications" :key="app.applicationId">
+            <tr v-for="app in applicationRows" :key="app.rowKey || app.applicationId">
               <td v-for="column in columns" :key="column.key">
                 <span
                   v-if="column.key === 'status'"
