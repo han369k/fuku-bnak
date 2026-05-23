@@ -374,8 +374,8 @@ const currentPage     = ref(1)
 const pageSize        = 15
 
 // 排序狀態
-const sortKey         = ref('nextPaymentDate')
-const sortOrder       = ref('asc') // 'asc' 或 'desc'
+const sortKey         = ref('startDate')
+const sortOrder       = ref('desc') // 'asc' 或 'desc'
 
 // Modal 狀態
 const showModal    = ref(false)
