@@ -17,6 +17,7 @@ import com.javaeasybank.creditcard.entity.CardApplicationItem;
 import com.javaeasybank.creditcard.entity.CardType;
 import com.javaeasybank.creditcard.enums.CardApplicationItemResult;
 import com.javaeasybank.creditcard.enums.CardApplicationStatus;
+import com.javaeasybank.creditcard.mapper.CardApplicationItemMapper;
 import com.javaeasybank.creditcard.mapper.CardApplicationMapper;
 import com.javaeasybank.creditcard.repository.CardAccountRepository;
 import com.javaeasybank.creditcard.repository.CardAppItemRepository;
@@ -37,6 +38,7 @@ public class CardAppService {
     private final CardAppRepository cardAppRepository;
     private final CardAppItemRepository cardAppItemRepository;
     private final CardApplicationMapper cardApplicationMapper;
+    private final CardApplicationItemMapper cardApplicationItemMapper;
     private final CustomerProfileRepository customerRepository;
     private final CardTypeRepository cardTypeRepository;
     private final CardAccountRepository cardAccountRepository;
@@ -165,17 +167,17 @@ public class CardAppService {
     private CardApplicationResponseDto toDtoWithItem(CardApplication app) {
         CardApplicationResponseDto dto = cardApplicationMapper.toDto(app);
 
-        cardAppItemRepository.findByApplicationApplicationId(app.getApplicationId())
-                .stream()
-                .findFirst()
-                .ifPresent(item -> {
-                    CardType cardType = item.getCardType();
-                    if (cardType != null) {
-                        dto.setCardTypeId(cardType.getCardTypeId());
-                        dto.setCardTypeName(cardType.getCardTypeName());
-                    }
-                    dto.setItemResult(item.getResult());
-                });
+        List<CardApplicationItem> items = cardAppItemRepository.findByApplicationApplicationId(app.getApplicationId());
+        dto.setItems(cardApplicationItemMapper.toDtoList(items));
+
+        items.stream().findFirst().ifPresent(item -> {
+            CardType cardType = item.getCardType();
+            if (cardType != null) {
+                dto.setCardTypeId(cardType.getCardTypeId());
+                dto.setCardTypeName(cardType.getCardTypeName());
+            }
+            dto.setItemResult(item.getResult());
+        });
 
         return dto;
     }
