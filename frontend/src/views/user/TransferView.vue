@@ -107,8 +107,8 @@
           <a-button type="primary" html-type="submit" :loading="submitting" block size="large">
             下一步 (發送驗證碼)
           </a-button>
-          <a-button @click="handleTransferBypassOtp" :loading="submitting" block size="large" style="margin-top: 10px;">
-            直接轉帳 (免驗證碼)
+          <a-button @click="handleTransferBypassOtp" html-type="button" :loading="submitting" block size="large" style="margin-top: 10px;">
+            直接轉帳（免驗證碼，For Demo）
           </a-button>
         </a-form-item>
       </a-form>
@@ -360,6 +360,33 @@ async function handleTransfer() {
   } finally {
     submitting.value = false
   }
+}
+
+async function handleTransferBypassOtp() {
+  normalizeToAccount()
+  if (!form.value.fromAccount || !form.value.toAccount || !form.value.amount) {
+    message.warning('請先填寫完整轉帳資訊')
+    return
+  }
+  if (!isInterbank.value && form.value.fromAccount === form.value.toAccount) {
+    message.error('轉出與轉入帳戶不可相同')
+    return
+  }
+  if (form.value.toAccount.length < 6 || form.value.toAccount.length > 20) {
+    message.error('轉入帳號長度須為 6 到 20 碼')
+    return
+  }
+  if (!isInterbank.value && form.value.toAccount.length !== 12) {
+    message.error('本行轉帳目的帳號須為 12 碼')
+    return
+  }
+  if (selectedBalance.value !== null && totalDebitAmount.value > selectedBalance.value) {
+    message.error(`可用餘額不足，預計扣款 ${formatNum(totalDebitAmount.value)} TWD`)
+    return
+  }
+
+  otpCode.value = '000000'
+  await submitOtpAndTransfer()
 }
 
 function fillDemoOtp() {
