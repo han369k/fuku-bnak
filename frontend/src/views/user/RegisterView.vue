@@ -8,7 +8,7 @@
 
       <section class="register-card jb-card">
         <h1 class="register-title">開立帳戶</h1>
-        <p class="register-subtitle">加入爪哇銀行，開啟您的數位金融旅程</p>
+        <p class="register-subtitle">加入福庫銀行，開啟您的數位金融旅程</p>
 
         <form @submit.prevent="handleRegister" novalidate>
           <div class="form-grid">
