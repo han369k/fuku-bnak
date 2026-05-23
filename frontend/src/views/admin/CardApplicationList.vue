@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { message, Modal } from 'ant-design-vue'
-import { SearchOutlined,SyncOutlined } from '@ant-design/icons-vue'
+import { SearchOutlined, SyncOutlined } from '@ant-design/icons-vue'
 import {
   getApplications,
   deleteApplication,
@@ -9,8 +9,9 @@ import {
   updateApplicationRemark,
 } from '@/api/cardApplication'
 import { useRouter } from 'vue-router'
+import { getApplicationDocuments, needSupplement } from '@/api/cardAppDoc'
 import dayjs from 'dayjs'
-
+import { BASE_URL } from '@/api/axios'
 
 const router = useRouter()
 
@@ -24,12 +25,18 @@ const loading = ref(false)
 const keyword = ref('')
 const status = ref(null)
 
+const documentModalVisible = ref(false)
+const currentDocuments = ref([])
+const supplementRemark = ref('')
+const supplementModalVisible = ref(false)
+
 const statusOptions = [
   { label: '全部', value: null },
   { label: '審核中', value: 'PENDING' },
   { label: '已核准', value: 'APPROVED' },
   { label: '已拒絕', value: 'REJECTED' },
   { label: '已完成', value: 'COMPLETED' },
+  { label: '需補件', value: 'NEED_SUPPLEMENT' },
 ]
 
 const applicationStatusLabelMap = {
@@ -37,10 +44,21 @@ const applicationStatusLabelMap = {
   APPROVED: '已核准',
   REJECTED: '已拒絕',
   COMPLETED: '已完成',
+  NEED_SUPPLEMENT: '需補件',
 }
 
 const getApplicationStatusLabel = (statusValue) =>
   applicationStatusLabelMap[statusValue] || statusValue
+
+const getFileUrl = (url) => {
+  if (!url) return ''
+  if (url.startsWith('http') || url.startsWith('blob:') || url.startsWith('data:')) return url
+  return `${BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`
+}
+
+const formatDocumentTime = (time) => {
+  return time ? dayjs(time).format('YYYY-MM-DD HH:mm:ss') : '-'
+}
 
 //分頁機
 const pagination = ref({
@@ -81,11 +99,13 @@ const columns = [
     key: 'applyDate',
     width: 180,
     customRender: ({ text }) => {
-    return text ? dayjs(text).format('YYYY-MM-DD HH:mm') : '-'
-  },
+      return text ? dayjs(text).format('YYYY-MM-DD HH:mm') : '-'
+    },
   },
   { title: '狀態', dataIndex: 'status', key: 'status', width: 120 },
-  { title: '備註', dataIndex: 'remark', key: 'remark' , width: 120},
+  { title: '備註', dataIndex: 'remark', key: 'remark', width: 120 },
+  { title: '附件', key: 'documents', width: 120 },
+  { title: '補件', key: 'supplement', width: 120 },
   { title: '審核', key: 'detail', width: 120 },
   { title: '修改備註', key: 'editRemark', width: 120 },
   { title: '刪除', key: 'delete', width: 120 },
@@ -93,6 +113,7 @@ const columns = [
 //取得資料
 const fetchData = async () => {
   loading.value = true
+  
   try {
     const data = await getApplications({
       page: pagination.value.current - 1,
@@ -100,6 +121,7 @@ const fetchData = async () => {
       keyword: keyword.value,
       status: status.value,
     })
+    console.log(data);
     applications.value = data.content
 
     console.log('applications:', applications.value)
@@ -161,6 +183,32 @@ watch([keyword, status], () => {
   pagination.value.current = 1
   fetchData()
 })
+const openDocumentsModal = async (record) => {
+  try {
+    currentRecord.value = record
+    currentDocuments.value = await getApplicationDocuments(record.applicationId)
+    documentModalVisible.value = true
+  } catch (error) {
+    message.error('附件查詢失敗')
+  }
+}
+
+const openSupplementModal = (record) => {
+  currentRecord.value = record
+  supplementRemark.value = record.remark || '請補上財力證明文件'
+  supplementModalVisible.value = true
+}
+
+const handleNeedSupplement = async () => {
+  try {
+    await needSupplement(currentRecord.value.applicationId, supplementRemark.value)
+    message.success('已退回補件')
+    supplementModalVisible.value = false
+    await fetchData()
+  } catch (error) {
+    message.error('退回補件失敗')
+  }
+}
 
 onMounted(() => {
   fetchData()
@@ -225,6 +273,13 @@ onMounted(() => {
             {{ getApplicationStatusLabel(record.status) }}
           </div>
         </template>
+        <template v-else-if="column.key === 'documents'">
+          <a-button type="link" @click="openDocumentsModal(record)"> 查看附件 </a-button>
+        </template>
+
+        <template v-else-if="column.key === 'supplement'">
+          <a-button type="link" danger @click="openSupplementModal(record)"> 退回補件 </a-button>
+        </template>
 
         <!-- 查看明細 -->
         <template v-else-if="column.key === 'detail'">
@@ -251,6 +306,36 @@ onMounted(() => {
     >
       <a-input v-model:value="remarkInput" placeholder="請輸入備註" autofocus></a-input>
     </a-modal>
+    <a-modal
+  v-model:open="documentModalVisible"
+  title="財力證明附件"
+  :footer="null"
+>
+  <a-empty v-if="currentDocuments.length === 0" description="尚未上傳附件" />
+
+  <div v-else class="document-list">
+    <div v-for="doc in currentDocuments" :key="doc.documentId" class="document-item">
+      <a :href="getFileUrl(doc.fileUrl)" target="_blank">
+        {{ doc.fileName || doc.fileUrl }}
+      </a>
+      <div class="document-time">
+        補件時間：{{ formatDocumentTime(doc.uploadedAt) }}
+      </div>
+    </div>
+  </div>
+</a-modal>
+
+<a-modal
+  v-model:open="supplementModalVisible"
+  title="退回補件"
+  @ok="handleNeedSupplement"
+  @cancel="supplementModalVisible = false"
+>
+  <a-input
+    v-model:value="supplementRemark"
+    placeholder="請輸入補件原因，例如：請補上近三個月薪資單"
+  />
+</a-modal>
   </div>
 </template>
 
@@ -344,5 +429,33 @@ onMounted(() => {
 :deep(.ant-btn-link) {
   padding-inline: 0 !important;
 }
+.status-need_supplement {
+  background-color: rgba(22, 119, 255, 0.1);
+  color: #1677ff;
+}
 
+.status-need_supplement .status-dot {
+  background-color: #1677ff;
+}
+
+.document-list {
+  display: grid;
+  gap: 12px;
+}
+
+.document-item {
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border, #e5e7eb);
+}
+
+.document-item:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.document-time {
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 13px;
+}
 </style>

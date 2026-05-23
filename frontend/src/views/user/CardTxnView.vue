@@ -20,7 +20,13 @@
   {{
     `${card.cardTypeName || card.cardType?.cardTypeName || '信用卡'}
     - ${card.cardNumber}
-    ${card.status === 'ACTIVE' ? '🟢 已開卡' : '🔴 未開卡'}`
+    ${
+      card.status === 'ACTIVE'
+        ? '🟢 已開卡'
+        : card.status === 'BLOCKED'
+        ? '⛔ 已停卡'
+        : '🔴 未開卡'
+    }`
   }}
 </option>
           </select>
