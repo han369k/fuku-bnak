@@ -24,6 +24,14 @@ export async function createScheduledTransfer(data) {
 }
 
 /**
+ * 請求預約轉帳 OTP
+ */
+export async function requestScheduledTransferOtp() {
+  const res = await api.post(`${BASE}/otp`)
+  return res.data.data
+}
+
+/**
  * 取消預約轉帳
  * @param {Number} id - 預約轉帳 ID
  */

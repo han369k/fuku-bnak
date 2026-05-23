@@ -183,7 +183,7 @@ const showNoForeignModal = ref(false)
 const resultPrimaryText = computed(() => (resultStatus.value === 'error' ? '重新填寫' : '再換一筆'))
 
 const exchangeAccounts = computed(() =>
-  accounts.value.filter(a => a.status === 'ACTIVE' && a.accountType !== 'LOAN'),
+  accounts.value.filter(a => a.status === 'ACTIVE' && a.accountType !== 'LOAN' && a.accountType !== 'SUB_ACCOUNT'),
 )
 const selectedFromAccount = computed(() => exchangeAccounts.value.find(a => a.accountNumber === form.fromAccountNumber))
 const selectedToAccount = computed(() => exchangeAccounts.value.find(a => a.accountNumber === form.toAccountNumber))

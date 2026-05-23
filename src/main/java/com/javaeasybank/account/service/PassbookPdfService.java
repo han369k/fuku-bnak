@@ -49,7 +49,7 @@ public class PassbookPdfService {
 
         try {
             byte[] plainPdf = renderHtmlToPdf(buildHtml(account, profile));
-            return encryptPdf(plainPdf, customerId);
+            return encryptPdf(plainPdf, profile);
         } catch (Exception e) {
             throw new BusinessException("電子存摺 PDF 產生失敗");
         }
@@ -66,9 +66,12 @@ public class PassbookPdfService {
         return output.toByteArray();
     }
 
-    private byte[] encryptPdf(byte[] plainPdf, String customerId) throws Exception {
+    private byte[] encryptPdf(byte[] plainPdf, CustomerProfile profile) throws Exception {
         ByteArrayOutputStream encryptedOutput = new ByteArrayOutputStream();
-        byte[] ownerPassword = ("JAVA_BANK_PASSBOOK_" + customerId).getBytes(StandardCharsets.UTF_8);
+        
+        String idNumber = profile.getIdNumber();
+        String password = idNumber.length() >= 4 ? idNumber.substring(idNumber.length() - 4) : idNumber;
+        byte[] ownerPassword = password.getBytes(StandardCharsets.UTF_8);
         WriterProperties properties = new WriterProperties()
                 .setStandardEncryption(
                         new byte[0],

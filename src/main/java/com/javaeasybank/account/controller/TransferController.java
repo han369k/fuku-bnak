@@ -8,9 +8,11 @@ import com.javaeasybank.account.dto.response.ReversalResponse;
 import com.javaeasybank.account.dto.response.TransferBankResponse;
 import com.javaeasybank.account.dto.response.TransferResponse;
 import com.javaeasybank.account.enums.TransferBank;
+import com.javaeasybank.account.service.TransferOtpService;
 import com.javaeasybank.account.service.TransferService;
 import com.javaeasybank.common.dto.response.ApiResponse;
 import com.javaeasybank.common.util.JwtUtil;
+import java.util.Map;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +36,7 @@ import java.util.List;
 public class TransferController {
 
     private final TransferService transferService;
+    private final TransferOtpService transferOtpService;
     private final JwtUtil jwtUtil;
 
     /**
@@ -51,10 +54,25 @@ public class TransferController {
      * 客戶端：處理轉帳請求。
      */
     @PostMapping("/api/customer/transfers")
-    public ResponseEntity<ApiResponse<TransferResponse>> transfer(@Valid @RequestBody TransferRequest request) {
+    public ResponseEntity<ApiResponse<TransferResponse>> transfer(
+            @Valid @RequestBody TransferRequest request,
+            HttpServletRequest httpRequest) {
+        String customerId = jwtUtil.resolveCustomerId(httpRequest);
+        transferOtpService.verifyOtp(customerId, request.getOtp());
+
         log.info("Received transfer request from account: {} to account: {}", request.getFromAccountNumber(), request.getToAccountNumber());
         TransferResponse response = transferService.transfer(request);
         return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * 客戶端：請求發送轉帳 OTP。
+     */
+    @PostMapping("/api/customer/transfers/otp")
+    public ResponseEntity<ApiResponse<Map<String, String>>> requestTransferOtp(HttpServletRequest httpRequest) {
+        String customerId = jwtUtil.resolveCustomerId(httpRequest);
+        String otp = transferOtpService.generateAndSendOtp(customerId);
+        return ResponseEntity.ok(ApiResponse.success(Map.of("demoOtp", otp)));
     }
 
     /**

@@ -499,23 +499,33 @@ BEGIN
 END;
 
 IF NOT EXISTS (SELECT 1 FROM FAVORITE_ACCOUNT)
-INSERT INTO FAVORITE_ACCOUNT (customer_id, bank_code, account_number, alias, bank_name, created_at, updated_at)
-SELECT TOP (24)
-    customer_id,
-    CASE rn % 4 WHEN 0 THEN '808' WHEN 1 THEN '812' WHEN 2 THEN '700' ELSE '004' END,
-    CASE rn % 4
-        WHEN 0 THEN '808' + RIGHT(REPLICATE('0', 13) + CAST(7000000000 + rn AS VARCHAR(13)), 13)
-        WHEN 1 THEN '812' + RIGHT(REPLICATE('0', 13) + CAST(7000000000 + rn AS VARCHAR(13)), 13)
-        WHEN 2 THEN '700' + RIGHT(REPLICATE('0', 13) + CAST(7000000000 + rn AS VARCHAR(13)), 13)
-        ELSE '004' + RIGHT(REPLICATE('0', 13) + CAST(7000000000 + rn AS VARCHAR(13)), 13)
-    END,
-    N'常用轉帳對象',
-    CASE rn % 4 WHEN 0 THEN N'玉山商業銀行' WHEN 1 THEN N'台新國際商業銀行' WHEN 2 THEN N'中華郵政股份有限公司' ELSE N'臺灣銀行' END,
-    DATEADD(DAY, -120 + rn, CAST('2026-05-13 09:00:00' AS DATETIME2)),
-    CAST('2026-05-13 09:00:00' AS DATETIME2)
-FROM #customers
-WHERE status = 'ACTIVE'
-ORDER BY rn;
+BEGIN
+    INSERT INTO FAVORITE_ACCOUNT (customer_id, bank_code, account_number, alias, bank_name, created_at, updated_at)
+    SELECT TOP (24)
+        customer_id,
+        CASE rn % 4 WHEN 0 THEN '808' WHEN 1 THEN '812' WHEN 2 THEN '700' ELSE '004' END,
+        CASE rn % 4
+            WHEN 0 THEN '808' + RIGHT(REPLICATE('0', 13) + CAST(7000000000 + rn AS VARCHAR(13)), 13)
+            WHEN 1 THEN '812' + RIGHT(REPLICATE('0', 13) + CAST(7000000000 + rn AS VARCHAR(13)), 13)
+            WHEN 2 THEN '700' + RIGHT(REPLICATE('0', 13) + CAST(7000000000 + rn AS VARCHAR(13)), 13)
+            ELSE '004' + RIGHT(REPLICATE('0', 13) + CAST(7000000000 + rn AS VARCHAR(13)), 13)
+        END,
+        N'常用轉帳對象',
+        CASE rn % 4 WHEN 0 THEN N'玉山商業銀行' WHEN 1 THEN N'台新國際商業銀行' WHEN 2 THEN N'中華郵政股份有限公司' ELSE N'臺灣銀行' END,
+        DATEADD(DAY, -120 + rn, CAST('2026-05-13 09:00:00' AS DATETIME2)),
+        CAST('2026-05-13 09:00:00' AS DATETIME2)
+    FROM #customers
+    WHERE status = 'ACTIVE'
+    ORDER BY rn;
+
+    UPDATE FAVORITE_ACCOUNT
+    SET bank_code = '822',
+        account_number = '820991991',
+        bank_name = N'中國信託商業銀行',
+        created_at = CAST('2026-01-14 09:00:00' AS DATETIME2),
+        updated_at = CAST('2026-01-14 09:00:00' AS DATETIME2)
+    WHERE customer_id = 'Q8M4T7K2';
+END;
 
 SELECT
     ROW_NUMBER() OVER (ORDER BY account_number) AS tx_rn,

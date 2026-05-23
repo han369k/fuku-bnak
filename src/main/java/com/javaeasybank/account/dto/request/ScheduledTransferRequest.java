@@ -29,4 +29,7 @@ public class ScheduledTransferRequest {
     private String scheduledDate;
 
     private String note;
+
+    @NotBlank(message = "OTP 驗證碼不可為空")
+    private String otp;
 }

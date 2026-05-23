@@ -1,9 +1,12 @@
 <template>
   <div class="transfer-page">
     <h2>轉帳匯款</h2>
-    <a-button type="primary" class="rounded-btn" style="margin-bottom: 20px;" @click="demoTransfer">示範轉帳1000</a-button>
+    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+      <a-button type="primary" class="rounded-btn" style="margin-bottom: 0 !important;" @click="demoTransfer">示範轉帳1000</a-button>
+      <a-button type="primary" danger class="rounded-btn" style="margin-bottom: 0 !important;" @click="riskTestTransfer">連續轉帳測試 (觸發風險)</a-button>
+    </div>
 
-    <a-card class="transfer-form-card">
+    <a-card class="transfer-form-card" v-show="step === 'form'">
       <a-form :model="form" layout="vertical" @finish="handleTransfer">
         <a-form-item
           label="轉出帳戶"
@@ -102,33 +105,47 @@
 
         <a-form-item>
           <a-button type="primary" html-type="submit" :loading="submitting" block size="large">
-            確認轉帳
+            下一步 (發送驗證碼)
+          </a-button>
+          <a-button @click="handleTransferBypassOtp" :loading="submitting" block size="large" style="margin-top: 10px;">
+            直接轉帳 (免驗證碼)
           </a-button>
         </a-form-item>
       </a-form>
     </a-card>
 
-    <transition name="modal-fade">
-      <div v-if="showResult" class="jb-modal-overlay">
-        <div class="jb-modal transfer-result-modal" role="dialog" aria-modal="true">
-          <h3 class="jb-modal-title">{{ resultTitle }}</h3>
-          <p class="jb-modal-content">{{ resultSub }}</p>
-          <div class="jb-modal-actions">
-            <button type="button" class="jb-btn jb-btn-primary" @click="resetForm">
-              {{ resultPrimaryText }}
-            </button>
-            <button
-              v-if="resultStatus !== 'error'"
-              type="button"
-              class="jb-btn jb-btn-secondary"
-              @click="$router.push({ name: 'user-transactions' })"
-            >
-              查看紀錄
-            </button>
-          </div>
-        </div>
+    <a-modal v-model:open="showOtpModal" title="OTP 驗證碼" :footer="null" :closable="false" :maskClosable="false">
+      <p>系統已發送一封包含 6 位數 OTP 驗證碼的信件至您的電子信箱，請輸入該驗證碼以完成轉帳交易。</p>
+      <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+        <a-input v-model:value="otpCode" placeholder="請輸入 6 位數 OTP" :maxlength="6" />
+        <a-button @click="fillDemoOtp" type="dashed">一鍵帶入剛寄出的 OTP</a-button>
       </div>
-    </transition>
+      <a-button type="primary" :loading="submitting" @click="submitOtpAndTransfer" block size="large">
+        驗證並送出轉帳
+      </a-button>
+      <a-button type="link" @click="cancelOtp" block style="margin-top: 10px;">
+        取消並回上一步修改
+      </a-button>
+    </a-modal>
+
+    <a-card v-if="step === 'success'" class="transfer-form-card result-card">
+      <div class="result-icon">
+        <check-circle-filled style="color: #5b6b55; font-size: 64px;" />
+      </div>
+      <h3 class="result-title">{{ resultTitle }}</h3>
+      <p class="result-message">{{ resultSub }}</p>
+      
+      <div class="result-actions">
+        <a-button type="primary" size="large" @click="resetForm" style="min-width: 140px;">
+          {{ resultPrimaryText }}
+        </a-button>
+        <a-button size="large" @click="$router.push({ name: 'user-transactions' })" style="min-width: 140px;">
+          查看紀錄
+        </a-button>
+      </div>
+    </a-card>
+
+
 
     <a-modal v-model:open="showFavorites" title="常用帳號" :footer="null" width="500px">
       <div v-if="favorites.length === 0 && !favLoading" class="empty-favorites">
@@ -152,7 +169,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { message } from 'ant-design-vue'
-import { getMyAccounts, doTransfer, getTransferBanks } from '@/api/customerAccount'
+import { CheckCircleFilled } from '@ant-design/icons-vue'
+import { getMyAccounts, doTransfer, getTransferBanks, requestTransferOtp } from '@/api/customerAccount'
 import { getFavoriteAccounts } from '@/api/favoriteAccount'
 
 const JAVA_BANK_CODE = '909'
@@ -172,8 +190,13 @@ const favorites = ref([])
 const favLoading = ref(false)
 const bankLoading = ref(false)
 const submitting = ref(false)
-const showResult = ref(false)
 const showFavorites = ref(false)
+const showOtpModal = ref(false)
+
+const step = ref('form') // 'form', 'success'
+const otpCode = ref('')
+const demoOtp = ref('')
+
 const resultStatus = ref('success')
 const resultTitle = ref('')
 const resultSub = ref('')
@@ -327,34 +350,66 @@ async function handleTransfer() {
 
   submitting.value = true
   try {
+    const res = await requestTransferOtp()
+    demoOtp.value = res.demoOtp
+    otpCode.value = ''
+    showOtpModal.value = true
+    message.success('已發送 OTP 驗證碼至您的信箱')
+  } catch (e) {
+    message.error(e?.response?.data?.message || '發送 OTP 失敗')
+  } finally {
+    submitting.value = false
+  }
+}
+
+function fillDemoOtp() {
+  if (demoOtp.value) {
+    otpCode.value = demoOtp.value
+    message.success('已帶入驗證碼')
+  } else {
+    message.warning('尚未獲取到驗證碼')
+  }
+}
+
+function cancelOtp() {
+  showOtpModal.value = false
+  otpCode.value = ''
+  demoOtp.value = ''
+}
+
+async function submitOtpAndTransfer() {
+  if (!otpCode.value || otpCode.value.length !== 6) {
+    message.error('請輸入 6 位數 OTP')
+    return
+  }
+
+  submitting.value = true
+  try {
     const result = await doTransfer({
       fromAccountNumber: form.value.fromAccount,
       toBankCode: form.value.toBankCode,
       toAccountNumber: form.value.toAccount,
       amount: form.value.amount,
       note: form.value.note || undefined,
+      otp: otpCode.value
     })
     await loadAccounts()
     onFromChange(form.value.fromAccount)
     if (result && result.pending) {
-      // 狀態為審核中
-      resultStatus.value = 'warning' // 使用黃色警告樣式
+      resultStatus.value = 'warning'
       resultTitle.value = '轉帳審核中'
       resultSub.value =
         result.pendingReason ||
         '您的轉帳交易已妥善受理。為保障您的帳戶資金安全，系統正進行例行的安全覆核程序，詳細的覆核進度已同步寄送至您的電子信箱。您無須重複送出申請，稍後亦可至「交易明細」查詢最終結果。'
     } else {
-      // 狀態為正常成功
       resultStatus.value = 'success'
       resultTitle.value = '轉帳成功'
       resultSub.value = `已成功轉帳 ${formatNum(result.amount || form.value.amount)} TWD 至 ${selectedBank.value.name} ${form.value.toAccount}，預計扣款 ${formatNum(result.totalDebitAmount || totalDebitAmount.value)} TWD`
     }
-    showResult.value = true
+    showOtpModal.value = false
+    step.value = 'success'
   } catch (e) {
-    resultStatus.value = 'error'
-    resultTitle.value = '轉帳失敗'
-    resultSub.value = e?.response?.data?.message || '系統錯誤，請稍後再試'
-    showResult.value = true
+    message.error(e?.response?.data?.message || '系統錯誤，轉帳失敗')
   } finally {
     submitting.value = false
   }
@@ -374,8 +429,42 @@ function demoTransfer() {
   }
 }
 
+async function riskTestTransfer() {
+  const checkingAccount = twdAccounts.value.find(a => a.accountType === 'CHECKING') || twdAccounts.value[0]
+  if (!checkingAccount) {
+    message.warning('目前沒有可用的帳號供示範')
+    return
+  }
+  const fromAcc = checkingAccount.accountNumber
+  const targetAcc = '090483761205' // Hardcoded target
+  
+  submitting.value = true
+  message.loading({ content: '正在執行連續 3 次 1000 元轉帳...', key: 'riskTest' })
+  try {
+    for (let i = 0; i < 3; i++) {
+      await doTransfer({
+        fromAccountNumber: fromAcc,
+        toBankCode: JAVA_BANK_CODE,
+        toAccountNumber: targetAcc,
+        amount: 1000,
+        note: '連續轉帳測試',
+        otp: '000000'
+      })
+    }
+    message.success({ content: '連續轉帳完成！', key: 'riskTest' })
+    await loadAccounts()
+    onFromChange(form.value.fromAccount)
+  } catch (e) {
+    message.error({ content: e?.response?.data?.message || '轉帳失敗', key: 'riskTest' })
+  } finally {
+    submitting.value = false
+  }
+}
+
 function resetForm() {
-  showResult.value = false
+  step.value = 'form'
+  otpCode.value = ''
+  demoOtp.value = ''
   form.value = {
     fromAccount: form.value.fromAccount,
     toBankCode: JAVA_BANK_CODE,
@@ -657,11 +746,49 @@ h2 {
     font-size: 15px;
   }
 
-  .jb-modal-actions {
+  .jb-modal-actions .jb-btn {
+    width: 100%;
+  }
+}
+
+.result-card {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.result-icon {
+  margin-bottom: 24px;
+}
+
+.result-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+  font-family: var(--font-heading);
+}
+
+.result-message {
+  font-size: 16px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 32px;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.result-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+
+@media (max-width: 640px) {
+  .result-actions {
     flex-direction: column;
   }
-
-  .jb-modal-actions .jb-btn {
+  .result-actions .ant-btn {
     width: 100%;
   }
 }

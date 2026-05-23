@@ -4,7 +4,7 @@
     <a-button type="primary" class="rounded-btn" style="margin-bottom: 20px;" @click="demoScheduledTransfer">示範預約1000</a-button>
 
     <!-- 新增預約 -->
-    <a-card class="form-card" title="新增預約轉帳">
+    <a-card class="form-card" title="新增預約轉帳" v-show="step === 'form'">
       <a-form :model="form" layout="vertical" @finish="handleCreate">
         <div class="scheduled-form-grid">
           <div class="form-field from-account-field">
@@ -64,10 +64,38 @@
 
         <a-form-item>
           <a-button type="primary" html-type="submit" :loading="creating" size="large">
-            建立預約
+            {{ step === 'otp' ? '建立預約' : '下一步 (發送驗證碼)' }}
           </a-button>
         </a-form-item>
       </a-form>
+    </a-card>
+
+    <a-modal v-model:open="showOtpModal" title="OTP 驗證碼" :footer="null" :closable="false" :maskClosable="false">
+      <p>系統已發送一封包含 6 位數 OTP 驗證碼的信件至您的電子信箱，請輸入該驗證碼以完成預約轉帳設定。</p>
+      <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+        <a-input v-model:value="otpCode" placeholder="請輸入 6 位數 OTP" :maxlength="6" />
+        <a-button @click="fillDemoOtp" type="dashed">一鍵帶入剛寄出的 OTP</a-button>
+      </div>
+      <a-button type="primary" :loading="creating" @click="submitOtpAndCreate" block size="large">
+        驗證並送出預約
+      </a-button>
+      <a-button type="link" @click="cancelOtp" block style="margin-top: 10px;">
+        取消並回上一步修改
+      </a-button>
+    </a-modal>
+
+    <a-card v-if="step === 'success'" class="form-card result-card" style="margin-top: 20px;">
+      <div class="result-icon">
+        <check-circle-filled style="color: #5b6b55; font-size: 64px;" />
+      </div>
+      <h3 class="result-title">預約轉帳建立成功</h3>
+      <p class="result-message">您的預約轉帳已成功設定，將於 {{ form.scheduledDate ? form.scheduledDate.format('YYYY-MM-DD') : '' }} 執行轉帳。</p>
+      
+      <div class="result-actions">
+        <a-button type="primary" size="large" @click="resetForm" style="min-width: 140px;">
+          再建立一筆
+        </a-button>
+      </div>
     </a-card>
 
     <!-- 預約列表 -->
@@ -155,9 +183,10 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
+import { CheckCircleFilled } from '@ant-design/icons-vue'
 import dayjs from 'dayjs'
 import { getMyAccounts, getTransferBanks } from '@/api/customerAccount'
-import { getScheduledTransfers, createScheduledTransfer, cancelScheduledTransfer } from '@/api/scheduledTransfer'
+import { getScheduledTransfers, createScheduledTransfer, cancelScheduledTransfer, requestScheduledTransferOtp } from '@/api/scheduledTransfer'
 import { getFavoriteAccounts } from '@/api/favoriteAccount'
 
 const JAVA_BANK_CODE = '909'
@@ -173,9 +202,14 @@ const creating = ref(false)
 const favLoading = ref(false)
 const bankLoading = ref(false)
 const showFavPicker = ref(false)
+const showOtpModal = ref(false)
+
+const step = ref('form') // 'form', 'success'
+const otpCode = ref('')
+const demoOtp = ref('')
 
 const twdAccounts = computed(() =>
-  accounts.value.filter(a => a.currency === 'TWD' && a.status === 'ACTIVE' && a.accountType !== 'LOAN')
+  accounts.value.filter(a => a.currency === 'TWD' && a.status === 'ACTIVE' && a.accountType !== 'LOAN' && a.accountType !== 'SUB_ACCOUNT')
 )
 const bankSelectOptions = computed(() =>
   banks.value.map((bank) => ({
@@ -228,6 +262,42 @@ async function handleCreate() {
     message.error('轉出與轉入帳戶不可相同')
     return
   }
+
+  creating.value = true
+  try {
+    const res = await requestScheduledTransferOtp()
+    demoOtp.value = res.demoOtp
+    otpCode.value = ''
+    showOtpModal.value = true
+    message.success('已發送 OTP 驗證碼至您的信箱')
+  } catch (e) {
+    message.error(e?.response?.data?.message || '發送 OTP 失敗')
+  } finally {
+    creating.value = false
+  }
+}
+
+function fillDemoOtp() {
+  if (demoOtp.value) {
+    otpCode.value = demoOtp.value
+    message.success('已帶入驗證碼')
+  } else {
+    message.warning('尚未獲取到驗證碼')
+  }
+}
+
+function cancelOtp() {
+  showOtpModal.value = false
+  otpCode.value = ''
+  demoOtp.value = ''
+}
+
+async function submitOtpAndCreate() {
+  if (!otpCode.value || otpCode.value.length !== 6) {
+    message.error('請輸入 6 位數 OTP')
+    return
+  }
+
   creating.value = true
   try {
     await createScheduledTransfer({
@@ -237,15 +307,24 @@ async function handleCreate() {
       amount: form.value.amount,
       scheduledDate: form.value.scheduledDate?.format('YYYY-MM-DD'),
       note: form.value.note || undefined,
+      otp: otpCode.value
     })
     message.success('預約轉帳建立成功')
-    form.value = { fromAccount: form.value.fromAccount, toBankCode: JAVA_BANK_CODE, toAccount: '', amount: null, scheduledDate: null, note: '' }
+    showOtpModal.value = false
+    step.value = 'success'
     await loadSchedules()
   } catch (e) {
     message.error(e?.response?.data?.message || '建立失敗')
   } finally {
     creating.value = false
   }
+}
+
+function resetForm() {
+  step.value = 'form'
+  otpCode.value = ''
+  demoOtp.value = ''
+  form.value = { fromAccount: form.value.fromAccount, toBankCode: JAVA_BANK_CODE, toAccount: '', amount: null, scheduledDate: null, note: '' }
 }
 
 async function handleCancel(id) {
@@ -604,6 +683,48 @@ h2 {
   }
 
   .account-input-row :deep(.ant-btn) {
+    width: 100%;
+  }
+}
+
+.result-card {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.result-icon {
+  margin-bottom: 24px;
+}
+
+.result-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+  font-family: var(--font-heading);
+}
+
+.result-message {
+  font-size: 16px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 32px;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.result-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+
+@media (max-width: 640px) {
+  .result-actions {
+    flex-direction: column;
+  }
+  .result-actions .ant-btn {
     width: 100%;
   }
 }
