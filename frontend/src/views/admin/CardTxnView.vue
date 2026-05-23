@@ -21,14 +21,22 @@ const txnTypeOptions = [
   { label: '全部', value: null },
   { label: '消費', value: 'PURCHASE' },
   { label: '刷退', value: 'REFUND' },
+  { label: '年費', value: 'ANNUAL_FEE' },
 ]
 
 const txnTypeLabelMap = {
   PURCHASE: '消費',
   REFUND: '刷退',
+  ANNUAL_FEE: '年費',
 }
 
 const getTxnTypeLabel = (typeValue) => txnTypeLabelMap[typeValue] || typeValue
+
+const getTxnTypeColor = (typeValue) => {
+  if (typeValue === 'REFUND') return 'red'
+  if (typeValue === 'ANNUAL_FEE') return 'gold'
+  return 'blue'
+}
 
 const columns = [
   {
@@ -257,7 +265,7 @@ onMounted(() => {
 
           <!-- 類型 -->
           <template v-else-if="column.dataIndex === 'txnType'">
-            <a-tag :color="record.txnType === 'REFUND' ? 'red' : 'blue'">
+            <a-tag :color="getTxnTypeColor(record.txnType)">
               {{ getTxnTypeLabel(record.txnType) }}
             </a-tag>
           </template>
@@ -266,6 +274,10 @@ onMounted(() => {
           <template v-else-if="column.key === 'action'">
             <template v-if="record.txnType === 'REFUND'">
               <a-tag color="red"> 刷退交易 </a-tag>
+            </template>
+
+            <template v-else-if="record.txnType === 'ANNUAL_FEE'">
+              <a-tag color="gold">年費</a-tag>
             </template>
 
             <template v-else-if="isRefunded(record)">

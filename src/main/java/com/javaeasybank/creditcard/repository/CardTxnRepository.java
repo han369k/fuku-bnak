@@ -7,11 +7,14 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import com.javaeasybank.creditcard.entity.CardTransaction;
+import com.javaeasybank.creditcard.enums.TxnType;
 
 public interface CardTxnRepository
                 extends JpaRepository<CardTransaction, Integer>, JpaSpecificationExecutor<CardTransaction> {
 
         boolean existsByRefTxn_TxnId(Integer txnId);
+
+        boolean existsByCard_CardIdAndTxnType(Integer cardId, TxnType txnType);
 
         Page<CardTransaction> findByCard_Customer_CustomerId(String customerId, Pageable pageable);
 
