@@ -88,7 +88,7 @@ public enum TransferBank {
     NEXT_BANK("823", "將來商業銀行"),
     LINE_BANK("824", "連線商業銀行"),
     RAKUTEN_BANK("826", "樂天國際商業銀行"),
-    JVB("909", "爪哇銀行"),
+    JVB("909", "福庫銀行"),
     SOUTH_FARMER_FISHER_INFO("952", "財團法人農漁會南區資訊中心"),
     TRADE_VAN("995", "關貿網路股份有限公司"),
     NATIONAL_TREASURY("996", "財政部國庫署"),
