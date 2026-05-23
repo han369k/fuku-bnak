@@ -1,5 +1,6 @@
 <template>
   <div class="transfer-page">
+    <h2>轉帳匯款</h2>
     <a-button type="primary" class="rounded-btn" style="margin-bottom: 20px;" @click="demoTransfer">示範轉帳1000</a-button>
 
     <a-card class="transfer-form-card">
@@ -107,14 +108,27 @@
       </a-form>
     </a-card>
 
-    <a-modal v-model:open="showResult" title="轉帳結果" :footer="null" @cancel="resetForm">
-      <a-result :status="resultStatus" :title="resultTitle" :sub-title="resultSub">
-        <template #extra>
-          <a-button type="primary" @click="resetForm">再轉一筆</a-button>
-          <a-button @click="$router.push({ name: 'user-transactions' })">查看紀錄</a-button>
-        </template>
-      </a-result>
-    </a-modal>
+    <transition name="modal-fade">
+      <div v-if="showResult" class="jb-modal-overlay">
+        <div class="jb-modal transfer-result-modal" role="dialog" aria-modal="true">
+          <h3 class="jb-modal-title">{{ resultTitle }}</h3>
+          <p class="jb-modal-content">{{ resultSub }}</p>
+          <div class="jb-modal-actions">
+            <button type="button" class="jb-btn jb-btn-primary" @click="resetForm">
+              {{ resultPrimaryText }}
+            </button>
+            <button
+              v-if="resultStatus !== 'error'"
+              type="button"
+              class="jb-btn jb-btn-secondary"
+              @click="$router.push({ name: 'user-transactions' })"
+            >
+              查看紀錄
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
 
     <a-modal v-model:open="showFavorites" title="常用帳號" :footer="null" width="500px">
       <div v-if="favorites.length === 0 && !favLoading" class="empty-favorites">
@@ -142,7 +156,7 @@ import { getMyAccounts, doTransfer, getTransferBanks } from '@/api/customerAccou
 import { getFavoriteAccounts } from '@/api/favoriteAccount'
 
 const JAVA_BANK_CODE = '909'
-const fallbackBanks = [{ code: JAVA_BANK_CODE, name: '爪哇銀行', label: '爪哇銀行 909' }]
+const fallbackBanks = [{ code: JAVA_BANK_CODE, name: '福庫銀行', label: '福庫銀行 909' }]
 
 const route = useRoute()
 const form = ref({
@@ -194,11 +208,12 @@ const toAccountPlaceholder = computed(() =>
 const bankSelectOptions = computed(() =>
   banks.value.map((bank) => ({
     value: bank.code,
-    label: `${bank.name} ${bank.code}`,
+    label: bankOptionLabel(bank),
     name: bank.name,
     code: bank.code,
   })),
 )
+const resultPrimaryText = computed(() => (resultStatus.value === 'error' ? '重新填寫' : '再轉一筆'))
 
 onMounted(async () => {
   await Promise.all([loadAccounts(), loadBanks()])
@@ -267,8 +282,16 @@ function selectFavorite(item) {
 }
 
 function favoriteDescription(item) {
-  const bank = item.bankName ? `${item.bankName} ${item.bankCode || ''}`.trim() : item.bankCode
+  const bank = bankDisplayName(item)
   return bank ? `${bank} ${item.accountNumber}` : item.accountNumber
+}
+
+function bankOptionLabel(bank) {
+  return bank.label || `${bank.name} ${bank.code}`
+}
+
+function bankDisplayName(item) {
+  return item.bankName ? `${item.bankName} ${item.bankCode || ''}`.trim() : item.bankCode
 }
 
 function parseAmountInput(value) {
@@ -387,8 +410,16 @@ function transferAccountLabel(account) {
 }
 
 h2 {
-  margin-bottom: 20px;
+  margin-bottom: 22px;
   color: var(--text-primary);
+  font-family: var(--font-heading);
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.transfer-page > .rounded-btn {
+  margin-bottom: 22px !important;
 }
 
 .transfer-form-card {
@@ -396,6 +427,55 @@ h2 {
   background: rgba(255, 249, 239, 0.92);
   border: 1px solid rgba(214, 206, 195, 0.86);
   box-shadow: 0 12px 36px rgba(63, 74, 66, 0.08);
+}
+
+.transfer-form-card :deep(.ant-card-body) {
+  padding: 28px;
+}
+
+.transfer-form-card :deep(.ant-form-item) {
+  margin-bottom: 22px;
+}
+
+.transfer-form-card :deep(.ant-form-item-label) {
+  padding-bottom: 8px;
+}
+
+.transfer-form-card :deep(.ant-form-item-label > label) {
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.transfer-form-card :deep(.ant-input),
+.transfer-form-card :deep(.ant-input-number),
+.transfer-form-card :deep(.ant-select-selector) {
+  min-height: 48px;
+  font-size: 16px;
+}
+
+.transfer-form-card :deep(.ant-input),
+.transfer-form-card :deep(.ant-input-number-input),
+.transfer-form-card :deep(.ant-select-selection-item),
+.transfer-form-card :deep(.ant-select-selection-placeholder) {
+  font-size: 16px;
+}
+
+.transfer-form-card :deep(.ant-select-single .ant-select-selector) {
+  align-items: center;
+}
+
+.transfer-form-card :deep(.ant-select-arrow) {
+  font-size: 16px;
+}
+
+.transfer-form-card :deep(.ant-btn) {
+  min-height: 44px;
+  font-size: 16px;
+}
+
+.transfer-form-card :deep(.ant-btn-lg) {
+  min-height: 48px;
+  font-size: 16px;
 }
 
 .account-input-row {
@@ -408,15 +488,16 @@ h2 {
 }
 
 .hint {
-  margin-top: 4px;
-  font-size: 12px;
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.5;
   color: var(--text-secondary);
 }
 
 .fee-preview {
   display: grid;
-  gap: 8px;
-  margin: 0 0 24px;
+  gap: 10px;
+  margin: 0 0 22px;
   padding: 16px;
   border: 1px solid rgba(214, 206, 195, 0.86);
   border-radius: 8px;
@@ -428,7 +509,7 @@ h2 {
   align-items: center;
   justify-content: space-between;
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: 15px;
 }
 
 .fee-row strong {
@@ -444,7 +525,7 @@ h2 {
 
 .fee-row.total strong {
   color: var(--primary-dark);
-  font-size: 16px;
+  font-size: 17px;
 }
 
 .empty-favorites {
@@ -453,13 +534,121 @@ h2 {
   padding: 32px 20px;
 }
 
+.jb-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(43, 43, 43, 0.4);
+  backdrop-filter: blur(4px);
+}
+
+.jb-modal {
+  width: min(90vw, 520px);
+  padding: 48px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  text-align: center;
+  background: rgba(255, 249, 239, 0.96);
+  border: 1px solid rgba(214, 206, 195, 0.86);
+  border-radius: 12px;
+  box-shadow: 0 12px 36px rgba(63, 74, 66, 0.12);
+}
+
+.transfer-result-modal {
+  min-height: 300px;
+  justify-content: center;
+}
+
+.jb-modal-title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--text-primary);
+}
+
+.jb-modal-content {
+  margin: 0;
+  white-space: pre-line;
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--text-secondary);
+}
+
+.jb-modal-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.jb-modal-actions .jb-btn {
+  min-width: 136px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition: opacity 0.2s var(--ease);
+}
+
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+  opacity: 0;
+}
+
 @media (max-width: 640px) {
   .transfer-page {
     padding: 16px 0;
   }
 
+  h2 {
+    font-size: 34px;
+    margin-bottom: 20px;
+  }
+
   .account-input-row {
     flex-direction: column;
+  }
+
+  .transfer-form-card :deep(.ant-card-body) {
+    padding: 20px 16px;
+  }
+
+  .transfer-form-card :deep(.ant-form-item-label > label),
+  .transfer-form-card :deep(.ant-input),
+  .transfer-form-card :deep(.ant-input-number-input),
+  .transfer-form-card :deep(.ant-select-selection-item),
+  .transfer-form-card :deep(.ant-select-selection-placeholder) {
+    font-size: 15px;
+  }
+
+  .jb-modal {
+    width: 100%;
+    padding: 36px 20px;
+  }
+
+  .jb-modal-title {
+    font-size: 22px;
+  }
+
+  .jb-modal-content {
+    font-size: 15px;
+  }
+
+  .jb-modal-actions {
+    flex-direction: column;
+  }
+
+  .jb-modal-actions .jb-btn {
+    width: 100%;
   }
 }
 </style>
