@@ -16,7 +16,7 @@ export async function getScheduledTransfers() {
 
 /**
  * 建立預約轉帳
- * @param {Object} data - { fromAccountNumber, toAccountNumber, amount, scheduledDate, note }
+ * @param {Object} data - { fromAccountNumber, toBankCode, toAccountNumber, amount, scheduledDate, note }
  */
 export async function createScheduledTransfer(data) {
   const res = await api.post(BASE, data)
