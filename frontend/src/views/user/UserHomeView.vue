@@ -20,7 +20,7 @@
         </svg>
       </div>
       <div class="onboard-content">
-        <h2 class="onboard-title">歡迎加入 Java Easy Bank</h2>
+        <h2 class="onboard-title">歡迎加入福庫銀行</h2>
         <p class="onboard-desc">
           您尚未擁有任何帳戶。立即申請開戶，即可享有存款、轉帳、換匯等完整金融服務。
         </p>
