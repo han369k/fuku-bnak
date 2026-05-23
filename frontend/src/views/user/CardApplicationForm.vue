@@ -32,12 +32,13 @@ const applicationRows = computed(() =>
   applications.value.flatMap((app) => {
     if (!app.items?.length) return [app]
 
-    return app.items.map((item) => ({
+    return app.items.map((item, index) => ({
       ...app,
       ...item,
       rowKey: `${app.applicationId}-${item.itemId}`,
       itemResult: item.result,
       remark: app.remark,
+      canUploadSupplement: index === 0,
     }))
   }),
 )
@@ -391,7 +392,7 @@ onBeforeUnmount(() => {
                 </span>
                 <span v-else-if="column.key === 'document'">
                   <button
-                  v-if="app.status === 'NEED_SUPPLEMENT'"  
+                  v-if="app.status === 'NEED_SUPPLEMENT' && app.canUploadSupplement !== false"  
                   class="jb-btn jb-btn-secondary jb-btn-sm"
                     type="button"
                     @click="openUploadModal(app)"
