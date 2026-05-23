@@ -8,7 +8,7 @@
   >
     <img
       src="/logo.png"
-      alt="Java Bank Logo"
+      alt="福庫銀行 Logo"
       class="jb-logo-img"
       draggable="false"
     />
