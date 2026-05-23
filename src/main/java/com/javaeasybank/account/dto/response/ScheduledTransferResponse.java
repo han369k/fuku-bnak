@@ -13,6 +13,8 @@ public class ScheduledTransferResponse {
 
     private Long id;
     private String fromAccountNumber;
+    private String toBankCode;
+    private String toBankName;
     private String toAccountNumber;
     private BigDecimal amount;
     private String scheduledDate;
@@ -28,6 +30,8 @@ public class ScheduledTransferResponse {
         return ScheduledTransferResponse.builder()
                 .id(entity.getId())
                 .fromAccountNumber(entity.getFromAccountNumber())
+                .toBankCode(entity.getToBankCode())
+                .toBankName(entity.getToBankName())
                 .toAccountNumber(entity.getToAccountNumber())
                 .amount(entity.getAmount())
                 .scheduledDate(entity.getScheduledDate() != null ? entity.getScheduledDate().toString() : null)
