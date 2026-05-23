@@ -12,30 +12,79 @@
       </div>
 
       <div class="form-grid">
-        <label class="field-shell select-shell">
-          <span class="field-label">信用卡</span>
-          <select v-model="form.cardId" class="field-control">
-            <option disabled value="">請選擇信用卡</option>
-            <option v-for="card in cards" :key="card.cardId" :value="card.cardId">
-  {{
-    `${card.cardTypeName || card.cardType?.cardTypeName || '信用卡'}
-    - ${card.cardNumber}
-    ${
-      card.status === 'ACTIVE'
-        ? '🟢 已開卡'
-        : card.status === 'BLOCKED'
-        ? '⛔ 已停卡'
-        : '🔴 未開卡'
-    }`
-  }}
-</option>
-          </select>
+        <!-- 卡號 -->
+        <div class="card-number-block">
+          <label class="field-shell card-number-field">
+            <span class="field-label">卡號</span>
+            <input
+              v-model="form.cardNumber"
+              class="field-control card-number-input"
+              inputmode="numeric"
+              maxlength="19"
+              placeholder="輸入卡號開頭"
+              autocomplete="off"
+              @input="formatCardNumberInput"
+            />
+          </label>
+
+          <div v-if="cardPickerCards.length" class="card-picker" aria-label="可選擇卡片">
+            <button
+              v-for="card in cardPickerCards"
+              :key="card.cardId"
+              type="button"
+              class="card-option"
+              :class="{ selected: form.cardId === card.cardId }"
+              :disabled="card.status !== 'ACTIVE'"
+              @click="selectCard(card)"
+            >
+              <span class="card-option-name">{{ getCardName(card) }}</span>
+              <span class="card-option-number">{{
+                formatCardNumberDisplay(getDisplayCardNumber(card))
+              }}</span>
+              <span class="card-option-status">{{ getCardStatusText(card.status) }}</span>
+            </button>
+          </div>
+
+          <p v-else-if="cardSearchDigits" class="card-picker-empty">沒有符合開頭的卡片</p>
+        </div>
+
+        <!-- 有效日期 -->
+        <label class="field-shell">
+          <span class="field-label">有效日期</span>
+          <input
+            v-model="form.expiryDate"
+            class="field-control"
+            maxlength="5"
+            placeholder="MM/YY"
+            @input="formatExpiryInput"
+          />
         </label>
 
+        <!-- 持卡人 -->
+        <label class="field-shell">
+          <span class="field-label">持卡人</span>
+          <input v-model="form.cardHolderName" class="field-control" placeholder="請輸入姓名" />
+        </label>
+
+        <!-- CVV -->
+        <label class="field-shell">
+          <span class="field-label">CVV</span>
+          <input
+            v-model="form.cvv"
+            class="field-control"
+            inputmode="numeric"
+            maxlength="3"
+            placeholder="自動產生"
+            @input="formatCvvInput"
+          />
+        </label>
+
+        <!-- 商家 -->
         <label class="field-shell select-shell">
           <span class="field-label">商家</span>
           <select v-model="form.merchantId" class="field-control">
             <option disabled value="">請選擇商家</option>
+
             <option
               v-for="merchant in merchants"
               :key="merchant.merchantId"
@@ -46,6 +95,7 @@
           </select>
         </label>
 
+        <!-- 金額 -->
         <label class="field-shell">
           <span class="field-label">金額</span>
           <input
@@ -57,15 +107,19 @@
           />
         </label>
 
+        <!-- 類型 -->
         <label class="field-shell select-shell">
           <span class="field-label">交易類型</span>
+
           <select v-model="form.txnType" class="field-control">
             <option value="PURCHASE">一般消費</option>
           </select>
         </label>
 
+        <!-- 備註 -->
         <label class="field-shell textarea-shell">
-          <span class="field-label">備註</span>
+          <span class="field-label">商品</span>
+
           <textarea
             v-model="form.description"
             class="field-control"
@@ -79,12 +133,14 @@
         <button type="button" class="primary-action" @click="handleCreateTransaction">
           新增刷卡交易
         </button>
+
         <button type="button" class="linepay-action" @click="handleLinePay">
           使用 LINE Pay 付款
         </button>
       </div>
     </section>
 
+    <!-- 交易紀錄 -->
     <section class="transactions-panel" aria-label="刷卡交易紀錄">
       <div class="transactions-header">
         <h3>刷卡交易紀錄</h3>
@@ -97,6 +153,7 @@
             <tr>
               <th>交易日期</th>
               <th>商家</th>
+              <th>商品 / 備註</th>
               <th>卡號</th>
               <th class="align-right">交易金額</th>
               <th class="align-right">回饋金額</th>
@@ -104,18 +161,34 @@
               <th>狀態</th>
             </tr>
           </thead>
+
           <tbody v-if="transactions.length">
             <tr v-for="txn in transactions" :key="txn.txnId">
-              <td class="mono-cell">{{ formatDate(txn.txnDate) }}</td>
+              <td class="mono-cell">
+                {{ formatDate(txn.txnDate) }}
+              </td>
+
               <td>{{ txn.merchantName || '-' }}</td>
-              <td class="mono-cell">{{ txn.cardNumber || '-' }}</td>
-              <td class="amount-cell debit">{{ formatMoney(txn.txnAmount) }}</td>
+              <td class="description-cell">
+                {{ txn.description || '-' }}
+              </td>
+
+              <td class="mono-cell">
+                {{ txn.cardNumber || '-' }}
+              </td>
+
+              <td class="amount-cell debit">
+                {{ formatMoney(txn.txnAmount) }}
+              </td>
+
               <td class="amount-cell credit">+{{ formatMoney(txn.cashbackAmount) }}</td>
+
               <td>
                 <span class="type-pill" :class="txn.txnType === 'REFUND' ? 'refund' : 'purchase'">
                   {{ txnTypeLabel(txn.txnType) }}
                 </span>
               </td>
+
               <td>
                 <span class="status-pill" :class="{ refunded: isRefunded(txn) }">
                   {{ statusLabel(txn) }}
@@ -126,42 +199,21 @@
         </table>
 
         <div v-if="loading" class="transactions-loading-state">
-          <span class="loading-brush" aria-hidden="true"></span>
+          <span class="loading-brush"></span>
           <strong>刷卡交易整理中</strong>
         </div>
 
         <div v-else-if="transactions.length === 0" class="transactions-empty-state">
-          <div class="transactions-empty-mark" aria-hidden="true">
-            <svg viewBox="0 0 96 96" role="img" focusable="false">
-              <circle cx="48" cy="48" r="36" fill="rgba(232, 226, 216, 0.76)" />
-              <rect
-                x="23"
-                y="32"
-                width="50"
-                height="34"
-                rx="7"
-                fill="rgba(255, 249, 239, 0.95)"
-                stroke="rgba(198, 188, 174, 0.98)"
-                stroke-width="2"
-              />
-              <path d="M28 43h40" stroke="rgba(92, 107, 95, 0.52)" stroke-width="4" />
-              <path
-                d="M33 55h14M55 55h9"
-                fill="none"
-                stroke="rgba(92, 107, 95, 0.62)"
-                stroke-width="3"
-                stroke-linecap="round"
-              />
-            </svg>
-          </div>
           <strong>目前沒有刷卡交易</strong>
           <span>新增交易或完成付款後，紀錄會整理在這裡。</span>
         </div>
       </div>
 
       <div v-if="totalElements > 0" class="transactions-pagination">
-        <span>第 {{ currentPage + 1 }} / {{ displayTotalPages }} 頁</span>
+        <span> 第 {{ currentPage + 1 }} / {{ displayTotalPages }} 頁 </span>
+
         <button type="button" :disabled="currentPage === 0" @click="prevPage">上一頁</button>
+
         <button type="button" :disabled="currentPage + 1 >= totalPages" @click="nextPage">
           下一頁
         </button>
@@ -171,7 +223,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { message } from 'ant-design-vue'
 import dayjs from 'dayjs'
 import {
@@ -189,11 +241,177 @@ const merchants = ref([])
 
 const form = ref({
   cardId: '',
+  cardNumber: '',
+  expiryDate: '',
+  cardHolderName: '',
+  cvv: '',
   merchantId: '',
   txnAmount: '',
   txnType: 'PURCHASE',
   description: '',
 })
+
+const cardSearchDigits = computed(() => normalizeCardNumber(form.value.cardNumber))
+
+const cardPickerCards = computed(() => {
+  const keyword = cardSearchDigits.value
+
+  return cards.value
+    .filter((card) => {
+      return !keyword || cardMatchesSearch(card, keyword)
+    })
+    .slice(0, 5)
+})
+
+function normalizeCardNumber(value) {
+  return String(value || '').replace(/\D/g, '')
+}
+
+function formatCardNumberInput() {
+  const digits = normalizeCardNumber(form.value.cardNumber).slice(0, 16)
+  form.value.cardNumber = digits.replace(/(.{4})/g, '$1 ').trim()
+}
+
+function formatCvvInput() {
+  form.value.cvv = String(form.value.cvv || '')
+    .replace(/\D/g, '')
+    .slice(0, 3)
+}
+
+function formatExpiryInput() {
+  const digits = String(form.value.expiryDate || '')
+    .replace(/\D/g, '')
+    .slice(0, 4)
+  form.value.expiryDate = digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits
+}
+
+function randomCvv() {
+  return String(Math.floor(Math.random() * 1000)).padStart(3, '0')
+}
+
+function seededDigits(seed, length) {
+  let hash = 0
+  const source = String(seed || '')
+
+  for (let i = 0; i < source.length; i++) {
+    hash = (hash * 31 + source.charCodeAt(i)) % 1000000007
+  }
+
+  let value = hash || 24681357
+  let result = ''
+
+  for (let i = 0; i < length; i++) {
+    value = (value * 1103515245 + 12345) % 2147483647
+    result += String(value % 10)
+  }
+
+  return result
+}
+
+function getDisplayCardNumber(card) {
+  const digits = normalizeCardNumber(card.cardNumber)
+
+  if (digits.length >= 16) {
+    return digits.slice(0, 16)
+  }
+
+  if (digits.length >= 8) {
+    const prefix = digits.slice(0, 4)
+    const suffix = digits.slice(-4)
+    return `${prefix}${seededDigits(`${card.cardId}-${digits}`, 8)}${suffix}`
+  }
+
+  return digits.padEnd(16, '0').slice(0, 16)
+}
+
+function formatCardNumberDisplay(cardNumber) {
+  return normalizeCardNumber(cardNumber)
+    .slice(0, 16)
+    .replace(/(.{4})/g, '$1 ')
+    .trim()
+}
+
+function cardMatchesSearch(card, keyword) {
+  const sourceCardNumber = normalizeCardNumber(card.cardNumber)
+  const displayCardNumber = getDisplayCardNumber(card)
+
+  return sourceCardNumber.startsWith(keyword) || displayCardNumber.startsWith(keyword)
+}
+
+function formatCardExpiry(card) {
+  if (!card.expiryDate) return ''
+  return dayjs(card.expiryDate).isValid() ? dayjs(card.expiryDate).format('MM/YY') : ''
+}
+
+function fillCardFields(card) {
+  form.value.cardId = card.cardId
+  form.value.cardNumber = formatCardNumberDisplay(getDisplayCardNumber(card))
+  form.value.expiryDate = formatCardExpiry(card)
+  form.value.cardHolderName = card.customerName || form.value.cardHolderName
+  form.value.cvv = randomCvv()
+}
+
+function selectCard(card) {
+  if (card.status !== 'ACTIVE') {
+    message.warning('這張卡片目前無法交易')
+    return
+  }
+
+  fillCardFields(card)
+}
+
+function getSelectedCard() {
+  return cards.value.find((card) => card.cardId === form.value.cardId)
+}
+
+watch(
+  () => form.value.cardNumber,
+  (newValue) => {
+    const inputCardNumber = normalizeCardNumber(newValue)
+
+    const matchedCard = cards.value.find((card) => {
+      return (
+        normalizeCardNumber(card.cardNumber) === inputCardNumber ||
+        getDisplayCardNumber(card) === inputCardNumber
+      )
+    })
+
+    if (matchedCard) {
+      fillCardFields(matchedCard)
+      return
+    }
+
+    form.value.cardId = ''
+  },
+)
+
+function validateCardInput() {
+  if (!form.value.cardId) {
+    message.warning('找不到符合的卡號')
+    return false
+  }
+
+  if (getSelectedCard()?.status !== 'ACTIVE') {
+    message.warning('這張卡片目前無法交易')
+    return false
+  }
+
+  if (!/^\d{2}\/\d{2}$/.test(form.value.expiryDate)) {
+    message.warning('有效日期格式請輸入 MM/YY')
+    return false
+  }
+
+  if (!form.value.cardHolderName.trim()) {
+    message.warning('請輸入持卡人姓名')
+    return false
+  }
+
+  if (!/^\d{3}$/.test(form.value.cvv)) {
+    form.value.cvv = randomCvv()
+  }
+
+  return true
+}
 const currentPage = ref(0)
 const pageSize = ref(10)
 const totalPages = ref(0)
@@ -204,8 +422,8 @@ const displayTotalPages = computed(() => Math.max(totalPages.value || 1, 1))
 const fetchCards = async () => {
   try {
     const response = await getMyCards()
-    console.log(response);
-    
+    console.log(response)
+
     cards.value = Array.isArray(response) ? response : []
   } catch (error) {
     console.error(error)
@@ -217,7 +435,7 @@ const fetchTransactions = async () => {
   try {
     loading.value = true
     const response = await getTransactions(currentPage.value, pageSize.value)
-    console.log(response);
+    console.log(response)
     transactions.value = Array.isArray(response?.content) ? response.content : []
     totalPages.value = response?.totalPages ?? 0
     totalElements.value = response?.totalElements ?? 0
@@ -241,8 +459,8 @@ const fetchMerchantNames = async () => {
 
 const handleCreateTransaction = async () => {
   try {
-    if (!form.value.cardId || !form.value.merchantId || !form.value.txnAmount) {
-      message.warning('請選擇信用卡、商家並輸入交易金額')
+    if (!validateCardInput() || !form.value.merchantId || !form.value.txnAmount) {
+      message.warning('請輸入卡片資料、選擇商家並輸入交易金額')
       return
     }
 
@@ -259,8 +477,13 @@ const handleCreateTransaction = async () => {
 
 const handleLinePay = async () => {
   try {
-    if (!form.value.cardId || !form.value.merchantId || !form.value.txnAmount || !form.value.description.trim()) {
-      message.warning('LINE Pay 付款需選擇信用卡、商家、金額並填寫備註')
+    if (
+      !validateCardInput() ||
+      !form.value.merchantId ||
+      !form.value.txnAmount ||
+      !form.value.description.trim()
+    ) {
+      message.warning('LINE Pay 付款需輸入卡片資料、商家、金額並填寫備註')
       return
     }
 
@@ -301,6 +524,10 @@ const prevPage = async () => {
 function resetForm() {
   form.value = {
     cardId: '',
+    cardNumber: '',
+    expiryDate: '',
+    cardHolderName: '',
+    cvv: '',
     merchantId: '',
     txnAmount: '',
     txnType: 'PURCHASE',
@@ -336,6 +563,20 @@ function statusLabel(txn) {
   if (txn.txnType === 'REFUND') return '刷退交易'
   if (txn.refunded) return '已刷退'
   return '已完成'
+}
+
+function getCardName(card) {
+  return card.cardTypeName || card.cardType?.cardTypeName || '信用卡'
+}
+
+function getCardStatusText(status) {
+  const map = {
+    ACTIVE: '可使用',
+    BLOCKED: '已停卡',
+    INACTIVE: '未開卡',
+  }
+
+  return map[status] || status || '-'
 }
 
 onMounted(async () => {
@@ -378,7 +619,9 @@ onMounted(async () => {
   background:
     linear-gradient(180deg, rgba(255, 249, 239, 0.86), rgba(249, 244, 235, 0.72)),
     url('/washi-texture.png');
-  background-size: auto, 300px 300px;
+  background-size:
+    auto,
+    300px 300px;
   border: 1px solid rgba(214, 206, 195, 0.84);
   border-radius: 18px;
   box-shadow: 0 14px 34px rgba(63, 74, 66, 0.08);
@@ -429,6 +672,85 @@ onMounted(async () => {
   background: rgba(255, 249, 239, 0.62);
   border: 1px solid rgba(198, 188, 174, 0.92);
   border-radius: 8px;
+}
+
+.card-number-block {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.card-number-field {
+  max-width: 480px;
+}
+
+.card-number-input {
+  font-family: var(--font-mono);
+}
+
+.card-picker {
+  display: grid;
+  gap: 6px;
+  max-width: 480px;
+}
+
+.card-option {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  padding: 7px 10px;
+  color: var(--text-primary);
+  background: rgba(255, 249, 239, 0.72);
+  border: 1px solid rgba(198, 188, 174, 0.72);
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.card-option:hover,
+.card-option.selected {
+  border-color: rgba(92, 107, 95, 0.52);
+  box-shadow: inset 0 0 0 1px rgba(92, 107, 95, 0.16);
+}
+
+.card-option:disabled {
+  color: var(--text-disabled);
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.card-option-name,
+.card-option-number,
+.card-option-status {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-option-name {
+  font-weight: 700;
+}
+
+.card-option-number {
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.card-option-status {
+  color: var(--primary-dark);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.card-picker-empty {
+  max-width: 480px;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
 }
 
 .textarea-shell {
@@ -666,7 +988,8 @@ textarea.field-control {
 }
 
 @keyframes brushLoading {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.38;
     transform: scaleX(0.72);
   }
@@ -721,6 +1044,12 @@ textarea.field-control {
     flex-direction: column;
   }
 
+  .card-number-field,
+  .card-picker,
+  .card-picker-empty {
+    max-width: none;
+  }
+
   .field-label {
     min-height: 34px;
   }
@@ -728,6 +1057,11 @@ textarea.field-control {
   .field-control {
     border-left: 0;
     border-top: 1px solid rgba(214, 206, 195, 0.72);
+  }
+
+  .card-option {
+    grid-template-columns: 1fr;
+    gap: 2px;
   }
 
   .transactions-pagination {
