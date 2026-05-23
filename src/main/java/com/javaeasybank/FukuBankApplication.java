@@ -15,21 +15,21 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @EnableAsync
 @EnableJpaAuditing
 @SpringBootApplication
-public class JavaEasyBankApplication {
+public class FukuBankApplication {
 
     public static void main(String[] args) {
         // 1. 在 Spring 啟動前先重置資料庫
 //        restoreDatabase();
 
         // 2. 正式啟動 Spring
-        SpringApplication.run(JavaEasyBankApplication.class, args);
+        SpringApplication.run(FukuBankApplication.class, args);
     }
 
     private static void restoreDatabase() {
         Properties prop = new Properties();
         String propFileName = "application-local.properties";
 
-        try (InputStream inputStream = JavaEasyBankApplication.class.getClassLoader().getResourceAsStream(propFileName)) {
+        try (InputStream inputStream = FukuBankApplication.class.getClassLoader().getResourceAsStream(propFileName)) {
             if (inputStream == null) {
                 System.out.println("找不到配置文件: " + propFileName + "，跳過重置步驟。");
                 return;
