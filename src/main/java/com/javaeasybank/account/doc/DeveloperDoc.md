@@ -711,7 +711,7 @@ Request body：
 
 - 來源 / 目的帳號不可為空。
 - 金額必須大於 0。
-- `toBankCode` 必須存在於 `TransferBank` enum；本行為 `JVB("909","爪哇銀行")`。
+- `toBankCode` 必須存在於 `TransferBank` enum；本行為 `JVB("909","福庫銀行")`。
 - 目的帳號只能為數字，長度 6 到 20 碼；本行轉帳目的帳號須為 12 碼。
 - 本行轉本行不可自我轉帳，會查目的帳戶並即時入帳。
 - 跨行轉帳僅支援 TWD 轉出，不查目的帳戶 DB，只確認來源帳戶、狀態與餘額。
@@ -1581,7 +1581,7 @@ WHERE account_number = ?
 | 3 | `account_number` | VARCHAR(14) | FK → ACCOUNT, NOT NULL | 影響帳號 |
 | 4 | `counterpart_account` | VARCHAR(20) | NULL | 對手方帳號 |
 | 5 | `bank_code` | VARCHAR(10) | NOT NULL | 本筆交易所屬銀行代碼，本行固定 909 |
-| 6 | `bank_name` | NVARCHAR(50) | NOT NULL | 本筆交易所屬銀行名稱，本行固定爪哇銀行 |
+| 6 | `bank_name` | NVARCHAR(50) | NOT NULL | 本筆交易所屬銀行名稱，本行固定福庫銀行 |
 | 7 | `counterpart_bank_code` | VARCHAR(10) | NULL | 對手方銀行代碼，本行 909 或他行代碼 |
 | 8 | `counterpart_bank_name` | NVARCHAR(50) | NULL | 對手方銀行名稱 |
 | 9 | `is_interbank` | BIT | NOT NULL | 是否跨行 |
