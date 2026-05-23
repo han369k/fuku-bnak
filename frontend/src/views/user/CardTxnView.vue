@@ -184,7 +184,7 @@
               <td class="amount-cell credit">+{{ formatMoney(txn.cashbackAmount) }}</td>
 
               <td>
-                <span class="type-pill" :class="txn.txnType === 'REFUND' ? 'refund' : 'purchase'">
+                <span class="type-pill" :class="txnTypeClass(txn.txnType)">
                   {{ txnTypeLabel(txn.txnType) }}
                 </span>
               </td>
@@ -551,8 +551,15 @@ function txnTypeLabel(type) {
   const map = {
     PURCHASE: '一般消費',
     REFUND: '刷退',
+    ANNUAL_FEE: '年費',
   }
   return map[type] || type || '-'
+}
+
+function txnTypeClass(type) {
+  if (type === 'REFUND') return 'refund'
+  if (type === 'ANNUAL_FEE') return 'fee'
+  return 'purchase'
 }
 
 function isRefunded(txn) {
@@ -939,6 +946,12 @@ textarea.field-control {
   color: var(--accent);
   background: rgba(166, 90, 77, 0.08);
   border: 1px solid rgba(166, 90, 77, 0.24);
+}
+
+.type-pill.fee {
+  color: #7b5a2f;
+  background: rgba(196, 164, 124, 0.16);
+  border: 1px solid rgba(196, 164, 124, 0.34);
 }
 
 .transactions-loading-state,

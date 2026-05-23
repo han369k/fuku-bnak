@@ -4,5 +4,6 @@ public enum TxnType {
 
 	PURCHASE,
 	REFUND,
-	PAYMENT
+	PAYMENT,
+	ANNUAL_FEE
 }

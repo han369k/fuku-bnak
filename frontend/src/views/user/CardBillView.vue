@@ -28,6 +28,16 @@ const formatMoney = (value) => {
   return Number(value || 0).toLocaleString()
 }
 
+const txnTypeLabel = (type) => {
+  const map = {
+    PURCHASE: '一般消費',
+    REFUND: '刷退',
+    ANNUAL_FEE: '年費',
+  }
+
+  return map[type] || type || '-'
+}
+
 const getRemainingAmount = (bill) => {
   return Math.max(Number(bill.totalAmount || 0) - Number(bill.paidAmount || 0), 0)
 }
@@ -416,7 +426,7 @@ onMounted(() => {
           <tbody>
             <tr v-for="txn in billedTransactions" :key="txn.txnId">
               <td>{{ dayjs(txn.txnDate).format('YYYY-MM-DD') }}</td>
-              <td>{{ txn.merchantName }}</td>
+              <td>{{ txn.merchantName || txn.description || txnTypeLabel(txn.txnType) }}</td>
               <td class="amount-col">NT$ {{ formatMoney(txn.txnAmount) }}</td>
             </tr>
           </tbody>
@@ -430,7 +440,7 @@ onMounted(() => {
         <div class="bill-body">
           <div class="info-row">
             <span>商店</span>
-            <strong>{{ txn.merchantName }}</strong>
+            <strong>{{ txn.merchantName || txn.description || txnTypeLabel(txn.txnType) }}</strong>
           </div>
 
           <div class="info-row">

@@ -20,11 +20,14 @@ import com.javaeasybank.creditcard.dto.CreditCardRequestDto;
 import com.javaeasybank.creditcard.dto.CreditCardResponseDto;
 import com.javaeasybank.creditcard.entity.CardAccount;
 import com.javaeasybank.creditcard.entity.CardApplicationItem;
+import com.javaeasybank.creditcard.entity.CardTransaction;
 import com.javaeasybank.creditcard.entity.CreditCard;
 import com.javaeasybank.creditcard.enums.CardStatus;
+import com.javaeasybank.creditcard.enums.TxnType;
 import com.javaeasybank.creditcard.mapper.CreditCardMapper;
 import com.javaeasybank.creditcard.repository.CardAccountRepository;
 import com.javaeasybank.creditcard.repository.CardAppItemRepository;
+import com.javaeasybank.creditcard.repository.CardTxnRepository;
 import com.javaeasybank.creditcard.repository.CardTypeRepository;
 import com.javaeasybank.creditcard.repository.CreditCardRepository;
 import com.javaeasybank.customer.entity.CustomerProfile;
@@ -49,6 +52,7 @@ public class CreditCardService {
     private final AccountRepository accountRepository;
     private final CardAccountRepository cardAccountRepository;
     private final CustomerProfileRepository customerProfileRepository;
+    private final CardTxnRepository cardTxnRepository;
 
     public Page<CreditCardResponseDto> findAll(Pageable pageable, String keyword, CardStatus status) {
         return cardRepository.search(pageable, keyword, status).map(mapper::toDto);
@@ -130,6 +134,7 @@ public class CreditCardService {
         }
 
         card.setStatus(CardStatus.ACTIVE);
+        createAnnualFeeTransaction(card);
         return mapper.toDto(cardRepository.save(card));
     }
 
@@ -210,6 +215,34 @@ public class CreditCardService {
 
     private BigDecimal resolveCreditLimit(BigDecimal approvedLimit) {
         return approvedLimit == null ? DEFAULT_CREDIT_LIMIT : approvedLimit;
+    }
+
+    private void createAnnualFeeTransaction(CreditCard card) {
+        if (card.getCardId() == null
+                || card.getCardType() == null
+                || card.getCardType().getAnnualFee() == null
+                || card.getCardType().getAnnualFee().compareTo(BigDecimal.ZERO) <= 0
+                || cardTxnRepository.existsByCard_CardIdAndTxnType(card.getCardId(), TxnType.ANNUAL_FEE)) {
+            return;
+        }
+
+        BigDecimal annualFee = card.getCardType().getAnnualFee();
+
+        CardTransaction txn = new CardTransaction();
+        txn.setCard(card);
+        txn.setTxnAmount(annualFee);
+        txn.setTxnType(TxnType.ANNUAL_FEE);
+        txn.setTxnDate(LocalDateTime.now());
+        txn.setDescription("信用卡年費");
+        txn.setCashbackRate(BigDecimal.ZERO);
+        txn.setCashbackAmount(BigDecimal.ZERO);
+
+        card.setCurrentDebt(zeroIfNull(card.getCurrentDebt()).add(annualFee));
+        cardTxnRepository.save(txn);
+    }
+
+    private BigDecimal zeroIfNull(BigDecimal amount) {
+        return amount == null ? BigDecimal.ZERO : amount;
     }
     
     private String resolveCreditCardAccountNumber(String customerId) {
