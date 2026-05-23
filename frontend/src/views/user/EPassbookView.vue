@@ -86,9 +86,9 @@
 
       <section v-else-if="selectedAccount" class="passbook-cover" aria-label="電子存摺封面">
         <div class="brand-block">
-          <img src="/logo.png" alt="JAVA_BANK" class="brand-mark" />
+          <img src="/logo.png" alt="福庫銀行 Logo" class="brand-mark" />
           <div>
-            <div class="brand-title">JAVA_BANK</div>
+            <div class="brand-title">福庫銀行</div>
             <div class="brand-subtitle">E-PASSBOOK</div>
             <div class="brand-motto">CALM · BALANCE · TRUST</div>
           </div>
@@ -132,7 +132,7 @@
         </div>
 
         <p class="cover-note">本電子存摺僅供參考，實際帳戶資訊以本行系統資料為準。</p>
-        <div class="seal" aria-hidden="true">爪哇<br />銀行</div>
+        <img src="/fukubank-seal.png" alt="" class="seal-mark" aria-hidden="true" />
       </section>
     </div>
 
@@ -754,20 +754,15 @@ async function copyAccount() {
   font-size: 12px;
 }
 
-.seal {
+.seal-mark {
   position: absolute;
   right: 48px;
-  bottom: 42px;
+  bottom: 30px;
   z-index: 1;
-  width: 46px;
-  height: 46px;
-  display: grid;
-  place-items: center;
-  color: var(--accent);
-  border: 2px solid rgba(166, 90, 77, 0.72);
-  font-family: var(--font-heading);
-  font-size: 13px;
-  line-height: 1.15;
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  pointer-events: none;
 }
 
 .passbook-actions {
@@ -855,6 +850,7 @@ async function copyAccount() {
 
   .brand-mark {
     width: 96px;
+    height: 64px;
   }
 
   .brand-title {
