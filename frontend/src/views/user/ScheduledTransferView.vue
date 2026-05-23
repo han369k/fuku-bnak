@@ -7,7 +7,7 @@
     <a-card class="form-card" title="新增預約轉帳">
       <a-form :model="form" layout="vertical" @finish="handleCreate">
         <a-row :gutter="16">
-          <a-col :span="12">
+          <a-col :span="8">
             <a-form-item label="轉出帳戶" name="fromAccount" :rules="[{ required: true, message: '請選擇轉出帳戶' }]">
               <a-select v-model:value="form.fromAccount" placeholder="選擇轉出帳戶" @change="onFromChange">
                 <a-select-option v-for="a in twdAccounts" :key="a.accountNumber" :value="a.accountNumber">
@@ -16,7 +16,19 @@
               </a-select>
             </a-form-item>
           </a-col>
-          <a-col :span="12">
+          <a-col :span="8">
+            <a-form-item label="轉入銀行" name="toBankCode" :rules="[{ required: true, message: '請選擇轉入銀行' }]">
+              <a-select
+                v-model:value="form.toBankCode"
+                show-search
+                placeholder="搜尋或選擇銀行"
+                :loading="bankLoading"
+                :options="bankSelectOptions"
+                option-filter-prop="label"
+              />
+            </a-form-item>
+          </a-col>
+          <a-col :span="8">
             <a-form-item label="轉入帳號" name="toAccount" :rules="[{ required: true, message: '請輸入轉入帳號' }]">
               <div style="display: flex; gap: 8px;">
                 <a-input v-model:value="form.toAccount" placeholder="12碼帳號" style="flex: 1" />
@@ -59,10 +71,11 @@
     <section class="list-card">
       <div class="list-card-title">我的預約轉帳</div>
       <div class="overflow-x-auto rounded-[16px] bg-white/60 p-4">
-        <table class="w-full min-w-[900px] border-collapse text-left text-[14px] text-[var(--text-primary)]">
+        <table class="w-full min-w-[1000px] border-collapse text-left text-[14px] text-[var(--text-primary)]">
           <thead class="bg-[rgba(245,241,234,0.84)]">
             <tr>
               <th class="rounded-tl-[10px] border-b border-[rgba(214,206,195,0.72)] px-4 py-3 font-semibold">轉出帳戶</th>
+              <th class="border-b border-[rgba(214,206,195,0.72)] px-4 py-3 font-semibold">轉入銀行</th>
               <th class="border-b border-[rgba(214,206,195,0.72)] px-4 py-3 font-semibold">轉入帳戶</th>
               <th class="border-b border-[rgba(214,206,195,0.72)] px-4 py-3 font-semibold">金額</th>
               <th class="border-b border-[rgba(214,206,195,0.72)] px-4 py-3 font-semibold">預約日期</th>
@@ -73,12 +86,12 @@
           </thead>
           <tbody>
             <tr v-if="loading">
-              <td colspan="7" class="border-b border-[rgba(214,206,195,0.42)] px-4 py-14 text-center text-[var(--text-secondary)]">
+              <td colspan="8" class="border-b border-[rgba(214,206,195,0.42)] px-4 py-14 text-center text-[var(--text-secondary)]">
                 資料載入中
               </td>
             </tr>
             <tr v-else-if="schedules.length === 0">
-              <td colspan="7" class="border-b border-[rgba(214,206,195,0.42)] px-4 py-14 text-center text-[var(--text-secondary)]">
+              <td colspan="8" class="border-b border-[rgba(214,206,195,0.42)] px-4 py-14 text-center text-[var(--text-secondary)]">
                 尚無預約轉帳
               </td>
             </tr>
@@ -89,6 +102,7 @@
                 class="transition-colors hover:bg-[rgba(92,107,95,0.045)]"
               >
                 <td class="border-b border-[rgba(214,206,195,0.42)] px-4 py-3 font-medium">{{ record.fromAccountNumber }}</td>
+                <td class="border-b border-[rgba(214,206,195,0.42)] px-4 py-3">{{ scheduleBankLabel(record) }}</td>
                 <td class="border-b border-[rgba(214,206,195,0.42)] px-4 py-3">{{ record.toAccountNumber }}</td>
                 <td class="border-b border-[rgba(214,206,195,0.42)] px-4 py-3">{{ formatNum(record.amount) }} TWD</td>
                 <td class="border-b border-[rgba(214,206,195,0.42)] px-4 py-3">{{ record.scheduledDate }}</td>
@@ -139,25 +153,36 @@
 import { ref, computed, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import dayjs from 'dayjs'
-import { getMyAccounts } from '@/api/customerAccount'
+import { getMyAccounts, getTransferBanks } from '@/api/customerAccount'
 import { getScheduledTransfers, createScheduledTransfer, cancelScheduledTransfer } from '@/api/scheduledTransfer'
 import { getFavoriteAccounts } from '@/api/favoriteAccount'
 
-const form = ref({ fromAccount: undefined, toAccount: '', amount: null, scheduledDate: null, note: '' })
+const JAVA_BANK_CODE = '909'
+const fallbackBanks = [{ code: JAVA_BANK_CODE, name: '福庫銀行', label: '福庫銀行 909' }]
+
+const form = ref({ fromAccount: undefined, toBankCode: JAVA_BANK_CODE, toAccount: '', amount: null, scheduledDate: null, note: '' })
 const accounts = ref([])
 const schedules = ref([])
 const favorites = ref([])
+const banks = ref(fallbackBanks)
 const loading = ref(false)
 const creating = ref(false)
 const favLoading = ref(false)
+const bankLoading = ref(false)
 const showFavPicker = ref(false)
 
 const twdAccounts = computed(() =>
   accounts.value.filter(a => a.currency === 'TWD' && a.status === 'ACTIVE' && a.accountType !== 'LOAN')
 )
+const bankSelectOptions = computed(() =>
+  banks.value.map((bank) => ({
+    value: bank.code,
+    label: bankOptionLabel(bank),
+  }))
+)
 
 onMounted(async () => {
-  await Promise.all([loadAccounts(), loadSchedules(), loadFavorites()])
+  await Promise.all([loadAccounts(), loadSchedules(), loadFavorites(), loadBanks()])
 })
 
 async function loadAccounts() {
@@ -176,6 +201,19 @@ async function loadFavorites() {
   finally { favLoading.value = false }
 }
 
+async function loadBanks() {
+  bankLoading.value = true
+  try {
+    const res = await getTransferBanks()
+    banks.value = Array.isArray(res) && res.length ? res : fallbackBanks
+  } catch (e) {
+    console.error(e)
+    banks.value = fallbackBanks
+  } finally {
+    bankLoading.value = false
+  }
+}
+
 function onFromChange() {}
 
 function disabledDate(current) {
@@ -183,7 +221,7 @@ function disabledDate(current) {
 }
 
 async function handleCreate() {
-  if (form.value.fromAccount === form.value.toAccount) {
+  if (form.value.toBankCode === JAVA_BANK_CODE && form.value.fromAccount === form.value.toAccount) {
     message.error('轉出與轉入帳戶不可相同')
     return
   }
@@ -191,13 +229,14 @@ async function handleCreate() {
   try {
     await createScheduledTransfer({
       fromAccountNumber: form.value.fromAccount,
+      toBankCode: form.value.toBankCode,
       toAccountNumber: form.value.toAccount,
       amount: form.value.amount,
       scheduledDate: form.value.scheduledDate?.format('YYYY-MM-DD'),
       note: form.value.note || undefined,
     })
     message.success('預約轉帳建立成功')
-    form.value = { fromAccount: form.value.fromAccount, toAccount: '', amount: null, scheduledDate: null, note: '' }
+    form.value = { fromAccount: form.value.fromAccount, toBankCode: JAVA_BANK_CODE, toAccount: '', amount: null, scheduledDate: null, note: '' }
     await loadSchedules()
   } catch (e) {
     message.error(e?.response?.data?.message || '建立失敗')
@@ -224,12 +263,25 @@ function confirmCancel(id) {
 
 function pickFavorite(item) {
   form.value.toAccount = item.accountNumber
+  if (item.bankCode) form.value.toBankCode = item.bankCode
   showFavPicker.value = false
 }
 
 function favoriteDescription(item) {
-  const bank = item.bankName ? `${item.bankName} ${item.bankCode || ''}`.trim() : item.bankCode
+  const bank = bankDisplayName(item)
   return bank ? `${bank} ${item.accountNumber}` : item.accountNumber
+}
+
+function bankOptionLabel(bank) {
+  return bank.label || `${bank.name} ${bank.code}`
+}
+
+function bankDisplayName(item) {
+  return item.bankName ? `${item.bankName} ${item.bankCode || ''}`.trim() : item.bankCode
+}
+
+function scheduleBankLabel(record) {
+  return record.toBankName ? `${record.toBankName} ${record.toBankCode || ''}`.trim() : record.toBankCode || '-'
 }
 
 function statusLabel(s) {
@@ -256,6 +308,7 @@ function demoScheduledTransfer() {
   const checkingAccount = twdAccounts.value.find(a => a.accountType === 'CHECKING') || twdAccounts.value[0]
   if (checkingAccount) {
     form.value.fromAccount = checkingAccount.accountNumber
+    form.value.toBankCode = JAVA_BANK_CODE
     form.value.amount = 1000
     form.value.toAccount = ''
     form.value.scheduledDate = dayjs().add(1, 'day')
@@ -274,8 +327,12 @@ function demoScheduledTransfer() {
 }
 
 h2 {
-  margin-bottom: 20px;
+  margin-bottom: 22px;
   color: var(--text-primary);
+  font-family: var(--font-heading);
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1.2;
 }
 
 .form-card {
@@ -283,6 +340,23 @@ h2 {
   background: rgba(255, 249, 239, 0.92);
   border: 1px solid rgba(214, 206, 195, 0.86);
   box-shadow: 0 12px 36px rgba(63, 74, 66, 0.08);
+}
+
+.form-card :deep(.ant-card-head) {
+  min-height: 64px;
+  padding: 0 28px;
+}
+
+.form-card :deep(.ant-card-body) {
+  padding: 28px;
+}
+
+.form-card :deep(.ant-form-item) {
+  margin-bottom: 22px;
+}
+
+.form-card :deep(.ant-form-item-label) {
+  padding-bottom: 8px;
 }
 
 .list-card {
@@ -295,24 +369,25 @@ h2 {
 }
 
 .list-card-title {
-  padding: 16px 24px;
+  padding: 14px 22px;
   border-bottom: 1px solid rgba(214, 206, 195, 0.72);
   color: var(--text-primary);
+  font-size: 16px;
   font-weight: 700;
 }
 
-.form-card :deep(.ant-card-head) {
-  color: var(--text-primary);
-  background: transparent;
-  border-bottom-color: rgba(214, 206, 195, 0.72);
-}
-
 .form-card :deep(.ant-card-head-title) {
+  color: var(--text-primary);
+  font-family: var(--font-heading);
+  font-size: 20px;
+  line-height: 1.35;
   font-weight: 700;
 }
 
 .form-card :deep(.ant-form-item-label > label) {
   color: var(--text-primary);
+  font-size: 16px;
+  line-height: 1.45;
   font-weight: 600;
 }
 
@@ -320,13 +395,40 @@ h2 {
 .form-card :deep(.ant-input),
 .form-card :deep(.ant-input-number),
 .form-card :deep(.ant-picker) {
+  min-height: 48px;
   border-color: rgba(198, 188, 174, 0.92);
   border-radius: 8px;
   background: rgba(255, 249, 239, 0.64);
+  font-size: 16px;
 }
 
-.form-card :deep(.ant-input-number-input) {
+.form-card :deep(.ant-input),
+.form-card :deep(.ant-input-number-input),
+.form-card :deep(.ant-picker-input > input),
+.form-card :deep(.ant-select-selection-item),
+.form-card :deep(.ant-select-selection-placeholder) {
   color: var(--text-primary);
+  font-size: 16px;
+}
+
+.form-card :deep(.ant-select-single .ant-select-selector),
+.form-card :deep(.ant-picker) {
+  align-items: center;
+}
+
+.form-card :deep(.ant-select-arrow),
+.form-card :deep(.ant-picker-suffix) {
+  font-size: 16px;
+}
+
+.form-card :deep(.ant-btn) {
+  min-height: 44px;
+  font-size: 16px;
+}
+
+.form-card :deep(.ant-btn-lg) {
+  min-height: 48px;
+  font-size: 16px;
 }
 
 .form-card :deep(.ant-btn-primary) {
@@ -340,14 +442,70 @@ h2 {
   background: var(--primary-dark);
 }
 
+.scheduled-transfer-page table {
+  font-size: 13px;
+}
+
+.scheduled-transfer-page th {
+  font-size: 13px;
+}
+
+.scheduled-transfer-page td {
+  font-size: 13px;
+}
+
+.scheduled-transfer-page td button {
+  font-size: 12px;
+}
+
+.scheduled-transfer-page :deep(.ant-modal-title) {
+  font-size: 18px;
+}
+
+.scheduled-transfer-page :deep(.ant-list-item-meta-title) {
+  font-size: 15px;
+}
+
+.scheduled-transfer-page :deep(.ant-list-item-meta-description),
+.scheduled-transfer-page :deep(.ant-list-item-action .ant-btn-link) {
+  font-size: 13px;
+}
+
 @media (max-width: 640px) {
   .scheduled-transfer-page {
     padding: 16px 0;
   }
 
+  h2 {
+    font-size: 34px;
+    margin-bottom: 20px;
+  }
+
+  .form-card :deep(.ant-card-head) {
+    min-height: 60px;
+    padding: 0 22px;
+  }
+
+  .form-card :deep(.ant-card-head-title) {
+    font-size: 18px;
+  }
+
+  .form-card :deep(.ant-card-body) {
+    padding: 20px 16px;
+  }
+
   .form-card :deep(.ant-col) {
     flex: 0 0 100%;
     max-width: 100%;
+  }
+
+  .form-card :deep(.ant-form-item-label > label),
+  .form-card :deep(.ant-input),
+  .form-card :deep(.ant-input-number-input),
+  .form-card :deep(.ant-picker-input > input),
+  .form-card :deep(.ant-select-selection-item),
+  .form-card :deep(.ant-select-selection-placeholder) {
+    font-size: 15px;
   }
 }
 </style>
