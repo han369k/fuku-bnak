@@ -24,7 +24,7 @@
     <section class="hero" aria-label="主視覺">
       <div class="hero-inner">
         <div class="hero-content" ref="heroContent">
-          <p class="hero-eyebrow">JAVA EASY BANK</p>
+          <p class="hero-eyebrow">FUKU BANK</p>
           <h1 class="hero-title">
             <span class="hero-line-1">靜心理財</span>
             <span class="hero-line-2">安穩致遠</span>
@@ -80,7 +80,7 @@
     <section class="values" aria-label="品牌特色">
       <div class="section-header">
         <p class="section-eyebrow">Why Us</p>
-        <h2 class="section-heading">為何選擇爪哇銀行</h2>
+        <h2 class="section-heading">為何選擇福庫銀行</h2>
         <div class="section-rule"></div>
       </div>
       <div class="values-grid">
@@ -108,7 +108,7 @@
     <footer class="landing-footer">
       <div class="footer-rule"></div>
       <JbLogo size="sm" />
-      <p class="footer-text">&copy; 2026 Java Easy Bank. All rights reserved.</p>
+      <p class="footer-text">&copy; 2026 Fuku Bank. All rights reserved.</p>
     </footer>
   </div>
 </template>
