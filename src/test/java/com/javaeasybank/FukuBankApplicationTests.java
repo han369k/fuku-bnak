@@ -2,11 +2,11 @@ package com.javaeasybank;
 
 import org.junit.jupiter.api.Test;
 
-class JavaEasyBankApplicationTests {
+class FukuBankApplicationTests {
 
     @Test
     void applicationClassIsLoadable() {
-        JavaEasyBankApplication.class.getDeclaredConstructors();
+        FukuBankApplication.class.getDeclaredConstructors();
     }
 
 }
