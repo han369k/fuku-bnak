@@ -50,7 +50,7 @@
       </div>
     </section>
 
-    <!-- 上方：個人卡片 + 資產總覽 -->
+    <!-- 上方：個人卡片 + 財務總覽 -->
     <div v-if="hasAccount" class="dashboard-top">
       <!-- 左：個人資訊卡片 -->
       <section class="profile-summary-card" aria-label="個人資訊">
@@ -101,12 +101,12 @@
         </div>
       </section>
 
-      <!-- 右：資產總覽 -->
-      <section class="asset-overview-card" aria-label="資產總覽">
+      <!-- 右：財務總覽 -->
+      <section class="asset-overview-card" aria-label="財務總覽">
         <div class="asset-card-header">
           <div class="asset-title-group">
-            <h2 class="asset-overview-title">資產總覽</h2>
-            <p class="asset-overview-subtitle">淨資產（折合臺幣）</p>
+            <h2 class="asset-overview-title">財務總覽</h2>
+            <p class="asset-overview-subtitle">可用資金（折合臺幣）</p>
           </div>
           <button
             class="toggle-visibility-btn"
@@ -148,7 +148,7 @@
 
         <div class="asset-main-amount">
           <span class="asset-currency-symbol">$</span>
-          <span class="asset-total-amount">{{ formatMoney(Math.round(assetData.netAsset)) }}</span>
+          <span class="asset-total-amount">{{ formatMoney(Math.round(assetData.availableFunds)) }}</span>
         </div>
 
         <div class="asset-grid">
@@ -157,14 +157,14 @@
             <div class="asset-subcard-header">
               <span class="asset-subcard-title">存款</span>
             </div>
-            <p class="asset-subcard-amount">$ {{ formatMoney(Math.round(assetData.deposit)) }}</p>
+            <p class="asset-subcard-amount">$ {{ formatMoney(Math.round(assetData.availableFunds)) }}</p>
             <div class="asset-subcard-details">
               <div class="asset-subcard-detail">
-                <span>臺幣淨資產</span>
+                <span>臺幣存款</span>
                 <span>$ {{ formatMoney(Math.round(assetData.twdAsset)) }}</span>
               </div>
               <div class="asset-subcard-detail">
-                <span>外幣淨資產</span>
+                <span>外幣折合</span>
                 <span>$ {{ formatMoney(Math.round(assetData.foreignAsset)) }}</span>
               </div>
             </div>
@@ -184,16 +184,12 @@
           <!-- 信用卡 -->
           <div class="asset-subcard">
             <div class="asset-subcard-header">
-              <span class="asset-subcard-title">信用卡消費總額</span>
+              <span class="asset-subcard-title">信用卡</span>
             </div>
-            <p class="asset-subcard-amount">$ {{ formatMoney(assetData.creditTotal) }}</p>
+            <p class="asset-subcard-amount">$ {{ formatMoney(assetData.currentBillAmount) }}</p>
             <div class="asset-subcard-details">
               <div class="asset-subcard-detail">
-                <span>臺幣未出帳</span>
-                <span>$ {{ formatMoney(assetData.creditUnbilled) }}</span>
-              </div>
-              <div class="asset-subcard-detail">
-                <span>{{ currentMonth }} 帳單</span>
+                <span>已出帳未繳</span>
                 <span :class="assetData.currentBillAmount > 0 ? 'text-overdue' : 'text-safe'">
                   {{
                     assetData.currentBillAmount > 0
@@ -202,16 +198,20 @@
                   }}
                 </span>
               </div>
+              <div class="asset-subcard-detail">
+                <span>未出帳消費</span>
+                <span>$ {{ formatMoney(assetData.creditUnbilled) }}</span>
+              </div>
             </div>
             <div class="asset-subcard-actions">
-              <button class="subcard-primary-btn" @click="router.push({ name: 'user-card-types' })">
-                申辦卡片
+              <button class="subcard-primary-btn" @click="router.push({ name: 'user-card-bills' })">
+                我要繳費
               </button>
               <button
                 class="subcard-secondary-btn"
                 @click="router.push({ name: 'user-card-bills' })"
               >
-                我要繳費
+                帳單明細
               </button>
             </div>
           </div>
@@ -232,58 +232,52 @@
             <p v-else class="asset-subcard-amount">
               {{
                 showAmounts
-                  ? '$ ' +
-                    sortedLoanAccounts
-                      .reduce((s, a) => s + (a.remainingPrincipal || 0), 0)
-                      .toLocaleString('zh-TW')
+                  ? '$ ' + formatWholeMoney(assetData.loanOutstanding)
                   : '***'
               }}
             </p>
             <div class="asset-subcard-details">
               <!-- 依最近繳款日排序，最多顯示 2 筆 -->
               <template v-if="sortedLoanAccounts.length > 0">
-                <div
-                  v-for="acc in sortedLoanAccounts.slice(0, 2)"
-                  :key="acc.accountId"
-                  class="asset-subcard-detail"
-                >
-                  <span>{{ LOAN_TYPE_MAP[acc.applyType] || acc.applyType }}</span>
-                  <span
-                    v-if="showAmounts"
-                    :class="{ 'text-overdue': acc.accountStatus === 'OVERDUE' }"
-                  >
-                    {{ acc.nextPaymentDate ? acc.nextPaymentDate.substring(0, 10) : '—' }}
+                <div class="asset-subcard-detail">
+                  <span>本期應繳</span>
+                  <span>
+                    {{
+                      showAmounts ? '$ ' + formatWholeMoney(loanSummary.nextPaymentAmount) : '***'
+                    }}
+                  </span>
+                </div>
+                <div class="asset-subcard-detail">
+                  <span>最近繳款日</span>
+                  <span v-if="showAmounts" :style="{ color: nextLoanDueDate.isWarning ? '#c0392b' : 'var(--text-secondary)', fontWeight: nextLoanDueDate.isWarning ? 600 : 400 }">
+                    {{ nextLoanDueDate.label }}
                   </span>
                   <span v-else>***</span>
+                </div>
+                <div class="asset-subcard-detail">
+                  <span>貸款筆數</span>
+                  <span>{{ loanSummary.count }} 筆</span>
                 </div>
               </template>
               <!-- 無帳戶時顯示預設項目 -->
               <template v-else>
                 <div class="asset-subcard-detail">
-                  <span>信用貸款</span>
+                  <span>本期應繳</span>
                   <span>—</span>
                 </div>
                 <div class="asset-subcard-detail">
-                  <span>房屋貸款</span>
+                  <span>最近繳款日</span>
                   <span>—</span>
+                </div>
+                <div class="asset-subcard-detail">
+                  <span>貸款筆數</span>
+                  <span>0 筆</span>
                 </div>
               </template>
             </div>
             <div class="asset-subcard-actions loan-subcard-actions">
               <button
                 class="subcard-primary-btn"
-                @click="$router.push({ name: 'user-loan-apply' })"
-              >
-                申請貸款
-              </button>
-              <button
-                class="subcard-secondary-btn"
-                @click="$router.push({ name: 'user-loan-status' })"
-              >
-                查看申請
-              </button>
-              <button
-                class="subcard-secondary-btn"
                 @click="$router.push({ name: 'user-loan-accounts' })"
               >
                 查看帳戶
@@ -294,17 +288,29 @@
               >
                 立即還款
               </button>
+              <button
+                class="subcard-secondary-btn"
+                @click="$router.push({ name: 'user-loan-apply' })"
+              >
+                申請貸款
+              </button>
+              <button
+                class="subcard-secondary-btn"
+                @click="$router.push({ name: 'user-loan-status' })"
+              >
+                查看申請
+              </button>
             </div>
           </div>
         </div>
       </section>
     </div>
 
-    <!-- 下方：資產分佈 + 匯率 + 歷史水位 -->
+    <!-- 下方：財務組成 + 匯率 + 歷史水位 -->
     <div v-if="hasAccount" class="dashboard-bottom">
-      <!-- 資產分佈 -->
-      <section class="distribution-card" aria-label="資產分佈">
-        <h3 class="card-title">資產分佈</h3>
+      <!-- 財務組成 -->
+      <section class="distribution-card" aria-label="財務組成">
+        <h3 class="card-title">財務組成</h3>
         <div class="section-rule"></div>
         <div class="donut-wrap">
           <canvas ref="donutCanvas" width="200" height="200"></canvas>
@@ -424,8 +430,6 @@ const onboardFeatures = [
 ]
 
 //==信用卡==
-const currentBillMonth = ref('')
-
 async function fetchCreditSummary() {
   try {
     const bills = await getBills(0, 10)
@@ -440,7 +444,6 @@ async function fetchCreditSummary() {
     })
 
     const latestBill = sortedBills[0]
-    currentBillMonth.value = latestBill?.billingMonth || ''
     const billTotal = Number(latestBill?.totalAmount || 0)
     const paidAmount = Number(latestBill?.paidAmount || 0)
     const remainingBillAmount = Math.max(billTotal - paidAmount, 0)
@@ -527,15 +530,8 @@ const todayStr = computed(() => {
   const d = new Date()
   return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`
 })
-//計算月結帳單月份
-const currentMonth = computed(() => {
-  if (!currentBillMonth.value) return '--'
-  return currentBillMonth.value
-})
-
 // === 資產資料 ===
 const assetData = ref({
-  netAsset: 0,
   deposit: 0,
   twdAsset: 0,
   foreignAsset: 0,
@@ -543,6 +539,8 @@ const assetData = ref({
   creditUnbilled: 12500,
   currentBillAmount: 0,
   currentBillPaidAmount: 0,
+  loanOutstanding: 0,
+  availableFunds: 0,
 })
 
 function calculateAssets() {
@@ -569,19 +567,56 @@ function calculateAssets() {
   assetData.value.twdAsset = twd
   assetData.value.foreignAsset = fxTwd
   assetData.value.deposit = twd + fxTwd
-  assetData.value.netAsset = assetData.value.deposit - assetData.value.creditTotal
 
-  const total = twd + fxTwd + assetData.value.creditTotal
+  const loanSum = loanAccounts.value.reduce((s, a) => s + (Number(a.remainingPrincipal) || 0), 0)
+  assetData.value.loanOutstanding = loanSum
+  assetData.value.availableFunds = assetData.value.deposit
+
+  const total = twd + fxTwd + assetData.value.creditTotal + loanSum
   if (total > 0) {
-    distributionData.value[0].pct = Math.round((twd / total) * 100)
-    distributionData.value[1].pct = Math.round((fxTwd / total) * 100)
-    distributionData.value[2].pct = Math.round((assetData.value.creditTotal / total) * 100)
+    let p1 = Math.round((twd / total) * 100)
+    let p2 = Math.round((fxTwd / total) * 100)
+    let p3 = Math.round((assetData.value.creditTotal / total) * 100)
+    let p4 = Math.round((loanSum / total) * 100)
+    
+    distributionData.value[0].pct = p1
+    distributionData.value[1].pct = p2
+    distributionData.value[2].pct = p3
+    distributionData.value[3].pct = p4
+  } else {
+    distributionData.value[0].pct = 0
+    distributionData.value[1].pct = 0
+    distributionData.value[2].pct = 0
+    distributionData.value[3].pct = 0
   }
 
   // 重繪圖表
   drawDonut()
   drawLine()
 }
+
+const loanSummary = computed(() => ({
+  count: sortedLoanAccounts.value.length,
+  nextPaymentAmount: sortedLoanAccounts.value.reduce(
+    (sum, acc) => sum + Number(acc.nextPaymentAmount || 0),
+    0,
+  ),
+}))
+
+const nextLoanDueDate = computed(() => {
+  const upcoming = sortedLoanAccounts.value.find((a) => a.nextPaymentDate)
+  if (!upcoming?.nextPaymentDate) {
+    return { label: '—', isWarning: false }
+  }
+  const label = upcoming.nextPaymentDate.substring(0, 10)
+  const today = new Date()
+  const due = new Date(upcoming.nextPaymentDate)
+  const isToday = label === today.toISOString().slice(0, 10)
+  return {
+    label,
+    isWarning: upcoming.accountStatus === 'OVERDUE' || isToday || due < today,
+  }
+})
 
 const showAmounts = ref(true)
 
@@ -590,16 +625,21 @@ function formatMoney(n) {
   return Number(n || 0).toLocaleString('en-US')
 }
 
+function formatWholeMoney(n) {
+  if (!showAmounts.value) return '***'
+  return Math.round(Number(n || 0)).toLocaleString('en-US', { maximumFractionDigits: 0 })
+}
+
 function comingSoon() {
   alert('此功能即將推出，敬請期待！')
 }
 
-// === 資產分佈 ===
+// === 財務組成 ===
 const distributionData = ref([
-  { label: '臺幣', pct: 0, color: 'var(--primary)' },
-  { label: '外幣', pct: 0, color: '#8BA58E' },
-  { label: '信用卡', pct: 0, color: 'var(--accent)' },
-  { label: '貸款', pct: 0, color: 'var(--border)' },
+  { label: '臺幣存款', pct: 0, color: 'var(--primary)' },
+  { label: '外幣折合', pct: 0, color: '#8BA58E' },
+  { label: '信用卡負債', pct: 0, color: 'var(--accent)' },
+  { label: '貸款負債', pct: 0, color: 'var(--border)' },
 ])
 
 const donutCanvas = ref(null)
@@ -822,6 +862,8 @@ onMounted(async () => {
       loanAccounts.value = res.data.data || []
     } catch {
       loanAccounts.value = []
+    } finally {
+      calculateAssets()
     }
   }
 })
@@ -1277,7 +1319,7 @@ onMounted(async () => {
   margin: var(--space-3) 0;
 }
 
-/* === 資產分佈 === */
+/* === 財務組成 === */
 .distribution-card {
   background: var(--bg-secondary);
   border: 1px solid var(--border);

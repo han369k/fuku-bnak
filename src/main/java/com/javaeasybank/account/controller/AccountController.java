@@ -167,6 +167,14 @@ public class AccountController {
     }
 
     /**
+     * 查詢全站帳戶統計數據
+     */
+    @GetMapping("/stats")
+    public ResponseEntity<ApiResponse<java.util.Map<String, Object>>> getStats() {
+        return ResponseEntity.ok(ApiResponse.success(accountService.getStatistics()));
+    }
+
+    /**
      * 變更帳戶狀態。
      *
      * @param accountNumber 帳號。

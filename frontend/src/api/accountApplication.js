@@ -61,3 +61,11 @@ export function rejectAccountApplication(id, reason) {
   return api.patch(`/api/admin/account-applications/${id}/reject`, { reason })
     .then(res => res.data.data)
 }
+
+/**
+ * 管理端：查詢全站開戶申請統計
+ */
+export function getAccountApplicationsStats() {
+  return api.get('/api/admin/account-applications/stats')
+    .then(res => res.data.data)
+}
