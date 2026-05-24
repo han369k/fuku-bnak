@@ -273,9 +273,18 @@ onBeforeUnmount(() => {
         <p class="page-subtitle">選擇適合你的卡片，查看年費與現金回饋。</p>
       </div>
 
-      <button class="jb-btn jb-btn-secondary jb-btn-sm" type="button" @click="fetchCardTypes">
-        重新整理
-      </button>
+      <div class="page-head-actions">
+        <button 
+          class="desktop-cart-btn jb-btn jb-btn-primary jb-btn-sm" 
+          type="button" 
+          @click="cartExpanded = true"
+        >
+          申辦清單 ({{ selectedCards.length }})
+        </button>
+        <button class="jb-btn jb-btn-secondary jb-btn-sm" type="button" @click="fetchCardTypes">
+          重新整理
+        </button>
+      </div>
     </div>
 
     <div v-if="loading" class="state-panel">
@@ -337,45 +346,43 @@ onBeforeUnmount(() => {
           </article>
         </div>
 
-        <aside
-          class="apply-cart"
-          :class="{
-            'is-floating': isScrolled,
-            'is-expanded': cartExpanded
-          }"
-          @click="isScrolled && !cartExpanded ? (cartExpanded = true) : null"
+        <a-drawer
+          v-model:open="cartExpanded"
+          title="申辦清單"
+          placement="right"
+          :width="360"
         >
-          <div class="cart-head">
-            <h3>申辦清單</h3>
-            <span>{{ selectedCards.length }} 張卡</span>
-            <button
-              v-if="isScrolled && cartExpanded"
-              class="close-cart-btn"
-              type="button"
-              @click.stop="cartExpanded = false"
-            >✕</button>
+          <div v-if="selectedCards.length === 0" class="cart-empty">
+            尚未加入卡片
           </div>
 
-          <div v-show="!isScrolled || cartExpanded" class="cart-body">
-            <div v-if="selectedCards.length === 0" class="cart-empty">
-              尚未加入卡片
-            </div>
+          <div v-else class="cart-list">
+            <div v-for="card in selectedCards" :key="card.cardTypeId" class="cart-item">
+              <span>{{ card.cardTypeName }}</span>
 
-            <div v-else class="cart-list">
-              <div v-for="card in selectedCards" :key="card.cardTypeId" class="cart-item">
-                <span>{{ card.cardTypeName }}</span>
-
-                <button type="button" class="remove-btn" @click="removeFromCart(card.cardTypeId)">
-                  移除
-                </button>
-              </div>
-
-              <button class="modal-confirm cart-submit" type="button" @click="openApplyModal">
-                立即申辦
+              <button type="button" class="remove-btn" @click="removeFromCart(card.cardTypeId)">
+                移除
               </button>
             </div>
+
+            <button class="modal-confirm cart-submit" type="button" @click="cartExpanded = false; openApplyModal()">
+              立即申辦
+            </button>
           </div>
-        </aside>
+        </a-drawer>
+
+        <!-- 手機版 Sticky Bottom Bar -->
+        <div class="application-summary-bar mobile-cart-bar">
+          <span class="summary-text">已選 {{ selectedCards.length }} 張卡</span>
+          <button 
+            class="jb-btn jb-btn-sm" 
+            :class="selectedCards.length > 0 ? 'jb-btn-primary' : 'jb-btn-secondary'"
+            :disabled="selectedCards.length === 0"
+            @click="selectedCards.length > 0 ? (cartExpanded = true) : null"
+          >
+            查看清單
+          </button>
+        </div>
       </div>
     </template>
 
@@ -894,119 +901,50 @@ onBeforeUnmount(() => {
   width: 100%;
 }
 .card-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
-  gap: 28px;
-  align-items: start;
+  display: block;
 }
 
-.apply-cart {
-  padding: 20px;
-  background: #ffffff;
-  border: 1px solid rgba(214, 206, 195, 0.55);
-  border-radius: 16px;
-  box-shadow: 0 12px 30px rgba(43, 38, 31, 0.08);
-  height: fit-content;
+.page-head-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.application-summary-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  background: rgba(250, 247, 240, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(80, 72, 60, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.summary-text {
+  font-weight: 700;
+  color: #1a1a2e;
+  font-size: 15px;
 }
 
 @media (min-width: 901px) {
-  .apply-cart {
-    position: fixed;
-    top: 160px;
-    right: max(24px, calc((100vw - 1080px) / 2));
-    z-index: 20;
-    width: 300px;
-    max-height: calc(100vh - 184px);
-    overflow-y: auto;
+  .mobile-cart-bar {
+    display: none !important;
   }
 }
+
 @media (max-width: 900px) {
-  .card-layout {
-    display: flex;
-    flex-direction: column;
+  .desktop-cart-btn {
+    display: none !important;
   }
 
   .card-type-grid {
     grid-template-columns: 1fr;
-  }
-
-  .apply-cart {
-    order: -1;
-    margin-bottom: 24px;
-    width: 100%;
-    position: static;
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  }
-
-  .apply-cart.is-floating {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    left: auto;
-    margin-bottom: 0;
-    width: auto;
-    border-radius: 999px;
-    padding: 12px 24px;
-    z-index: 100;
-    cursor: pointer;
-  }
-
-  @keyframes cart-pop-in {
-    0% { transform: translateY(80px) scale(0.9); opacity: 0; }
-    100% { transform: translateY(0) scale(1); opacity: 1; }
-  }
-
-  @keyframes cart-breathe {
-    0% { box-shadow: 0 4px 12px rgba(92, 107, 95, 0.3), 0 0 0 0 rgba(92, 107, 95, 0.4); }
-    70% { box-shadow: 0 4px 12px rgba(92, 107, 95, 0.3), 0 0 0 12px rgba(92, 107, 95, 0); }
-    100% { box-shadow: 0 4px 12px rgba(92, 107, 95, 0.3), 0 0 0 0 rgba(92, 107, 95, 0); }
-  }
-
-  .apply-cart.is-floating:not(.is-expanded) {
-    background-color: var(--primary, #5c6b5f);
-    color: #ffffff;
-    border: none;
-    animation: cart-pop-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards, cart-breathe 2s infinite ease-in-out 0.4s;
-  }
-
-  .apply-cart.is-floating:not(.is-expanded) .cart-title,
-  .apply-cart.is-floating:not(.is-expanded) .cart-count {
-    color: #ffffff;
-    margin: 0;
-  }
-
-  .apply-cart.is-floating .cart-head {
-    margin-bottom: 0;
-  }
-
-  .apply-cart.is-floating.is-expanded {
-    bottom: 24px;
-    right: 24px;
-    left: 24px;
-    width: auto;
-    border-radius: 16px;
-    padding: 20px;
-    cursor: default;
-    max-height: 80vh;
-    overflow-y: auto;
-  }
-
-  .apply-cart.is-floating.is-expanded .cart-head {
-    margin-bottom: 14px;
-  }
-
-  .close-cart-btn {
-    background: #f3f4f6;
-    border: none;
-    border-radius: 50%;
-    width: 28px;
-    height: 28px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 14px;
-    color: #4b5563;
   }
 }
 
