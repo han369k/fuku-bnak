@@ -943,6 +943,10 @@ onBeforeUnmount(() => {
     display: none !important;
   }
 
+  .card-layout {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
+  }
+
   .card-type-grid {
     grid-template-columns: 1fr;
   }
