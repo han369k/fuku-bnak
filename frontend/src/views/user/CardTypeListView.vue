@@ -245,8 +245,9 @@ async function applyCardType() {
 const isScrolled = ref(false)
 const cartExpanded = ref(false)
 
-function handleScroll() {
-  isScrolled.value = window.scrollY > 150
+function handleScroll(e) {
+  const scrollTop = e.target.scrollTop || window.scrollY || document.documentElement.scrollTop || 0
+  isScrolled.value = scrollTop > 150
   if (!isScrolled.value) {
     cartExpanded.value = false
   }
@@ -255,12 +256,12 @@ function handleScroll() {
 onMounted(() => {
   fetchCardTypes()
   fetchMyApplications()
-  window.addEventListener('scroll', handleScroll, { passive: true })
+  window.addEventListener('scroll', handleScroll, { capture: true, passive: true })
 })
 
 onBeforeUnmount(() => {
   revokeProofPreviewUrls()
-  window.removeEventListener('scroll', handleScroll)
+  window.removeEventListener('scroll', handleScroll, { capture: true })
 })
 </script>
 

@@ -3,8 +3,9 @@ import { ref, onMounted, onUnmounted } from 'vue'
 
 const showButton = ref(false)
 
-function checkScroll() {
-  showButton.value = window.scrollY > 150
+function checkScroll(e) {
+  const scrollTop = e.target.scrollTop || window.scrollY || document.documentElement.scrollTop || 0
+  showButton.value = scrollTop > 150
 }
 
 function scrollToTop() {
@@ -12,14 +13,19 @@ function scrollToTop() {
     top: 0,
     behavior: 'smooth'
   })
+  // Also scroll the main container if there is one
+  const userContent = document.querySelector('.user-content')
+  if (userContent) {
+    userContent.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 }
 
 onMounted(() => {
-  window.addEventListener('scroll', checkScroll, { passive: true })
+  window.addEventListener('scroll', checkScroll, { capture: true, passive: true })
 })
 
 onUnmounted(() => {
-  window.removeEventListener('scroll', checkScroll)
+  window.removeEventListener('scroll', checkScroll, { capture: true })
 })
 </script>
 

@@ -1,5 +1,5 @@
 <template>
-  <div class="passbook-page">
+  <div class="passbook-page" ref="passbookPageRef">
     <nav class="passbook-breadcrumb" aria-label="breadcrumb">
       <span>首頁</span>
       <span class="chevron">›</span>
@@ -174,7 +174,7 @@ const profile = ref(null)
 const selectedAccountNumber = ref(null)
 const pdfLoading = ref(false)
 
-const coverWrapperRef = ref(null)
+const passbookPageRef = ref(null)
 const coverScale = ref(1)
 let resizeObserver = null
 
@@ -205,6 +205,7 @@ onMounted(async () => {
   resizeObserver = new ResizeObserver((entries) => {
     for (const entry of entries) {
       const width = entry.contentRect.width
+      // Calculate scale relative to max-width of passbook-cover-container (980)
       if (width < 980) {
         coverScale.value = width / 980
       } else {
@@ -212,8 +213,8 @@ onMounted(async () => {
       }
     }
   })
-  if (coverWrapperRef.value) {
-    resizeObserver.observe(coverWrapperRef.value)
+  if (passbookPageRef.value) {
+    resizeObserver.observe(passbookPageRef.value)
   }
 })
 
