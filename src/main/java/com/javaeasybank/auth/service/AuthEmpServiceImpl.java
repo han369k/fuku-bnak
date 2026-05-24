@@ -36,13 +36,6 @@ public class AuthEmpServiceImpl implements AuthEmpService {
         this.actionLogService = actionLogService;
     }
 
-    /**
-     * 記錄操作日誌
-     * - empId / empName：優先從 SecurityContext 查；LOGIN 時由呼叫方直接帶入
-     * - target：被操作對象的 ID（如員工編號）
-     * - details：操作說明
-     * - ipAddress：來源 IP
-     */
     private void recordLog(String empId, String empName,
                            String action, String target,
                            String details, String ipAddress) {
@@ -56,9 +49,7 @@ public class AuthEmpServiceImpl implements AuthEmpService {
         actionLogService.saveLog(log);
     }
 
-    /**
-     * 從 SecurityContext 取得當前登入員工資訊，回傳 [empId, empName]
-     */
+    /** 從 SecurityContext 取得目前登入員工，失敗時回傳系統身份。 */
     private String[] resolveCurrentEmp() {
         try {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -69,13 +60,12 @@ public class AuthEmpServiceImpl implements AuthEmpService {
                     return new String[]{ optEmp.get().getEmpId(), optEmp.get().getEmpName() };
                 }
             }
-        } catch (Exception ignored) { }
+        } catch (Exception ignored) {
+            // Best-effort lookup; use system identity below.
+        }
         return new String[]{ "SYSTEM", "系統" };
     }
 
-    // ===========================
-    // 登入：使用 email 驗證，帶入 IP
-    // ===========================
     @Override
     public AuthRespository.AuthEmpResponse login(AuthRespository.LoginRequest request, String ipAddress) {
         AuthEmp emp = authEmpRepository.findByEmail(request.getEmail())
@@ -84,7 +74,6 @@ public class AuthEmpServiceImpl implements AuthEmpService {
         emp.setLastLoginDate(LocalDateTime.now());
         authEmpRepository.save(emp);
 
-        // LOGIN 時 SecurityContext 尚未建立，直接帶入查到的員工資訊
         recordLog(emp.getEmpId(), emp.getEmpName(),
                   "LOGIN", emp.getEmpId(),
                   "員工登入系統", ipAddress);
@@ -92,9 +81,6 @@ public class AuthEmpServiceImpl implements AuthEmpService {
         return convertToResponse(emp);
     }
 
-    // ===========================
-    // 登出：記錄 LOGOUT 日誌
-    // ===========================
     @Override
     public void logout(String email, String ipAddress) {
         String empId = "SYSTEM";
