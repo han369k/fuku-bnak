@@ -27,7 +27,6 @@ const formatExpiryDate = (date) => {
 const fetchCards = async () => {
   try {
     const response = await getMyCards()
-    console.log(response)
     cards.value = response
   } catch (error) {
     console.error('Failed to fetch cards:', error)
