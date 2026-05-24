@@ -3,18 +3,29 @@
     <transition name="intro-fade">
       <div v-if="showIntro" class="landing-intro" aria-label="福庫銀行開場影片">
         <video
+          v-if="isMobileIntro"
           ref="introVideo"
-          class="landing-intro-video"
+          class="landing-intro-video landing-intro-video--mobile"
+          src="/fukubank-intro-vertical.mp4"
           autoplay
           muted
           playsinline
           preload="auto"
           @ended="finishIntro"
           @error="finishIntro"
-        >
-          <source src="/fukubank-intro-vertical.mp4" media="(max-width: 700px)" type="video/mp4" />
-          <source src="/fukubank-intro.mp4" type="video/mp4" />
-        </video>
+        ></video>
+        <video
+          v-else
+          ref="introVideo"
+          class="landing-intro-video landing-intro-video--desktop"
+          src="/fukubank-intro.mp4"
+          autoplay
+          muted
+          playsinline
+          preload="auto"
+          @ended="finishIntro"
+          @error="finishIntro"
+        ></video>
         <button type="button" class="intro-skip-btn" @click="finishIntro">略過</button>
       </div>
     </transition>
@@ -146,7 +157,9 @@ const customerAuthStore = useCustomerAuthStore()
 const { isLoggedIn, customer } = storeToRefs(customerAuthStore)
 const showIntro = ref(true)
 const introVideo = ref(null)
+const isMobileIntro = ref(false)
 let introFallbackTimer
+let introMediaQuery
 
 const landingBgStyle = {
   backgroundImage: `radial-gradient(ellipse at center, rgba(245, 240, 231, 0.82) 0%, rgba(245, 240, 231, 0.66) 52%, rgba(245, 240, 231, 0.46) 100%), url(${landingWabiBg})`,
@@ -191,6 +204,7 @@ const valueItems = [
 // Scroll Reveal — subtle fade-in
 onMounted(() => {
   document.body.classList.add('landing-intro-lock')
+  setupIntroMediaQuery()
   playIntro()
 
   const els = document.querySelectorAll('.reveal')
@@ -209,6 +223,7 @@ onMounted(() => {
 onUnmounted(() => {
   window.clearTimeout(introFallbackTimer)
   document.body.classList.remove('landing-intro-lock')
+  introMediaQuery?.removeEventListener('change', updateIntroMode)
 })
 
 async function playIntro() {
@@ -226,6 +241,16 @@ function finishIntro() {
   window.clearTimeout(introFallbackTimer)
   document.body.classList.remove('landing-intro-lock')
   showIntro.value = false
+}
+
+function setupIntroMediaQuery() {
+  introMediaQuery = window.matchMedia('(max-width: 768px)')
+  updateIntroMode()
+  introMediaQuery.addEventListener('change', updateIntroMode)
+}
+
+function updateIntroMode() {
+  isMobileIntro.value = Boolean(introMediaQuery?.matches)
 }
 </script>
 
@@ -258,23 +283,37 @@ function finishIntro() {
 .landing-intro {
   position: fixed;
   inset: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
   z-index: 9999;
-  display: grid;
-  place-items: center;
-  background: #050504;
+  overflow: hidden;
+  background: #f4efe6;
 }
 
 .landing-intro-video {
-  width: 100vw;
-  height: 100vh;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
   object-fit: cover;
-  background: #050504;
+  object-position: center center;
+  background: #f4efe6;
+}
+
+.landing-intro-video--desktop {
+  object-fit: cover;
+}
+
+.landing-intro-video--mobile {
+  object-fit: contain;
 }
 
 .intro-skip-btn {
   position: fixed;
   right: 28px;
-  bottom: 28px;
+  bottom: max(28px, calc(env(safe-area-inset-bottom) + 18px));
   z-index: 10000;
   min-height: 38px;
   padding: 8px 16px;
@@ -795,7 +834,8 @@ function finishIntro() {
 
 @media (max-width: 700px) {
   .landing-intro-video {
-    object-fit: fill;
+    object-fit: contain;
+    background: #f4efe6;
   }
 }
 
