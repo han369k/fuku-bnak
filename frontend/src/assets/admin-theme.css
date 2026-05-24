@@ -120,8 +120,10 @@ body {
 ========================================= */
 .page-container {
   padding: 32px 40px;
+  width: 100%;
   max-width: 1520px;
   margin: 0 auto;
+  min-width: 0;
 }
 
 .page-header {
@@ -202,4 +204,14 @@ body {
 .edit-btn:hover {
   color: var(--admin-primary-hover);
   background-color: rgba(92, 107, 95, 0.05);
+}
+
+@media (max-width: 768px) {
+  .page-container {
+    padding: 16px 12px;
+  }
+  .ant-table-wrapper {
+    padding: 8px;
+    border-radius: 8px;
+  }
 }
