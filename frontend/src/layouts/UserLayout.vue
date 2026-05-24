@@ -1129,6 +1129,7 @@ function handleLogout() {
     flex: 0 0 auto;
     min-width: 126px;
     padding-bottom: 8px;
+    position: static;
   }
 
   .mega-nav-trigger {
@@ -1140,11 +1141,13 @@ function handleLogout() {
   .mega-nav-icon { display: none; }
 
   .mega-dropdown {
-    position: static;
-    width: min(260px, calc(100vw - 32px));
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
     min-width: 220px;
-    margin: 2px 0 0;
-    border-radius: var(--radius-md);
+    margin: 0;
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
     box-shadow: 0 10px 24px rgba(63, 74, 66, 0.1);
   }
 
@@ -1174,6 +1177,7 @@ function handleLogout() {
     gap: 8px 10px;
     flex-wrap: wrap;
     justify-content: flex-end;
+    position: relative;
   }
 
   .header-top-inner > :first-child {
@@ -1189,7 +1193,10 @@ function handleLogout() {
     display: contents;
   }
 
-  .notification-bell-wrap { order: 1; }
+  .notification-bell-wrap { 
+    order: 1; 
+    position: static;
+  }
   .avatar-btn { order: 2; }
   .logout-btn { order: 3; }
 
@@ -1230,9 +1237,10 @@ function handleLogout() {
   }
 
   .notification-dropdown {
-    right: 0;
-    left: auto;
-    width: min(348px, calc(100vw - 20px));
+    top: calc(100% + 4px);
+    right: 14px;
+    left: 14px;
+    width: calc(100vw - 28px);
   }
 
   .notification-dropdown-footer {
@@ -1285,6 +1293,12 @@ function handleLogout() {
   .avatar-placeholder {
     width: 32px;
     height: 32px;
+  }
+
+  .notification-dropdown {
+    right: 12px;
+    left: 12px;
+    width: calc(100vw - 24px);
   }
 
   .logout-btn {
