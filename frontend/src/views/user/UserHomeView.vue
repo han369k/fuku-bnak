@@ -77,6 +77,14 @@
             <span class="profile-value">一般會員</span>
           </div>
           <div class="profile-detail-row">
+            <span class="profile-label">帳戶狀態</span>
+            <span class="profile-value">正常</span>
+          </div>
+          <div class="profile-detail-row">
+            <span class="profile-label">實名驗證</span>
+            <span class="profile-value">已完成</span>
+          </div>
+          <div class="profile-detail-row">
             <span class="profile-label">最近登入</span>
             <span class="profile-value">{{ todayStr }}</span>
           </div>
@@ -980,7 +988,8 @@ onMounted(async () => {
 .dashboard-top {
   display: grid;
   grid-template-columns: 320px 1fr;
-  gap: 24px;
+  align-items: start;
+  gap: 20px;
   margin-bottom: 32px;
   width: 100%;
   min-width: 0;
@@ -1082,7 +1091,7 @@ onMounted(async () => {
   cursor: pointer;
   transition: all 0.2s ease;
   border-top: 1px solid rgba(214, 206, 195, 0.4);
-  margin-top: auto;
+  margin-top: 12px;
 }
 
 .profile-link-row:hover {

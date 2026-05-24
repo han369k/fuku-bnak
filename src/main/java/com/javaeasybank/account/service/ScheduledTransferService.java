@@ -45,8 +45,21 @@ public class ScheduledTransferService {
             throw new BusinessException("轉出帳戶不屬於您");
         }
 
-        if (toBank.isJavaBank() && request.getFromAccountNumber().equals(request.getToAccountNumber())) {
-            throw new BusinessException("轉出與轉入帳戶不可相同");
+        if (fromAccount.getAccountType() == com.javaeasybank.account.enums.AccountType.SUB_ACCOUNT) {
+            throw new BusinessException("子帳戶無法轉出");
+        }
+
+        if (toBank.isJavaBank()) {
+            if (request.getFromAccountNumber().equals(request.getToAccountNumber())) {
+                throw new BusinessException("轉出與轉入帳戶不可相同");
+            }
+            Account toAccount = accountRepository.findById(request.getToAccountNumber())
+                    .orElseThrow(() -> new BusinessException("轉入帳戶不存在"));
+            if (toAccount.getAccountType() == com.javaeasybank.account.enums.AccountType.SUB_ACCOUNT) {
+                if (!toAccount.getCustomerId().equals(customerId)) {
+                    throw new BusinessException("只能轉入自己名下的子帳戶");
+                }
+            }
         }
 
         LocalDate scheduledDate = LocalDate.parse(request.getScheduledDate());

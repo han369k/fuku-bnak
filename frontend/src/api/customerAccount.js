@@ -54,6 +54,15 @@ export async function doTransfer(data) {
 }
 
 /**
+ * 請求轉帳 OTP
+ * POST /api/customer/transfers/otp
+ */
+export async function requestTransferOtp() {
+  const res = await api.post('/api/customer/transfers/otp')
+  return res.data.data
+}
+
+/**
  * 取得匯率
  * GET /api/public/exchange-rates
  */

@@ -87,6 +87,16 @@ public class TransferService {
 
         Account fromAccount = findAccountOrThrow(fromAccNum, "SOURCE_ACCOUNT_NOT_FOUND", "來源帳戶不存在");
 
+        if (fromAccount.getAccountType() == AccountType.SUB_ACCOUNT) {
+            if (interbank) {
+                throw new TransferException("SUB_ACCOUNT_RESTRICTED", "子帳戶無法跨行轉出");
+            }
+            Account toAccount = findAccountOrThrow(toAccNum, "TARGET_ACCOUNT_NOT_FOUND", "目的帳戶不存在");
+            if (!toAccount.getCustomerId().equals(fromAccount.getCustomerId()) || toAccount.getAccountType() != AccountType.CHECKING) {
+                throw new TransferException("SUB_ACCOUNT_RESTRICTED", "子帳戶只能轉回自己的台幣活期帳戶");
+            }
+        }
+
         validateActiveAccount(fromAccount, "SOURCE_ACCOUNT_INACTIVE", "來源帳戶非正常狀態");
         validateGeneralBalanceAccount(fromAccount, "來源帳戶");
         if (interbank && fromAccount.getCurrency() != Currency.TWD) {
@@ -251,6 +261,12 @@ public class TransferService {
                 Account toAccount = findAccountOrThrow(
                         toAccNum, "TARGET_ACCOUNT_NOT_FOUND", "目的帳戶不存在");
 
+                if (toAccount.getAccountType() == AccountType.SUB_ACCOUNT) {
+                    if (!toAccount.getCustomerId().equals(fromAccount.getCustomerId())) {
+                        throw new TransferException("SUB_ACCOUNT_RESTRICTED", "只能轉入自己名下的子帳戶");
+                    }
+                }
+
                 validateActiveAccount(toAccount, "TARGET_ACCOUNT_INACTIVE", "目的帳戶非正常狀態");
                 validateGeneralBalanceAccount(toAccount, "目的帳戶");
 
@@ -396,6 +412,10 @@ public class TransferService {
         validateExchangeAccountOwner(toAccount, customerId);
         validateExchangeAccountStatus(fromAccount, "轉出帳戶");
         validateExchangeAccountStatus(toAccount, "轉入帳戶");
+
+        if (fromAccount.getAccountType() == AccountType.SUB_ACCOUNT || toAccount.getAccountType() == AccountType.SUB_ACCOUNT) {
+            throw new TransferException("SUB_ACCOUNT_RESTRICTED", "子帳戶無法進行換匯");
+        }
 
         if (fromAccount.getCurrency() == toAccount.getCurrency()) {
             throw new TransferException("SAME_CURRENCY", "換匯需選擇不同幣別帳戶");

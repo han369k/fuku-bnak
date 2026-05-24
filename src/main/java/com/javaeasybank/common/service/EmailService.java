@@ -117,6 +117,13 @@ public class EmailService {
         // 使用溫和的主旨，不使用「風控」、「審核」、「攔截」等字眼
         sendEmail(to, "Fuku Bank - 轉帳交易處理進度通知", html);
     }
+
+    public void sendTransferOtpEmail(String to, String otp) {
+        Context context = new Context();
+        context.setVariable("otp", otp);
+        String html = templateEngine.process("mail/transfer-otp", context);
+        sendEmail(to, "Fuku Bank - 轉帳交易驗證碼 (OTP)", html);
+    }
     //月結信用卡帳單
     @Async
     public void sendCardBillStatementEmail(
