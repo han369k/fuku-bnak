@@ -242,13 +242,26 @@ async function applyCardType() {
   }
 }
 
+const isScrolled = ref(false)
+const cartExpanded = ref(false)
+
+function handleScroll(e) {
+  const scrollTop = e.target.scrollTop || window.scrollY || document.documentElement.scrollTop || 0
+  isScrolled.value = scrollTop > 150
+  if (!isScrolled.value) {
+    cartExpanded.value = false
+  }
+}
+
 onMounted(() => {
   fetchCardTypes()
   fetchMyApplications()
+  window.addEventListener('scroll', handleScroll, { capture: true, passive: true })
 })
 
 onBeforeUnmount(() => {
   revokeProofPreviewUrls()
+  window.removeEventListener('scroll', handleScroll, { capture: true })
 })
 </script>
 
@@ -260,9 +273,18 @@ onBeforeUnmount(() => {
         <p class="page-subtitle">選擇適合你的卡片，查看年費與現金回饋。</p>
       </div>
 
-      <button class="jb-btn jb-btn-secondary jb-btn-sm" type="button" @click="fetchCardTypes">
-        重新整理
-      </button>
+      <div class="page-head-actions">
+        <button 
+          class="desktop-cart-btn jb-btn jb-btn-primary jb-btn-sm" 
+          type="button" 
+          @click="cartExpanded = true"
+        >
+          申辦清單 ({{ selectedCards.length }})
+        </button>
+        <button class="jb-btn jb-btn-secondary jb-btn-sm" type="button" @click="fetchCardTypes">
+          重新整理
+        </button>
+      </div>
     </div>
 
     <div v-if="loading" class="state-panel">
@@ -324,12 +346,12 @@ onBeforeUnmount(() => {
           </article>
         </div>
 
-        <aside class="apply-cart">
-          <div class="cart-head">
-            <h3>申辦清單</h3>
-            <span>{{ selectedCards.length }} 張卡</span>
-          </div>
-
+        <a-drawer
+          v-model:open="cartExpanded"
+          title="申辦清單"
+          placement="right"
+          :width="360"
+        >
           <div v-if="selectedCards.length === 0" class="cart-empty">
             尚未加入卡片
           </div>
@@ -343,11 +365,24 @@ onBeforeUnmount(() => {
               </button>
             </div>
 
-            <button class="modal-confirm cart-submit" type="button" @click="openApplyModal">
+            <button class="modal-confirm cart-submit" type="button" @click="cartExpanded = false; openApplyModal()">
               立即申辦
             </button>
           </div>
-        </aside>
+        </a-drawer>
+
+        <!-- 手機版 Sticky Bottom Bar -->
+        <div class="application-summary-bar mobile-cart-bar">
+          <span class="summary-text">已選 {{ selectedCards.length }} 張卡</span>
+          <button 
+            class="jb-btn jb-btn-sm" 
+            :class="selectedCards.length > 0 ? 'jb-btn-primary' : 'jb-btn-secondary'"
+            :disabled="selectedCards.length === 0"
+            @click="selectedCards.length > 0 ? (cartExpanded = true) : null"
+          >
+            查看清單
+          </button>
+        </div>
       </div>
     </template>
 
@@ -569,29 +604,7 @@ onBeforeUnmount(() => {
   border-radius: var(--radius-md);
 }
 
-@media (max-width: 900px) {
-  .card-layout {
-    grid-template-columns: 1fr;
-  }
 
-  .card-type-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .apply-cart {
-    position: static;
-  }
-}
-
-@media (max-width: 700px) {
-  .page-head {
-    flex-direction: column;
-  }
-
-  .card-image-wrap {
-    max-width: 320px;
-  }
-}
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -888,30 +901,64 @@ onBeforeUnmount(() => {
   width: 100%;
 }
 .card-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
-  gap: 28px;
-  align-items: start;
+  display: block;
 }
 
-.apply-cart {
-  padding: 20px;
-  background: #ffffff;
-  border: 1px solid rgba(214, 206, 195, 0.55);
-  border-radius: 16px;
-  box-shadow: 0 12px 30px rgba(43, 38, 31, 0.08);
-  height: fit-content;
+.page-head-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.application-summary-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  background: rgba(250, 247, 240, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(80, 72, 60, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.summary-text {
+  font-weight: 700;
+  color: #1a1a2e;
+  font-size: 15px;
 }
 
 @media (min-width: 901px) {
-  .apply-cart {
-    position: fixed;
-    top: 160px;
-    right: max(24px, calc((100vw - 1080px) / 2));
-    z-index: 20;
-    width: 300px;
-    max-height: calc(100vh - 184px);
-    overflow-y: auto;
+  .mobile-cart-bar {
+    display: none !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .desktop-cart-btn {
+    display: none !important;
+  }
+
+  .card-layout {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
+  }
+
+  .card-type-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .page-head {
+    flex-direction: column;
+  }
+
+  .card-image-wrap {
+    max-width: 320px;
   }
 }
 </style>

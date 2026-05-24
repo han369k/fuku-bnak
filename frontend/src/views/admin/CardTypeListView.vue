@@ -67,7 +67,6 @@ const fetchCardTypes = async () => {
   try {
     const data = await getCardTypes()
     cardTypes.value = data
-    console.log(data)
   } catch (error) {
     message.error(error.response?.data?.message || '讀取資料失敗')
   } finally {

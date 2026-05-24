@@ -50,9 +50,8 @@ const fetchData = async () => {
     })
     cards.value = response.data.data.content
     pagination.value.total = response.data.data.totalElements
-    console.log(response.data.data.content)
   } catch (error) {
-    console.log(error)
+    message.error(error.response?.data?.message || '讀取卡片資料失敗')
   } finally {
     loading.value = false
   }
@@ -79,7 +78,7 @@ const handleBlock = async (record) => {
     await fetchData()
     message.success('停用成功')
   } catch (error) {
-    console.log(error)
+    message.error(error.response?.data?.message || '停用失敗')
   }
 }
 
@@ -90,7 +89,7 @@ const handleUnblock = async (record) => {
     await fetchData()
     message.success('啟用成功')
   } catch (error) {
-    console.log(error)
+    message.error(error.response?.data?.message || '啟用失敗')
   }
 }
 
@@ -114,7 +113,6 @@ const handleSubmit = async () => {
     modalVisible.value = false
     fetchData()
   } catch (error) {
-    console.log(error)
     message.error(error.response?.data?.message || (isEdit.value ? '更新卡片失敗' : '新增卡片失敗'))
   }
 }

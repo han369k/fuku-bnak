@@ -16,10 +16,10 @@
       <!-- 右側表單 -->
       <section class="login-form-section">
         <div class="login-card">
-          <p class="login-eyebrow">Welcome Back</p>
-          <h1>歡迎回來</h1>
+          <p class="login-eyebrow">SECURE ACCESS</p>
+          <h1>身份驗證</h1>
           <div class="login-rule"></div>
-          <p class="login-subtitle">登入您的帳戶</p>
+          <p class="login-subtitle">確認身份後，繼續使用福庫銀行服務</p>
 
           <form @submit.prevent="handleLogin(false)" novalidate>
             <div class="jb-form-item">
@@ -141,6 +141,18 @@
       </section>
     </main>
 
+    <!-- Login Success Overlay -->
+    <transition name="fade-blur">
+      <div v-if="showSuccessOverlay" class="success-overlay">
+        <div class="success-content">
+          <div class="success-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+          </div>
+          <h2>{{ loginName }} 歡迎回來</h2>
+        </div>
+      </div>
+    </transition>
+
     <!-- Custom Toast -->
     <transition name="toast-fade">
       <div v-if="toast.visible" class="jb-toast" :class="`toast-${toast.type}`">
@@ -163,6 +175,9 @@ const customerAuthStore = useCustomerAuthStore()
 const loading = ref(false)
 const showPwd = ref(false)
 const generatedCaptcha = ref('')
+
+const showSuccessOverlay = ref(false)
+const loginName = ref('')
 
 const toast = reactive({ visible: false, text: '', type: 'error', timer: null })
 function showToast(text, type = 'error') {
@@ -247,7 +262,13 @@ async function handleLogin(bypass = false) {
     })
     const data = res.data.data
     customerAuthStore.setCustomer(data)
-    router.push({ name: 'user-home' })
+    
+    loginName.value = data.name || data.customerName || data.username || '親愛的客戶'
+    showSuccessOverlay.value = true
+    
+    setTimeout(() => {
+      router.push({ name: 'user-home' })
+    }, 2000)
   } catch (err) {
     showToast(err.response?.data?.message || '登入失敗，請檢查帳號密碼', 'error')
   } finally {
@@ -469,4 +490,65 @@ async function handleLogin(bypass = false) {
 
 .toast-fade-enter-active, .toast-fade-leave-active { transition: all 0.3s var(--ease); }
 .toast-fade-enter-from, .toast-fade-leave-to { opacity: 0; transform: translate(-50%, -10px); }
+
+/* Success Overlay */
+.success-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.success-content {
+  text-align: center;
+  color: var(--primary);
+  animation: pop-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.success-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px;
+  background: var(--primary);
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.success-icon svg {
+  width: 32px;
+  height: 32px;
+}
+
+.success-content h2 {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: 2px;
+  color: #1a1a2e;
+}
+
+@keyframes pop-in {
+  0% { opacity: 0; transform: scale(0.8); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.fade-blur-enter-active,
+.fade-blur-leave-active {
+  transition: all 0.4s ease;
+}
+
+.fade-blur-enter-from,
+.fade-blur-leave-to {
+  opacity: 0;
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
+}
 </style>

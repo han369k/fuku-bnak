@@ -5,7 +5,7 @@
       <div class="welcome-text">
         <h1>{{ greeting }}，{{ userName }}</h1>
         <p class="welcome-sub">
-          角色：<a-tag class="role-tag-muted">{{ userRole }}</a-tag>
+          <span>角色：<a-tag class="role-tag-muted">{{ userRole }}</a-tag></span>
           <span v-if="lastLogin" class="last-login">上次登入：{{ lastLogin }}</span>
         </p>
       </div>
@@ -316,6 +316,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .last-login {
@@ -471,6 +472,7 @@ onUnmounted(() => {
   .stats-grid { grid-template-columns: 1fr; }
   .shortcut-grid { grid-template-columns: repeat(2, 1fr); }
   .welcome-section { flex-direction: column; gap: 16px; text-align: center; }
+  .welcome-sub { justify-content: center; }
   .welcome-date { text-align: center; }
 }
 

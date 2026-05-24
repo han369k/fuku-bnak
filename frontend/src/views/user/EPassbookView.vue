@@ -1,5 +1,5 @@
 <template>
-  <div class="passbook-page">
+  <div class="passbook-page" ref="passbookPageRef">
     <nav class="passbook-breadcrumb" aria-label="breadcrumb">
       <span>首頁</span>
       <span class="chevron">›</span>
@@ -84,15 +84,16 @@
         </button>
       </section>
 
-      <section v-else-if="selectedAccount" class="passbook-cover" aria-label="電子存摺封面">
-        <div class="brand-block">
-          <img src="/logo.png" alt="福庫銀行 Logo" class="brand-mark" />
-          <div>
-            <div class="brand-title">福庫銀行</div>
-            <div class="brand-subtitle">E-PASSBOOK</div>
-            <div class="brand-motto">CALM · BALANCE · TRUST</div>
+      <section v-else-if="selectedAccount" class="passbook-cover-container" ref="coverWrapperRef" :style="{ height: `${430 * coverScale}px` }">
+        <div class="passbook-cover" aria-label="電子存摺封面" :style="{ transform: `scale(${coverScale})` }">
+          <div class="brand-block">
+            <img src="/logo.png" alt="福庫銀行 Logo" class="brand-mark" />
+            <div>
+              <div class="brand-title">福庫銀行</div>
+              <div class="brand-subtitle">E-PASSBOOK</div>
+              <div class="brand-motto">CALM · BALANCE · TRUST</div>
+            </div>
           </div>
-        </div>
 
         <div class="cover-divider"></div>
 
@@ -133,6 +134,7 @@
 
         <p class="cover-note">本電子存摺僅供參考，實際帳戶資訊以本行系統資料為準。</p>
         <img src="/fukubank-seal.png" alt="" class="seal-mark" aria-hidden="true" />
+        </div>
       </section>
     </div>
 
@@ -158,7 +160,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { message } from 'ant-design-vue'
 import { ArrowLeftOutlined, CopyOutlined, DownloadOutlined, PrinterOutlined } from '@ant-design/icons-vue'
 import { downloadPassbookPdf, getMyAccounts } from '@/api/customerAccount'
@@ -171,6 +173,10 @@ const accounts = ref([])
 const profile = ref(null)
 const selectedAccountNumber = ref(null)
 const pdfLoading = ref(false)
+
+const passbookPageRef = ref(null)
+const coverScale = ref(1)
+let resizeObserver = null
 
 const currencyPriority = { TWD: 0, USD: 1, JPY: 2, EUR: 3, GBP: 4 }
 const passbookAccounts = computed(() => accounts.value
@@ -195,6 +201,25 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
+
+  resizeObserver = new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      const width = entry.contentRect.width
+      // Calculate scale relative to max-width of passbook-cover-container (980)
+      if (width < 980) {
+        coverScale.value = width / 980
+      } else {
+        coverScale.value = 1
+      }
+    }
+  })
+  if (passbookPageRef.value) {
+    resizeObserver.observe(passbookPageRef.value)
+  }
+})
+
+onUnmounted(() => {
+  if (resizeObserver) resizeObserver.disconnect()
 })
 
 function typeLabel(type, currency) {
@@ -616,12 +641,21 @@ async function copyAccount() {
   transform: translateY(-1px);
 }
 
-.passbook-cover {
-  position: relative;
-  overflow: hidden;
-  width: min(100%, 980px);
-  min-height: 430px;
+.passbook-cover-container {
+  width: 100%;
+  max-width: 980px;
   margin: 0 auto;
+  position: relative;
+}
+
+.passbook-cover {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: top left;
+  overflow: hidden;
+  width: 980px;
+  height: 430px;
   padding: 52px 56px 44px;
   background:
     linear-gradient(120deg, rgba(255, 249, 239, 0.94), rgba(249, 244, 235, 0.86)),
@@ -841,29 +875,6 @@ async function copyAccount() {
 
   .passbook-empty-btn {
     width: 100%;
-  }
-
-  .passbook-cover {
-    padding: 34px 22px 32px;
-    border-radius: 12px;
-  }
-
-  .brand-mark {
-    width: 96px;
-    height: 64px;
-  }
-
-  .brand-title {
-    font-size: 24px;
-  }
-
-  .cover-grid {
-    grid-template-columns: 1fr;
-    gap: 0;
-  }
-
-  .info-row {
-    grid-template-columns: 96px 1fr;
   }
 
   .passbook-actions {

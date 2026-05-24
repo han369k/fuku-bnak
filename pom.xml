@@ -35,7 +35,7 @@
     <properties>
         <java.version>21</java.version>
         <kotlin.version>2.3.10</kotlin.version>
-        <lombok.version>1.18.36</lombok.version>
+        <lombok.version>1.18.38</lombok.version>
     </properties>
 
     <dependencies>
@@ -86,7 +86,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.36</version>
+            <version>1.18.38</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
@@ -214,7 +214,7 @@
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
-                            <version>1.18.36</version>
+                            <version>1.18.38</version>
                         </path>
                         <path>
                             <groupId>org.projectlombok</groupId>
