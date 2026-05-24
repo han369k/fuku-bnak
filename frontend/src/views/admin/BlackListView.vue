@@ -21,6 +21,7 @@
       :data-source="dataSource"
       :pagination="pagination"
       :loading="loading"
+      :scroll="{ x: 1300 }"
       row-key="id"
       @change="handleTableChange"
     >
@@ -175,7 +176,7 @@ function formatDate(value) {
 
 const columns = [
   { title: '類型', dataIndex: 'listType', key: 'listType', width: 120 },
-  { title: '資料', dataIndex: 'listValue', key: 'listValue' },
+  { title: '資料', dataIndex: 'listValue', key: 'listValue', width: 180, ellipsis: true },
   { title: '啟用狀態', dataIndex: 'status', key: 'status', width: 100 },
   { title: '原因', dataIndex: 'reason', key: 'reason', width: 200, ellipsis: true },
   { title: '資料來源', dataIndex: 'source', key: 'source', width: 150, ellipsis: true },
