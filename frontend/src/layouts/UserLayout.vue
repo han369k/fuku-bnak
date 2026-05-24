@@ -103,6 +103,7 @@
             v-for="(menu, idx) in menus"
             :key="idx"
             class="mega-nav-item"
+            :class="{ 'is-open': openMenu === idx }"
             @mouseenter="handleMouseEnter(idx)"
             @mouseleave="handleMouseLeave"
           >
@@ -208,6 +209,11 @@ function updateCompactNavState() {
 }
 
 function updateDropdownPosition(idx = openMenu.value) {
+  if (isCompactNav.value) {
+    dropdownStyle.value = {}
+    return
+  }
+
   if (!isCompactNav.value || idx < 0) {
     dropdownStyle.value = {}
     return
@@ -233,12 +239,14 @@ function updateDropdownPosition(idx = openMenu.value) {
 }
 
 function handleMouseEnter(idx) {
+  if (isCompactNav.value) return
   clearTimeout(leaveTimer)
   openMenu.value = idx
   nextTick(() => updateDropdownPosition(idx))
 }
 
 function handleMouseLeave() {
+  if (isCompactNav.value) return
   leaveTimer = setTimeout(() => {
     openMenu.value = -1
     dropdownStyle.value = {}
@@ -1101,7 +1109,7 @@ function handleLogout() {
 @media (max-width: 900px) {
   .mega-nav {
     overflow-x: auto;
-    overflow-y: visible;
+    overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
   }
@@ -1112,28 +1120,40 @@ function handleLogout() {
     width: max-content;
     min-width: max-content;
     max-width: none;
+    align-items: flex-start;
     flex-wrap: nowrap;
     padding: 0 var(--space-3);
   }
 
   .mega-nav-item {
     flex: 0 0 auto;
-    min-width: auto;
+    min-width: 126px;
+    padding-bottom: 8px;
   }
 
   .mega-nav-trigger {
-    width: auto;
-    padding: 12px 14px;
+    width: 100%;
+    padding: 10px 14px;
     font-size: var(--text-xs);
   }
 
   .mega-nav-icon { display: none; }
 
   .mega-dropdown {
-    position: fixed;
-    width: min(240px, calc(100vw - 24px));
-    min-width: 200px;
+    position: static;
+    width: min(260px, calc(100vw - 32px));
+    min-width: 220px;
+    margin: 2px 0 0;
     border-radius: var(--radius-md);
+    box-shadow: 0 10px 24px rgba(63, 74, 66, 0.1);
+  }
+
+  .mega-nav-item.is-open {
+    min-width: min(280px, calc(100vw - 32px));
+  }
+
+  .dropdown-link {
+    padding: 11px 14px;
   }
 }
 
@@ -1143,21 +1163,21 @@ function handleLogout() {
   }
 
   .header-top {
-    padding: 0 0 10px;
+    padding: 0 0 6px;
   }
 
   .header-top-inner {
-    min-height: 64px;
+    min-height: 0;
     height: auto;
-    padding: 8px 16px 0;
-    align-items: flex-start;
-    gap: 8px 12px;
+    padding: 6px 14px 0;
+    align-items: center;
+    gap: 6px 10px;
     flex-wrap: wrap;
   }
 
   .header-top-inner :deep(.jb-logo-img) {
-    max-width: 96px;
-    height: auto;
+    height: 54px;
+    width: auto;
   }
 
   .header-user {
@@ -1168,27 +1188,35 @@ function handleLogout() {
     flex-wrap: wrap;
   }
 
+  .notification-bell-wrap,
+  .avatar-btn,
+  .logout-btn {
+    order: 1;
+  }
+
   .session-timer {
     order: 2;
     width: 100%;
-    margin: 4px 0 0;
-    padding: 8px 10px;
+    margin: 2px 0 0;
+    padding: 6px 10px;
     justify-content: space-between;
-    gap: 8px;
-    border-radius: 14px;
-    flex-wrap: wrap;
+    gap: 6px;
+    border-radius: 12px;
+    flex-wrap: nowrap;
   }
 
   .session-timer-text {
     font-size: 12px;
-    white-space: normal;
+    white-space: nowrap;
     line-height: 1.35;
     min-width: 0;
-    flex: 1 1 140px;
+    flex: 1 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .session-continue-btn {
-    padding: 6px 10px;
+    padding: 5px 10px;
     font-size: 12px;
     flex-shrink: 0;
   }
@@ -1238,6 +1266,39 @@ function handleLogout() {
     padding: 16px;
   }
 
+}
+
+@media (max-width: 480px) {
+  .header-top-inner {
+    padding-inline: 12px;
+  }
+
+  .header-user {
+    gap: 6px;
+  }
+
+  .header-top-inner :deep(.jb-logo-img) {
+    height: 48px;
+  }
+
+  .notification-bell-btn,
+  .user-avatar,
+  .avatar-placeholder {
+    width: 32px;
+    height: 32px;
+  }
+
+  .logout-btn {
+    padding: 6px 9px;
+  }
+
+  .session-timer {
+    padding: 5px 9px;
+  }
+
+  .mega-nav-trigger {
+    padding: 9px 12px;
+  }
 }
 
 /* === Modal Styles (Consistent with Profile) === */
