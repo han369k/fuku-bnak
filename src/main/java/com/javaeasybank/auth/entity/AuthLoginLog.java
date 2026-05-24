@@ -7,7 +7,7 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "auth_login_log")
+@Table(name = "AUTH_LOGIN_LOG")
 @Getter
 @Setter
 public class AuthLoginLog {
@@ -29,7 +29,7 @@ public class AuthLoginLog {
     @Column(name = "login_result", length = 10, nullable = false)
     private String loginResult;
 
-    @Column(name = "fail_reason", length = 200)
+    @Column(name = "fail_reason", length = 200, columnDefinition = "NVARCHAR(200)")
     private String failReason;
 
     @Column(name = "ip_address", length = 45)

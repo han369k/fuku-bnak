@@ -3,11 +3,13 @@ package com.javaeasybank.account.entity;
 import com.javaeasybank.account.enums.Currency;
 import com.javaeasybank.account.enums.EntryType;
 import com.javaeasybank.account.enums.TransactionType;
+import com.javaeasybank.account.enums.TransferBank;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.data.domain.Persistable;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -19,7 +21,7 @@ import java.util.UUID;
  */
 @Entity
 @Table(
-    name = "trans_log", 
+    name = "trans_log",
     indexes = {
         @Index(name = "idx_tx_ref", columnList = "reference_id"),
         @Index(name = "idx_tx_account_time", columnList = "account_number, created_at")
@@ -28,7 +30,21 @@ import java.util.UUID;
 @Getter
 @Setter
 @NoArgsConstructor
-public class TransLog {
+public class TransLog implements Persistable<String> {
+
+    /** 讓 Spring Data JPA 的 save() 正確走 persist() 而非 merge() */
+    @Transient
+    private boolean isNew = true;
+
+    @Override
+    public String getId() { return transactionId; }
+
+    @Override
+    public boolean isNew() { return isNew; }
+
+    @PostPersist
+    @PostLoad
+    void markNotNew() { this.isNew = false; }
 
     /**
      * 交易 ID，主鍵，長度為 36 (UUID)，不可為空。
@@ -44,16 +60,46 @@ public class TransLog {
     private String referenceId;
 
     /**
-     * 交易相關的帳號，長度為 12，不可為空。
+     * 交易相關的帳號，不可為空。
      */
-    @Column(name = "account_number", length = 12, nullable = false)
+    @Column(name = "account_number", length = 14, nullable = false)
     private String accountNumber;
 
     /**
-     * 對方帳號，長度為 12。
+     * 對方帳號，行內 12 碼，跨行最多 20 碼。
      */
-    @Column(name = "counterpart_account", length = 12)
+    @Column(name = "counterpart_account", length = 20)
     private String counterpartAccount;
+
+    /**
+     * 本筆交易所屬銀行代碼。
+     */
+    @Column(name = "bank_code", length = 10, nullable = false)
+    private String bankCode = TransferBank.JVB.getCode();
+
+    /**
+     * 本筆交易所屬銀行名稱。
+     */
+    @Column(name = "bank_name", length = 50, nullable = false, columnDefinition = "NVARCHAR(50)")
+    private String bankName = TransferBank.JVB.getDisplayName();
+
+    /**
+     * 對方銀行代碼。
+     */
+    @Column(name = "counterpart_bank_code", length = 10)
+    private String counterpartBankCode;
+
+    /**
+     * 對方銀行名稱。
+     */
+    @Column(name = "counterpart_bank_name", length = 50, columnDefinition = "NVARCHAR(50)")
+    private String counterpartBankName;
+
+    /**
+     * 是否為跨行交易。
+     */
+    @Column(name = "is_interbank", nullable = false)
+    private boolean interbank = false;
 
     /**
      * 記帳類型（借方/貸方），使用枚舉儲存，不可為空。
@@ -74,6 +120,18 @@ public class TransLog {
      */
     @Column(nullable = false, precision = 19, scale = 4)
     private BigDecimal amount;
+
+    /**
+     * 手續費金額。
+     */
+    @Column(name = "fee_amount", nullable = false, precision = 19, scale = 4)
+    private BigDecimal feeAmount = BigDecimal.ZERO;
+
+    /**
+     * 本次業務總扣款金額。
+     */
+    @Column(name = "total_debit_amount", precision = 19, scale = 4)
+    private BigDecimal totalDebitAmount;
 
     /**
      * 交易前的帳戶餘額，不可為空，精度為 19，小數點後 4 位。

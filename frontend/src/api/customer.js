@@ -21,9 +21,22 @@ export function updateCustomer(customerId, data) {
   return api.put(`/api/customers/${customerId}`, data)
 }
 
+// 上傳顧客證件圖片，回傳 /uploads/id-cards/... 路徑
+export async function uploadCustomerDocument(formData) {
+  const res = await api.post('/api/customers/documents', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return res.data.data
+}
+
 // 註銷客戶（軟刪除）
 export function deactivateCustomer(customerId) {
   return api.put(`/api/customers/${customerId}/deactivate`)
+}
+
+// 重新啟用客戶
+export function activateCustomer(customerId) {
+  return api.put(`/api/customers/${customerId}/activate`)
 }
 
 // 一鍵帶入測試資料

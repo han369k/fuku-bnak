@@ -1,9 +1,9 @@
 package com.javaeasybank.risk.controller;
 
 import com.javaeasybank.common.dto.response.ApiResponse;
-import com.javaeasybank.risk.core.enums.BlacklistType;
-import com.javaeasybank.risk.dto.BlackListRequest;
-import com.javaeasybank.risk.dto.BlackListResponse;
+import com.javaeasybank.risk.enums.BlacklistType;
+import com.javaeasybank.risk.dto.request.BlackListRequest;
+import com.javaeasybank.risk.dto.response.BlackListResponse;
 import com.javaeasybank.risk.service.BlackListService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -14,9 +14,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/blacklist")
+@RequestMapping("/api/risk/blacklist")
 public class BlackListController {
 
     private final BlackListService blackListService;
@@ -24,12 +28,12 @@ public class BlackListController {
     //查全部
     @GetMapping
     public ResponseEntity<ApiResponse<Page<BlackListResponse>>> getBlackLists(
+            @RequestParam(required = false) Boolean activated,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        Page<BlackListResponse> response = blackListService.findAll(pageable);
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(ApiResponse.success(blackListService.getBlackLists(activated, pageable)));
     }
 
-    //新增
+    //手動新增
     @PostMapping("/create")
     public ResponseEntity<ApiResponse<BlackListRequest>> createBlackList(@RequestBody BlackListRequest request) {
         BlackListRequest create = blackListService.create(request);
@@ -54,8 +58,8 @@ public class BlackListController {
     public ResponseEntity<ApiResponse<Void>> updateStatus(
             @PathVariable BlacklistType type,
             @PathVariable String value,
-            @RequestParam Boolean enabled) {
-        blackListService.updateStatusByBusinessKey(type, value, enabled);
+            @RequestParam Boolean status) {
+        blackListService.updateStatusByBusinessKey(type, value, status);
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 
@@ -67,5 +71,42 @@ public class BlackListController {
             @RequestBody BlackListRequest request) {
         BlackListResponse updatedResponse = blackListService.updateByBusinessKey(type, value, request);
         return ResponseEntity.ok(ApiResponse.success(updatedResponse));
+    }
+
+    /**
+     * 單一快速校驗（給外部模組呼叫）
+     * GET /api/risk/blacklist/check?type=ACCOUNT_NO&value=帳號
+     */
+    @GetMapping("/check")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> check(
+            @RequestParam BlacklistType type,
+            @RequestParam String value) {
+
+        boolean hit = blackListService.isBlacklisted(type, value);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("blacklisted", hit);
+        result.put("type", type);
+        result.put("value", value);
+
+        return ResponseEntity.ok(ApiResponse.success(result));
+    }
+
+    /**
+     * 批次校驗（給送審前預檢用）
+     * POST /api/risk/blacklist/check-batch
+     * Body: { "ACCOUNT_NO": "123456", "EMAIL": "xx@gmail.com" }
+     */
+    @PostMapping("/check-batch")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> checkBatch(
+            @RequestBody Map<BlacklistType, String> map) {
+
+        List<BlacklistType> hitTypes = blackListService.checkAll(map);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("blacklisted", !hitTypes.isEmpty());
+        result.put("hitTypes", hitTypes);
+
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 }

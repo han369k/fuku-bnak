@@ -1,25 +1,30 @@
 package com.javaeasybank.auth.service;
 
-import com.javaeasybank.auth.dto.AuthDto;
+import com.javaeasybank.auth.repository.AuthRespository;
 import java.util.List;
 
 public interface AuthEmpService {
 
-    // === 登入 ===
-    AuthDto.AuthEmpResponse login(AuthDto.LoginRequest request);
+    // === 登入 / 登出 ===
+    AuthRespository.AuthEmpResponse login(AuthRespository.LoginRequest request, String ipAddress);
+    void logout(String email, String ipAddress);
 
     // === 員工 CRUD ===
-    List<AuthDto.AuthEmpResponse> getAllEmps();
-    List<AuthDto.AuthEmpResponse> searchEmpsByName(String keyword);
-    AuthDto.AuthEmpResponse createEmp(AuthDto.AuthEmpRequest request);
-    AuthDto.AuthEmpResponse updateEmp(String empId, AuthDto.AuthEmpRequest request);
+    Long getEmpCount();
+    List<AuthRespository.AuthEmpResponse> getAllEmps();
+    List<AuthRespository.AuthEmpResponse> getAllEmpsExcludingCurrent();
+    List<AuthRespository.AuthEmpResponse> searchEmpsByName(String keyword);
+    List<AuthRespository.AuthEmpResponse> searchEmpsByNameExcludingCurrent(String keyword);
+    AuthRespository.AuthEmpResponse createEmp(AuthRespository.AuthEmpRequest request);
+    AuthRespository.AuthEmpResponse updateEmp(String empId, AuthRespository.AuthEmpRequest request);
     void suspendEmp(String empId);
+    void resumeEmp(String empId);
 
     // === 一鍵帶入測試資料 ===
     void seedTestData();
 
     // === 給其他模組對接用 ===
-    AuthDto.AuthEmpResponse getEmpByEmpId(String empId);
-    AuthDto.AuthEmpResponse getEmpByEmail(String email);
+    AuthRespository.AuthEmpResponse getEmpByEmpId(String empId);
+    AuthRespository.AuthEmpResponse getEmpByEmail(String email);
     String getRoleCodeByEmpId(String empId);
 }

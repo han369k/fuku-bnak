@@ -6,8 +6,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
+// 貸款申請資料存取介面
 public interface LoanApplicationRepository extends JpaRepository<LoanApplication, String> {
 
-    // 依狀態篩選，按建立時間降序
+    // 依申請狀態篩選，按建立時間降序排列（最新的在前）
     List<LoanApplication> findByApplicationStatusOrderByCreateTimeDesc(LoanApplicationStatus status);
+
+    // 依客戶 ID 查詢該客戶的所有申請，按建立時間降序排列
+    List<LoanApplication> findByCustomerIdOrderByCreateTimeDesc(String customerId);
+
+    // 查詢所有 updateTime 不為 null 的申請，依 updateTime 降序排列
+    List<LoanApplication> findByUpdateTimeIsNotNullOrderByUpdateTimeDesc();
 }

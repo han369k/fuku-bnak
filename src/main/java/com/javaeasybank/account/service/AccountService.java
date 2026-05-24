@@ -8,6 +8,7 @@ import com.javaeasybank.account.enums.AccountType;
 import com.javaeasybank.account.enums.Currency;
 import com.javaeasybank.account.exception.AccountException;
 import com.javaeasybank.account.repository.AccountRepository;
+import com.javaeasybank.account.utils.AccountDefaults;
 import com.javaeasybank.account.utils.AccountNumberGenerator;
 import com.javaeasybank.customer.repository.CustomerProfileRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,19 +18,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class AccountService {
 
-    private static final BigDecimal CHECKING_INITIAL_BALANCE = new BigDecimal("1000");
-    private static final BigDecimal CHECKING_INTEREST_RATE = new BigDecimal("0.0015");
+    private static final List<AccountType> ADMIN_EXCLUDED_ACCOUNT_TYPES = List.of(AccountType.BUSINESS);
 
     private final AccountRepository accountRepository;
     private final CustomerProfileRepository customerProfileRepository;
@@ -65,11 +61,10 @@ public class AccountService {
 
         // 4. 活存帳戶強制綁定初始餘額 1,000，並設定固定利率 0.15%
         if (request.getAccountType() == AccountType.CHECKING) {
-            account.setBalance(CHECKING_INITIAL_BALANCE.setScale(request.getCurrency().getDecimalPlaces(), RoundingMode.HALF_EVEN));
-            account.setInterestRate(CHECKING_INTEREST_RATE);
+            AccountDefaults.applyCheckingDefaults(account);
         } else if (request.getAccountType() == AccountType.SUB_ACCOUNT) {
              // 子帳戶利率比照活存
-             account.setInterestRate(CHECKING_INTEREST_RATE);
+             AccountDefaults.applySubAccountDefaults(account);
         }
 
         // 儲存並回傳
@@ -89,6 +84,9 @@ public class AccountService {
     public AccountResponse getAccount(String accountNumber) {
         Account account = accountRepository.findById(accountNumber)
                 .orElseThrow(() -> new AccountException("ACCOUNT_NOT_FOUND", "Account not found: " + accountNumber));
+        if (account.getAccountType() == AccountType.BUSINESS) {
+            throw new AccountException("ACCOUNT_NOT_FOUND", "Account not found: " + accountNumber);
+        }
         return toResponse(account);
     }
 
@@ -101,7 +99,7 @@ public class AccountService {
      */
     @Transactional(readOnly = true)
     public Page<AccountResponse> getAccountsByCustomerId(String customerId, Pageable pageable) {
-        return accountRepository.findByCustomerId(customerId, pageable)
+        return accountRepository.findByCustomerIdAndAccountTypeNotIn(customerId, ADMIN_EXCLUDED_ACCOUNT_TYPES, pageable)
                 .map(this::toResponse);
     }
 
@@ -114,7 +112,7 @@ public class AccountService {
      */
     @Transactional(readOnly = true)
     public Page<AccountResponse> getAccountsByStatus(AccountStatus status, Pageable pageable) {
-        return accountRepository.findByStatus(status, pageable)
+        return accountRepository.findByStatusAndAccountTypeNot(status, AccountType.BUSINESS, pageable)
                 .map(this::toResponse);
     }
 
@@ -128,7 +126,35 @@ public class AccountService {
      */
     @Transactional(readOnly = true)
     public Page<AccountResponse> getAccountsByTypeAndCurrency(AccountType type, Currency currency, Pageable pageable) {
+        if (type == AccountType.BUSINESS) {
+            return Page.empty(pageable);
+        }
         return accountRepository.findByAccountTypeAndCurrency(type, currency, pageable)
+                .map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<AccountResponse> searchAdminAccounts(
+            String customerId,
+            String customerName,
+            String accountNumber,
+            AccountStatus status,
+            AccountType type,
+            Currency currency,
+            Pageable pageable) {
+        if (type == AccountType.BUSINESS) {
+            return Page.empty(pageable);
+        }
+
+        return accountRepository.searchAdminAccounts(
+                        normalize(customerId),
+                        normalize(customerName),
+                        normalize(accountNumber),
+                        status,
+                        type,
+                        currency,
+                        ADMIN_EXCLUDED_ACCOUNT_TYPES,
+                        pageable)
                 .map(this::toResponse);
     }
 
@@ -140,8 +166,27 @@ public class AccountService {
      */
     @Transactional(readOnly = true)
     public Page<AccountResponse> getLatest(Pageable pageable) {
-        return accountRepository.findAllByOrderByCreatedAtDesc(pageable)
+        return accountRepository.findByAccountTypeNotOrderByCreatedAtDesc(AccountType.BUSINESS, pageable)
                 .map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.Map<String, Object> getStatistics() {
+        java.util.Map<String, Object> stats = new java.util.HashMap<>();
+        stats.put("status", convertToMap(accountRepository.countByStatusGroup()));
+        stats.put("currency", convertToMap(accountRepository.countByCurrencyGroup()));
+        stats.put("accountType", convertToMap(accountRepository.countByAccountTypeGroup()));
+        stats.put("totalAccounts", accountRepository.countExcludingBusiness());
+        stats.put("totalBalance", accountRepository.sumTotalBalance());
+        return stats;
+    }
+
+    private java.util.Map<String, Long> convertToMap(List<Object[]> results) {
+        return results.stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        row -> row[0] != null ? row[0].toString() : "UNKNOWN",
+                        row -> ((Number) row[1]).longValue()
+                ));
     }
 
     /**
@@ -162,6 +207,9 @@ public class AccountService {
     public AccountResponse updateAccountStatus(String accountNumber, AccountStatus newStatus) {
         Account account = accountRepository.findById(accountNumber)
                 .orElseThrow(() -> new AccountException("ACCOUNT_NOT_FOUND", "Account not found: " + accountNumber));
+        if (account.getAccountType() == AccountType.BUSINESS) {
+            throw new AccountException("ACCOUNT_NOT_FOUND", "Account not found: " + accountNumber);
+        }
 
         AccountStatus currentStatus = account.getStatus();
 
@@ -229,6 +277,13 @@ public class AccountService {
         return AccountResponse.fromEntity(account, customerName);
     }
 
+    private String normalize(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
+    }
+
     /**
      * 執行客戶的 KYC 驗證。
      * 目前為模擬通過。
@@ -253,6 +308,11 @@ public class AccountService {
         String customerId = request.getCustomerId();
         AccountType type = request.getAccountType();
         Currency currency = request.getCurrency();
+
+        if (type == AccountType.LOAN || type == AccountType.CREDIT_CARD || type == AccountType.BUSINESS) {
+            throw new AccountException("DEDICATED_ACCOUNT_TYPE",
+                    "此帳戶類型需透過專用業務服務建立：" + type);
+        }
 
         if (type == AccountType.CHECKING) {
             // CHECKING(活存): 同客戶 + 同 currency 只能有一個

@@ -1,4 +1,6 @@
 import './assets/main.css'
+import './assets/customer-theme.css'
+import './assets/admin-theme.css'
 
 // 載入Vue的運行環境
 import { createApp } from 'vue'
@@ -11,6 +13,10 @@ import router from './router' // 路由套件
 import Antd from 'ant-design-vue' // 螞蟻骨架
 import 'ant-design-vue/dist/reset.css' // 螞蟻css
 import { createPinia } from 'pinia' // 狀態管理
+
+//載入tailwind
+import './assets/tailwind.css'
+
 
 // 將根元件掛載到變數 才能使用其方法
 const app = createApp(App)

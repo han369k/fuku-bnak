@@ -3,16 +3,19 @@
     <transition name="modal-fade">
       <div v-if="modelValue" class="modal-overlay" @click.self="close">
         <div class="modal" @click.stop>
+
           <!-- ── Header ── -->
           <div class="modal-header">
             <div class="header-left">
-              <span class="modal-icon">🗂️</span>
+              <span class="modal-icon"><i class="fa-solid fa-file-pen"></i></span>
               <div>
                 <div class="modal-title">審核填單</div>
                 <div class="modal-sub">
                   <span class="id-chip">{{ app?.applicationId }}</span>
                   <span class="applicant-hint">
-                    {{ app?.applicantName || (app?.customerId ? `會員 #${app.customerId}` : '') }}
+                    {{
+                      app?.applicantName || (app?.cif ? `CIF: ${app.cif}` : (app?.customerId ? `#${app.customerId}` : ''))
+                    }}
                   </span>
                   <span v-if="review" class="review-status-badge" :class="reviewStatusClass">
                     {{ reviewStatusLabel }}
@@ -20,13 +23,15 @@
                 </div>
               </div>
             </div>
-            <button class="close-btn" @click="close">✕</button>
+            <button class="close-btn" @click="close"><i class="fa-solid fa-x"></i></button>
           </div>
 
           <div class="modal-body">
             <div class="modal-columns">
+
               <!-- ── 左欄：申請資訊 + 現有填單摘要 ── -->
               <div class="info-panel">
+
                 <!-- 申請資訊 -->
                 <div class="section-title">申請資訊</div>
                 <div class="info-grid">
@@ -52,7 +57,7 @@
                     <span class="info-label">申請人</span>
                     <span class="info-val">
                       {{
-                        app?.applicantName || (app?.customerId ? `會員 #${app.customerId}` : '—')
+                        app?.applicantName || (app?.cif ? `${app.cif}` : (app?.customerId ? `#${app.customerId}` : '—'))
                       }}
                     </span>
                   </div>
@@ -72,7 +77,7 @@
 
                 <!-- 現有填單摘要 -->
                 <template v-if="reviewLoading">
-                  <div class="section-title" style="margin-top: 20px">現有填單</div>
+                  <div class="section-title" style="margin-top:20px">現有填單</div>
                   <div class="review-skel">
                     <div v-for="i in 4" :key="i" class="sk-row">
                       <div class="sk sk-label"></div>
@@ -90,21 +95,23 @@
                   <div class="info-grid">
                     <div class="info-row">
                       <span class="info-label">確認金額</span>
-                      <span class="info-val amount">{{
-                        formatAmount(review.confirmedAmount)
-                      }}</span>
+                      <span class="info-val amount">{{ formatAmount(form.confirmedAmount) }}</span>
                     </div>
                     <div class="info-row">
                       <span class="info-label">確認期數</span>
-                      <span class="info-val">{{ review.confirmedPeriod }} 個月</span>
+                      <span class="info-val">{{ form.confirmedPeriod ? form.confirmedPeriod + ' 個月' : '—' }}</span>
                     </div>
                     <div class="info-row">
                       <span class="info-label">確認利率</span>
-                      <span class="info-val rate">{{ formatRate(review.confirmedRate) }}</span>
+                      <span class="info-val rate">
+                        {{ form.confirmedRate && !isNaN(parseFloat(form.confirmedRate))
+                          ? parseFloat(form.confirmedRate).toFixed(2) + '%'
+                          : '—' }}
+                      </span>
                     </div>
                     <div class="info-row">
                       <span class="info-label">擔保品備注</span>
-                      <span class="info-val">{{ review.collateralNote || '—' }}</span>
+                      <span class="info-val">{{ form.collateralNote || '—' }}</span>
                     </div>
                     <div class="info-row">
                       <span class="info-label">填單行員</span>
@@ -113,14 +120,14 @@
                     <div class="info-row">
                       <span class="info-label">填單時間</span>
                       <span class="info-val mono small">{{
-                        formatDateTime(review.reviewTime)
-                      }}</span>
+                          formatDateTime(review.reviewTime)
+                        }}</span>
                     </div>
                     <div class="info-row" v-if="review.submittedTime">
                       <span class="info-label">送審時間</span>
                       <span class="info-val mono small">{{
-                        formatDateTime(review.submittedTime)
-                      }}</span>
+                          formatDateTime(review.submittedTime)
+                        }}</span>
                     </div>
                     <div class="info-row" v-if="review.reviewNote">
                       <span class="info-label">審核備注</span>
@@ -132,29 +139,38 @@
                 <template v-else-if="!reviewLoading">
                   <div class="section-divider"></div>
                   <div class="no-review">
-                    <span class="no-review-icon">📋</span>
+                    <span class="no-review-icon"><i class="fa-solid fa-file-lines"></i></span>
                     <span>尚未建立填單草稿</span>
                   </div>
                 </template>
+
               </div>
 
               <!-- ── 右欄：填單表單 ── -->
               <div class="form-panel">
-                <div class="section-title">
-                  {{ review ? '更新草稿' : '建立草稿' }}
+                <div class="section-title section-title-row">
+                  <span>{{ review ? '更新草稿' : '建立草稿' }}</span>
+                  <button
+                    v-if="!isSubmitted"
+                    class="btn-autofill"
+                    @click="fillFromApp"
+                    title="將申請人原始申請資訊代入欄位"
+                  >
+                    一鍵代入
+                  </button>
                 </div>
 
                 <!-- Alert -->
                 <transition name="alert-fade">
                   <div v-if="alert.show" class="form-alert" :class="'alert-' + alert.type">
-                    <span>{{ alert.type === 'success' ? '✅' : '❌' }}</span>
+                    <span><i :class="alert.type === 'success' ? 'fa-solid fa-circle-check' : 'fa-solid fa-circle-xmark'"></i></span>
                     <span>{{ alert.msg }}</span>
                   </div>
                 </transition>
 
                 <!-- 已送審提示 -->
                 <div v-if="isSubmitted" class="submitted-banner">
-                  <span class="submitted-icon">✅</span>
+                  <span class="submitted-icon"><i class="fa-solid fa-check"></i></span>
                   <div>
                     <div class="submitted-title">此填單已送審</div>
                     <div class="submitted-sub">送審後無法修改，如需調整請洽主管</div>
@@ -163,6 +179,7 @@
 
                 <!-- Form -->
                 <fieldset class="form-fields" :disabled="isSubmitted">
+
                   <div class="field-row">
                     <div class="field">
                       <label class="field-label">確認金額（TWD）<span class="req">*</span></label>
@@ -183,7 +200,7 @@
                         class="field-input"
                         type="number"
                         v-model.number="form.confirmedPeriod"
-                        placeholder="e.g. 36"
+                        placeholder="e.g. 12"
                         :class="{ error: v$.confirmedPeriod }"
                       />
                       <span class="field-hint" v-if="app?.applyPeriod">
@@ -193,19 +210,17 @@
                   </div>
 
                   <div class="field">
-                    <label class="field-label">確認利率（小數）<span class="req">*</span></label>
+                    <label class="field-label">確認利率（%）<span class="req">*</span></label>
                     <div class="rate-input-wrap">
                       <input
                         class="field-input"
-                        type="number"
-                        step="0.001"
-                        v-model.number="form.confirmedRate"
-                        placeholder="e.g. 0.04"
+                        type="text"
+                        inputmode="decimal"
+                        v-model="form.confirmedRate"
+                        placeholder="可填至小數點後兩位"
                         :class="{ error: v$.confirmedRate }"
                       />
-                      <span class="rate-preview" v-if="form.confirmedRate">
-                        = {{ (form.confirmedRate * 100).toFixed(2) }}%
-                      </span>
+                      <span class="rate-unit">%</span>
                     </div>
                     <span class="field-hint" v-if="app?.rate">
                       申請利率：{{ formatRate(app.rate) }}
@@ -223,18 +238,16 @@
                   </div>
 
                   <div class="field">
-                    <label class="field-label">填單行員 ID<span class="req">*</span></label>
-                    <input
-                      class="field-input"
-                      v-model="form.empId"
-                      placeholder="e.g. EMP001"
-                      :class="{ error: v$.empId }"
-                    />
+                    <label class="field-label">填單行員</label>
+                    <div class="emp-id-display">
+                      <span class="emp-id-badge">{{ form.empId || '—' }}</span>
+<!--                      <span class="emp-id-hint">由登入帳號自動帶入</span>-->
+                    </div>
                   </div>
 
                   <!-- 差異提示 -->
                   <div class="diff-hints" v-if="hasDiff">
-                    <div class="diff-title">⚠ 與原始申請差異</div>
+                    <div class="diff-title"><i class="fa-solid fa-triangle-exclamation"></i> 與原始申請差異</div>
                     <div class="diff-row" v-if="amountDiff !== null">
                       <span class="diff-label">金額</span>
                       <span class="diff-val" :class="amountDiff > 0 ? 'up' : 'down'">
@@ -250,10 +263,11 @@
                     <div class="diff-row" v-if="rateDiff !== null">
                       <span class="diff-label">利率</span>
                       <span class="diff-val" :class="rateDiff > 0 ? 'up' : 'down'">
-                        {{ rateDiff > 0 ? '▲' : '▼' }} {{ (Math.abs(rateDiff) * 100).toFixed(3) }}%
+                        {{ rateDiff > 0 ? '▲' : '▼' }} {{ Math.abs(rateDiff).toFixed(2) }}%
                       </span>
                     </div>
                   </div>
+
                 </fieldset>
 
                 <!-- 驗證錯誤提示 -->
@@ -263,20 +277,14 @@
 
                 <!-- Action buttons -->
                 <div class="form-actions" v-if="!isSubmitted">
-                  <button
-                    class="btn btn-ghost"
-                    @click="resetForm"
-                    :disabled="saveLoading || submitLoading"
-                  >
+                  <button class="btn btn-ghost" @click="resetForm"
+                          :disabled="saveLoading || submitLoading">
                     重置
                   </button>
-                  <button
-                    class="btn btn-draft"
-                    @click="saveDraft"
-                    :disabled="saveLoading || submitLoading"
-                  >
+                  <button class="btn btn-draft" @click="saveDraft"
+                          :disabled="saveLoading || submitLoading">
                     <span v-if="saveLoading" class="spin">⟳</span>
-                    <span v-else>💾</span>
+                    <span v-else><i class="fa-solid fa-floppy-disk"></i></span>
                     儲存草稿
                   </button>
                   <button
@@ -286,17 +294,19 @@
                     :title="!review ? '請先儲存草稿後才能送審' : ''"
                   >
                     <span v-if="submitLoading" class="spin">⟳</span>
-                    <span v-else>🚀</span>
+                    <span v-else><i class="fa-solid fa-paper-plane"></i></span>
                     送審
                   </button>
                 </div>
 
                 <div class="form-hint-row" v-if="!review && !isSubmitted">
-                  <span class="hint-icon">ℹ️</span> 請先儲存草稿，才能執行送審
+                  <span class="hint-icon"><i class="fa-solid fa-circle-info"></i></span> 請先儲存草稿，才能執行送審
                 </div>
+
               </div>
             </div>
           </div>
+
         </div>
       </div>
     </transition>
@@ -304,9 +314,9 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch } from 'vue'
-import api from '@/api/axios'
-import { BASE_URL } from '@/api/axios'
+import {ref, reactive, computed, watch} from 'vue'
+import axios from '@/api/axios'
+import api from "@/api/axios";
 
 // ── Props / Emits ──
 const props = defineProps({
@@ -318,13 +328,8 @@ const emit = defineEmits(['update:modelValue', 'review-updated'])
 // ── Constants ──
 
 const LOAN_TYPE_NAME = {
-  PERSONAL: '個人信貸',
-  CAR: '汽車貸款',
-  MOTOR: '機車貸款',
-  STUDENT: '學貸',
-  BUSINESS: '創業貸款',
-  HOUSE: '房屋貸款',
-  LAND: '土地貸款',
+  PERSONAL: '個人信貸', CAR: '汽車貸款', MOTOR: '機車貸款', STUDENT: '學貸',
+  BUSINESS: '創業貸款', HOUSE: '房屋貸款', LAND: '土地貸款',
 }
 
 // ── State ──
@@ -337,38 +342,31 @@ const submitted = ref(false)
 const form = reactive({
   confirmedAmount: null,
   confirmedPeriod: null,
-  confirmedRate: null,
+  confirmedRate: '',   // 文字欄位，空字串為未填
   collateralNote: '',
   empId: '',
 })
 
-const alert = reactive({ show: false, type: 'success', msg: '' })
+const alert = reactive({show: false, type: 'success', msg: ''})
 
 // ── Computed ──
 const isSubmitted = computed(() => review.value?.reviewStatus === 'SUBMITTED')
 
-const reviewStatusLabel = computed(
-  () =>
-    ({
-      DRAFT: '草稿',
-      SUBMITTED: '已送審',
-    })[review.value?.reviewStatus] || review.value?.reviewStatus,
-)
+const reviewStatusLabel = computed(() => ({
+  DRAFT: '草稿',
+  SUBMITTED: '已送審',
+}[review.value?.reviewStatus] || review.value?.reviewStatus))
 
-const reviewStatusClass = computed(
-  () =>
-    ({
-      DRAFT: 'rs-draft',
-      SUBMITTED: 'rs-submitted',
-    })[review.value?.reviewStatus] || '',
-)
+const reviewStatusClass = computed(() => ({
+  DRAFT: 'rs-draft',
+  SUBMITTED: 'rs-submitted',
+}[review.value?.reviewStatus] || ''))
 
 // 驗證
 const v$ = computed(() => ({
   confirmedAmount: submitted.value && !form.confirmedAmount,
   confirmedPeriod: submitted.value && !form.confirmedPeriod,
-  confirmedRate: submitted.value && form.confirmedRate == null,
-  empId: submitted.value && !form.empId,
+  confirmedRate: submitted.value && (!form.confirmedRate || isNaN(parseFloat(form.confirmedRate))),
 }))
 const hasValidateErr = computed(() => Object.values(v$.value).some(Boolean))
 
@@ -384,23 +382,23 @@ const periodDiff = computed(() => {
   return d !== 0 ? d : null
 })
 const rateDiff = computed(() => {
-  if (form.confirmedRate == null || !props.app?.rate) return null
-  const d = parseFloat((form.confirmedRate - parseFloat(props.app.rate)).toFixed(6))
+  if (!form.confirmedRate || !props.app?.rate) return null
+  // form.confirmedRate 為 % 字串（e.g. "3.14"），app.rate 為 decimal（e.g. 0.0314）→ 統一換成 %
+  const applyRatePct = parseFloat(props.app.rate) * 100
+  const d = parseFloat((parseFloat(form.confirmedRate) - applyRatePct).toFixed(4))
   return d !== 0 ? d : null
 })
-const hasDiff = computed(
-  () => amountDiff.value !== null || periodDiff.value !== null || rateDiff.value !== null,
+const hasDiff = computed(() =>
+  amountDiff.value !== null || periodDiff.value !== null || rateDiff.value !== null
 )
 
 // ── Watch：開啟時載入 ──
-watch(
-  () => props.modelValue,
-  async (open) => {
-    if (open && props.app?.applicationId) {
-      await fetchReview()
-    }
-  },
-)
+watch(() => props.modelValue, async (open) => {
+  if (open && props.app?.applicationId) {
+    await fetchReview()
+    form.empId = JSON.parse(localStorage.getItem('auth_user'))?.empId || ''
+  }
+})
 
 // ── Methods ──
 async function fetchReview() {
@@ -408,7 +406,7 @@ async function fetchReview() {
   review.value = null
   try {
     const res = await api.get(
-      `${BASE_URL}/api/admin/loan-applications/${props.app.applicationId}/review`,
+      `/api/admin/loan-applications/${props.app.applicationId}/review`
     )
     if (res.data.success && res.data.data) {
       review.value = res.data.data
@@ -425,22 +423,38 @@ async function fetchReview() {
 function prefillForm(r) {
   form.confirmedAmount = r.confirmedAmount ?? null
   form.confirmedPeriod = r.confirmedPeriod ?? null
-  form.confirmedRate = r.confirmedRate != null ? parseFloat(r.confirmedRate) : null
+  // DB 儲存 decimal（0.0314），顯示時轉為百分比字串（"3.14"）
+  form.confirmedRate = r.confirmedRate != null
+    ? String(parseFloat((parseFloat(r.confirmedRate) * 100).toFixed(4)))
+    : ''
   form.collateralNote = r.collateralNote ?? ''
   form.empId = r.empId ?? ''
+}
+
+function fillFromApp() {
+  if (!props.app) return
+  form.confirmedAmount = props.app.applyAmount ?? null
+  form.confirmedPeriod = props.app.applyPeriod ?? null
+  // app.rate 為 decimal（e.g. 0.0314），轉成百分比字串（"3.14"）
+  form.confirmedRate = props.app.rate != null
+    ? String(parseFloat((parseFloat(props.app.rate) * 100).toFixed(4)))
+    : ''
+  // collateralNote 不覆蓋，保留已填內容
 }
 
 function resetForm() {
   if (review.value) {
     prefillForm(review.value)
+    form.empId = JSON.parse(localStorage.getItem('auth_user'))?.empId || ''
   } else {
     Object.assign(form, {
       confirmedAmount: null,
       confirmedPeriod: null,
-      confirmedRate: null,
+      confirmedRate: '',
       collateralNote: '',
-      empId: '',
+      empId: ''
     })
+    form.empId = JSON.parse(localStorage.getItem('auth_user'))?.empId || ''
   }
   submitted.value = false
   alert.show = false
@@ -453,13 +467,19 @@ async function saveDraft() {
   saveLoading.value = true
   alert.show = false
   try {
-    await api.post(`${BASE_URL}/api/admin/loan-applications/${props.app.applicationId}/review`, {
-      confirmedAmount: form.confirmedAmount,
-      confirmedPeriod: form.confirmedPeriod,
-      confirmedRate: form.confirmedRate,
-      collateralNote: form.collateralNote,
-      empId: form.empId,
-    })
+    await api.post(
+      `/api/admin/loan-applications/${props.app.applicationId}/review`,
+      {
+        confirmedAmount: form.confirmedAmount,
+        confirmedPeriod: form.confirmedPeriod,
+        // 輸入的是百分比字串，儲存時解析並轉回 decimal
+        confirmedRate: form.confirmedRate
+          ? parseFloat((parseFloat(form.confirmedRate) / 100).toFixed(6))
+          : null,
+        collateralNote: form.collateralNote,
+        empId: form.empId,
+      }
+    )
     showAlert('success', '草稿已儲存')
     submitted.value = false
     await fetchReview()
@@ -477,7 +497,7 @@ async function submitReview() {
   alert.show = false
   try {
     await api.patch(
-      `${BASE_URL}/api/admin/loan-applications/${props.app.applicationId}/review/submit`,
+      `/api/admin/loan-applications/${props.app.applicationId}/review/submit`
     )
     showAlert('success', '已成功送審！')
     await fetchReview()
@@ -490,11 +510,10 @@ async function submitReview() {
 }
 
 function showAlert(type, msg) {
-  Object.assign(alert, { show: true, type, msg })
-  if (type === 'success')
-    setTimeout(() => {
-      alert.show = false
-    }, 4000)
+  Object.assign(alert, {show: true, type, msg})
+  if (type === 'success') setTimeout(() => {
+    alert.show = false
+  }, 4000)
 }
 
 function close() {
@@ -505,32 +524,37 @@ function close() {
 function formatAmount(n) {
   return n ? '$ ' + Number(n).toLocaleString('zh-TW') : '—'
 }
+
 function formatRate(r) {
   return r != null ? (parseFloat(r) * 100).toFixed(2) + '%' : '—'
 }
+
 function formatDateTime(d) {
   return d ? d.replace('T', ' ').substring(0, 16) : '—'
 }
 </script>
 
 <style scoped>
-/* ── Variables ── */
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css');
+
+/* ── Variables（對齊 admin-theme）── */
 .modal-overlay {
-  --accent: #2563eb;
-  --accent-dim: rgba(37, 99, 235, 0.08);
-  --accent-lt: rgba(37, 99, 235, 0.15);
+  --accent: #5C6B5F;
+  --accent-dim: rgba(92, 107, 95, 0.10);
+  --accent-lt: rgba(92, 107, 95, 0.20);
   --surface: #ffffff;
-  --surface-2: #f1f5f9;
-  --border: #e2e8f0;
-  --border-2: #cbd5e1;
-  --ink: #0f172a;
-  --ink-2: #1e293b;
-  --muted: #94a3b8;
-  --muted-2: #64748b;
-  --red: #dc2626;
-  --green: #16a34a;
-  --blue: #2563eb;
-  --gold: #d97706;
+  --surface-2: #f0f2f0;
+  --border: #dde1de;
+  --border-2: #c8cdc9;
+  --ink: #2B2B2B;
+  --ink-2: #333333;
+  --muted: #8c9891;
+  --muted-2: #5a6a5e;
+  --primary: #5C6B5F;
+  --primary-dk: #4A574D;
+  --red: #C0392B;
+  --green: #4A8C5C;
+  --gold: #8C7355;
 }
 
 /* ── Overlay ── */
@@ -561,23 +585,20 @@ function formatDateTime(d) {
 }
 
 /* Transitions */
-.modal-fade-enter-active,
-.modal-fade-leave-active {
-  transition:
-    opacity 0.2s,
-    transform 0.2s;
+.modal-fade-enter-active, .modal-fade-leave-active {
+  transition: opacity 0.2s, transform 0.2s;
 }
-.modal-fade-enter-from,
-.modal-fade-leave-to {
+
+.modal-fade-enter-from, .modal-fade-leave-to {
   opacity: 0;
   transform: scale(0.97) translateY(8px);
 }
-.alert-fade-enter-active,
-.alert-fade-leave-active {
+
+.alert-fade-enter-active, .alert-fade-leave-active {
   transition: opacity 0.2s;
 }
-.alert-fade-enter-from,
-.alert-fade-leave-to {
+
+.alert-fade-enter-from, .alert-fade-leave-to {
   opacity: 0;
 }
 
@@ -590,20 +611,24 @@ function formatDateTime(d) {
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
+
 .header-left {
   display: flex;
   align-items: center;
   gap: 12px;
 }
+
 .modal-icon {
   font-size: 22px;
 }
+
 .modal-title {
   font-family: 'Noto Serif TC', serif;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--ink);
 }
+
 .modal-sub {
   display: flex;
   align-items: center;
@@ -611,37 +636,41 @@ function formatDateTime(d) {
   margin-top: 4px;
   flex-wrap: wrap;
 }
+
 .id-chip {
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 11px;
+  font-size: 13px;
   color: var(--accent);
   background: var(--accent-dim);
   border: 1px solid var(--accent-lt);
   padding: 2px 8px;
   border-radius: 4px;
 }
+
 .applicant-hint {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--muted-2);
 }
 
 .review-status-badge {
-  font-size: 10px;
+  font-size: 12px;
   font-family: 'IBM Plex Mono', monospace;
   padding: 2px 8px;
   border-radius: 20px;
   border: 1px solid;
   font-weight: 600;
 }
+
 .rs-draft {
   color: var(--gold);
-  border-color: #fcd34d;
-  background: #fffbeb;
+  border-color: #C4B090;
+  background: #F5EFE6;
 }
+
 .rs-submitted {
-  color: #166534;
-  border-color: #86efac;
-  background: #f0fdf4;
+  color: var(--primary-dk);
+  border-color: #A5B8A9;
+  background: #ECF0EC;
 }
 
 .close-btn {
@@ -658,6 +687,7 @@ function formatDateTime(d) {
   justify-content: center;
   transition: all 0.15s;
 }
+
 .close-btn:hover {
   background: var(--surface-2);
   color: var(--ink);
@@ -668,6 +698,7 @@ function formatDateTime(d) {
   flex: 1;
   overflow: hidden;
 }
+
 .modal-columns {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -684,8 +715,9 @@ function formatDateTime(d) {
   flex-direction: column;
   gap: 0;
 }
+
 .section-title {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--muted-2);
   font-family: 'IBM Plex Mono', monospace;
@@ -696,11 +728,44 @@ function formatDateTime(d) {
   align-items: center;
   gap: 10px;
 }
+
+.section-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.btn-autofill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  font-size: 13px;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 600;
+  color: var(--primary-dk);
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-lt);
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.btn-autofill:hover {
+  background: var(--accent-lt);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .review-id {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
   font-weight: 400;
 }
+
 .section-divider {
   border: none;
   border-top: 1px solid var(--border);
@@ -712,46 +777,53 @@ function formatDateTime(d) {
   flex-direction: column;
   gap: 9px;
 }
+
 .info-row {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 8px;
 }
+
 .info-label {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--muted-2);
   white-space: nowrap;
   flex-shrink: 0;
   font-family: 'IBM Plex Mono', monospace;
 }
+
 .info-val {
-  font-size: 13px;
+  font-size: 15px;
   color: var(--ink-2);
   text-align: right;
   word-break: break-all;
 }
+
 .info-val.amount {
   font-family: 'IBM Plex Mono', monospace;
   font-weight: 600;
   color: var(--ink);
 }
+
 .info-val.rate {
   font-family: 'IBM Plex Mono', monospace;
   color: var(--green);
   font-weight: 500;
 }
+
 .info-val.mono {
   font-family: 'IBM Plex Mono', monospace;
 }
+
 .info-val.small {
-  font-size: 11px;
+  font-size: 13px;
   color: var(--muted-2);
 }
 
 /* Type badge */
 .type-badge {
-  font-size: 11px;
+  font-size: 13px;
   font-family: 'IBM Plex Mono', monospace;
   padding: 2px 8px;
   border-radius: 4px;
@@ -760,40 +832,47 @@ function formatDateTime(d) {
   color: var(--muted-2);
   display: inline-block;
 }
+
 .type-PERSONAL {
-  color: #b45309;
-  border-color: #fde68a;
-  background: #fffbeb;
+  color: #7A5C3A;
+  border-color: #dde1de;
+  background: #f4f5f7;
 }
+
 .type-CAR {
-  color: #1d4ed8;
-  border-color: #bfdbfe;
-  background: #eff6ff;
+  color: #3F5F5A;
+  border-color: #B5CECA;
+  background: #EEF3F2;
 }
+
 .type-MOTOR {
-  color: #c2410c;
-  border-color: #fed7aa;
-  background: #fff7ed;
+  color: #7A4A38;
+  border-color: #D4B8AE;
+  background: #F5EDE9;
 }
+
 .type-STUDENT {
-  color: #15803d;
-  border-color: #bbf7d0;
-  background: #f0fdf4;
+  color: #4A6B5C;
+  border-color: #B5CCBF;
+  background: #EEF3EF;
 }
+
 .type-BUSINESS {
-  color: #6d28d9;
-  border-color: #ddd6fe;
-  background: #f5f3ff;
+  color: #5C5074;
+  border-color: #C4BCDA;
+  background: #F0EEF5;
 }
+
 .type-HOUSE {
-  color: #0f766e;
-  border-color: #99f6e4;
-  background: #f0fdfa;
+  color: #3D5C58;
+  border-color: #AECBC7;
+  background: #EBF2F1;
 }
+
 .type-LAND {
-  color: #78716c;
-  border-color: #e7e5e4;
-  background: #fafaf9;
+  color: #5a6a5e;
+  border-color: #dde1de;
+  background: #f0f2f0;
 }
 
 /* Skeleton */
@@ -803,25 +882,30 @@ function formatDateTime(d) {
   gap: 10px;
   margin-top: 4px;
 }
+
 .sk-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
+
 .sk {
-  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background: linear-gradient(90deg, #e8eae8 25%, #d5dad6 50%, #e8eae8 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite;
   border-radius: 4px;
 }
+
 .sk-label {
   width: 60px;
   height: 12px;
 }
+
 .sk-val {
   width: 100px;
   height: 12px;
 }
+
 @keyframes shimmer {
   to {
     background-position: -200% 0;
@@ -833,10 +917,11 @@ function formatDateTime(d) {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--muted);
   padding: 14px 0;
 }
+
 .no-review-icon {
   font-size: 18px;
   opacity: 0.5;
@@ -861,6 +946,7 @@ function formatDateTime(d) {
   flex-direction: column;
   gap: 14px;
 }
+
 .form-fields:disabled {
   opacity: 0.6;
   pointer-events: none;
@@ -871,51 +957,55 @@ function formatDateTime(d) {
   flex-direction: column;
   gap: 5px;
 }
+
 .field-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
+
 .field-label {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--muted-2);
   font-family: 'IBM Plex Mono', monospace;
   letter-spacing: 0.04em;
 }
+
 .req {
   color: var(--red);
   margin-left: 2px;
 }
-.field-input,
-.field-textarea {
+
+.field-input, .field-textarea {
   background: var(--surface);
   border: 1px solid var(--border-2);
   border-radius: 8px;
   color: var(--ink);
   font-family: 'Noto Sans TC', sans-serif;
-  font-size: 13px;
+  font-size: 15px;
   padding: 9px 12px;
   outline: none;
   width: 100%;
-  transition:
-    border-color 0.15s,
-    box-shadow 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
-.field-input:focus,
-.field-textarea:focus {
+
+.field-input:focus, .field-textarea:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-dim);
 }
+
 .field-input.error {
   border-color: var(--red);
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+  box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.12);
 }
+
 .field-textarea {
   resize: vertical;
   min-height: 80px;
 }
+
 .field-hint {
-  font-size: 11px;
+  font-size: 13px;
   color: var(--muted);
   font-family: 'IBM Plex Mono', monospace;
 }
@@ -925,49 +1015,79 @@ function formatDateTime(d) {
   align-items: center;
   gap: 10px;
 }
+
 .rate-input-wrap .field-input {
   flex: 1;
 }
-.rate-preview {
+
+.rate-unit {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 15px;
   font-weight: 600;
   color: var(--green);
   white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Emp ID display */
+.emp-id-display {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.emp-id-badge {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.emp-id-hint {
+  font-size: 13px;
+  color: var(--muted);
 }
 
 /* Diff hints */
 .diff-hints {
   padding: 12px 14px;
   border-radius: 8px;
-  background: #fffbeb;
-  border: 1px solid #fcd34d;
+  background: #F5EFE6;
+  border: 1px solid #C4B090;
 }
+
 .diff-title {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
-  color: #92400e;
+  color: var(--gold);
   margin-bottom: 8px;
 }
+
 .diff-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-top: 4px;
 }
+
 .diff-label {
-  font-size: 12px;
-  color: #92400e;
+  font-size: 14px;
+  color: var(--gold);
   font-family: 'IBM Plex Mono', monospace;
 }
+
 .diff-val {
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
 }
+
 .diff-val.up {
   color: var(--red);
 }
+
 .diff-val.down {
   color: var(--green);
 }
@@ -979,22 +1099,25 @@ function formatDateTime(d) {
   gap: 12px;
   padding: 14px 16px;
   border-radius: 8px;
-  background: #f0fdf4;
-  border: 1px solid #86efac;
+  background: #ECF0EC;
+  border: 1px solid #A5B8A9;
 }
+
 .submitted-icon {
   font-size: 20px;
   flex-shrink: 0;
 }
+
 .submitted-title {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
-  color: #166534;
+  color: var(--primary-dk);
   margin-bottom: 2px;
 }
+
 .submitted-sub {
-  font-size: 12px;
-  color: #16a34a;
+  font-size: 14px;
+  color: var(--primary);
 }
 
 /* Alert */
@@ -1004,22 +1127,24 @@ function formatDateTime(d) {
   gap: 8px;
   padding: 10px 14px;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 14px;
 }
+
 .alert-success {
-  background: #f0fdf4;
-  border: 1px solid #86efac;
-  color: #166534;
+  background: rgba(92, 107, 95, 0.08);
+  border: 1px solid rgba(92, 107, 95, 0.3);
+  color: var(--primary-dk);
 }
+
 .alert-error {
-  background: #fef2f2;
-  border: 1px solid #fca5a5;
-  color: #991b1b;
+  background: rgba(192, 57, 43, 0.08);
+  border: 1px solid rgba(192, 57, 43, 0.3);
+  color: var(--red);
 }
 
 /* Validate error */
 .validate-err {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--red);
   display: flex;
   align-items: center;
@@ -1028,12 +1153,13 @@ function formatDateTime(d) {
 
 /* Form hint row */
 .form-hint-row {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--muted-2);
   display: flex;
   align-items: center;
   gap: 6px;
 }
+
 .hint-icon {
   font-size: 14px;
 }
@@ -1044,6 +1170,7 @@ function formatDateTime(d) {
   gap: 8px;
   padding-top: 4px;
 }
+
 .btn {
   display: inline-flex;
   align-items: center;
@@ -1054,44 +1181,53 @@ function formatDateTime(d) {
   cursor: pointer;
   transition: all 0.15s;
   font-weight: 500;
-  font-size: 13px;
+  font-size: 14px;
   padding: 9px 16px;
 }
+
 .btn-ghost {
   background: var(--surface-2);
   color: var(--muted-2);
   border: 1px solid var(--border);
 }
+
 .btn-ghost:hover {
   border-color: var(--border-2);
   color: var(--ink);
 }
+
 .btn-ghost:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
+
 .btn-draft {
   flex: 1;
-  background: #fffbeb;
-  color: #92400e;
-  border: 1px solid #fcd34d;
+  background: #F5EFE6;
+  color: var(--gold);
+  border: 1px solid #C4B090;
 }
+
 .btn-draft:hover:not(:disabled) {
-  background: #fef3c7;
+  background: #EAE0D0;
   border-color: var(--gold);
 }
+
 .btn-draft:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
+
 .btn-submit {
   flex: 1;
   background: var(--accent);
   color: #fff;
 }
+
 .btn-submit:hover:not(:disabled) {
-  background: #1d4ed8;
+  background: var(--primary-dk);
 }
+
 .btn-submit:disabled {
   opacity: 0.4;
   cursor: not-allowed;
@@ -1102,6 +1238,7 @@ function formatDateTime(d) {
   animation: spin 0.8s linear infinite;
   display: inline-block;
 }
+
 @keyframes spin {
   to {
     transform: rotate(360deg);

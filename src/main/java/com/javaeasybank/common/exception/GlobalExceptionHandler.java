@@ -2,8 +2,12 @@ package com.javaeasybank.common.exception;
 
 import com.javaeasybank.account.exception.AccountException;
 import com.javaeasybank.common.dto.response.ApiResponse;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -64,6 +68,17 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * 攔截資料唯一鍵或完整性衝突，避免直接把 Hibernate / SQL 訊息丟給前端。
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDataIntegrityViolationException(DataIntegrityViolationException e) {
+        return ResponseEntity
+                .badRequest()
+                .body(ApiResponse.fail(resolveDataIntegrityMessage(e)));
+    }
+
+    /**
+
      * 攔截權限不足錯誤（角色無權限存取此 API）
      * 回傳 HTTP 403
      */
@@ -74,7 +89,15 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.fail("FORBIDDEN", "權限不足，您的角色無法執行此操作"));
     }
 
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAccessDeniedException(AccessDeniedException e) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.fail("FORBIDDEN", "權限不足，您的角色無法執行此操作"));
+    }
+
     /**
+
      * 攔截登入驗證錯誤（帳號密碼錯誤、帳號停用等）
      * 回傳 HTTP 401
      */
@@ -86,6 +109,22 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * 攔截 DB 層的 INSERT/UPDATE 行數不符（SQL Server + Hibernate 預設值衝突）
+     * 通常發生在多個 trigger 或 DEFAULT 值設定下，回傳 500
+     */
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<ApiResponse<Void>> handleObjectOptimisticLock(ObjectOptimisticLockingFailureException e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.fail("資料寫入失敗，請稍後再試。若問題持續發生請聯繫系統管理員"));
+    }
+
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    public ResponseEntity<ApiResponse<Void>> handleOptimisticLock(OptimisticLockingFailureException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.fail("該案件已被他人搶先處理，請重新整理"));
+    }
+
+    /**
      * 攔截所有其他預期外的錯誤
      * 回傳 HTTP 500
      */
@@ -94,5 +133,27 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .internalServerError()
                 .body(ApiResponse.fail("伺服器錯誤: " + e.getMessage()));
+    }
+
+    private String resolveDataIntegrityMessage(DataIntegrityViolationException e) {
+        String message = e.getMostSpecificCause() != null
+                ? e.getMostSpecificCause().getMessage()
+                : e.getMessage();
+        String lowerMessage = message == null ? "" : message.toLowerCase();
+
+        if (lowerMessage.contains("email")) {
+            return "電子信箱已被使用";
+        }
+        if (lowerMessage.contains("phone")) {
+            return "手機號碼已被使用";
+        }
+        if (lowerMessage.contains("username")) {
+            return "使用者帳號已存在";
+        }
+        if (lowerMessage.contains("id_number")) {
+            return "身分證字號已存在";
+        }
+
+        return "資料重複或格式不符，請確認帳號、信箱、手機與身分證字號是否已被使用";
     }
 }

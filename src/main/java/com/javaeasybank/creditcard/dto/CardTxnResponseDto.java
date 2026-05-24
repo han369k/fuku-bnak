@@ -15,7 +15,13 @@ public class CardTxnResponseDto {
     private TxnType txnType;
     private LocalDateTime txnDate;
     private String description;
-
+    private String customerName;
     private String merchantName;
     private String cardNumber;
+    private Integer refTxnId;
+    //此欄位純設計給前台看
+    private Boolean refunded;
+
+    private BigDecimal cashbackRate;
+    private BigDecimal cashbackAmount;
 }

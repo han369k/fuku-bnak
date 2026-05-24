@@ -5,7 +5,7 @@
       <div class="welcome-text">
         <h1>{{ greeting }}，{{ userName }}</h1>
         <p class="welcome-sub">
-          角色：<a-tag color="blue">{{ userRole }}</a-tag>
+          <span>角色：<a-tag class="role-tag-muted">{{ userRole }}</a-tag></span>
           <span v-if="lastLogin" class="last-login">上次登入：{{ lastLogin }}</span>
         </p>
       </div>
@@ -48,30 +48,34 @@
       </div>
     </div>
 
-    <!-- ── 最新交易 ── -->
-    <div class="section-title">最新交易紀錄</div>
-    <a-table
-      :columns="transColumns"
-      :data-source="recentTrans"
-      :loading="transLoading"
-      :pagination="false"
-      size="small"
-      row-key="transactionId"
-    >
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.dataIndex === 'transactionType'">
-          <a-tag :color="typeColor(record.transactionType)">
-            {{ typeLabel(record.transactionType) }}
-          </a-tag>
+    <!-- ── 最新交易（業務人員可見）── -->
+    <template v-if="!isCISO">
+      <div class="section-title">最新交易紀錄</div>
+      <a-table
+        :columns="transColumns"
+        :data-source="recentTrans"
+        :loading="transLoading"
+        :pagination="false"
+        size="small"
+        row-key="transactionId"
+        :locale="{ emptyText: '目前沒有交易紀錄' }"
+      >
+        <template #bodyCell="{ column, record }">
+          <template v-if="column.dataIndex === 'transactionType'">
+            <a-tag class="transaction-type-tag">
+              {{ typeLabel(record.transactionType) }}
+            </a-tag>
+          </template>
+          <template v-else-if="column.dataIndex === 'amount'">
+            {{ formatAmount(record.amount, record.currency) }}
+          </template>
+          <template v-else-if="column.dataIndex === 'createdAt'">
+            {{ formatDate(record.createdAt) }}
+          </template>
         </template>
-        <template v-else-if="column.dataIndex === 'amount'">
-          {{ formatAmount(record.amount, record.currency) }}
-        </template>
-        <template v-else-if="column.dataIndex === 'createdAt'">
-          {{ formatDate(record.createdAt) }}
-        </template>
-      </template>
-    </a-table>
+      </a-table>
+    </template>
+
   </div>
 </template>
 
@@ -93,12 +97,24 @@ import {
 import { getLatestAccounts } from '@/api/account'
 import { getLatestTransLogs } from '@/api/account'
 import { getCustomers } from '@/api/customer'
-import { getEmployees } from '@/api/auth'
+import { getEmployeeCount } from '@/api/auth'
 
 const authStore = useAuthStore()
 
+// ── 角色權限（permLevel 數字判斷，統一來源）──
+const permLevel = computed(() => authStore.user?.permLevel ?? 0)
+const isCISO   = computed(() => permLevel.value >= 4)  // 資安長 (Lvl4+)
+const isManager = computed(() => permLevel.value >= 2) // 主管及以上
+
+// 角色 roleCode → 顯示名稱映射表
+const roleDisplayName = {
+  CISO: '系統管理員',
+  CFDM: '主管',
+  CFSO: '職員',
+}
+
 // ── 使用者資訊 ──
-const userName = computed(() => authStore.user?.empName || '使用者')
+const userName = computed(() => roleDisplayName[authStore.user?.roleCode] || authStore.user?.empName || '使用者')
 const userRole = computed(() => authStore.user?.roleCode || '未知')
 const lastLogin = computed(() => {
   const d = authStore.user?.lastLoginDate
@@ -131,23 +147,50 @@ const customerCount = ref(0)
 const employeeCount = ref(0)
 const todayTransCount = ref(0)
 const statsLoading = ref(true)
+const iconTones = {
+  account: { bg: 'rgba(92, 107, 95, 0.11)', color: '#5C6B5F' },
+  customer: { bg: 'rgba(78, 102, 92, 0.10)', color: '#4E665C' },
+  employee: { bg: 'rgba(92, 91, 76, 0.10)', color: '#5C5B4C' },
+  transaction: { bg: 'rgba(93, 107, 113, 0.10)', color: '#5D6B71' },
+  loan: { bg: 'rgba(143, 116, 70, 0.11)', color: '#7A6744' },
+  risk: { bg: 'rgba(166, 90, 77, 0.10)', color: '#9A554B' },
+  card: { bg: 'rgba(106, 92, 116, 0.10)', color: '#665A70' },
+  system: { bg: 'rgba(91, 96, 101, 0.10)', color: '#5B6065' },
+}
 
-const stats = computed(() => [
-  { label: '帳戶總數', value: accountCount.value, icon: BankOutlined, bg: '#e6f7ff', color: '#1890ff', loading: statsLoading.value },
-  { label: '客戶總數', value: customerCount.value, icon: UserOutlined, bg: '#f6ffed', color: '#52c41a', loading: statsLoading.value },
-  { label: '員工人數', value: employeeCount.value, icon: TeamOutlined, bg: '#fff7e6', color: '#fa8c16', loading: statsLoading.value },
-  { label: '最新交易', value: todayTransCount.value, icon: SwapOutlined, bg: '#f9f0ff', color: '#722ed1', loading: statsLoading.value },
-])
+// ── 統計卡片：依角色切換 ──
+const stats = computed(() => {
+  if (isCISO.value) {
+    // 資安長視角：稽核數據
+    return [
+      { label: '員工總人數', value: employeeCount.value, icon: TeamOutlined,        ...iconTones.employee, loading: statsLoading.value },
+      { label: '今日系統登入', value: todayTransCount.value || '—',  icon: AccountBookOutlined, ...iconTones.system, loading: false },
+      { label: '系統可用率',   value: '99.9%',                       icon: AlertOutlined,       ...iconTones.account, loading: false },
+      { label: '高風險操作',   value: '0',                            icon: AuditOutlined,       ...iconTones.risk, loading: false },
+    ]
+  }
+  // 業務人員視角：業務數據
+  return [
+    { label: '帳戶總數', value: accountCount.value,   icon: BankOutlined,  ...iconTones.account, loading: statsLoading.value },
+    { label: '客戶總數', value: customerCount.value,  icon: UserOutlined,  ...iconTones.customer, loading: statsLoading.value },
+    { label: '員工人數', value: employeeCount.value,  icon: TeamOutlined,  ...iconTones.employee, loading: statsLoading.value },
+    { label: '最新交易', value: todayTransCount.value, icon: SwapOutlined,  ...iconTones.transaction, loading: statsLoading.value },
+  ]
+})
 
-// ── 快捷入口 ──
-const shortcuts = [
-  { label: '帳戶管理', desc: '查看與管理帳戶', route: '/admin/accounts', icon: BankOutlined, bg: '#e6f7ff', color: '#1890ff' },
-  { label: '交易操作', desc: '存款/提款/轉帳/沖正', route: '/admin/transfers', icon: DollarOutlined, bg: '#f6ffed', color: '#52c41a' },
-  { label: '交易紀錄', desc: '查看所有交易紀錄', route: '/admin/trans-logs', icon: FileTextOutlined, bg: '#fff7e6', color: '#fa8c16' },
-  { label: '貸款管理', desc: '審核貸款申請', route: '/admin/loan-applications', icon: AuditOutlined, bg: '#f9f0ff', color: '#722ed1' },
-  { label: '風險事件', desc: '監控異常風險', route: '/admin/risk-events', icon: AlertOutlined, bg: '#fff1f0', color: '#f5222d' },
-  { label: '信用卡管理', desc: '卡別與申請', route: '/admin/card-applications', icon: CreditCardOutlined, bg: '#e6fffb', color: '#13c2c2' },
+// ── 快捷入口：依角色切換 ──
+const businessShortcuts = [
+  { label: '帳戶管理',   desc: '查看與管理帳戶',    route: '/admin/accounts',          icon: BankOutlined,     ...iconTones.account },
+  { label: '交易紀錄',   desc: '查看所有交易紀錄',    route: '/admin/trans-logs',       icon: FileTextOutlined, ...iconTones.transaction },
+  { label: '貸款管理',   desc: '審核貸款申請',       route: '/admin/loan-applications', icon: AuditOutlined,    ...iconTones.loan },
+  { label: '風險事件',   desc: '監控異常風險',       route: '/admin/risk-events',       icon: AlertOutlined,    ...iconTones.risk },
+  { label: '信用卡管理', desc: '卡別與申請',         route: '/admin/card-applications', icon: CreditCardOutlined, ...iconTones.card },
 ]
+const cisoShortcuts = [
+  { label: '系統日誌', desc: '查看所有操作日誌', route: '/admin/logs',      icon: FileTextOutlined, ...iconTones.system },
+  { label: '員工管理', desc: '帳號與權限管理',   route: '/admin/employees', icon: TeamOutlined,     ...iconTones.employee },
+]
+const shortcuts = computed(() => isCISO.value ? cisoShortcuts : businessShortcuts)
 
 // ── 最新交易表格 ──
 const recentTrans = ref([])
@@ -165,24 +208,18 @@ const typeMap = {
   TRANSFER: '轉帳',
   DEPOSIT: '存款',
   WITHDRAW: '提款',
+  EXCHANGE: '換匯',
   INTEREST: '利息',
   LOAN_DISBURSEMENT: '貸款撥款',
   LOAN_REPAYMENT: '貸款還款',
+  CARD_PAYMENT: '信用卡繳款',
+  CARD_SETTLEMENT: '信用卡結算',
+  CARD_REWARD: '信用卡回饋',
   REVERSAL: '沖正',
-}
-
-const typeColorMap = {
-  TRANSFER: 'blue',
-  DEPOSIT: 'green',
-  WITHDRAW: 'orange',
-  INTEREST: 'cyan',
-  LOAN_DISBURSEMENT: 'geekblue',
-  LOAN_REPAYMENT: 'lime',
-  REVERSAL: 'purple',
+  TRANSFER_FEE: '轉帳手續費',
 }
 
 function typeLabel(t) { return typeMap[t] || t }
-function typeColor(t) { return typeColorMap[t] || 'default' }
 
 function formatAmount(amount, currency) {
   const c = currency || 'TWD'
@@ -194,24 +231,24 @@ function formatDate(d) {
   return new Date(d).toLocaleString('zh-TW')
 }
 
+
 // ── 載入資料 ──
 async function loadStats() {
   statsLoading.value = true
   try {
-    const [accRes, custRes, empRes] = await Promise.allSettled([
-      getLatestAccounts(0, 1),
-      getCustomers(),
-      getEmployees(),
-    ])
-
-    if (accRes.status === 'fulfilled') {
-      accountCount.value = accRes.value.data?.data?.totalElements ?? 0
-    }
-    if (custRes.status === 'fulfilled') {
-      customerCount.value = custRes.value.data?.data?.length ?? 0
-    }
-    if (empRes.status === 'fulfilled') {
-      employeeCount.value = empRes.value.data?.data?.length ?? 0
+    // 資安長不需要帳戶與客戶統計，只取員工數
+if (isCISO.value) {
+      const empRes = await getEmployeeCount().catch(() => null)
+      if (empRes) employeeCount.value = empRes.data?.data ?? 0
+    } else {
+      const [accRes, custRes, empRes] = await Promise.allSettled([
+        getLatestAccounts(0, 1),
+        getCustomers(),
+        getEmployeeCount(),
+      ])
+      if (accRes.status === 'fulfilled') accountCount.value = accRes.value.data?.data?.totalElements ?? 0
+      if (custRes.status === 'fulfilled') customerCount.value = custRes.value.data?.data?.length ?? 0
+      if (empRes.status === 'fulfilled') employeeCount.value = empRes.value.data?.data ?? 0
     }
   } catch {
     // silent
@@ -221,6 +258,7 @@ async function loadStats() {
 }
 
 async function loadRecentTrans() {
+  if (isCISO.value) return // 資安長不顯示交易資料
   transLoading.value = true
   try {
     const res = await getLatestTransLogs(0, 8)
@@ -249,6 +287,7 @@ onUnmounted(() => {
 <style scoped>
 .dashboard {
   max-width: 1200px;
+  margin: 0 auto;
 }
 
 /* ── 歡迎區 ── */
@@ -256,11 +295,12 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 12px;
-  padding: 28px 32px;
+  background: linear-gradient(135deg, #5C6B5F 0%, #7A8C7E 100%);
+  border-radius: 24px;
+  padding: 32px;
   margin-bottom: 24px;
   color: #fff;
+  box-shadow: 0 10px 30px rgba(92, 107, 95, 0.2);
 }
 
 .welcome-text h1 {
@@ -276,11 +316,19 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .last-login {
   color: rgba(255, 255, 255, 0.65);
   font-size: 13px;
+}
+
+.role-tag-muted {
+  background: rgba(255, 255, 255, 0.16) !important;
+  border-color: rgba(255, 255, 255, 0.26) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+  font-weight: 600;
 }
 
 .welcome-date {
@@ -360,19 +408,24 @@ onUnmounted(() => {
 /* ── 快捷入口 ── */
 .shortcut-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 14px;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
   margin-bottom: 28px;
 }
 
 .shortcut-card {
   background: #fff;
-  border-radius: 10px;
-  padding: 20px 16px;
+  border-radius: 14px;
+  padding: 28px 16px 24px;
   text-align: center;
   cursor: pointer;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
   transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 130px;
 }
 
 .shortcut-card:hover {
@@ -402,6 +455,13 @@ onUnmounted(() => {
   color: #8c8c8c;
 }
 
+.transaction-type-tag {
+  background: rgba(92, 107, 95, 0.08) !important;
+  border: 1px solid rgba(92, 107, 95, 0.18) !important;
+  color: #5C6B5F !important;
+  font-weight: 600;
+}
+
 /* ── RWD ── */
 @media (max-width: 1100px) {
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
@@ -412,6 +472,8 @@ onUnmounted(() => {
   .stats-grid { grid-template-columns: 1fr; }
   .shortcut-grid { grid-template-columns: repeat(2, 1fr); }
   .welcome-section { flex-direction: column; gap: 16px; text-align: center; }
+  .welcome-sub { justify-content: center; }
   .welcome-date { text-align: center; }
 }
+
 </style>

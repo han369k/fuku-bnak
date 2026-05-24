@@ -5,10 +5,15 @@ package com.javaeasybank.account.enums;
  */
 public enum TransactionType {
     TRANSFER,           // 轉帳
+    TRANSFER_FEE,       // 轉帳手續費
     DEPOSIT,            // 存款
     WITHDRAW,           // 提款
+    EXCHANGE,           // 換匯
     INTEREST,           // 利息入帳
     LOAN_DISBURSEMENT,  // 貸款撥款
     LOAN_REPAYMENT,     // 貸款還款
+    CARD_PAYMENT,       // 信用卡繳款
+    CARD_SETTLEMENT,    // 信用卡帳務結算
+    CARD_REWARD,        // 信用卡回饋
     REVERSAL            // 沖正
 }

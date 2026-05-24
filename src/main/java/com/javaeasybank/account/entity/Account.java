@@ -23,10 +23,10 @@ import java.time.LocalDateTime;
 public class Account {
 
     /**
-     * 帳號，主鍵，長度為 12，不可為空。
+     * 帳號，主鍵，一般帳戶 12 碼，貸款/信用卡帳戶可為 14 碼。
      */
     @Id
-    @Column(name = "account_number", length = 12, nullable = false)
+    @Column(name = "account_number", length = 14, nullable = false)
     private String accountNumber;
 
     /**
@@ -75,9 +75,9 @@ public class Account {
     private AccountStatus status = AccountStatus.PENDING;
 
     /**
-     * 父帳號，用於子帳戶，長度為 12。
+     * 父帳號，用於子帳戶。
      */
-    @Column(name = "parent_account_number", length = 12)
+    @Column(name = "parent_account_number", length = 14)
     private String parentAccountNumber;
 
     /**
