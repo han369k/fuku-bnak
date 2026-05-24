@@ -569,29 +569,7 @@ onBeforeUnmount(() => {
   border-radius: var(--radius-md);
 }
 
-@media (max-width: 900px) {
-  .card-layout {
-    grid-template-columns: 1fr;
-  }
 
-  .card-type-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .apply-cart {
-    position: static;
-  }
-}
-
-@media (max-width: 700px) {
-  .page-head {
-    flex-direction: column;
-  }
-
-  .card-image-wrap {
-    max-width: 320px;
-  }
-}
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -912,6 +890,29 @@ onBeforeUnmount(() => {
     width: 300px;
     max-height: calc(100vh - 184px);
     overflow-y: auto;
+  }
+}
+@media (max-width: 900px) {
+  .card-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .card-type-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .apply-cart {
+    position: static;
+  }
+}
+
+@media (max-width: 700px) {
+  .page-head {
+    flex-direction: column;
+  }
+
+  .card-image-wrap {
+    max-width: 320px;
   }
 }
 </style>

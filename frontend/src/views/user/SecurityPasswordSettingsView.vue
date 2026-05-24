@@ -314,4 +314,27 @@ async function handleSubmit() {
   font-size: 14px;
   line-height: 1.7;
 }
+
+@media (max-width: 640px) {
+  .ctbc-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .ctbc-label {
+    width: 100%;
+  }
+  .ctbc-field {
+    width: 100%;
+  }
+  .jb-input {
+    max-width: 100%;
+  }
+  .security-password-page {
+    padding: 16px;
+  }
+  .security-content {
+    padding: 20px 16px;
+  }
+}
 </style>

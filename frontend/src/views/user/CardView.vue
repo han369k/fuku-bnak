@@ -412,4 +412,41 @@ onMounted(() => {
 .confirm-btn:hover {
   background: #16a34a;
 }
+
+@media (max-width: 480px) {
+  .page {
+    padding: 16px;
+  }
+  .page-title {
+    font-size: 32px;
+    margin-bottom: 24px;
+  }
+  .card-header {
+    width: 100%;
+    max-width: 380px;
+  }
+  .credit-card {
+    width: 100%;
+    max-width: 380px;
+    height: auto;
+    aspect-ratio: 380 / 220;
+    border-radius: 16px;
+  }
+  .card-content {
+    padding: 16px;
+  }
+  .card-brand {
+    font-size: 12px;
+  }
+  .card-type {
+    font-size: 20px;
+  }
+  .card-number {
+    font-size: 20px;
+    letter-spacing: 2px;
+  }
+  .card-footer {
+    margin-top: auto;
+  }
+}
 </style>

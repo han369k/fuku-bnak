@@ -916,11 +916,14 @@ onMounted(async () => {
 
 <style scoped>
 .acct-app-page {
+  width: 100%;
   max-width: 800px;
   margin: 0 auto;
   padding: var(--space-6) 0;
   display: grid;
   gap: var(--space-6);
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 /* === 頁面標題 === */
