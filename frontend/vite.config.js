@@ -39,6 +39,7 @@ export default defineConfig({
       '/api': backendProxy('api'),
       '/user': backendProxy('user'),
       '/uploads': backendProxy('uploads'),
+      '/img': backendProxy('img'),
     },
   },
   resolve: {
