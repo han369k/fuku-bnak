@@ -214,4 +214,9 @@ body {
     padding: 8px;
     border-radius: 8px;
   }
+  /* 手機版取消表格固定欄位，避免擠壓中間內容 */
+  .ant-table-cell-fix-left,
+  .ant-table-cell-fix-right {
+    position: static !important;
+  }
 }
