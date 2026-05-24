@@ -1,7 +1,4 @@
-/**
- * 後端 errorCode → 前端中文訊息對照表
- * 後端回傳英文 errorCode，前端依此顯示對應中文
- */
+// 後端 errorCode 對應的前端中文訊息。
 const ERROR_MESSAGES = {
   // Account 帳戶模組
   ACCOUNT_NOT_FOUND: '找不到該帳戶',
@@ -17,18 +14,12 @@ const ERROR_MESSAGES = {
   INSUFFICIENT_BALANCE: '餘額不足',
 }
 
-/**
- * 根據後端回傳的 error response 取得中文錯誤訊息
- * @param {Error} err - axios catch 到的 error
- * @param {string} fallback - 查不到時的預設訊息
- * @returns {string} 中文錯誤訊息
- */
+// 從 axios error 取得中文錯誤訊息。
 export function getErrorMessage(err, fallback = '操作失敗') {
   const errorCode = err.response?.data?.errorCode
   if (errorCode && ERROR_MESSAGES[errorCode]) {
     return ERROR_MESSAGES[errorCode]
   }
-  // 沒有 errorCode 就 fallback 到後端的 message 或預設訊息
   return err.response?.data?.message || fallback
 }
 
