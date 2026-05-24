@@ -21,6 +21,7 @@ import java.util.List;
 
 @Slf4j
 @Service
+@Async
 @RequiredArgsConstructor
 public class EmailService {
 
@@ -35,7 +36,6 @@ public class EmailService {
 
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    @Async
     public void sendEmail(String to, String subject, String content) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
@@ -97,10 +97,7 @@ public class EmailService {
         sendEmail(to, "Fuku Bank - 密碼重設連結", html);
     }
 
-    /**
-     * ─── 新增：轉帳交易安全覆核中（審核中）通知信 ───
-     * 採用隱晦委婉、站在維護資金安全角度的文案設計
-     */
+    /** 寄送轉帳交易安全覆核中的進度通知。 */
     public void sendTransferPendingNotification(String to, String fromAccount, String toAccount, BigDecimal amount, String currency, String referenceId) {
         String time = LocalDateTime.now().format(formatter);
         Context context = new Context();
@@ -111,10 +108,7 @@ public class EmailService {
         context.setVariable("amount", amount);
         context.setVariable("currency", currency);
 
-        // 渲染對應的審核中 HTML 樣板
         String html = templateEngine.process("mail/transfer-pending", context);
-
-        // 使用溫和的主旨，不使用「風控」、「審核」、「攔截」等字眼
         sendEmail(to, "Fuku Bank - 轉帳交易處理進度通知", html);
     }
 
@@ -124,37 +118,27 @@ public class EmailService {
         String html = templateEngine.process("mail/transfer-otp", context);
         sendEmail(to, "Fuku Bank - 轉帳交易驗證碼 (OTP)", html);
     }
-    //月結信用卡帳單
-    @Async
+    /** 寄送信用卡月結帳單通知。 */
     public void sendCardBillStatementEmail(
-        String to,
-        String customerName,
-        String billingMonth,
-        BigDecimal totalAmount,
-        BigDecimal minimumPayment,
-        LocalDate dueDate,
-        Integer billId) {
+            String to,
+            String customerName,
+            String billingMonth,
+            BigDecimal totalAmount,
+            BigDecimal minimumPayment,
+            LocalDate dueDate,
+            Integer billId) {
 
-    Context context = new Context();
+        Context context = new Context();
+        context.setVariable("customerName", customerName);
+        context.setVariable("billingMonth", billingMonth);
+        context.setVariable("totalAmount", totalAmount);
+        context.setVariable("minimumPayment", minimumPayment);
+        context.setVariable("dueDate", dueDate);
+        context.setVariable("billId", billId);
 
-    context.setVariable("customerName", customerName);
-    context.setVariable("billingMonth", billingMonth);
-    context.setVariable("totalAmount", totalAmount);
-    context.setVariable("minimumPayment", minimumPayment);
-    context.setVariable("dueDate", dueDate);
-    context.setVariable("billId", billId);
-
-    String html = templateEngine.process(
-            "mail/card-bill-statement",
-            context
-    );
-
-    sendEmail(
-            to,
-            "Fuku Bank - 信用卡月結帳單通知",
-            html
-    );
-}
+        String html = templateEngine.process("mail/card-bill-statement", context);
+        sendEmail(to, "Fuku Bank - 信用卡月結帳單通知", html);
+    }
 
     public void sendLoanDocumentRequiredNotification(
             String to,
@@ -195,35 +179,34 @@ public class EmailService {
         String html = templateEngine.process("mail/account-locked-notification", context);
         sendEmail(to, "Fuku Bank - 登入通知", html);
     }
-    //郵件附件
-    @Async
+    /** 寄送 HTML 郵件與單一附件。 */
     public void sendEmailWithAttachment(
-        String to,
-        String subject,
-        String content,
-        String filename,
-        byte[] attachmentBytes) {
+            String to,
+            String subject,
+            String content,
+            String filename,
+            byte[] attachmentBytes) {
 
-    try {
-        MimeMessage message = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-        helper.setFrom(fromEmail, "FukuBank-福庫銀行");
-        helper.setTo(to);
-        helper.setSubject(subject);
-        helper.setText(content, true);
+            helper.setFrom(fromEmail, "FukuBank-福庫銀行");
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(content, true);
 
-        helper.addAttachment(
-                filename,
-                new ByteArrayResource(attachmentBytes)
-        );
+            helper.addAttachment(
+                    filename,
+                    new ByteArrayResource(attachmentBytes)
+            );
 
-        mailSender.send(message);
+            mailSender.send(message);
 
-    } catch (Exception e) {
-        log.error("Failed to send email with attachment to {}: {}", to, e.getMessage());
+        } catch (Exception e) {
+            log.error("Failed to send email with attachment to {}: {}", to, e.getMessage());
+        }
     }
-}
 
     private String formatLoanType(String loanType) {
         if (loanType == null || loanType.isBlank()) {
