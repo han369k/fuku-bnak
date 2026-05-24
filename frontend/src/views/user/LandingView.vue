@@ -5,14 +5,16 @@
         <video
           ref="introVideo"
           class="landing-intro-video"
-          src="/fukubank-intro.mp4"
           autoplay
           muted
           playsinline
           preload="auto"
           @ended="finishIntro"
           @error="finishIntro"
-        ></video>
+        >
+          <source src="/fukubank-intro-vertical.mp4" media="(max-width: 700px)" type="video/mp4" />
+          <source src="/fukubank-intro.mp4" type="video/mp4" />
+        </video>
         <button type="button" class="intro-skip-btn" @click="finishIntro">略過</button>
       </div>
     </transition>
@@ -789,6 +791,12 @@ function finishIntro() {
   .values-grid { grid-template-columns: 1fr; }
   .value-item::after { display: none; }
   .cta-section { padding: 0 var(--space-4) 80px; }
+}
+
+@media (max-width: 700px) {
+  .landing-intro-video {
+    object-fit: fill;
+  }
 }
 
 @media (max-width: 500px) {
