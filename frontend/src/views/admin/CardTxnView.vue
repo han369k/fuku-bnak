@@ -124,7 +124,6 @@ const fetchCardTxns = async () => {
         : null,
     })
     transactions.value = res.content
-    console.log(res.content)
 
     pagination.value.total = res.totalElements
   } catch (error) {
