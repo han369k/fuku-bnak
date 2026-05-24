@@ -4,7 +4,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 const showButton = ref(false)
 
 function checkScroll() {
-  showButton.value = window.scrollY > 300
+  showButton.value = window.scrollY > 150
 }
 
 function scrollToTop() {
@@ -41,7 +41,7 @@ onUnmounted(() => {
   display: none; /* Default hidden on desktop */
 }
 
-@media (max-width: 640px) {
+@media (max-width: 900px) {
   .scroll-to-top {
     display: flex;
     align-items: center;
