@@ -35,7 +35,14 @@ const fetchCards = async () => {
 
 const getImageUrl = (url) => {
   if (!url) return ''
-  return url.startsWith('http') ? url : `${BASE_URL}/${url}`
+  if (url.startsWith('http') || url.startsWith('blob:') || url.startsWith('data:')) return url
+
+  const base = BASE_URL || ''
+  const path = url.startsWith('/') ? url : `/${url}`
+
+  if (!base) return path
+
+  return `${base.replace(/\/+$/, '')}${path}`
 }
 const handleActivateCard = async (cardId) => {
   try {

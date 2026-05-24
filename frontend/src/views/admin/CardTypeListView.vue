@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { message, Modal } from 'ant-design-vue'
-import api from '@/api/axios'
+import { BASE_URL } from '@/api/axios'
 import {
   getCardTypes,
   createCardType,
@@ -34,7 +34,15 @@ const open = ref(false)
 //==工具函式==
 // 取得圖片路徑
 const getImageUrl = (path) => {
-  return `${api.defaults.baseURL}/${path}`
+  if (!path) return ''
+  if (path.startsWith('http') || path.startsWith('blob:') || path.startsWith('data:')) return path
+
+  const base = BASE_URL || ''
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+
+  if (!base) return normalizedPath
+
+  return `${base.replace(/\/+$/, '')}${normalizedPath}`
 }
 //處理圖片
 const handleFileChange = (e) => {

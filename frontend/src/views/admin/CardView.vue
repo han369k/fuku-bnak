@@ -3,7 +3,7 @@ import { ref, onMounted, watch } from 'vue'
 import { message, Modal } from 'ant-design-vue'
 import { getCards, updateCard, deleteCard, blockCard, unblockCard } from '@/api/card'
 import { PlusOutlined, SearchOutlined, SyncOutlined } from '@ant-design/icons-vue'
-import api from '@/api/axios'
+import { BASE_URL } from '@/api/axios'
 
 const cards = ref([])
 const loading = ref(false)
@@ -24,6 +24,17 @@ const cardStatusLabelMap = {
 }
 
 const getCardStatusLabel = (statusValue) => cardStatusLabelMap[statusValue] || statusValue
+const getImageUrl = (path) => {
+  if (!path) return ''
+  if (path.startsWith('http') || path.startsWith('blob:') || path.startsWith('data:')) return path
+
+  const base = BASE_URL || ''
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+
+  if (!base) return normalizedPath
+
+  return `${base.replace(/\/+$/, '')}${normalizedPath}`
+}
 const pagination = ref({
   current: 1,
   pageSize: 10,
@@ -211,7 +222,7 @@ onMounted(() => {
         <!-- 卡片圖片 -->
         <template v-else-if="column.key === 'image'">
           <img
-            :src="`${api.defaults.baseURL}/${record.cardType?.cardImageUrl}`"
+            :src="getImageUrl(record.cardType?.cardImageUrl)"
             style="height: 40px; border-radius: 4px"
           />
         </template>
