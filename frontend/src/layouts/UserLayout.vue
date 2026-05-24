@@ -1169,10 +1169,15 @@ function handleLogout() {
   .header-top-inner {
     min-height: 0;
     height: auto;
-    padding: 6px 14px 0;
+    padding: calc(24px + env(safe-area-inset-top, 0px)) 14px 0;
     align-items: center;
-    gap: 6px 10px;
+    gap: 8px 10px;
     flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .header-top-inner > :first-child {
+    margin-right: auto;
   }
 
   .header-top-inner :deep(.jb-logo-img) {
@@ -1181,23 +1186,17 @@ function handleLogout() {
   }
 
   .header-user {
-    flex: 1 1 auto;
-    justify-content: flex-end;
-    gap: 8px;
-    min-width: 0;
-    flex-wrap: wrap;
+    display: contents;
   }
 
-  .notification-bell-wrap,
-  .avatar-btn,
-  .logout-btn {
-    order: 1;
-  }
+  .notification-bell-wrap { order: 1; }
+  .avatar-btn { order: 2; }
+  .logout-btn { order: 3; }
 
   .session-timer {
-    order: 2;
+    order: 4;
     width: 100%;
-    margin: 2px 0 0;
+    margin: 8px 0 2px;
     padding: 6px 10px;
     justify-content: space-between;
     gap: 6px;
