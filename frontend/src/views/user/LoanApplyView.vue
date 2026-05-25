@@ -90,7 +90,7 @@
           <!-- 錯誤提示 -->
           <transition name="fade">
             <div v-if="submitError" class="form-error-banner">
-              ❌ {{ submitError }}
+              <i class="fa-solid fa-circle-xmark"></i> {{ submitError }}
             </div>
           </transition>
 
@@ -120,7 +120,7 @@
 
             <!-- 無符合帳戶 -->
             <div v-else-if="twdCheckingAccounts.length === 0 && !accountsError" class="acct-empty">
-              <span class="acct-empty-icon">⚠️</span>
+              <span class="acct-empty-icon"><i class="fa-solid fa-triangle-exclamation"></i></span>
               <div>
                 <div class="acct-empty-title">您名下目前沒有正常的台幣活存帳戶</div>
                 <div class="acct-empty-sub">請開立新台幣活存帳戶後再申請貸款</div>
@@ -129,7 +129,7 @@
 
             <!-- 載入錯誤 -->
             <div v-else-if="accountsError" class="acct-error">
-              <span>⚠️</span> {{ accountsError }}
+              <span><i class="fa-solid fa-triangle-exclamation"></i></span> {{ accountsError }}
             </div>
 
             <!-- 下拉選單 -->
@@ -398,7 +398,7 @@
           <!-- 送出 -->
           <transition name="fade">
             <div v-if="submitError" class="form-error-banner" style="margin-bottom:12px">
-              ❌ {{ submitError }}
+              <i class="fa-solid fa-circle-xmark"></i> {{ submitError }}
             </div>
           </transition>
 
@@ -420,7 +420,7 @@
     ══════════════════════════════════════════ -->
     <div v-else-if="step === 'done'" class="step-wrap">
       <div class="done-card">
-        <div class="done-icon">✅</div>
+        <div class="done-icon"><i class="fa-solid fa-circle-check"></i></div>
         <h2 class="done-title">申請已送出！</h2>
         <p class="done-desc">感謝您的申請，專員將於 3 個工作日內主動與您聯繫。</p>
 

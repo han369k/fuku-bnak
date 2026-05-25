@@ -622,7 +622,7 @@ async function fetchApplications() {
     })
     applications.value = res.data.success ? res.data.data : []
   } catch (e) {
-    error.value = e.response?.data?.message || '連線失敗，請確認後端服務是否啟動（GET /api/admin/loan-applications）'
+    error.value = e.response?.data?.message || '載入失敗，請稍後再試'
     applications.value = []
   } finally {
     loading.value = false
