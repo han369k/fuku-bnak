@@ -15,7 +15,7 @@ import com.javaeasybank.creditcard.service.CardTypeService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/user/card-types")
+@RequestMapping("/api/public/card-types")
 @RequiredArgsConstructor
 public class CardTypeController {
 
