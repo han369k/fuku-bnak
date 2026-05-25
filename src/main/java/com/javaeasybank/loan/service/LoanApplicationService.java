@@ -473,11 +473,6 @@ public class LoanApplicationService {
                 TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                     @Override
                     public void afterCommit() {
-                        try {
-                            sendLoanContractNotification(applicationId);
-                        } catch (Exception e) {
-                            log.error("[LoanContract] APPROVED 後寄送契約失敗，appId={}, error={}", applicationId, e.getMessage());
-                        }
                         log.info("[AutoDisburse] 風控核准，觸發自動撥款 applicationId={}", applicationId);
                         try {
                             LAService.autoDisburse(applicationId);
@@ -541,6 +536,7 @@ public class LoanApplicationService {
                             "貸款已核准撥款",
                             "您的貸款已核准並完成撥款。",
                             "/user/loan-accounts");
+                    sendLoanContractNotification(applicationId);
                 } else {
                     log.warn("[LoanDisbursed] 略過通知：email={} detail={} applicationId={}",
                             disbEmail, detail, applicationId);
@@ -682,7 +678,7 @@ public class LoanApplicationService {
                 <html>
                 <body style="font-family: Microsoft JhengHei, Arial, sans-serif; color:#333; line-height:1.7;">
                   <p>%s 您好：</p>
-                  <p>您的貸款已通過風控審查，附件為依最終填單內容產生之貸款契約書，請留存備查。</p>
+                  <p>您的貸款已核准並完成撥款，附件為依最終填單內容產生之貸款契約書，請留存備查。</p>
                   <p>契約編號：<b>%s</b></p>
                   <p>Java Easy Bank 敬上</p>
                 </body>
@@ -792,6 +788,8 @@ public class LoanApplicationService {
         customerProfileRepository.findById(loan.getCustomerId()).ifPresent(p -> {
             dto.setCif(p.getCif());
             dto.setMemberName(p.getName());
+            dto.setPhone(p.getPhone());
+            dto.setEmail(p.getEmail());
         });
         dto.setApplyType(loan.getApplyType());
         dto.setApplyAmount(loan.getApplyAmount());

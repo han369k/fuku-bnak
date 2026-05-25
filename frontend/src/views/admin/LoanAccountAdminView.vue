@@ -71,6 +71,36 @@
         </transition>
       </div>
 
+      <!-- 案件編號搜尋 -->
+      <div class="id-search-wrap">
+        <span class="id-search-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
+        <input
+          class="id-search-input"
+          type="text"
+          placeholder="案件編號…"
+          v-model="applicationIdQuery"
+          @input="currentPage = 1"
+        />
+        <button v-if="applicationIdQuery" class="id-search-clear" @click="applicationIdQuery = ''; currentPage = 1">
+          <i class="fa-solid fa-x"></i>
+        </button>
+      </div>
+
+      <!-- 貸款帳戶編號搜尋 -->
+      <div class="id-search-wrap">
+        <span class="id-search-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
+        <input
+          class="id-search-input"
+          type="text"
+          placeholder="貸款帳戶編號…"
+          v-model="accountNumberQuery"
+          @input="currentPage = 1"
+        />
+        <button v-if="accountNumberQuery" class="id-search-clear" @click="accountNumberQuery = ''; currentPage = 1">
+          <i class="fa-solid fa-x"></i>
+        </button>
+      </div>
+
       <!-- 結果摘要 -->
       <div class="filter-meta" v-if="!loading">
         共 <strong>{{ filteredAccounts.length }}</strong> 筆
@@ -105,17 +135,26 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th>帳戶編號</th>
-                <th>客戶 CIF</th>
+                <th class="sortable" @click="toggleSort('applicationId')">
+                  案件編號<span class="sort-icon">{{ sortIcon('applicationId') }}</span>
+                </th>
+                <th class="sortable" @click="toggleSort('accountNumber')">
+                  貸款帳務帳號<span class="sort-icon">{{ sortIcon('accountNumber') }}</span>
+                </th>
+                <th>客戶</th>
                 <th>類型</th>
                 <th class="text-right">本金</th>
                 <th class="text-right">月繳</th>
                 <th class="text-right">年利率</th>
                 <th class="text-center">期數進度</th>
                 <th class="text-right">剩餘本金</th>
-                <th>下次繳款日</th>
+                <th class="sortable" @click="toggleSort('nextPaymentDate')">
+                  下次繳款日<span class="sort-icon">{{ sortIcon('nextPaymentDate') }}</span>
+                </th>
                 <th>狀態</th>
-                <th>撥款日</th>
+                <th class="sortable" @click="toggleSort('startDate')">
+                  撥款日<span class="sort-icon">{{ sortIcon('startDate') }}</span>
+                </th>
                 <th class="text-center">還款時間表</th>
               </tr>
             </thead>
@@ -127,10 +166,16 @@
                 :class="{ 'row-overdue': acc.accountStatus === 'OVERDUE' }"
               >
                 <td>
-                  <span class="mono text-sm">{{ acc.accountId }}</span>
+                  <span class="mono text-sm">{{ acc.applicationId || '—' }}</span>
                 </td>
                 <td>
-                  <span class="mono cif-tag">{{ acc.cif || '—' }}</span>
+                  <span class="mono text-sm">{{ acc.accountNumber || '—' }}</span>
+                </td>
+                <td>
+                  <div class="applicant-cell">
+                    <span class="mono cif-tag">{{ acc.cif || '—' }}</span>
+                    <span class="member-name" v-if="acc.memberName">{{ acc.memberName }}</span>
+                  </div>
                 </td>
                 <td>
                   <span class="type-badge" :class="'tb-' + acc.applyType">
@@ -230,7 +275,7 @@
             <div class="modal-title-group">
               <span class="modal-title">還款時間表</span>
               <span v-if="modalAccount" class="modal-subtitle">
-                帳戶 {{ modalAccount.accountId }}
+                案件 {{ modalAccount.applicationId || '—' }} ｜ 貸款帳務帳號 {{ modalAccount.accountNumber || '—' }}
                 <span class="type-badge" :class="'tb-' + modalAccount.applyType" style="margin-left:8px;">
                   {{ LOAN_TYPE_NAME[modalAccount.applyType] || modalAccount.applyType }}
                 </span>
@@ -366,11 +411,32 @@ const repaymentLoading = ref(false)
 const currentPage     = ref(1)
 const pageSize        = 15
 
+// ── 排序 ──
+const sortKey = ref('')   // 'applicationId' | 'accountNumber' | 'nextPaymentDate' | 'startDate'
+const sortDir = ref('asc')
+const applicationIdQuery  = ref('')
+const accountNumberQuery  = ref('')
+
+function toggleSort(key) {
+  if (sortKey.value === key) {
+    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortKey.value = key
+    sortDir.value = 'asc'
+  }
+  currentPage.value = 1
+}
+
+function sortIcon(key) {
+  if (sortKey.value !== key) return '⇅'
+  return sortDir.value === 'asc' ? '↑' : '↓'
+}
+
 // Modal 狀態
 const showModal    = ref(false)
 const modalAccount = ref(null)
 
-// ── 篩選 ──
+// ── 篩選 + 排序 ──
 const filteredAccounts = computed(() => {
   let list = accounts.value
   if (currentStatus.value) {
@@ -378,6 +444,23 @@ const filteredAccounts = computed(() => {
   }
   if (selectedTypes.value.length > 0) {
     list = list.filter(a => selectedTypes.value.includes(a.applyType))
+  }
+  if (applicationIdQuery.value.trim()) {
+    const q = applicationIdQuery.value.trim().toLowerCase()
+    list = list.filter(a => (a.applicationId || '').toLowerCase().includes(q))
+  }
+  if (accountNumberQuery.value.trim()) {
+    const q = accountNumberQuery.value.trim().toLowerCase()
+    list = list.filter(a => (a.accountNumber || '').toLowerCase().includes(q))
+  }
+  if (sortKey.value) {
+    const key = sortKey.value
+    const dir = sortDir.value === 'asc' ? 1 : -1
+    list = [...list].sort((a, b) => {
+      const av = a[key] ?? ''
+      const bv = b[key] ?? ''
+      return String(av).localeCompare(String(bv), 'zh-TW') * dir
+    })
   }
   return list
 })
@@ -513,7 +596,7 @@ onMounted(fetchAccounts)
   margin-bottom: 20px;
 }
 .page-title {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 700;
   color: var(--ink);
   margin: 0;
@@ -539,7 +622,7 @@ onMounted(fetchAccounts)
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--muted-2);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s;
@@ -561,7 +644,7 @@ onMounted(fetchAccounts)
   background: rgba(255,255,255,0.25);
   padding: 0 6px;
   border-radius: 10px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   min-width: 18px;
   text-align: center;
@@ -580,7 +663,7 @@ onMounted(fetchAccounts)
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--muted-2);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s;
@@ -612,8 +695,8 @@ onMounted(fetchAccounts)
   justify-content: space-between;
   padding: 6px 14px 10px;
 }
-.dropdown-title { font-size: 11px; font-weight: 600; color: var(--muted-2); text-transform: uppercase; letter-spacing: 0.06em; }
-.clear-btn { font-size: 11px; color: var(--accent); background: none; border: none; cursor: pointer; padding: 0; }
+.dropdown-title { font-size: 13px; font-weight: 600; color: var(--muted-2); text-transform: uppercase; letter-spacing: 0.06em; }
+.clear-btn { font-size: 13px; color: var(--accent); background: none; border: none; cursor: pointer; padding: 0; }
 .dropdown-divider { height: 1px; background: var(--border); margin: 4px 0; }
 
 .dropdown-item {
@@ -622,7 +705,7 @@ onMounted(fetchAccounts)
   gap: 8px;
   padding: 8px 14px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--ink);
   transition: background 0.1s;
 }
@@ -657,7 +740,52 @@ onMounted(fetchAccounts)
 .idot-HOUSE    { background: #7B6B8E; }
 .idot-LAND     { background: #8E7B6B; }
 
-.filter-meta { font-size: 12px; color: var(--muted-2); margin-left: auto; }
+/* ── ID 搜尋欄位 ── */
+.id-search-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.id-search-icon {
+  position: absolute;
+  left: 9px;
+  font-size: 12px;
+  color: var(--muted);
+  pointer-events: none;
+  opacity: 0.6;
+}
+.id-search-input {
+  width: 160px;
+  padding: 6px 28px 6px 28px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 14px;
+  font-family: 'IBM Plex Mono', monospace;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.id-search-input::placeholder { color: var(--muted); opacity: 1; }
+.id-search-input:focus { border-color: var(--accent); }
+.id-search-clear {
+  position: absolute;
+  right: 7px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 2px 4px;
+  font-size: 10px;
+  line-height: 1;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  transition: color 0.12s;
+}
+.id-search-clear:hover { color: var(--ink); }
+
+.filter-meta { font-size: 14px; color: var(--muted-2); margin-left: auto; }
 .filter-meta strong { color: var(--ink); }
 
 /* ── Table Card ── */
@@ -675,7 +803,7 @@ onMounted(fetchAccounts)
   gap: 12px; padding: 60px 0; text-align: center;
 }
 .state-icon  { font-size: 36px; }
-.state-text  { font-size: 14px; color: var(--muted-2); }
+.state-text  { font-size: 15px; color: var(--muted-2); }
 .spin-lg { font-size: 28px; color: var(--muted); animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -685,7 +813,7 @@ onMounted(fetchAccounts)
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 15px;
   white-space: nowrap;
 }
 
@@ -695,7 +823,7 @@ onMounted(fetchAccounts)
 }
 .data-table th {
   padding: 11px 14px;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--muted-2);
   text-align: left;
@@ -705,6 +833,17 @@ onMounted(fetchAccounts)
 }
 .data-table th.text-right  { text-align: right; }
 .data-table th.text-center { text-align: center; }
+.data-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+.data-table th.sortable:hover { color: var(--accent); }
+.sort-icon {
+  font-size: 11px;
+  opacity: 0.5;
+  margin-left: 4px;
+}
+.data-table th.sortable:hover .sort-icon { opacity: 1; }
 
 .data-row {
   border-bottom: 1px solid var(--border);
@@ -718,29 +857,43 @@ onMounted(fetchAccounts)
   padding: 11px 14px;
   color: var(--ink);
   vertical-align: middle;
+  font-size: 15px;
 }
 .data-table td.text-right  { text-align: right; }
 .data-table td.text-center { text-align: center; }
 
 /* Mono / text helpers */
 .mono  { font-family: 'IBM Plex Mono', monospace; }
-.text-sm { font-size: 12px; }
+.text-sm { font-size: 14px; }
 .muted   { color: var(--muted-2); }
 .overdue-text { color: var(--red); font-weight: 600; }
 
+/* 客戶欄 */
+.applicant-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.member-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
 /* CIF tag */
 .cif-tag {
-  font-size: 11px;
+  font-size: 12px;
   background: rgba(234, 228, 218, 0.62);
   border: 1px solid var(--border);
   padding: 2px 7px;
   border-radius: 8px;
   color: var(--muted-2);
+  align-self: flex-start;
 }
 
 /* 類型標籤 */
 .type-badge {
-  font-size: 11px;
+  font-size: 13px;
   padding: 3px 8px;
   border-radius: 8px;
   font-weight: 600;
@@ -756,7 +909,7 @@ onMounted(fetchAccounts)
 
 /* 帳戶狀態 */
 .status-badge {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   padding: 3px 10px;
   border-radius: 20px;
@@ -771,7 +924,7 @@ onMounted(fetchAccounts)
   display: flex; flex-direction: column; gap: 4px;
   align-items: center; min-width: 80px;
 }
-.period-text { font-size: 12px; font-family: 'IBM Plex Mono', monospace; color: var(--ink-2); }
+.period-text { font-size: 14px; font-family: 'IBM Plex Mono', monospace; color: var(--ink-2); }
 .mini-bar-wrap {
   height: 3px; width: 70px;
   background: var(--surface-2);
@@ -789,12 +942,12 @@ onMounted(fetchAccounts)
   display: flex; align-items: baseline; gap: 10px;
   margin-bottom: 12px;
 }
-.rep-title    { font-size: 13px; font-weight: 700; color: var(--primary); }
-.rep-subtitle { font-size: 11px; color: var(--muted-2); }
+.rep-title    { font-size: 15px; font-weight: 700; color: var(--primary); }
+.rep-subtitle { font-size: 13px; color: var(--muted-2); }
 
 .rep-loading {
   text-align: center; color: var(--muted-2);
-  font-size: 13px; padding: 16px 0;
+  font-size: 14px; padding: 16px 0;
   display: flex; align-items: center; justify-content: center; gap: 8px;
 }
 .rep-loading .spin { animation: spin 0.8s linear infinite; }
@@ -804,7 +957,7 @@ onMounted(fetchAccounts)
 .rep-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: 14px;
   white-space: nowrap;
 }
 .rep-table th {
@@ -813,7 +966,7 @@ onMounted(fetchAccounts)
   background: var(--surface-2);
   border-bottom: 1px solid var(--border);
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 10px;
+  font-size: 13px;
   letter-spacing: 0.06em;
   color: var(--muted-2);
   font-weight: 600;
@@ -836,7 +989,7 @@ onMounted(fetchAccounts)
 .rrow-overdue td { color: var(--red); }
 
 .rep-status {
-  font-size: 10px; font-weight: 600;
+  font-size: 12px; font-weight: 600;
   padding: 2px 8px; border-radius: 10px; display: inline-block;
 }
 .rs-scheduled { background: rgba(196,154,60,0.12);  color: #7a6000; }
@@ -849,7 +1002,7 @@ onMounted(fetchAccounts)
   padding: 12px 16px; border-top: 1px solid var(--border);
   background: rgba(234, 228, 218, 0.62); flex-wrap: wrap; gap: 10px;
 }
-.footer-count { font-size: 12px; color: var(--muted-2); font-family: 'IBM Plex Mono', monospace; }
+.footer-count { font-size: 14px; color: var(--muted-2); font-family: 'IBM Plex Mono', monospace; }
 .footer-count strong { color: var(--ink); }
 
 .pagination { display: flex; align-items: center; gap: 4px; }
@@ -858,7 +1011,7 @@ onMounted(fetchAccounts)
 .page-btn {
   display: inline-flex; align-items: center; justify-content: center;
   padding: 5px 9px; border-radius: 6px;
-  font-size: 12px; font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px; font-family: 'IBM Plex Mono', monospace;
   cursor: pointer; border: 1px solid var(--border);
   background: var(--surface); color: var(--muted-2);
   transition: all 0.15s; min-width: 32px; white-space: nowrap;
@@ -877,7 +1030,7 @@ onMounted(fetchAccounts)
   font-family: 'Noto Sans TC', sans-serif;
   cursor: pointer; transition: all 0.15s; font-weight: 500;
 }
-.btn-sm { padding: 7px 14px; font-size: 12px; }
+.btn-sm { padding: 7px 14px; font-size: 14px; }
 .btn-ghost {
   background: var(--surface); color: var(--muted-2);
   border: 1px solid var(--border);
@@ -895,7 +1048,7 @@ onMounted(fetchAccounts)
 .schedule-btn {
   display: inline-flex; align-items: center; gap: 5px;
   padding: 5px 12px; border-radius: 6px;
-  font-size: 12px; font-weight: 500;
+  font-size: 14px; font-weight: 500;
   border: 1px solid var(--border);
   background: var(--surface); color: var(--primary);
   cursor: pointer; transition: all 0.15s;
@@ -936,8 +1089,8 @@ onMounted(fetchAccounts)
   flex-shrink: 0;
 }
 .modal-title-group { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.modal-title { font-size: 16px; font-weight: 700; color: #2B2B2B; }
-.modal-subtitle { font-size: 12px; color: #5a6a5e; display: flex; align-items: center; }
+.modal-title { font-size: 18px; font-weight: 700; color: #2B2B2B; }
+.modal-subtitle { font-size: 14px; color: #5a6a5e; display: flex; align-items: center; }
 .modal-close-btn {
   width: 30px; height: 30px; border-radius: 8px;
   border: 1px solid #dde1de; background: #ffffff;
@@ -959,8 +1112,8 @@ onMounted(fetchAccounts)
   border-right: 1px solid #dde1de;
 }
 .summary-item:last-child { border-right: none; }
-.summary-label { font-size: 10px; font-weight: 600; color: #5a6a5e; text-transform: uppercase; letter-spacing: 0.06em; }
-.summary-value { font-size: 13px; font-weight: 600; color: #2B2B2B; }
+.summary-label { font-size: 12px; font-weight: 600; color: #5a6a5e; text-transform: uppercase; letter-spacing: 0.06em; }
+.summary-value { font-size: 15px; font-weight: 600; color: #2B2B2B; }
 
 /* Modal Body */
 .modal-body {

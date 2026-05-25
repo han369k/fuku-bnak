@@ -1,68 +1,657 @@
+/*
+===============================================================================
+Java Easy Bank Account Mock Data
+- Requires customer_insert.sql first
+- Creates realistic customer accounts from 100 customer profiles
+- Generates exactly 500 transaction log rows
+- JPY balances and transaction amounts are generated without fractional values
+===============================================================================
+*/
+
 SET NOCOUNT ON;
 
-DELETE FROM SCHEDULED_TRANSFER;
-DELETE FROM FAVORITE_ACCOUNT;
-DELETE FROM TRANS_LOG;
-DELETE FROM ACCOUNT_DAILY_SNAPSHOTS;
-DELETE FROM ACCOUNT_STATUS_HISTORY;
-DELETE FROM [ACCOUNT];
+-- Clear account mock data in FK-safe order. Business accounts are recreated below.
+IF OBJECT_ID('SCHEDULED_TRANSFER', 'U') IS NOT NULL DELETE FROM SCHEDULED_TRANSFER;
+IF OBJECT_ID('FAVORITE_ACCOUNT', 'U') IS NOT NULL DELETE FROM FAVORITE_ACCOUNT;
+IF OBJECT_ID('TRANS_LOG', 'U') IS NOT NULL DELETE FROM TRANS_LOG;
+IF OBJECT_ID('ACCOUNT_DAILY_SNAPSHOTS', 'U') IS NOT NULL DELETE FROM ACCOUNT_DAILY_SNAPSHOTS;
+IF OBJECT_ID('ACCOUNT_STATUS_HISTORY', 'U') IS NOT NULL DELETE FROM ACCOUNT_STATUS_HISTORY;
+IF OBJECT_ID('ACCOUNT', 'U') IS NOT NULL DELETE FROM [ACCOUNT];
+IF OBJECT_ID('ACCOUNT_APPLICATION', 'U') IS NOT NULL DELETE FROM ACCOUNT_APPLICATION;
+IF OBJECT_ID('ACCOUNT_APPLICATION', 'U') IS NOT NULL
+BEGIN
+    DBCC CHECKIDENT ('ACCOUNT_APPLICATION', RESEED, 10000) WITH NO_INFOMSGS;
+END;
 
-DECLARE @seedTime DATETIME2 = '2026-05-19 09:00:00';
+IF OBJECT_ID('tempdb..#customers') IS NOT NULL DROP TABLE #customers;
+IF OBJECT_ID('tempdb..#mock_accounts') IS NOT NULL DROP TABLE #mock_accounts;
+IF OBJECT_ID('tempdb..#tx_accounts') IS NOT NULL DROP TABLE #tx_accounts;
 
+SELECT TOP (100)
+    CAST(SUBSTRING(email, 9, 3) AS INT) AS rn,
+    customer_id, cif, id_number, name, birthday, gender, email, phone, address,
+    nationality, registered_address, current_address, occupation, employer,
+    estimated_monthly_tx, account_purpose, fund_source, tax_residency, is_pep,
+    id_front_url, id_back_url, second_id_url, risk_level, status
+INTO #customers
+FROM CUSTOMER_PROFILE
+ORDER BY rn;
+
+IF (SELECT COUNT(*) FROM #customers) <> 100
+    THROW 51101, 'account_mockdata.sql requires exactly 100 customers. Run customer_insert.sql first.', 1;
+
+CREATE TABLE #mock_accounts (
+    account_number VARCHAR(14) NOT NULL PRIMARY KEY,
+    customer_id VARCHAR(20) NOT NULL,
+    account_type VARCHAR(20) NOT NULL,
+    currency CHAR(3) NOT NULL,
+    balance DECIMAL(19,4) NULL,
+    liability DECIMAL(19,4) NULL,
+    interest_rate DECIMAL(7,5) NULL,
+    status VARCHAR(20) NOT NULL,
+    parent_account_number VARCHAR(14) NULL,
+    created_at DATETIME2 NOT NULL,
+    changed_at DATETIME2 NOT NULL,
+    created_by VARCHAR(20) NULL,
+    changed_by VARCHAR(20) NULL
+);
+
+-- Bank business accounts used by loan/card/account integrations.
+INSERT INTO #mock_accounts VALUES
+('909000000001', 'BANK_INTERNAL', 'BUSINESS', 'TWD', 999999999999.0000, 0.0000, NULL, 'ACTIVE', NULL, '2026-01-01 09:00:00', '2026-05-13 09:00:00', N'總行', N'總行'),
+('909000000002', 'BANK_INTERNAL', 'BUSINESS', 'TWD', 0.0000, 0.0000, NULL, 'ACTIVE', NULL, '2026-01-01 09:00:00', '2026-05-13 09:00:00', N'總行', N'總行');
+
+-- One TWD checking account per customer.
+INSERT INTO #mock_accounts (
+    account_number, customer_id, account_type, currency, balance, liability,
+    interest_rate, status, parent_account_number, created_at, changed_at, created_by, changed_by
+)
+SELECT
+    '070' + RIGHT(REPLICATE('0', 9) + CAST(rn AS VARCHAR(9)), 9),
+    customer_id,
+    'CHECKING',
+    'TWD',
+    CAST(18000 + rn * 2200 + (rn % 7) * 375 AS DECIMAL(19,4)),
+    0.0000,
+    0.00500,
+    CASE WHEN status = 'ACTIVE' THEN 'ACTIVE' ELSE 'FROZEN' END,
+    NULL,
+    DATEADD(DAY, -120 + rn, CAST('2026-05-13 09:00:00' AS DATETIME2)),
+    CAST('2026-05-13 09:00:00' AS DATETIME2),
+    N'總行',
+    N'總行'
+FROM #customers
+WHERE rn NOT IN (45, 95);
+
+-- Foreign currency savings accounts for customers who applied for FX services.
+INSERT INTO #mock_accounts (
+    account_number, customer_id, account_type, currency, balance, liability,
+    interest_rate, status, parent_account_number, created_at, changed_at, created_by, changed_by
+)
+SELECT
+    '071' + RIGHT(REPLICATE('0', 9) + CAST(rn AS VARCHAR(9)), 9),
+    customer_id,
+    'SAVINGS',
+    CASE rn % 6 WHEN 0 THEN 'JPY' WHEN 1 THEN 'USD' WHEN 2 THEN 'EUR' WHEN 3 THEN 'GBP' WHEN 4 THEN 'CNY' ELSE 'AUD' END,
+    CASE rn % 6
+        WHEN 0 THEN CAST(120000 + rn * 2500 AS DECIMAL(19,4))
+        ELSE CAST(800 + rn * 37 + (rn % 4) * 0.25 AS DECIMAL(19,4))
+    END,
+    0.0000,
+    CASE rn % 6 WHEN 0 THEN 0.00100 ELSE 0.00250 END,
+    'ACTIVE',
+    NULL,
+    DATEADD(DAY, -90 + rn, CAST('2026-05-13 09:00:00' AS DATETIME2)),
+    CAST('2026-05-13 09:00:00' AS DATETIME2),
+    N'總行',
+    N'總行'
+FROM #customers
+WHERE (rn <= 24 OR (rn >= 51 AND rn <= 74)) AND status = 'ACTIVE';
+
+-- Time deposits: fewer, larger, and lower activity.
+INSERT INTO #mock_accounts (
+    account_number, customer_id, account_type, currency, balance, liability,
+    interest_rate, status, parent_account_number, created_at, changed_at, created_by, changed_by
+)
+SELECT
+    '072' + RIGHT(REPLICATE('0', 9) + CAST(rn AS VARCHAR(9)), 9),
+    customer_id,
+    'TIME_DEPOSIT',
+    CASE rn % 4 WHEN 0 THEN 'JPY' WHEN 1 THEN 'TWD' WHEN 2 THEN 'USD' ELSE 'EUR' END,
+    CASE rn % 4
+        WHEN 0 THEN CAST(300000 + rn * 5000 AS DECIMAL(19,4))
+        WHEN 1 THEN CAST(180000 + rn * 12000 AS DECIMAL(19,4))
+        ELSE CAST(5000 + rn * 220 + (rn % 3) * 0.50 AS DECIMAL(19,4))
+    END,
+    0.0000,
+    CASE rn % 4 WHEN 0 THEN 0.00350 WHEN 1 THEN 0.01200 ELSE 0.00800 END,
+    'ACTIVE',
+    NULL,
+    DATEADD(DAY, -75 + rn, CAST('2026-05-13 09:00:00' AS DATETIME2)),
+    CAST('2026-05-13 09:00:00' AS DATETIME2),
+    N'總行',
+    N'總行'
+FROM #customers
+WHERE (rn <= 12 OR (rn >= 51 AND rn <= 62)) AND status = 'ACTIVE';
+
+-- Sub accounts only exist for customers who already have TWD checking accounts.
+INSERT INTO #mock_accounts (
+    account_number, customer_id, account_type, currency, balance, liability,
+    interest_rate, status, parent_account_number, created_at, changed_at, created_by, changed_by
+)
+SELECT
+    '073' + RIGHT(REPLICATE('0', 9) + CAST(rn AS VARCHAR(9)), 9),
+    customer_id,
+    'SUB_ACCOUNT',
+    'TWD',
+    CAST(3000 + rn * 550 AS DECIMAL(19,4)),
+    0.0000,
+    0.00500,
+    'ACTIVE',
+    '070' + RIGHT(REPLICATE('0', 9) + CAST(rn AS VARCHAR(9)), 9),
+    DATEADD(DAY, -45 + rn, CAST('2026-05-13 09:00:00' AS DATETIME2)),
+    CAST('2026-05-13 09:00:00' AS DATETIME2),
+    N'總行',
+    N'總行'
+FROM #customers
+WHERE (rn <= 10 OR (rn >= 51 AND rn <= 60)) AND status = 'ACTIVE';
+
+-- Credit-card payment accounts: hidden from general account views.
+INSERT INTO #mock_accounts (
+    account_number, customer_id, account_type, currency, balance, liability,
+    interest_rate, status, parent_account_number, created_at, changed_at, created_by, changed_by
+)
+SELECT
+    '801' + RIGHT(REPLICATE('0', 11) + CAST(rn AS VARCHAR(11)), 11),
+    customer_id,
+    'CREDIT_CARD',
+    'TWD',
+    CAST((rn % 4) * 1000 AS DECIMAL(19,4)),
+    0.0000,
+    NULL,
+    'ACTIVE',
+    NULL,
+    DATEADD(DAY, -35 + rn, CAST('2026-05-13 09:00:00' AS DATETIME2)),
+    CAST('2026-05-13 09:00:00' AS DATETIME2),
+    N'總行',
+    N'總行'
+FROM #customers
+WHERE (rn <= 8 OR (rn >= 51 AND rn <= 58)) AND status = 'ACTIVE';
+
+-- Loan accounts: balance stays 0; liability carries the loan principal.
+INSERT INTO #mock_accounts (
+    account_number, customer_id, account_type, currency, balance, liability,
+    interest_rate, status, parent_account_number, created_at, changed_at, created_by, changed_by
+)
+SELECT
+    '901'
+        + RIGHT('00' + CAST(ASCII(UPPER(LEFT(id_number, 1))) - ASCII('A') + 1 AS VARCHAR(2)), 2)
+        + SUBSTRING(id_number, 2, LEN(id_number)),
+    customer_id,
+    'LOAN',
+    'TWD',
+    0.0000,
+    CAST(120000 + rn * 35000 AS DECIMAL(19,4)),
+    0.02100,
+    'ACTIVE',
+    NULL,
+    DATEADD(DAY, -20 + rn, CAST('2026-05-13 09:00:00' AS DATETIME2)),
+    CAST('2026-05-13 09:00:00' AS DATETIME2),
+    N'總行',
+    N'總行'
+FROM #customers
+WHERE customer_id IN (
+    'A6R3M8J2',
+    'B3N8T5P9',
+    'B9P5N2W6',
+    'C6T8R4J3',
+    'C9W2M6R4',
+    'D5Q9T2W7',
+    'E2V7D9M5',
+    'E5J7Q3D8',
+    'F2P9V4K6',
+    'F7V4C8N2'
+) AND status = 'ACTIVE';
+
+INSERT INTO #mock_accounts (
+    account_number, customer_id, account_type, currency, balance, liability,
+    interest_rate, status, parent_account_number, created_at, changed_at, created_by, changed_by
+)
+SELECT
+    '901'
+        + RIGHT('00' + CAST(ASCII(UPPER(LEFT(id_number, 1))) - ASCII('A') + 1 AS VARCHAR(2)), 2)
+        + SUBSTRING(id_number, 2, LEN(id_number)),
+    customer_id,
+    'LOAN',
+    'TWD',
+    0.0000,
+    CAST(2500000 AS DECIMAL(19,4)),
+    0.01800,
+    'ACTIVE',
+    NULL,
+    CAST('2026-05-21 15:00:00' AS DATETIME2),
+    CAST('2026-05-21 16:00:00' AS DATETIME2),
+    N'總行',
+    N'總行'
+FROM #customers
+WHERE customer_id = 'Q8M4T7K2'
+  AND status = 'ACTIVE';
+
+IF NOT EXISTS (SELECT 1 FROM [ACCOUNT])
 INSERT INTO [ACCOUNT] (
     account_number, customer_id, account_type, currency, balance, liability,
-    interest_rate, status, parent_account_number, created_at, changed_at,
-    created_by, changed_by
+    interest_rate, status, parent_account_number, created_at, changed_at, created_by, changed_by
 )
-VALUES
-('070000000001', 'Q8M4T7K2', 'CHECKING', 'TWD', 250000.0000, 0.0000, 0.00500, 'ACTIVE', NULL, DATEADD(DAY, -120, @seedTime), @seedTime, 'system', 'system'),
-('070000000002', 'R5N9W3A6', 'CHECKING', 'TWD', 180000.0000, 0.0000, 0.00500, 'ACTIVE', NULL, DATEADD(DAY, -119, @seedTime), @seedTime, 'system', 'system'),
-('070000000003', 'H7C2P8D4', 'CHECKING', 'TWD', 220000.0000, 0.0000, 0.00500, 'ACTIVE', NULL, DATEADD(DAY, -118, @seedTime), @seedTime, 'system', 'system'),
-('070000000004', 'V6J3X9M5', 'CHECKING', 'TWD', 210000.0000, 0.0000, 0.00500, 'ACTIVE', NULL, DATEADD(DAY, -117, @seedTime), @seedTime, 'system', 'system'),
-('070000000005', 'K2T8B4R7', 'CHECKING', 'TWD', 195000.0000, 0.0000, 0.00500, 'ACTIVE', NULL, DATEADD(DAY, -116, @seedTime), @seedTime, 'system', 'system'),
-('070000000006', 'M9A5D2Q8', 'CHECKING', 'TWD', 175000.0000, 0.0000, 0.00500, 'ACTIVE', NULL, DATEADD(DAY, -115, @seedTime), @seedTime, 'system', 'system'),
-('070000000007', 'P4W7N6C3', 'CHECKING', 'TWD', 260000.0000, 0.0000, 0.00500, 'ACTIVE', NULL, DATEADD(DAY, -114, @seedTime), @seedTime, 'system', 'system'),
-('070000000008', 'T8H2K5V9', 'CHECKING', 'TWD', 310000.0000, 0.0000, 0.00500, 'ACTIVE', NULL, DATEADD(DAY, -113, @seedTime), @seedTime, 'system', 'system'),
-('070000000009', 'A6R3M8J2', 'CHECKING', 'TWD', 205000.0000, 0.0000, 0.00500, 'ACTIVE', NULL, DATEADD(DAY, -112, @seedTime), @seedTime, 'system', 'system'),
-('070000000010', 'D5Q9T2W7', 'CHECKING', 'TWD', 265000.0000, 0.0000, 0.00500, 'ACTIVE', NULL, DATEADD(DAY, -111, @seedTime), @seedTime, 'system', 'system'),
-('070000000011', 'F7V4C8N2', 'CHECKING', 'TWD', 240000.0000, 0.0000, 0.00500, 'ACTIVE', NULL, DATEADD(DAY, -110, @seedTime), @seedTime, 'system', 'system'),
-('070000000012', 'G3K6P9M5', 'CHECKING', 'TWD', 330000.0000, 0.0000, 0.00500, 'ACTIVE', NULL, DATEADD(DAY, -109, @seedTime), @seedTime, 'system', 'system'),
-('070000000013', 'J8R2D5A7', 'CHECKING', 'TWD', 155000.0000, 0.0000, 0.00500, 'ACTIVE', NULL, DATEADD(DAY, -108, @seedTime), @seedTime, 'system', 'system'),
-('070000000014', 'L4N9T6Q3', 'CHECKING', 'TWD', 290000.0000, 0.0000, 0.00500, 'ACTIVE', NULL, DATEADD(DAY, -107, @seedTime), @seedTime, 'system', 'system'),
-('070000000015', 'N2W5H8C4', 'CHECKING', 'TWD', 280000.0000, 0.0000, 0.00500, 'ACTIVE', NULL, DATEADD(DAY, -106, @seedTime), @seedTime, 'system', 'system'),
-('070000000016', 'S7A3K9P6', 'CHECKING', 'TWD', 150000.0000, 0.0000, 0.00500, 'ACTIVE', NULL, DATEADD(DAY, -105, @seedTime), @seedTime, 'system', 'system');
+SELECT
+    account_number, customer_id, account_type, currency, balance, liability,
+    interest_rate, status, parent_account_number, created_at, changed_at, created_by, changed_by
+FROM #mock_accounts
+WHERE parent_account_number IS NULL
+ORDER BY account_number;
 
-INSERT INTO [ACCOUNT_STATUS_HISTORY] (
-    history_id, account_number, old_status, new_status, change_reason, changed_at, changed_by
+IF NOT EXISTS (SELECT 1 FROM [ACCOUNT] WHERE parent_account_number IS NOT NULL)
+INSERT INTO [ACCOUNT] (
+    account_number, customer_id, account_type, currency, balance, liability,
+    interest_rate, status, parent_account_number, created_at, changed_at, created_by, changed_by
 )
-VALUES
-('00000000-0000-0000-0000-000000000001', '070000000001', 'ACTIVE', 'ACTIVE', N'Initial seed', @seedTime, 'system'),
-('00000000-0000-0000-0000-000000000002', '070000000015', 'ACTIVE', 'ACTIVE', N'Initial seed', @seedTime, 'system');
+SELECT
+    account_number, customer_id, account_type, currency, balance, liability,
+    interest_rate, status, parent_account_number, created_at, changed_at, created_by, changed_by
+FROM #mock_accounts
+WHERE parent_account_number IS NOT NULL
+ORDER BY account_number;
 
-INSERT INTO [ACCOUNT_DAILY_SNAPSHOTS] (
-    snapshot_id, account_number, snapshot_date, balance, interest_rate, daily_interest, created_at
+-- Account applications: exactly one latest application per mock customer.
+IF NOT EXISTS (SELECT 1 FROM ACCOUNT_APPLICATION)
+INSERT INTO ACCOUNT_APPLICATION (
+    application_no, customer_id, account_type, currency,
+    customer_name, id_number, birthday, gender, email, address, nationality, phone,
+    registered_address, current_address, occupation, employer, estimated_monthly_tx,
+    account_purpose, fund_source, tax_residency, is_pep,
+    id_front_url, id_back_url, second_id_url, risk_flag, apply_ip,
+    status, reject_reason, reviewed_at, reviewed_by, created_account_number,
+    created_at, updated_at
 )
-VALUES
-('10000000-0000-0000-0000-000000000001', '070000000001', '2026-05-18', 250000.0000, 0.00500, 34.2466, @seedTime),
-('10000000-0000-0000-0000-000000000002', '070000000015', '2026-05-18', 280000.0000, 0.00500, 38.3950, @seedTime);
+SELECT
+    'APP-20260501-' + RIGHT(REPLICATE('0', 4) + CAST(c.rn AS VARCHAR(4)), 4),
+    c.customer_id,
+    x.account_type,
+    x.currency,
+    c.name,
+    c.id_number,
+    c.birthday,
+    c.gender,
+    c.email,
+    c.address,
+    ISNULL(c.nationality, 'TW'),
+    c.phone,
+    ISNULL(c.registered_address, c.address),
+    ISNULL(c.current_address, c.address),
+    c.occupation,
+    c.employer,
+    ISNULL(c.estimated_monthly_tx, 20),
+    ISNULL(c.account_purpose, 'SAVINGS'),
+    ISNULL(c.fund_source, 'SALARY'),
+    ISNULL(c.tax_residency, 'TW'),
+    ISNULL(c.is_pep, 0),
+    ISNULL(c.id_front_url, CONCAT('/uploads/mock/customer/', c.customer_id, '-front.jpg')),
+    ISNULL(c.id_back_url, CONCAT('/uploads/mock/customer/', c.customer_id, '-back.jpg')),
+    ISNULL(c.second_id_url, CONCAT('/uploads/mock/customer/', c.customer_id, '-second.jpg')),
+    CASE
+        WHEN ISNULL(c.is_pep, 0) = 1 THEN 'PEP'
+        WHEN c.risk_level = 'HIGH' THEN 'HIGH_RISK'
+        WHEN c.risk_level = 'MEDIUM' THEN 'WATCH'
+        ELSE 'NORMAL'
+    END,
+    CONCAT('203.0.113.', (c.rn % 200) + 20),
+    x.application_status,
+    CASE
+        WHEN x.application_status = 'REJECTED' THEN N'收入證明與申請用途不符'
+        WHEN x.application_status = 'SUPPLEMENT_REQUIRED' THEN N'請補上第二證件影像'
+        ELSE NULL
+    END,
+    CASE WHEN x.application_status IN ('APPROVED', 'REJECTED', 'SUPPLEMENT_REQUIRED')
+        THEN DATEADD(DAY, 2, x.created_at)
+        ELSE NULL
+    END,
+    CASE WHEN x.application_status IN ('APPROVED', 'REJECTED', 'SUPPLEMENT_REQUIRED') THEN 'E26001' ELSE NULL END,
+    CASE WHEN x.application_status = 'APPROVED'
+        THEN '070' + RIGHT(REPLICATE('0', 9) + CAST(c.rn AS VARCHAR(9)), 9)
+        ELSE NULL
+    END,
+    x.created_at,
+    CASE WHEN x.application_status IN ('APPROVED', 'REJECTED', 'SUPPLEMENT_REQUIRED')
+        THEN DATEADD(DAY, 2, x.created_at)
+        ELSE x.created_at
+    END
+FROM #customers c
+CROSS APPLY (
+    SELECT
+        CASE
+            WHEN c.rn IN (45, 95) THEN 'PENDING'
+            WHEN c.rn IN (46, 96) THEN 'SUPPLEMENT_REQUIRED'
+            WHEN c.rn IN (47, 97) THEN 'REJECTED'
+            WHEN c.rn IN (48, 98) THEN 'CANCELLED'
+            ELSE 'APPROVED'
+        END AS application_status,
+        CASE
+            WHEN c.rn IN (46, 96) THEN 'SAVINGS'
+            WHEN c.rn IN (47, 97) THEN 'TIME_DEPOSIT'
+            WHEN c.rn IN (48, 98) THEN 'SUB_ACCOUNT'
+            ELSE 'CHECKING'
+        END AS account_type,
+        CASE
+            WHEN c.rn IN (46, 96) THEN 'JPY'
+            WHEN c.rn IN (47, 97) THEN 'USD'
+            ELSE 'TWD'
+        END AS currency,
+        DATEADD(DAY, -60 + c.rn, CAST('2026-05-01 09:00:00' AS DATETIME2)) AS created_at
+) x;
 
-INSERT INTO TRANS_LOG (
-    transaction_id, reference_id, account_number, counterpart_account, bank_code, bank_name,
-    counterpart_bank_code, counterpart_bank_name, is_interbank, entry_type, transaction_type,
-    amount, fee_amount, total_debit_amount, balance_before, balance_after, currency, note, created_at
-)
-VALUES
-('20000000-0000-0000-0000-000000000001', 'REF-001', '070000000001', '070000000002', '909', N'Java Easy Bank', NULL, NULL, 0, 'D', 'TRANSFER', 1000.0000, 0.0000, 1000.0000, 250000.0000, 249000.0000, 'TWD', N'Seed transfer', @seedTime),
-('20000000-0000-0000-0000-000000000002', 'REF-002', '070000000001', '070000000003', '909', N'Java Easy Bank', NULL, NULL, 0, 'D', 'TRANSFER', 2000.0000, 0.0000, 2000.0000, 249000.0000, 247000.0000, 'TWD', N'Seed transfer', @seedTime);
+UPDATE p
+SET
+    latest_account_application_id = a.id,
+    latest_account_application_no = a.application_no,
+    latest_applied_account_type = a.account_type,
+    latest_applied_currency = a.currency,
+    latest_account_application_status = a.status,
+    latest_account_application_risk_flag = a.risk_flag,
+    latest_account_application_reviewed_at = a.reviewed_at,
+    latest_account_application_reviewed_by = a.reviewed_by,
+    latest_account_application_reject_reason = a.reject_reason,
+    created_account_number = CASE WHEN LEN(a.created_account_number) <= 12 THEN a.created_account_number ELSE LEFT(a.created_account_number, 12) END,
+    account_application_synced_at = SYSDATETIME(),
+    updated_at = SYSDATETIME()
+FROM CUSTOMER_PROFILE p
+JOIN ACCOUNT_APPLICATION a ON a.customer_id = p.customer_id;
 
+IF OBJECT_ID('ACCOUNT_STATUS_HISTORY', 'U') IS NOT NULL
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM ACCOUNT_STATUS_HISTORY)
+    INSERT INTO ACCOUNT_STATUS_HISTORY (
+        history_id, account_number, old_status, new_status, change_reason, changed_at, changed_by
+    )
+    SELECT
+        LOWER(CONVERT(CHAR(36), NEWID())),
+        account_number,
+        NULL,
+        status,
+        N'Mock data initial status',
+        created_at,
+        N'總行'
+    FROM #mock_accounts
+    WHERE account_type <> 'BUSINESS';
+END;
+
+IF NOT EXISTS (SELECT 1 FROM FAVORITE_ACCOUNT)
 INSERT INTO FAVORITE_ACCOUNT (customer_id, bank_code, account_number, alias, bank_name, created_at, updated_at)
-VALUES
-('Q8M4T7K2', '909', '070000000002', N'Amy', N'Java Easy Bank', @seedTime, @seedTime),
-('Q8M4T7K2', '909', '909000000002', N'Bank collection', N'Java Easy Bank', @seedTime, @seedTime);
+SELECT TOP (24)
+    customer_id,
+    CASE rn % 4 WHEN 0 THEN '808' WHEN 1 THEN '812' WHEN 2 THEN '700' ELSE '004' END,
+    CASE rn % 4
+        WHEN 0 THEN '808' + RIGHT(REPLICATE('0', 13) + CAST(7000000000 + rn AS VARCHAR(13)), 13)
+        WHEN 1 THEN '812' + RIGHT(REPLICATE('0', 13) + CAST(7000000000 + rn AS VARCHAR(13)), 13)
+        WHEN 2 THEN '700' + RIGHT(REPLICATE('0', 13) + CAST(7000000000 + rn AS VARCHAR(13)), 13)
+        ELSE '004' + RIGHT(REPLICATE('0', 13) + CAST(7000000000 + rn AS VARCHAR(13)), 13)
+    END,
+    N'常用轉帳對象',
+    CASE rn % 4 WHEN 0 THEN N'玉山商業銀行' WHEN 1 THEN N'台新國際商業銀行' WHEN 2 THEN N'中華郵政股份有限公司' ELSE N'臺灣銀行' END,
+    DATEADD(DAY, -20 + rn, CAST('2026-05-13 09:00:00' AS DATETIME2)),
+    CAST('2026-05-13 09:00:00' AS DATETIME2)
+FROM #customers
+WHERE status = 'ACTIVE'
+ORDER BY rn;
 
-INSERT INTO SCHEDULED_TRANSFER (
-    customer_id, from_account_number, to_account_number, amount, scheduled_date,
-    note, status, executed_at, fail_reason, created_at, updated_at
+SELECT
+    ROW_NUMBER() OVER (ORDER BY account_number) AS tx_rn,
+    account_number,
+    customer_id,
+    account_type,
+    currency,
+    balance
+INTO #tx_accounts
+FROM #mock_accounts
+WHERE account_type IN ('CHECKING', 'SAVINGS', 'SUB_ACCOUNT')
+  AND status = 'ACTIVE';
+
+DECLARE @accountCount INT = (SELECT COUNT(*) FROM #tx_accounts);
+IF @accountCount = 0
+    THROW 51102, 'account_mockdata.sql found no active transaction accounts.', 1;
+
+DECLARE
+    @i INT = 1,
+    @slot INT,
+    @counterpartSlot INT,
+    @accountNumber VARCHAR(14),
+    @currency CHAR(3),
+    @currentBalance DECIMAL(19,4),
+    @amount DECIMAL(19,4),
+    @fee DECIMAL(19,4),
+    @totalDebit DECIMAL(19,4),
+    @balanceBefore DECIMAL(19,4),
+    @balanceAfter DECIMAL(19,4),
+    @entryType VARCHAR(10),
+    @transactionType VARCHAR(25),
+    @counterpartAccount VARCHAR(20),
+    @counterpartBankCode VARCHAR(10),
+    @counterpartBankName NVARCHAR(50),
+    @isInterbank BIT,
+    @note NVARCHAR(200),
+    @referenceId VARCHAR(30),
+    @createdAt DATETIME2(3);
+
+IF NOT EXISTS (SELECT 1 FROM TRANS_LOG)
+BEGIN
+WHILE @i <= 500
+BEGIN
+    SET @slot = ((@i - 1) % @accountCount) + 1;
+    SET @counterpartSlot = (@slot % @accountCount) + 1;
+
+    SELECT
+        @accountNumber = account_number,
+        @currency = currency,
+        @currentBalance = balance
+    FROM #tx_accounts
+    WHERE tx_rn = @slot;
+
+    SET @amount = CASE
+        WHEN @currency = 'JPY' THEN CAST(500 + ((@i * 137) % 80) * 100 AS DECIMAL(19,4))
+        WHEN @currency = 'TWD' THEN CAST(300 + ((@i * 193) % 90) * 100 AS DECIMAL(19,4))
+        ELSE CAST(20 + ((@i * 17) % 90) + ((@i % 4) * 0.25) AS DECIMAL(19,4))
+    END;
+    SET @fee = 0.0000;
+    SET @totalDebit = NULL;
+    SET @counterpartAccount = NULL;
+    SET @counterpartBankCode = NULL;
+    SET @counterpartBankName = NULL;
+    SET @isInterbank = 0;
+    SET @note = N'臨櫃存款';
+
+    IF @i % 17 = 0
+    BEGIN
+        SET @transactionType = 'INTEREST';
+        SET @entryType = 'CREDIT';
+        SET @amount = CASE
+            WHEN @currency = 'JPY' THEN CAST(1 + (@i % 8) AS DECIMAL(19,4))
+            WHEN @currency = 'TWD' THEN CAST(3 + (@i % 20) AS DECIMAL(19,4))
+            ELSE CAST(0.10 + (@i % 10) * 0.03 AS DECIMAL(19,4))
+        END;
+        SET @note = N'活存利息入帳';
+    END
+    ELSE IF @i % 11 = 0
+    BEGIN
+        SET @transactionType = 'EXCHANGE';
+        SET @entryType = 'CREDIT';
+        SET @note = N'換匯入帳';
+    END
+    ELSE IF @i % 7 = 0
+    BEGIN
+        SET @transactionType = 'WITHDRAW';
+        SET @entryType = 'DEBIT';
+        SET @note = N'ATM 提款';
+    END
+    ELSE IF @i % 5 = 0
+    BEGIN
+        SET @transactionType = 'TRANSFER';
+        SET @entryType = 'DEBIT';
+        SET @note = N'轉帳';
+
+        IF @currency = 'TWD' AND @i % 20 = 0
+        BEGIN
+            SET @isInterbank = 1;
+            SET @counterpartBankCode = CASE @i % 4 WHEN 0 THEN '808' WHEN 1 THEN '812' WHEN 2 THEN '700' ELSE '004' END;
+            SET @counterpartBankName = CASE @counterpartBankCode
+                WHEN '808' THEN N'玉山商業銀行'
+                WHEN '812' THEN N'台新國際商業銀行'
+                WHEN '700' THEN N'中華郵政股份有限公司'
+                ELSE N'臺灣銀行'
+            END;
+            SET @counterpartAccount = @counterpartBankCode + RIGHT(REPLICATE('0', 13) + CAST(6000000000 + @i AS VARCHAR(13)), 13);
+            SET @fee = CASE WHEN @amount <= 1000 THEN 10.0000 ELSE 15.0000 END;
+            SET @note = N'跨行轉帳';
+        END
+        ELSE
+        BEGIN
+            SET @counterpartBankCode = '909';
+            SET @counterpartBankName = N'爪哇銀行';
+            SELECT @counterpartAccount = account_number
+            FROM #tx_accounts
+            WHERE tx_rn = @counterpartSlot;
+        END
+    END
+    ELSE
+    BEGIN
+        SET @transactionType = 'DEPOSIT';
+        SET @entryType = 'CREDIT';
+        SET @note = N'薪資或現金存入';
+    END
+
+    SET @balanceBefore = @currentBalance;
+
+    IF @entryType = 'DEBIT'
+    BEGIN
+        SET @totalDebit = @amount + @fee;
+        IF @balanceBefore < @totalDebit
+        BEGIN
+            SET @transactionType = 'DEPOSIT';
+            SET @entryType = 'CREDIT';
+            SET @fee = 0.0000;
+            SET @totalDebit = NULL;
+            SET @counterpartAccount = NULL;
+            SET @counterpartBankCode = NULL;
+            SET @counterpartBankName = NULL;
+            SET @isInterbank = 0;
+            SET @note = N'餘額不足改為臨櫃存款 mock';
+        END
+    END
+
+    SET @balanceAfter = CASE
+        WHEN @entryType = 'DEBIT' THEN @balanceBefore - ISNULL(@totalDebit, @amount)
+        ELSE @balanceBefore + @amount
+    END;
+
+    SET @referenceId = 'TXN-20260513-' + RIGHT(REPLICATE('0', 6) + CAST(@i AS VARCHAR(6)), 6);
+    SET @createdAt = DATEADD(MINUTE, -(@i * 43), CAST('2026-05-13 10:00:00' AS DATETIME2(3)));
+
+    INSERT INTO TRANS_LOG (
+        transaction_id, reference_id, account_number, counterpart_account,
+        bank_code, bank_name, counterpart_bank_code, counterpart_bank_name,
+        is_interbank, entry_type, transaction_type, amount, fee_amount,
+        total_debit_amount, balance_before, balance_after, currency, note, created_at
+    ) VALUES (
+        LOWER(CONVERT(CHAR(36), NEWID())),
+        @referenceId,
+        @accountNumber,
+        @counterpartAccount,
+        '909',
+        N'爪哇銀行',
+        @counterpartBankCode,
+        @counterpartBankName,
+        @isInterbank,
+        @entryType,
+        @transactionType,
+        @amount,
+        @fee,
+        CASE WHEN @entryType = 'DEBIT' THEN @totalDebit ELSE NULL END,
+        @balanceBefore,
+        @balanceAfter,
+        @currency,
+        @note,
+        @createdAt
+    );
+
+    UPDATE #tx_accounts
+    SET balance = @balanceAfter
+    WHERE account_number = @accountNumber;
+
+    UPDATE #mock_accounts
+    SET balance = @balanceAfter,
+        changed_at = @createdAt,
+        changed_by = 'mock'
+    WHERE account_number = @accountNumber;
+
+    SET @i += 1;
+END;
+END; -- IF NOT EXISTS TRANS_LOG
+
+UPDATE a
+SET
+    a.balance = m.balance,
+    a.changed_at = m.changed_at,
+    a.changed_by = m.changed_by
+FROM [ACCOUNT] a
+JOIN #mock_accounts m ON m.account_number = a.account_number;
+
+IF (SELECT COUNT(*) FROM TRANS_LOG) <> 500
+    THROW 51103, 'account_mockdata.sql expected exactly 500 TRANS_LOG rows.', 1;
+
+IF EXISTS (
+    SELECT 1
+    FROM [ACCOUNT]
+    WHERE currency = 'JPY'
+      AND (balance <> FLOOR(balance) OR ISNULL(liability, 0) <> FLOOR(ISNULL(liability, 0)))
 )
-VALUES
-('Q8M4T7K2', '070000000001', '070000000002', 5000.0000, '2026-05-20', N'Rent', 'PENDING', NULL, NULL, @seedTime, @seedTime);
+    THROW 51104, 'account_mockdata.sql generated fractional JPY account money.', 1;
+
+IF EXISTS (
+    SELECT 1
+    FROM TRANS_LOG
+    WHERE currency = 'JPY'
+      AND (
+          amount <> FLOOR(amount)
+          OR fee_amount <> FLOOR(fee_amount)
+          OR ISNULL(total_debit_amount, 0) <> FLOOR(ISNULL(total_debit_amount, 0))
+          OR balance_before <> FLOOR(balance_before)
+          OR balance_after <> FLOOR(balance_after)
+      )
+)
+    THROW 51105, 'account_mockdata.sql generated fractional JPY transaction money.', 1;
+
+IF EXISTS (SELECT 1 FROM TRANS_LOG WHERE LEN(reference_id) > 30 OR LEN(account_number) > 14 OR LEN(ISNULL(counterpart_account, '')) > 20)
+    THROW 51106, 'account_mockdata.sql generated data longer than account transaction column limits.', 1;
+
+PRINT N'account_mockdata.sql completed: customer accounts and 500 transaction log rows generated.';
+
+DROP TABLE #tx_accounts;
+DROP TABLE #mock_accounts;
+DROP TABLE #customers;
+
+-- ===== Demo Test Accounts (seq 101-104) =====
+-- These 4 accounts are NOT in the TOP(100) auto-generation above.
+-- Insert them explicitly with controlled statuses.
+INSERT INTO [ACCOUNT] (account_number, customer_id, account_type, currency, balance, liability, interest_rate, status, parent_account_number, created_at, changed_at, created_by, changed_by)
+SELECT v.account_number, v.customer_id, v.account_type, v.currency, v.balance, v.liability, v.interest_rate, v.status, NULL, GETDATE(), GETDATE(), 'mock-demo', 'mock-demo'
+FROM (VALUES
+    ('090000000101', 'DM01NR01', 'CHECKING', 'TWD', 150000.0000, 0.0000, NULL, 'ACTIVE'),
+    ('090000000201', 'DM01NR01', 'SAVINGS',  'TWD', 500000.0000, 0.0000, 1.50, 'ACTIVE'),
+    ('090000000102', 'DM02NR02', 'CHECKING', 'TWD', 280000.0000, 0.0000, NULL, 'ACTIVE'),
+    ('090000000202', 'DM02NR02', 'SAVINGS',  'TWD', 1200000.0000, 0.0000, 1.50, 'ACTIVE'),
+    ('090000000103', 'DM03FZ01', 'CHECKING', 'TWD', 75000.0000, 0.0000, NULL, 'FROZEN'),
+    ('090000000203', 'DM03FZ01', 'SAVINGS',  'TWD', 300000.0000, 0.0000, 1.50, 'FROZEN'),
+    ('090000000104', 'DM04BK01', 'CHECKING', 'TWD', 95000.0000, 0.0000, NULL, 'ACTIVE'),
+    ('090000000204', 'DM04BK01', 'SAVINGS',  'TWD', 420000.0000, 0.0000, 1.50, 'ACTIVE')
+) AS v(account_number, customer_id, account_type, currency, balance, liability, interest_rate, status)
+WHERE NOT EXISTS (SELECT 1 FROM [ACCOUNT] a WHERE a.account_number = v.account_number);
+
+SET NOCOUNT OFF;
+GO
