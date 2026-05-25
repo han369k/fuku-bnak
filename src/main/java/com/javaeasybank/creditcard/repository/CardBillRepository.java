@@ -11,22 +11,26 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import com.javaeasybank.creditcard.entity.CardBill;
 import com.javaeasybank.creditcard.enums.BillStatus;
 
-public interface CardBillRepository extends JpaRepository<CardBill, Integer>,JpaSpecificationExecutor<CardBill> {
+public interface CardBillRepository extends JpaRepository<CardBill, Integer>, JpaSpecificationExecutor<CardBill> {
 
-    Page<CardBill> findByCardAccountCustomerCustomerId(String customerId, Pageable pageable);
+        Page<CardBill> findByCardAccountCustomerCustomerId(String customerId, Pageable pageable);
 
-    boolean existsByBillingMonth(String billingMonth);
+        boolean existsByBillingMonth(String billingMonth);
 
-    Optional<CardBill> findTopByCardAccountCustomerCustomerIdAndBillStatusInOrderByDueDateAsc(
-            String customerId,
-            List<BillStatus> statuses);
+        Optional<CardBill> findTopByCardAccountCustomerCustomerIdAndBillStatusInOrderByDueDateAsc(
+                        String customerId,
+                        List<BillStatus> statuses);
 
-    Optional<CardBill> findByBillIdAndCardAccountCustomerCustomerId(
-            Integer billId,
-            String customerId);
+        Optional<CardBill> findByBillIdAndCardAccountCustomerCustomerId(
+                        Integer billId,
+                        String customerId);
 
-    boolean existsByCardAccountIdAndBillingMonth(
-            Integer cardAccountId,
-            String billingMonth);
+        boolean existsByCardAccountIdAndBillingMonth(
+                        Integer cardAccountId,
+                        String billingMonth);
+        //最近一期未繳狀態
+        List<CardBill> findByCardAccountIdAndBillStatusInOrderByBillingMonthAsc(
+                        Integer cardAccountId,
+                        List<BillStatus> statuses);
 
 }

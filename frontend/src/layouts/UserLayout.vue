@@ -103,6 +103,7 @@
             v-for="(menu, idx) in menus"
             :key="idx"
             class="mega-nav-item"
+            :class="{ 'is-open': openMenu === idx }"
             @mouseenter="handleMouseEnter(idx)"
             @mouseleave="handleMouseLeave"
           >
@@ -123,7 +124,7 @@
             <!-- 下拉面板 -->
             <transition name="dropdown">
               <div
-                v-if="openMenu === idx"
+                v-if="openMenu === idx && !isCompactNav"
                 class="mega-dropdown"
                 :style="dropdownStyle"
               >
@@ -144,6 +145,24 @@
             </transition>
           </div>
         </div>
+
+        <transition name="dropdown">
+          <div v-if="isCompactNav && openMenu !== -1" class="mobile-nav-panel">
+            <ul class="mobile-nav-list">
+              <li v-for="sub in menus[openMenu]?.children" :key="sub.label">
+                <a
+                  href="#"
+                  class="dropdown-link mobile-nav-link"
+                  :class="{ disabled: !sub.route }"
+                  @click.prevent="handleSubClick(sub)"
+                >
+                  <span class="dropdown-link-text">{{ sub.label }}</span>
+                  <span v-if="sub.desc" class="dropdown-link-desc">{{ sub.desc }}</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+        </transition>
       </nav>
     </header>
 
@@ -208,6 +227,11 @@ function updateCompactNavState() {
 }
 
 function updateDropdownPosition(idx = openMenu.value) {
+  if (isCompactNav.value) {
+    dropdownStyle.value = {}
+    return
+  }
+
   if (!isCompactNav.value || idx < 0) {
     dropdownStyle.value = {}
     return
@@ -233,12 +257,14 @@ function updateDropdownPosition(idx = openMenu.value) {
 }
 
 function handleMouseEnter(idx) {
+  if (isCompactNav.value) return
   clearTimeout(leaveTimer)
   openMenu.value = idx
   nextTick(() => updateDropdownPosition(idx))
 }
 
 function handleMouseLeave() {
+  if (isCompactNav.value) return
   leaveTimer = setTimeout(() => {
     openMenu.value = -1
     dropdownStyle.value = {}
@@ -295,7 +321,7 @@ const menus = [
     route: null,
     children: [
       { label: '卡片總覽', desc: '查看所有信用卡', route: 'user-card-types' },
-      { label: '線上申辦', desc: '申請新信用卡', route: 'user-card-applications' },
+      { label: '申辦信用卡紀錄', desc: '查看紀錄', route: 'user-card-applications' },
       {label:'卡片管理', desc:'查看持有信用卡', route:'user-cards'},
       {label:'交易管理', desc:'查看與刷卡交易', route:'user-card-txns'},
       { label: '帳單查詢', desc: '查看信用卡帳單', route: 'user-card-bills' },
@@ -489,6 +515,7 @@ function stopGraceTimer() {
 }
 
 onMounted(() => {
+  document.body.classList.add('customer-ant-scope')
   updateCompactNavState()
   compactNavMedia = window.matchMedia('(max-width: 900px)')
   document.addEventListener('click', closeOnOutsideClick)
@@ -511,6 +538,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  document.body.classList.remove('customer-ant-scope')
   document.removeEventListener('click', closeOnOutsideClick)
   window.removeEventListener('resize', handleViewportChange)
   window.removeEventListener('scroll', handleViewportChange, true)
@@ -967,8 +995,8 @@ function handleLogout() {
   justify-content: center;
   gap: var(--space-2);
   width: 100%;
-  padding: 18px var(--space-3);
-  font-size: 16px;
+  padding: 16px var(--space-3);
+  font-size: 15px;
   font-family: var(--font-body);
   font-weight: 500;
   color: var(--text-primary);
@@ -1016,7 +1044,7 @@ function handleLogout() {
   position: absolute;
   top: 100%;
   left: 0;
-  min-width: 240px;
+  min-width: 220px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 0 0 var(--radius-md) var(--radius-md);
@@ -1034,7 +1062,7 @@ function handleLogout() {
 .dropdown-link {
   display: flex;
   flex-direction: column;
-  padding: var(--space-3) var(--space-4);
+  padding: 10px 16px;
   text-decoration: none;
   color: var(--text-primary);
   transition: background var(--duration) var(--ease);
@@ -1053,14 +1081,14 @@ function handleLogout() {
 }
 
 .dropdown-link-text {
-  font-size: var(--text-body);
+  font-size: 14px;
   font-weight: 500;
   color: var(--text-primary);
   line-height: 1.4;
 }
 
 .dropdown-link-desc {
-  font-size: var(--text-xs);
+  font-size: 11px;
   color: var(--text-secondary);
   margin-top: 2px;
   line-height: 1.4;
@@ -1068,6 +1096,10 @@ function handleLogout() {
 
 .dropdown-link:hover .dropdown-link-text {
   color: var(--primary);
+}
+
+.mobile-nav-panel {
+  display: none;
 }
 
 /* === Dropdown Transition === */
@@ -1098,40 +1130,83 @@ function handleLogout() {
 /* === Mobile === */
 @media (max-width: 900px) {
   .mega-nav {
+    position: relative;
+    overflow: visible;
+  }
+
+  .mega-nav-inner {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    align-items: stretch;
+    flex-wrap: nowrap;
+    padding: 0 var(--space-3);
     overflow-x: auto;
     overflow-y: visible;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
   }
 
-  .mega-nav::-webkit-scrollbar { display: none; }
-
-  .mega-nav-inner {
-    width: max-content;
-    min-width: max-content;
-    max-width: none;
-    flex-wrap: nowrap;
-    padding: 0 var(--space-3);
+  .mega-nav-inner::-webkit-scrollbar {
+    display: none;
   }
 
   .mega-nav-item {
     flex: 0 0 auto;
-    min-width: auto;
+    min-width: 126px;
+    position: static;
   }
 
   .mega-nav-trigger {
-    width: auto;
-    padding: 12px 14px;
+    width: 100%;
+    padding: 10px 14px;
     font-size: var(--text-xs);
   }
 
   .mega-nav-icon { display: none; }
 
-  .mega-dropdown {
-    position: fixed;
-    width: min(240px, calc(100vw - 24px));
-    min-width: 200px;
-    border-radius: var(--radius-md);
+  .mobile-nav-panel {
+    display: block;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 14px var(--space-4) 16px;
+    background: rgba(255, 252, 246, 0.98);
+    border-top: 1px solid rgba(80, 72, 60, 0.1);
+    border-bottom: 1px solid rgba(80, 72, 60, 0.12);
+    box-shadow: 0 18px 36px rgba(45, 42, 36, 0.12);
+    z-index: 120;
+    box-sizing: border-box;
+  }
+
+  .mobile-nav-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    width: 100%;
+    max-height: min(360px, calc(100dvh - 190px));
+    overflow-y: auto;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .mobile-nav-link {
+    width: 100%;
+    min-width: 0;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: rgba(255, 249, 239, 0.64);
+    border: 1px solid rgba(214, 206, 195, 0.66);
+    box-sizing: border-box;
+  }
+
+  .mobile-nav-link:hover {
+    background: rgba(92, 107, 95, 0.06);
   }
 }
 
@@ -1141,52 +1216,63 @@ function handleLogout() {
   }
 
   .header-top {
-    padding: 0 0 10px;
+    padding: 0 0 6px;
   }
 
   .header-top-inner {
-    min-height: 64px;
+    min-height: 0;
     height: auto;
-    padding: 8px 16px 0;
-    align-items: flex-start;
-    gap: 8px 12px;
+    padding: calc(24px + env(safe-area-inset-top, 0px)) 14px 0;
+    align-items: center;
+    gap: 8px 10px;
     flex-wrap: wrap;
+    justify-content: flex-end;
+    position: relative;
+  }
+
+  .header-top-inner > :first-child {
+    margin-right: auto;
   }
 
   .header-top-inner :deep(.jb-logo-img) {
-    max-width: 96px;
-    height: auto;
+    height: 54px;
+    width: auto;
   }
 
   .header-user {
-    flex: 1 1 auto;
-    justify-content: flex-end;
-    gap: 8px;
-    min-width: 0;
-    flex-wrap: wrap;
+    display: contents;
   }
 
+  .notification-bell-wrap { 
+    order: 1; 
+    position: static;
+  }
+  .avatar-btn { order: 2; }
+  .logout-btn { order: 3; }
+
   .session-timer {
-    order: 2;
+    order: 4;
     width: 100%;
-    margin: 4px 0 0;
-    padding: 8px 10px;
+    margin: 8px 0 2px;
+    padding: 6px 10px;
     justify-content: space-between;
-    gap: 8px;
-    border-radius: 14px;
-    flex-wrap: wrap;
+    gap: 6px;
+    border-radius: 12px;
+    flex-wrap: nowrap;
   }
 
   .session-timer-text {
     font-size: 12px;
-    white-space: normal;
+    white-space: nowrap;
     line-height: 1.35;
     min-width: 0;
-    flex: 1 1 140px;
+    flex: 1 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .session-continue-btn {
-    padding: 6px 10px;
+    padding: 5px 10px;
     font-size: 12px;
     flex-shrink: 0;
   }
@@ -1201,9 +1287,10 @@ function handleLogout() {
   }
 
   .notification-dropdown {
-    right: 0;
-    left: auto;
-    width: min(348px, calc(100vw - 20px));
+    top: calc(100% + 4px);
+    right: 14px;
+    left: 14px;
+    width: calc(100vw - 28px);
   }
 
   .notification-dropdown-footer {
@@ -1236,6 +1323,45 @@ function handleLogout() {
     padding: 16px;
   }
 
+}
+
+@media (max-width: 480px) {
+  .header-top-inner {
+    padding-inline: 12px;
+  }
+
+  .header-user {
+    gap: 6px;
+  }
+
+  .header-top-inner :deep(.jb-logo-img) {
+    height: 48px;
+  }
+
+  .notification-bell-btn,
+  .user-avatar,
+  .avatar-placeholder {
+    width: 32px;
+    height: 32px;
+  }
+
+  .notification-dropdown {
+    right: 12px;
+    left: 12px;
+    width: calc(100vw - 24px);
+  }
+
+  .logout-btn {
+    padding: 6px 9px;
+  }
+
+  .session-timer {
+    padding: 5px 9px;
+  }
+
+  .mega-nav-trigger {
+    padding: 9px 12px;
+  }
 }
 
 /* === Modal Styles (Consistent with Profile) === */

@@ -42,7 +42,7 @@
         </template>
         <template v-if="column.key === 'action'">
           <a-button type="link" class="action-btn" @click="viewDetail(record.customerId)">
-            查看完整評分
+            <FileTextOutlined /> 評估報告
           </a-button>
         </template>
       </template>
@@ -53,8 +53,9 @@
 <script setup>
 import {ref, reactive, onMounted} from 'vue'
 import {message} from 'ant-design-vue'
+import {FileTextOutlined} from '@ant-design/icons-vue'
 import {useRouter} from 'vue-router'
-import axios from 'axios'
+import api from '@/api/axios'
 
 const router = useRouter()
 const BASE_URL = '/api/risk/creditscore'
@@ -75,8 +76,8 @@ const pagination = reactive({
 })
 
 const columns = [
-  {title: '客戶 ID', dataIndex: 'customerId', key: 'customerId', width: 150},
-  {title: '客戶姓名', dataIndex: 'customerName', key: 'customerName', width: 150},
+  {title: 'CIF (客戶代碼)', dataIndex: 'cif', key: 'cif', width: 150},
+  {title: '姓名', dataIndex: 'customerName', key: 'customerName', width: 120},
   {title: '風險等級', dataIndex: 'riskLevel', key: 'riskLevel', width: 120},
   {
     title: '最後更新',
@@ -102,7 +103,7 @@ async function fetchCredits() {
       ? `${sortField.value},${sortOrder.value}`
       : 'lastUpdatedAt,desc'
 
-    const res = await axios.get(BASE_URL, {params, withCredentials: true})
+    const res = await api.get(BASE_URL, {params})
     const page = res.data.data
     credits.value = page.content
     const backendPageNumber = Number(page.number || 0)
@@ -205,14 +206,16 @@ onMounted(fetchCredits)
   padding: 0;
 }
 
+/* ── 💡 調整：沉穩、專業金融質感的風險藥丸樣式 ── */
 .status-tag {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
+  padding: 4px 12px;
   border-radius: 20px;
   font-size: 15px;
   font-weight: 600;
+  line-height: 1.2;
 }
 
 .status-dot {
@@ -221,30 +224,39 @@ onMounted(fetchCredits)
   border-radius: 50%;
 }
 
+/* 低風險：從鮮綠色改為「沉穩英倫松針綠」 */
 .risk-low {
-  background-color: rgba(82, 196, 26, 0.1);
-  color: #389e0d;
+  background-color: rgba(47, 122, 70, 0.08); /* 降低明度與飽和度的綠 bg */
+  color: #276339;                             /* 穩重的深松針綠文字 */
 }
-
 .risk-low .status-dot {
-  background-color: #52c41a;
+  background-color: #2f7a46;
 }
 
+/* 中風險：從亮橘色改為「洗鍊古銅烤漆琥珀」 */
 .risk-medium {
-  background-color: rgba(250, 140, 22, 0.1);
-  color: #fa8c16;
+  background-color: rgba(181, 107, 24, 0.08); /* 偏向木質與皮革的沉穩琥珀 bg */
+  color: #91520f;                             /* 深古銅橘文字 */
 }
-
 .risk-medium .status-dot {
-  background-color: #fa8c16;
+  background-color: #b56b18;
 }
 
+/* 高風險：從刺眼大紅改為「高級波爾多深磚紅」 */
 .risk-high {
-  background-color: rgba(255, 77, 79, 0.1);
-  color: #d9363e;
+  background-color: rgba(166, 29, 36, 0.07); /* 帶有灰色調的暗紅 bg */
+  color: #8c1c21;                            /* 經典金融高風險的深磚紅/酒紅文字 */
+}
+.risk-high .status-dot {
+  background-color: #a61d24;
 }
 
-.risk-high .status-dot {
-  background-color: #ff4d4f;
+/* 拒絕往來/凍結：從亮紫色改為「午夜深靛紫」 */
+.risk-suspended {
+  background-color: rgba(83, 29, 171, 0.07); /* 深邃的午夜紫 bg */
+  color: #43168c;                            /* 穩重的深靛紫文字 */
+}
+.risk-suspended .status-dot {
+  background-color: #531dab;
 }
 </style>

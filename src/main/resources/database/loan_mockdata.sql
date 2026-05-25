@@ -13,7 +13,6 @@
 -- - Risk review queue and credit-visible demo rows stay aligned
 -- ============================================================
 
-SET NOCOUNT ON;
 
 DELETE FROM LOAN_REPAYMENT;
 DELETE FROM LOAN_ACCOUNT;
@@ -27,20 +26,78 @@ DELETE FROM RISK_EVENT_LOG WHERE business_id LIKE 'LA202605%';
 DECLARE @customerPool TABLE (
     seq INT PRIMARY KEY,
     customer_id NVARCHAR(50) NOT NULL,
-    checking_account_number VARCHAR(14) NOT NULL
+    checking_account_number VARCHAR(14) NULL
 );
 
-INSERT INTO @customerPool (seq, customer_id, checking_account_number)
-SELECT
-    ROW_NUMBER() OVER (ORDER BY a.account_number) AS seq,
-    a.customer_id,
-    a.account_number
-FROM [ACCOUNT] a
-WHERE a.account_type = 'CHECKING'
-  AND a.currency = 'TWD'
-  AND a.customer_id <> 'Q8M4T7K2'
-ORDER BY a.account_number
-OFFSET 0 ROWS FETCH NEXT 44 ROWS ONLY;
+INSERT INTO @customerPool (seq, customer_id, checking_account_number) VALUES
+(1,  'A6R3M8J2', NULL),
+(2,  'B3N8T5P9', NULL),
+(3,  'B9P5N2W6', NULL),
+(4,  'C6T8R4J3', NULL),
+(5,  'C9W2M6R4', NULL),
+(6,  'D5Q9T2W7', NULL),
+(7,  'E2V7D9M5', NULL),
+(8,  'E5J7Q3D8', NULL),
+(9,  'F2P9V4K6', NULL),
+(10, 'F7V4C8N2', NULL),
+(11, 'G3K6P9M5', NULL),
+(12, 'G8A5C2N7', NULL),
+(13, 'H4D7R9M3', NULL),
+(14, 'H7C2P8D4', NULL),
+(15, 'J6K3W8Q5', NULL),
+(16, 'J8R2D5A7', NULL),
+(17, 'K2T8B4R7', NULL),
+(18, 'L4N9T6Q3', NULL),
+(19, 'L9M2T7A4', NULL),
+(20, 'M9A5D2Q8', NULL),
+(21, 'N5V8C3P6', NULL),
+(22, 'P4W7N6C3', NULL),
+(23, 'P7Q4J9D2', NULL),
+(24, 'Q2R6M8W5', NULL),
+(25, 'Q5H3K8A7', NULL),
+(26, 'R5N9W3A6', NULL),
+(27, 'R8J6N2C4', NULL),
+(28, 'Z4M7A3K8', NULL),
+(29, 'S7A3K9P6', NULL),
+(30, 'T3M9P5W7', NULL),
+(31, 'T6D2P9M7', NULL),
+(32, 'T8H2K5V9', NULL),
+(33, 'U5D8M2R4', NULL),
+(34, 'U8H5Q3R6', NULL),
+(35, 'V3K7W4A9', NULL),
+(36, 'V6J3X9M5', NULL),
+(37, 'V7A4D8Q2', NULL),
+(38, 'W2K6T9N5', NULL),
+(39, 'W6M2C8D5', NULL),
+(40, 'W9F4T7N2', NULL),
+(41, 'X3J6Q8C5', NULL),
+(42, 'X8C3R7M4', NULL),
+(43, 'X9N5T3Q7', NULL),
+(44, 'Y8L2V5D9', NULL);
+
+UPDATE cp
+SET checking_account_number = a.account_number
+FROM @customerPool cp
+INNER JOIN [ACCOUNT] a
+    ON a.customer_id = cp.customer_id
+   AND a.account_type = 'CHECKING'
+   AND a.currency = 'TWD'
+   AND a.status = 'ACTIVE';
+
+IF EXISTS (
+    SELECT 1
+    FROM @customerPool cp
+    WHERE NOT EXISTS (
+        SELECT 1
+        FROM [ACCOUNT] a
+        WHERE a.customer_id = cp.customer_id
+          AND a.account_number = cp.checking_account_number
+          AND a.account_type = 'CHECKING'
+          AND a.currency = 'TWD'
+          AND a.status = 'ACTIVE'
+    )
+)
+    THROW 51301, 'loan_mockdata.sql requires each loan customer to have an ACTIVE TWD CHECKING account in account_mockdata.sql.', 1;
 
 DECLARE @typeRules TABLE (
     seq INT PRIMARY KEY,
@@ -99,12 +156,14 @@ INSERT INTO @apps (
     required_documents,
     review_comment
 ) VALUES
-('LA202605210900000001', 'Q8M4T7K2', 'PERSONAL', 120000.00, 12, 0.040000, '070000000027', 'PENDING_CONTACT', '2026-05-21 09:00:00', NULL, NULL, NULL, NULL, 0, NULL, NULL, 'NEW'),
-('LA202605211000000002', 'Q8M4T7K2', 'CAR',      380000.00, 36, 0.025000, '070000000027', 'PENDING_CONTACT', '2026-05-21 10:00:00', NULL, NULL, NULL, NULL, 0, NULL, NULL, 'NEW'),
-('LA202605211100000003', 'Q8M4T7K2', 'STUDENT',  220000.00, 84, 0.015000, '070000000027', 'PENDING_CONTACT', '2026-05-21 11:00:00', NULL, NULL, NULL, NULL, 0, NULL, NULL, 'NEW'),
-('LA202605211300000004', 'Q8M4T7K2', 'BUSINESS', 600000.00, 60, 0.020000, '070000000027', 'PENDING_CONTACT', '2026-05-21 13:00:00', NULL, NULL, NULL, NULL, 0, NULL, NULL, 'NEW'),
-('LA202605211400000005', 'Q8M4T7K2', 'HOUSE',   2500000.00, 120, 0.018000, '070000000027', 'DISBURSED',      '2026-05-21 14:00:00', 'CONFIRMED', '2026-05-21 15:00:00', '2026-05-21 15:30:00', '2026-05-21 16:00:00', 0, 'HOUSE_COLLATERAL', 'DISBURSED', 'DISBURSED'),
-('LA202605161600000006', 'Q8M4T7K2', 'PERSONAL',  80000.00, 24, 0.040000, '070000000027', 'CANCELLED',      '2026-05-16 16:00:00', 'DECLINED', '2026-05-16 16:30:00', NULL, '2026-05-16 16:30:00', 0, 'CUSTOMER_WITHDREW', NULL, 'CANCELLED');
+('LA202605210900000001', 'Q8M4T7K2', 'PERSONAL', 120000.00, 12, 0.040000, NULL, 'PENDING_CONTACT', '2026-05-21 09:00:00', NULL, NULL, NULL, NULL, 0, NULL, NULL, 'NEW'),
+('LA202605211000000002', 'Q8M4T7K2', 'CAR',      380000.00, 36, 0.025000, NULL, 'PENDING_CONTACT', '2026-05-21 10:00:00', NULL, NULL, NULL, NULL, 0, NULL, NULL, 'NEW'),
+('LA202605211100000003', 'Q8M4T7K2', 'STUDENT',  220000.00, 84, 0.015000, NULL, 'PENDING_CONTACT', '2026-05-21 11:00:00', NULL, NULL, NULL, NULL, 0, NULL, NULL, 'NEW'),
+('LA202605211300000004', 'Q8M4T7K2', 'BUSINESS', 600000.00, 60, 0.020000, NULL, 'PENDING_CONTACT', '2026-05-21 13:00:00', NULL, NULL, NULL, NULL, 0, NULL, NULL, 'NEW'),
+('LA202605211400000005', 'Q8M4T7K2', 'HOUSE',   2500000.00, 120, 0.018000, NULL, 'DISBURSED', '2026-05-21 14:00:00', 'CONFIRMED', '2026-05-21 15:00:00', '2026-05-21 15:30:00', '2026-05-21 16:00:00', 0, 'HOUSE_COLLATERAL', 'DISBURSED', 'DISBURSED'),
+('LA202605221000000000', 'Q8M4T7K2', 'PERSONAL', 150000.00, 24, 0.040000, NULL, 'DISBURSED', '2026-05-22 10:00:00', 'CONFIRMED', '2026-05-22 11:00:00', '2026-05-22 11:30:00', '2026-05-22 12:00:00', 0, 'SALARY_SLIP', 'DISBURSED', 'DISBURSED'),
+('LA202605161600000006', 'Q8M4T7K2', 'PERSONAL',  80000.00, 24, 0.040000, NULL, 'CANCELLED',      '2026-05-16 16:00:00', 'DECLINED', '2026-05-16 16:30:00', NULL, '2026-05-16 16:30:00', 0, 'CUSTOMER_WITHDREW', NULL, 'CANCELLED');
+
 
 ;WITH nums AS (
     SELECT TOP (98) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS rn
@@ -181,12 +240,7 @@ INSERT INTO @apps (
     review_comment
 )
 SELECT
-    CONCAT(
-        'LA',
-        CONVERT(char(8), base_time, 112),
-        REPLACE(CONVERT(char(8), base_time, 108), ':', ''),
-        RIGHT(CONCAT('0000', CAST(rn AS VARCHAR(4))), 4)
-    ) AS application_id,
+    CONCAT('LA', CONCAT(CONVERT(VARCHAR(8), base_time, 112), REPLACE(CONVERT(VARCHAR(8), base_time, 108), ':', '')), RIGHT(CONCAT('0000', CAST(rn AS VARCHAR(4))), 4)) AS application_id,
     customer_id,
     apply_type,
     apply_amount,
@@ -243,6 +297,31 @@ SELECT
     END AS review_comment
 FROM planned;
 
+UPDATE a
+SET disbursement_account = checking.account_number
+FROM @apps a
+INNER JOIN [ACCOUNT] checking
+    ON checking.customer_id = a.customer_id
+   AND checking.account_type = 'CHECKING'
+   AND checking.currency = 'TWD'
+   AND checking.status = 'ACTIVE';
+
+IF EXISTS (
+    SELECT 1
+    FROM @apps a
+    WHERE a.application_status IN ('APPROVED', 'DISBURSED', 'PENDING_REVIEW', 'RETURNED', 'REJECTED')
+      AND NOT EXISTS (
+        SELECT 1
+        FROM [ACCOUNT] checking
+        WHERE checking.customer_id = a.customer_id
+          AND checking.account_number = a.disbursement_account
+          AND checking.account_type = 'CHECKING'
+          AND checking.currency = 'TWD'
+          AND checking.status = 'ACTIVE'
+    )
+)
+    THROW 51302, 'loan_mockdata.sql requires application disbursement accounts to come from ACTIVE TWD CHECKING accounts.', 1;
+
 INSERT INTO LOAN_APPLICATION (
     application_id,
     customer_id,
@@ -258,7 +337,6 @@ INSERT INTO LOAN_APPLICATION (
     documents_submitted_at,
     update_time,
     current_supplement_batch_no,
-    admin_comment,
     required_documents,
     review_comment
 )
@@ -277,7 +355,6 @@ SELECT
     documents_submitted_at,
     update_time,
     current_supplement_batch_no,
-    admin_comment,
     required_documents,
     review_comment
 FROM @apps;
@@ -293,7 +370,7 @@ INSERT INTO LOAN_CONTACT_LOG (
     note
 )
 SELECT
-    CONCAT('CL', RIGHT(CONCAT('000000', CAST(ROW_NUMBER() OVER (ORDER BY a.seq) AS VARCHAR(6))), 6)) AS log_id,
+    CONCAT('CL', CONCAT(CONVERT(VARCHAR(8), a.create_time, 112), REPLACE(CONVERT(VARCHAR(8), a.create_time, 108), ':', '')), RIGHT(CONCAT('0000', CAST(ROW_NUMBER() OVER (ORDER BY a.seq) AS VARCHAR(4))), 4)) AS log_id,
     a.application_id,
     'EMP001',
     CASE
@@ -448,7 +525,7 @@ INSERT INTO LOAN_REVIEW_DETAIL (
     review_note
 )
 SELECT
-    CONCAT('LRD20260521', RIGHT(CONCAT('000', CAST(ROW_NUMBER() OVER (ORDER BY a.seq) AS VARCHAR(3))), 3)) AS review_id,
+    CONCAT('LRD', CONCAT(CONVERT(VARCHAR(8), a.create_time, 112), REPLACE(CONVERT(VARCHAR(8), a.create_time, 108), ':', '')), RIGHT(CONCAT('0000', CAST(ROW_NUMBER() OVER (ORDER BY a.seq) AS VARCHAR(4))), 4)) AS review_id,
     a.application_id,
     a.apply_amount,
     a.apply_period,
@@ -494,12 +571,7 @@ INSERT INTO LOAN_ACCOUNT (
     update_time
 )
 SELECT
-    CONCAT(
-        'LAC',
-        CONVERT(char(8), DATEADD(HOUR, 1, a.create_time), 112),
-        REPLACE(CONVERT(char(8), DATEADD(HOUR, 1, a.create_time), 108), ':', ''),
-        RIGHT(CONCAT('0000', CAST(ROW_NUMBER() OVER (ORDER BY a.seq) AS VARCHAR(4))), 4)
-    ) AS account_id,
+    loan_account.account_number AS account_id,
     loan_account.account_number AS account_number,
     a.application_id,
     a.customer_id,
@@ -527,19 +599,44 @@ SELECT
     END AS account_status,
     DATEADD(HOUR, 1, a.create_time) AS create_time,
     DATEADD(HOUR, 2, a.create_time) AS update_time
-FROM @apps a
+FROM (
+    SELECT
+        a.*,
+        ROW_NUMBER() OVER (PARTITION BY a.customer_id ORDER BY a.create_time, a.application_id) AS loan_account_ordinal
+    FROM @apps a
+    WHERE a.application_status = 'DISBURSED'
+) a
 INNER JOIN CUSTOMER_PROFILE cp
     ON cp.customer_id = a.customer_id
 CROSS APPLY (
-    SELECT '901'
+    SELECT CAST(900 + a.loan_account_ordinal AS VARCHAR(3))
         + RIGHT('00' + CAST(ASCII(UPPER(LEFT(cp.id_number, 1))) - ASCII('A') + 1 AS VARCHAR(2)), 2)
         + SUBSTRING(cp.id_number, 2, LEN(cp.id_number)) AS expected_account_number
 ) encoded
 INNER JOIN [ACCOUNT] loan_account
     ON loan_account.customer_id = a.customer_id
    AND loan_account.account_type = 'LOAN'
-   AND loan_account.account_number = encoded.expected_account_number
-WHERE a.application_status = 'DISBURSED';
+   AND loan_account.account_number = encoded.expected_account_number;
+
+IF EXISTS (
+    SELECT 1
+    FROM LOAN_ACCOUNT
+    GROUP BY account_number
+    HAVING COUNT(*) > 1
+)
+    THROW 51303, 'loan_mockdata.sql generated duplicated LOAN_ACCOUNT.account_number.', 1;
+
+IF EXISTS (
+    SELECT 1
+    FROM @apps a
+    WHERE a.application_status = 'DISBURSED'
+      AND NOT EXISTS (
+          SELECT 1
+          FROM LOAN_ACCOUNT la
+          WHERE la.application_id = a.application_id
+      )
+)
+    THROW 51304, 'loan_mockdata.sql could not bind each DISBURSED application to a dedicated ACCOUNT loan account.', 1;
 
 ;WITH period_numbers AS (
     SELECT TOP (480) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS period_index
@@ -606,20 +703,23 @@ SELECT
     NULL AS update_time
 FROM repayment_rows;
 
-IF NOT EXISTS (SELECT 1 FROM TRANS_LOG WHERE reference_id = 'LOAN-DISB-202605211400000005')
+IF NOT EXISTS (SELECT 1 FROM TRANS_LOG WHERE reference_id = 'LOAN-DISB-2026052005')
 BEGIN
+    DECLARE @damingDisbursementAccount VARCHAR(14);
     DECLARE @damingDisbursementBefore DECIMAL(19, 4);
     DECLARE @damingDisbursementAmount DECIMAL(19, 4) = 2500000.0000;
 
-    SELECT @damingDisbursementBefore = balance
+    SELECT TOP 1
+        @damingDisbursementAccount = account_number,
+        @damingDisbursementBefore = balance
     FROM [ACCOUNT]
-    WHERE account_number = '070000000027'
-      AND customer_id = 'Q8M4T7K2'
+    WHERE customer_id = 'Q8M4T7K2'
       AND account_type = 'CHECKING'
       AND currency = 'TWD'
-      AND status = 'ACTIVE';
+      AND status = 'ACTIVE'
+    ORDER BY account_number;
 
-    IF @damingDisbursementBefore IS NOT NULL
+    IF @damingDisbursementAccount IS NOT NULL AND @damingDisbursementBefore IS NOT NULL
     BEGIN
         INSERT INTO TRANS_LOG (
             transaction_id,
@@ -642,9 +742,9 @@ BEGIN
             note,
             created_at
         ) VALUES (
-            '00000000-0000-0000-0000-202605211400',
-            'LOAN-DISB-202605211400000005',
-            '070000000027',
+            '00000000-0000-0000-0000-202605200005',
+            'LOAN-DISB-2026052005',
+            @damingDisbursementAccount,
             '909000000001',
             '909',
             N'爪哇銀行',
@@ -668,8 +768,166 @@ BEGIN
             balance = @damingDisbursementBefore + @damingDisbursementAmount,
             changed_at = '2026-05-21 16:00:00',
             changed_by = 'loan-mock'
-        WHERE account_number = '070000000027';
+        WHERE account_number = @damingDisbursementAccount;
     END
 END;
 
+
+-- [Appended] Auto-generate Overdue Mock Data
+SET NOCOUNT OFF;
+SET XACT_ABORT ON;
+
+BEGIN TRAN;
+
+DECLARE @targetOverdueTotal INT = 6;
+DECLARE @today DATE = CAST(GETDATE() AS DATE);
+DECLARE @overdueDate DATE = DATEADD(DAY, -3, @today);          -- 逾期日
+DECLARE @firstPaidDate DATE = DATEADD(MONTH, -1, @overdueDate); -- 第1期已繳
+DECLARE @startDate DATE = DATEADD(MONTH, -2, @overdueDate);     -- 撥款日
+DECLARE @now DATETIME2 = SYSDATETIME();
+
+DECLARE @wangCustomerId NVARCHAR(50) = 'Q8M4T7K2';
+DECLARE @wangAccountId NVARCHAR(50);
+
+SELECT TOP 1
+    @wangAccountId = la.account_id
+FROM loan_account la
+WHERE la.customer_id = @wangCustomerId
+ORDER BY la.create_time ASC, la.account_id DESC;
+
+IF @wangAccountId IS NULL
+BEGIN
+    THROW 52001, '找不到王大明(Q8M4T7K2)的 loan_account，請先確認 seed 已建立。', 1;
+END;
+
+IF OBJECT_ID('tempdb..#target_overdue_accounts') IS NOT NULL
+    DROP TABLE #target_overdue_accounts;
+
+CREATE TABLE #target_overdue_accounts
+(
+    account_id NVARCHAR(50) NOT NULL PRIMARY KEY
+);
+
+-- 先放入王大明
+INSERT INTO #target_overdue_accounts(account_id)
+VALUES (@wangAccountId);
+
+DECLARE @currentOverdue INT;
+DECLARE @additionalNeeded INT;
+
+SELECT
+    @currentOverdue = COUNT(*)
+FROM loan_account
+WHERE account_status = 'OVERDUE';
+
+SET @additionalNeeded =
+    @targetOverdueTotal
+    - (
+        @currentOverdue
+        + CASE
+            WHEN EXISTS (
+                SELECT 1
+                FROM loan_account
+                WHERE account_id = @wangAccountId
+                  AND account_status <> 'OVERDUE'
+            ) THEN 1
+            ELSE 0
+          END
+      );
+
+IF @additionalNeeded < 0
+    SET @additionalNeeded = 0;
+
+-- 從 ACTIVE 補足到總共 6 筆 OVERDUE
+INSERT INTO #target_overdue_accounts(account_id)
+SELECT TOP (@additionalNeeded) la.account_id
+FROM loan_account la
+WHERE la.account_status = 'ACTIVE'
+  AND la.customer_id <> @wangCustomerId
+ORDER BY la.create_time DESC, la.account_id DESC;
+
+IF (
+    SELECT COUNT(*)
+    FROM #target_overdue_accounts
+) < (
+    CASE
+        WHEN @additionalNeeded > 0 THEN @additionalNeeded + 1
+        ELSE 1
+    END
+)
+BEGIN
+    THROW 52002, 'ACTIVE 帳戶不足，無法補成 6 筆逾期帳戶。', 1;
+END;
+
+;WITH repayment_rank AS
+(
+    SELECT
+        lr.repayment_id,
+        lr.account_id,
+        lr.period_index,
+        ROW_NUMBER() OVER (
+            PARTITION BY lr.account_id
+            ORDER BY lr.period_index
+        ) AS rn
+    FROM loan_repayment lr
+    INNER JOIN #target_overdue_accounts t
+        ON t.account_id = lr.account_id
+)
+UPDATE lr
+SET
+    scheduled_date =
+        CASE
+            WHEN rr.rn = 1 THEN @firstPaidDate
+            WHEN rr.rn = 2 THEN @overdueDate
+            ELSE DATEADD(MONTH, rr.rn - 2, @overdueDate)
+        END,
+    paid_date =
+        CASE
+            WHEN rr.rn = 1 THEN @firstPaidDate
+            ELSE NULL
+        END,
+    repayment_status =
+        CASE
+            WHEN rr.rn = 1 THEN 'PAID'
+            WHEN rr.rn = 2 THEN 'OVERDUE'
+            ELSE 'SCHEDULED'
+        END,
+    update_time = @now
+FROM loan_repayment lr
+INNER JOIN repayment_rank rr
+    ON rr.repayment_id = lr.repayment_id;
+
+;WITH first_period_remaining AS
+(
+    SELECT
+        lr.account_id,
+        lr.remaining_after,
+        ROW_NUMBER() OVER (
+            PARTITION BY lr.account_id
+            ORDER BY lr.period_index
+        ) AS rn
+    FROM loan_repayment lr
+    INNER JOIN #target_overdue_accounts t
+        ON t.account_id = lr.account_id
+)
+UPDATE la
+SET
+    account_status = 'OVERDUE',
+    start_date = @startDate,
+    next_payment_date = @overdueDate,
+    paid_periods = 1,
+    remaining_principal = fpr.remaining_after,
+    update_time = @now
+FROM loan_account la
+INNER JOIN first_period_remaining fpr
+    ON fpr.account_id = la.account_id
+   AND fpr.rn = 1
+INNER JOIN #target_overdue_accounts t
+    ON t.account_id = la.account_id;
+
+COMMIT;
+
 PRINT 'loan_mockdata.sql completed: seeded 104 applications, 43 risk review tasks, 11 loan accounts, and repayment schedules.';
+
+SET XACT_ABORT OFF;
+SET NOCOUNT OFF;

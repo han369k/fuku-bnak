@@ -170,6 +170,25 @@ public class AccountService {
                 .map(this::toResponse);
     }
 
+    @Transactional(readOnly = true)
+    public java.util.Map<String, Object> getStatistics() {
+        java.util.Map<String, Object> stats = new java.util.HashMap<>();
+        stats.put("status", convertToMap(accountRepository.countByStatusGroup()));
+        stats.put("currency", convertToMap(accountRepository.countByCurrencyGroup()));
+        stats.put("accountType", convertToMap(accountRepository.countByAccountTypeGroup()));
+        stats.put("totalAccounts", accountRepository.countExcludingBusiness());
+        stats.put("totalBalance", accountRepository.sumTotalBalance());
+        return stats;
+    }
+
+    private java.util.Map<String, Long> convertToMap(List<Object[]> results) {
+        return results.stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        row -> row[0] != null ? row[0].toString() : "UNKNOWN",
+                        row -> ((Number) row[1]).longValue()
+                ));
+    }
+
     /**
      * 變更帳戶狀態。
      * 依據合法的狀態流轉規則進行驗證，不合法的轉換將被拒絕。

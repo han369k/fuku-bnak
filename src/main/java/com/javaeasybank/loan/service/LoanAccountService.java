@@ -21,7 +21,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -79,9 +78,14 @@ public class LoanAccountService {
 
         LocalDate startDate = LocalDate.now();
 
+        if (loanAccountNumber == null || loanAccountNumber.isBlank()) {
+            throw new BusinessException("缺少帳戶模組貸款帳號：" + applicationId);
+        }
+        String normalizedLoanAccountNumber = loanAccountNumber.trim();
+
         LoanAccount account = new LoanAccount();
-        account.setAccountId(generateId("LAC"));
-        account.setAccountNumber(loanAccountNumber);
+        account.setAccountId(normalizedLoanAccountNumber);
+        account.setAccountNumber(normalizedLoanAccountNumber);
         account.setApplicationId(applicationId);
         account.setCustomerId(loan.getCustomerId());
         account.setApplyType(loan.getApplyType());
@@ -142,13 +146,6 @@ public class LoanAccountService {
     }
 
     // ── 工具方法 ─────────────────────────────────────────────────────
-
-    // 產生格式化識別碼：前綴 + yyyyMMddHHmmss + 4 位隨機數字
-    private String generateId(String prefix) {
-        String timeStr      = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
-        String randomSuffix = String.format("%04d", (int) (Math.random() * 10000));
-        return prefix + timeStr + randomSuffix;
-    }
 
     // 將 LoanAccount Entity 轉換為 LoanAccountResponseDTO
     private LoanAccountResponseDTO toResponseDTO(LoanAccount account) {

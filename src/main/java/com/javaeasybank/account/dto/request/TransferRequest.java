@@ -46,4 +46,10 @@ public class TransferRequest {
      * 轉帳備註。
      */
     private String note;
+
+    /**
+     * OTP 驗證碼。
+     */
+    @NotBlank(message = "OTP 驗證碼不可為空")
+    private String otp;
 }

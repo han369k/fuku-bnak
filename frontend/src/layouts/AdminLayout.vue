@@ -1,32 +1,61 @@
 <template>
   <a-layout class="admin-layout">
+    <button
+      class="mobile-menu-btn"
+      type="button"
+      :aria-expanded="isMobileSiderOpen"
+      aria-label="開啟管理選單"
+      @click="isMobileSiderOpen = true"
+    >
+      <MenuOutlined />
+      選單
+    </button>
+    <div
+      v-if="isMobileSiderOpen"
+      class="mobile-sider-mask"
+      @click="closeMobileSider"
+    ></div>
     <a-layout-sider
       width="260"
       theme="light"
+      class="admin-sider"
+      :class="{ 'is-mobile-open': isMobileSiderOpen }"
       style="position: fixed; left: 0; top: 0; bottom: 0; z-index: 100"
     >
       <div class="sider-content">
+        <button
+          class="mobile-sider-close"
+          type="button"
+          aria-label="關閉管理選單"
+          @click="closeMobileSider"
+        >
+          <CloseOutlined />
+        </button>
         <div class="logo-container">
           <img
             src="/logo.png"
             alt="JavaBank"
             class="logo-img"
-            @click="$router.push({ name: 'admin-home' })"
+            @click="goAdminRoute('admin-home')"
             style="cursor: pointer"
           />
         </div>
 
         <a-menu v-model:selectedKeys="selectedKeys" mode="inline">
-          <a-menu-item key="admin-home" @click="$router.push({ name: 'admin-home' })">
-            <template #icon><HomeOutlined /></template>
+          <a-menu-item key="admin-home" @click="goAdminRoute('admin-home')">
+            <template #icon>
+              <HomeOutlined/>
+            </template>
             <span>首頁</span>
           </a-menu-item>
 
           <!-- 業務模組：僅顯示給 Lvl0(職員) 與 Lvl2(主管)，資安長(Lvl4)不可見 -->
           <template v-if="isBusinessStaff">
             <a-menu-item-group title="客戶管理">
-              <a-menu-item key="admin-customers" @click="$router.push({ name: 'admin-customers' })">
-                <template #icon><UserOutlined /></template>
+              <a-menu-item key="admin-customers" @click="goAdminRoute('admin-customers')">
+                <template #icon>
+                  <UserOutlined/>
+                </template>
                 <span>客戶管理</span>
               </a-menu-item>
             </a-menu-item-group>
@@ -34,20 +63,26 @@
             <a-menu-item-group title="帳戶管理">
               <a-menu-item
                 key="admin-account-applications"
-                @click="$router.push({ name: 'admin-account-applications' })"
+                @click="goAdminRoute('admin-account-applications')"
               >
-                <template #icon><SolutionOutlined /></template>
+                <template #icon>
+                  <SolutionOutlined/>
+                </template>
                 <span>開戶申請審核</span>
               </a-menu-item>
-              <a-menu-item key="admin-accounts" @click="$router.push({ name: 'admin-accounts' })">
-                <template #icon><BankOutlined /></template>
+              <a-menu-item key="admin-accounts" @click="goAdminRoute('admin-accounts')">
+                <template #icon>
+                  <BankOutlined/>
+                </template>
                 <span>帳戶管理</span>
               </a-menu-item>
               <a-menu-item
                 key="admin-trans-logs"
-                @click="$router.push({ name: 'admin-trans-logs' })"
+                @click="goAdminRoute('admin-trans-logs')"
               >
-                <template #icon><ProfileOutlined /></template>
+                <template #icon>
+                  <ProfileOutlined/>
+                </template>
                 <span>交易紀錄</span>
               </a-menu-item>
             </a-menu-item-group>
@@ -55,16 +90,20 @@
             <a-menu-item-group title="消金貸款業務">
               <a-menu-item
                 key="loan-applications"
-                @click="$router.push({ name: 'loan-applications' })"
+                @click="goAdminRoute('loan-applications')"
               >
-                <template #icon><AuditOutlined /></template>
+                <template #icon>
+                  <AuditOutlined/>
+                </template>
                 <span>貸款申請管理</span>
               </a-menu-item>
               <a-menu-item
                 key="admin-loan-accounts"
-                @click="$router.push({ name: 'admin-loan-accounts' })"
+                @click="goAdminRoute('admin-loan-accounts')"
               >
-                <template #icon><FundOutlined /></template>
+                <template #icon>
+                  <FundOutlined/>
+                </template>
                 <span>貸款帳戶管理</span>
               </a-menu-item>
             </a-menu-item-group>
@@ -72,57 +111,76 @@
             <a-menu-item-group title="信用卡業務">
               <a-menu-item
                 key="admin-card-types"
-                @click="$router.push({ name: 'admin-card-types' })"
+                @click="goAdminRoute('admin-card-types')"
               >
-                <template #icon><AppstoreAddOutlined /></template>
+                <template #icon>
+                  <AppstoreAddOutlined/>
+                </template>
                 <span>信用卡卡別管理</span>
               </a-menu-item>
               <a-menu-item
                 key="admin-card-applications"
-                @click="$router.push({ name: 'admin-card-applications' })"
+                @click="goAdminRoute('admin-card-applications')"
               >
-                <template #icon><SolutionOutlined /></template>
+                <template #icon>
+                  <SolutionOutlined/>
+                </template>
                 <span>信用卡開卡審核</span>
               </a-menu-item>
-              <a-menu-item key="admin-cards" @click="$router.push({ name: 'admin-cards' })">
-                <template #icon><CreditCardOutlined /></template>
+              <a-menu-item key="admin-cards" @click="goAdminRoute('admin-cards')">
+                <template #icon>
+                  <CreditCardOutlined/>
+                </template>
                 <span>信用卡卡片管理</span>
               </a-menu-item>
-              <a-menu-item key="admin-card-txns" @click="$router.push({ name: 'admin-card-txns' })">
-                <template #icon><ProfileOutlined /></template>
+              <a-menu-item key="admin-card-txns" @click="goAdminRoute('admin-card-txns')">
+                <template #icon>
+                  <ProfileOutlined/>
+                </template>
                 <span>信用卡交易管理</span>
               </a-menu-item>
               <a-menu-item
                 key="admin-card-bills"
-                @click="$router.push({ name: 'admin-card-bills' })"
+                @click="goAdminRoute('admin-card-bills')"
               >
-                <template #icon><CreditCardOutlined /></template>
+                <template #icon>
+                  <CreditCardOutlined/>
+                </template>
                 <span>信用卡帳單管理</span>
               </a-menu-item>
             </a-menu-item-group>
             <a-menu-item-group title="風險管理">
               <a-menu-item
                 key="admin-risk-events"
-                @click="$router.push({ name: 'admin-risk-events' })"
+                @click="goAdminRoute('admin-risk-events')"
               >
-                <template #icon><AlertOutlined /></template>
+                <template #icon>
+                  <AlertOutlined/>
+                </template>
                 <span>風險事件</span>
               </a-menu-item>
-              <a-menu-item key="admin-blacklist" @click="$router.push({ name: 'admin-blacklist' })">
-                <template #icon><StopOutlined /></template>
+              <a-menu-item key="admin-blacklist" @click="goAdminRoute('admin-blacklist')">
+                <template #icon>
+                  <StopOutlined/>
+                </template>
                 <span>黑名單</span>
               </a-menu-item>
               <a-menu-item
                 key="admin-review-task"
-                @click="$router.push({ name: 'admin-review-task' })"
+                @click="goAdminRoute('admin-review-task')"
               >
-                <template #icon><CheckCircleOutlined /></template>
+                <template #icon>
+                  <CheckCircleOutlined/>
+                </template>
                 <span>人工審核</span>
               </a-menu-item>
               <a-menu-item
                 key="admin-credit-list"
-                @click="$router.push({ name: 'admin-credit-list' })"
+                @click="goAdminRoute('admin-credit-list')"
               >
+                <template #icon>
+                  <SafetyOutlined />
+                </template>
                 <span>客戶信用評分</span>
               </a-menu-item>
             </a-menu-item-group>
@@ -131,12 +189,16 @@
           <!-- 系統管理：僅顯示給 Lvl4(資安長) -->
           <template v-if="isCISO">
             <a-menu-item-group title="系統管理">
-              <a-menu-item key="admin-employees" @click="$router.push({ name: 'admin-employees' })">
-                <template #icon><TeamOutlined /></template>
+              <a-menu-item key="admin-employees" @click="goAdminRoute('admin-employees')">
+                <template #icon>
+                  <TeamOutlined/>
+                </template>
                 <span>員工管理</span>
               </a-menu-item>
-              <a-menu-item key="admin-logs" @click="$router.push({ name: 'admin-logs' })">
-                <template #icon><SettingOutlined /></template>
+              <a-menu-item key="admin-logs" @click="goAdminRoute('admin-logs')">
+                <template #icon>
+                  <SettingOutlined/>
+                </template>
                 <span>系統日誌</span>
               </a-menu-item>
             </a-menu-item-group>
@@ -145,7 +207,7 @@
       </div>
     </a-layout-sider>
 
-    <a-layout :style="{ marginLeft: '260px' }">
+    <a-layout class="admin-main">
       <a-layout-header class="custom-header">
         <div class="header-search"></div>
 
@@ -159,32 +221,34 @@
             >
               保持登入
             </a-button>
-            <a-button size="small" class="demo-mode-badge" @click="triggerIdleAlert">Demo 模式</a-button>
+            <a-button size="small" class="demo-mode-badge" @click="triggerIdleAlert">Demo 模式
+            </a-button>
           </div>
           <a-tag class="custom-role-tag">
             {{ authStore.user?.roleCode || 'ROLE' }}
           </a-tag>
-          <span class="user-name">{{ authStore.user?.empName || '員工姓名' }}</span>
+          <span class="user-name">{{ roleDisplayName[authStore.user?.roleCode] || authStore.user?.empName || '員工姓名' }}</span>
           <a-button shape="round" class="logout-btn" @click="handleLogout">
-            <LogoutOutlined /> 登出
+            <LogoutOutlined/>
+            登出
           </a-button>
         </div>
       </a-layout-header>
 
       <a-layout-content class="admin-content">
-        <router-view />
+        <router-view/>
       </a-layout-content>
     </a-layout>
   </a-layout>
 </template>
 
 <script setup>
-import { ref, watch, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
-import { checkAuth, logout } from '@/api/auth'
-import { Modal } from 'ant-design-vue'
-import { onMounted, onUnmounted } from 'vue'
+import {ref, watch, computed} from 'vue'
+import {useRoute, useRouter} from 'vue-router'
+import {useAuthStore} from '@/stores/auth'
+import {checkAuth, logout} from '@/api/auth'
+import {Modal} from 'ant-design-vue'
+import {onMounted, onUnmounted} from 'vue'
 import {
   HomeOutlined,
   TeamOutlined,
@@ -201,6 +265,9 @@ import {
   AlertOutlined,
   StopOutlined,
   CheckCircleOutlined,
+  SafetyOutlined,
+  MenuOutlined,
+  CloseOutlined
 } from '@ant-design/icons-vue'
 
 const route = useRoute()
@@ -211,19 +278,32 @@ const authStore = useAuthStore()
 // Lvl 0 = 職員(CFSO)  |  Lvl 2 = 主管(CFDM)  |  Lvl 4 = 資安長(CISO)
 const permLevel = computed(() => authStore.user?.permLevel ?? 0)
 const isCISO = computed(() => permLevel.value >= 4) // 資安長及以上
-const isManager = computed(() => permLevel.value >= 2) // 主管及以上（包含 CISO）
 const isBusinessStaff = computed(() => permLevel.value < 4) // 業務人員（職員 + 主管）
+
+// 角色 roleCode → 顯示名稱映射表
+const roleDisplayName = {
+  CISO: '系統管理員',
+  CFDM: '主管',
+  CFSO: '職員',
+}
 
 const selectedKeys = ref([route.name])
 const countdown = ref(300)
 const isTimerPaused = ref(false)
+const isMobileSiderOpen = ref(false)
 
 watch(
   () => route.name,
   (val) => {
     selectedKeys.value = [val]
+    closeMobileSider()
   },
 )
+
+watch(isMobileSiderOpen, (isOpen) => {
+  if (typeof document === 'undefined') return
+  document.body.style.overflow = isOpen ? 'hidden' : ''
+})
 
 function formatTime(seconds) {
   const m = Math.floor(seconds / 60)
@@ -242,6 +322,21 @@ function triggerIdleAlert() {
       countdown.value = 300 // 重設倒數
     },
   })
+}
+
+function goAdminRoute(name) {
+  router.push({ name })
+  closeMobileSider()
+}
+
+function closeMobileSider() {
+  isMobileSiderOpen.value = false
+}
+
+function handleGlobalKeydown(event) {
+  if (event.key === 'Escape') {
+    closeMobileSider()
+  }
 }
 
 async function handleLogout() {
@@ -273,6 +368,8 @@ async function keepAdminSessionAlive() {
 }
 
 onMounted(() => {
+  window.addEventListener('keydown', handleGlobalKeydown)
+
   // 每 1 秒更新倒數
   idleTimer = setInterval(() => {
     if (isTimerPaused.value) return
@@ -289,6 +386,9 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  window.removeEventListener('keydown', handleGlobalKeydown)
+  document.body.style.overflow = ''
+
   if (idleTimer) clearInterval(idleTimer)
   if (sessionKeepAliveTimer) clearInterval(sessionKeepAliveTimer)
 })
@@ -299,11 +399,23 @@ onUnmounted(() => {
   min-height: 100vh;
 }
 
+.admin-main {
+  margin-left: 260px;
+  min-width: 0;
+}
+
+.mobile-menu-btn,
+.mobile-sider-mask,
+.mobile-sider-close {
+  display: none;
+}
+
 :deep(.ant-layout-sider) {
   background-color: #f1f3f0 !important;
 }
 
 .sider-content {
+  position: relative;
   height: 100vh;
   overflow-y: auto;
   overflow-x: hidden;
@@ -313,10 +425,12 @@ onUnmounted(() => {
 .sider-content::-webkit-scrollbar {
   width: 6px;
 }
+
 .sider-content::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.1);
   border-radius: 4px;
 }
+
 .sider-content::-webkit-scrollbar-track {
   background: transparent;
 }
@@ -501,16 +615,174 @@ onUnmounted(() => {
 }
 
 .admin-content {
-  padding: 24px 32px 32px;
+  padding: 24px 24px 32px;
   overflow-y: auto;
+}
+
+@media (max-width: 900px) {
+  .admin-layout {
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  .admin-main {
+    margin-left: 0;
+    width: 100%;
+    min-width: 0;
+  }
+
+  :deep(.admin-sider.ant-layout-sider) {
+    width: min(82vw, 300px) !important;
+    min-width: min(82vw, 300px) !important;
+    max-width: min(82vw, 300px) !important;
+    flex: 0 0 min(82vw, 300px) !important;
+    z-index: 1000 !important;
+    transform: translateX(-100%);
+    transition: transform 0.24s ease;
+    box-shadow: 12px 0 30px rgba(44, 54, 48, 0.18);
+  }
+
+  .sider-content {
+    padding-top: 16px;
+  }
+
+  .mobile-sider-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 38px;
+    height: 38px;
+    border: 1px solid rgba(214, 206, 195, 0.92);
+    border-radius: 12px;
+    background: rgba(255, 249, 239, 0.94);
+    color: #4a574d;
+    display: grid;
+    place-items: center;
+    font-size: 17px;
+    box-shadow: 0 8px 18px rgba(63, 74, 66, 0.1);
+  }
+
+  .logo-container {
+    padding-top: 36px;
+  }
+
+  :deep(.admin-sider.ant-layout-sider.is-mobile-open) {
+    transform: translateX(0);
+  }
+
+  .mobile-sider-mask {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 900;
+    background: rgba(43, 43, 43, 0.34);
+    backdrop-filter: blur(2px);
+  }
+
+  .mobile-menu-btn {
+    position: fixed;
+    left: 12px;
+    top: 12px;
+    z-index: 850;
+    height: 40px;
+    padding: 0 13px;
+    border: 1px solid rgba(214, 206, 195, 0.9);
+    border-radius: 12px;
+    background: rgba(255, 249, 239, 0.94);
+    color: #4a574d;
+    box-shadow: 0 8px 22px rgba(63, 74, 66, 0.12);
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .custom-header {
+    min-height: 64px !important;
+    height: auto !important;
+    line-height: normal !important;
+    padding: 10px 12px 10px 96px !important;
+    align-items: flex-start;
+  }
+
+  .header-search {
+    display: none;
+  }
+
+  .header-right {
+    width: 100%;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .admin-timer {
+    order: 2;
+    width: 100%;
+    padding: 7px 10px;
+    gap: 8px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .timer-text {
+    min-width: 0;
+    flex: 1 1 130px;
+    font-size: 12px;
+    white-space: normal;
+  }
+
+  .custom-role-tag {
+    font-size: 12px !important;
+    padding: 3px 8px !important;
+  }
+
+  .user-name {
+    max-width: 86px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+  }
+
+  .logout-btn {
+    height: 34px;
+    padding-inline: 10px;
+    font-size: 13px;
+  }
+
+  .admin-content {
+    width: 100%;
+    max-width: 100%;
+    padding: 14px 12px 28px;
+    overflow-x: hidden;
+  }
+}
+
+@media (max-width: 520px) {
+  .custom-header {
+    padding-left: 88px !important;
+  }
+
+  .demo-mode-badge {
+    display: none;
+  }
+
+  .session-toggle-btn.ant-btn {
+    padding-inline: 8px !important;
+  }
 }
 
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.2s ease;
 }
+
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
 }
+
+
 </style>

@@ -2,6 +2,8 @@ package com.javaeasybank.creditcard.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
+
 import com.javaeasybank.creditcard.enums.BillStatus;
 
 import lombok.Data;
@@ -35,4 +37,6 @@ public class CardBillResponseDto {
     private Boolean rewardPosted;
 
     private String rewardReferenceId;
+
+    private List<CardSummaryDto> cards;
 }

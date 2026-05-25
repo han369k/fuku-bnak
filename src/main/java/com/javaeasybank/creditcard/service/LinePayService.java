@@ -82,7 +82,6 @@ public class LinePayService {
                 }
                 Map<String, Object> result = new HashMap<>(responseBody);
                 result.put("orderId", orderId);
-                System.out.println(requestBody);
                 return result;
         }
 

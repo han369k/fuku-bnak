@@ -19,6 +19,7 @@
         </a-input>
         <a-button type="primary" class="rounded-btn" @click="handleSearch">查詢</a-button>
         <a-button class="rounded-btn btn-ghost" @click="handleClear">清除</a-button>
+        <a-button class="rounded-btn btn-ghost" @click="fillWangXiaoMing">帶入王小明</a-button>
         <a-button type="primary" class="rounded-btn" @click="goCreate"> 新增客戶</a-button>
       </div>
     </div>
@@ -116,7 +117,7 @@
               </a-button>
             </template>
 
-            <template v-else-if="record.status === 'INACTIVE' || record.status === 'DEACTIVATED'">
+            <template v-else-if="(record.status === 'INACTIVE' || record.status === 'DEACTIVATED') && canDeactivate">
               <a-button type="link" class="action-btn resume-btn" @click="handleActivate(record)">
                 啟用
               </a-button>
@@ -124,6 +125,7 @@
 
             <template v-else>
               <a-button
+                v-if="canDeactivate"
                 type="link"
                 class="action-btn suspend-btn"
                 @click="handleDeactivate(record)"
@@ -584,11 +586,12 @@
 </template>
 
 <script setup>
-import {ref, reactive, onMounted} from 'vue'
+import {ref, reactive, onMounted, computed} from 'vue'
 import {useRouter} from 'vue-router'
 import {message, Modal} from 'ant-design-vue'
 import {SearchOutlined} from '@ant-design/icons-vue'
 import {BASE_URL} from '@/api/axios'
+import {useAuthStore} from '@/stores/auth'
 import {
   getCustomers,
   updateCustomer,
@@ -599,6 +602,11 @@ import {
 import {unlockCustomer} from "@/api/customerAuth.js";
 
 const router = useRouter()
+const authStore = useAuthStore()
+
+// 角色判斷：職員(permLevel<2)不可停用客戶
+const permLevel = computed(() => authStore.user?.permLevel ?? 0)
+const canDeactivate = computed(() => permLevel.value >= 2)
 
 const statusMap = {
   ACTIVE: '正常',
@@ -827,6 +835,11 @@ function handleSearch() {
 function handleClear() {
   keyword.value = ''
   customers.value = []
+}
+
+function fillWangXiaoMing() {
+  keyword.value = '王小明'
+  handleSearch()
 }
 
 function goCreate() {

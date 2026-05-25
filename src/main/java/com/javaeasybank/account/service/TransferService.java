@@ -10,6 +10,7 @@ import com.javaeasybank.account.entity.Account;
 import com.javaeasybank.account.entity.PendingTransfer;
 import com.javaeasybank.account.entity.TransLog;
 import com.javaeasybank.account.enums.*;
+import com.javaeasybank.account.exception.TargetAccountFailedException;
 import com.javaeasybank.account.exception.TransferException;
 import com.javaeasybank.account.repository.AccountRepository;
 import com.javaeasybank.account.repository.PendingTransferRepository;
@@ -65,7 +66,7 @@ public class TransferService {
      * 執行國內轉帳。
      * 本行 909 轉帳會查詢目的帳戶並入帳；跨行轉帳只扣轉出帳戶，並額外寫入同業務編號的手續費紀錄。
      */
-    @Transactional
+    @Transactional(noRollbackFor = TargetAccountFailedException.class)
     public TransferResponse transfer(TransferRequest request) {
 
         String referenceId = ReferenceIdGenerator.generate();
@@ -86,7 +87,17 @@ public class TransferService {
 
         Account fromAccount = findAccountOrThrow(fromAccNum, "SOURCE_ACCOUNT_NOT_FOUND", "來源帳戶不存在");
 
-        validateActiveAccount(fromAccount, "SOURCE_ACCOUNT_INACTIVE", "來源帳戶非 ACTIVE 狀態");
+        if (fromAccount.getAccountType() == AccountType.SUB_ACCOUNT) {
+            if (interbank) {
+                throw new TransferException("SUB_ACCOUNT_RESTRICTED", "子帳戶無法跨行轉出");
+            }
+            Account toAccount = findAccountOrThrow(toAccNum, "TARGET_ACCOUNT_NOT_FOUND", "目的帳戶不存在");
+            if (!toAccount.getCustomerId().equals(fromAccount.getCustomerId()) || toAccount.getAccountType() != AccountType.CHECKING) {
+                throw new TransferException("SUB_ACCOUNT_RESTRICTED", "子帳戶只能轉回自己的台幣活期帳戶");
+            }
+        }
+
+        validateActiveAccount(fromAccount, "SOURCE_ACCOUNT_INACTIVE", "來源帳戶非正常狀態");
         validateGeneralBalanceAccount(fromAccount, "來源帳戶");
         if (interbank && fromAccount.getCurrency() != Currency.TWD) {
             throw new TransferException("INTERBANK_TWD_ONLY", "跨行轉帳僅支援台幣帳戶");
@@ -141,10 +152,10 @@ public class TransferService {
                 amount,
                 referenceId, internalWarning);
 
-        // 外部風控直接拒絕 (最高優先級)
-        if (riskResult.getDisposition() == Disposition.REJECT) {
-            throw new TransferException("RISK_REJECTED", riskResult.getReason());
-        }
+        // 外部風控直接拒絕 (最高優先級) 改由 executeTransfer 內部處理，以確保能觸發扣款後沖正
+        // if (riskResult.getDisposition() == Disposition.REJECT) {
+        //     throw new TransferException("RISK_REJECTED", riskResult.getReason());
+        // }
         String finalReason = internalWarning != null
                 ? internalWarning
                 : (riskResult.getDisposition() == Disposition.MANUAL_REVIEW
@@ -185,11 +196,11 @@ public class TransferService {
 
         // ────────────────────────────────────────────────
 
-        return executeTransfer(request, referenceId);
+        return executeTransfer(request, referenceId, riskResult);
     }
 
-    @Transactional
-    protected TransferResponse executeTransfer(TransferRequest request, String referenceId) {
+    @Transactional(noRollbackFor = TargetAccountFailedException.class)
+    protected TransferResponse executeTransfer(TransferRequest request, String referenceId, RiskCheckResponse riskResult) {
 
         String fromAccNum = normalizeAccountNumber(request.getFromAccountNumber());
         String toAccNum = normalizeAccountNumber(request.getToAccountNumber());
@@ -211,62 +222,82 @@ public class TransferService {
         LocalDateTime now = LocalDateTime.now();
         BigDecimal toAccountBalance = null;
 
-        if (interbank) {
+        // Debit the source account first, regardless of local or interbank
+        fromAccount.setBalance(fromBalanceBefore.subtract(totalDebitAmount));
+        saveAccounts(fromAccount);
 
-            fromAccount.setBalance(fromBalanceBefore.subtract(totalDebitAmount));
-            saveAccounts(fromAccount);
+        BigDecimal afterTransfer = fromBalanceBefore.subtract(amount);
 
-            BigDecimal afterTransfer = fromBalanceBefore.subtract(amount);
+        TransLog transferLog = buildTransLog(
+                referenceId, fromAccNum, toAccNum, toBank,
+                EntryType.DEBIT, TransactionType.TRANSFER,
+                amount, fromBalanceBefore, afterTransfer,
+                fromAccount.getCurrency(), request.getNote(),
+                interbank, feeAmount, totalDebitAmount);
 
-            TransLog transferLog = buildTransLog(
-                    referenceId, fromAccNum, toAccNum, toBank,
-                    EntryType.DEBIT, TransactionType.TRANSFER,
-                    amount, fromBalanceBefore, afterTransfer,
-                    fromAccount.getCurrency(), request.getNote(),
-                    true, feeAmount, totalDebitAmount);
-
-            TransLog feeLog = buildTransLog(
+        TransLog feeLog = null;
+        if (interbank && feeAmount.compareTo(BigDecimal.ZERO) > 0) {
+            feeLog = buildTransLog(
                     referenceId, fromAccNum, toAccNum, toBank,
                     EntryType.DEBIT, TransactionType.TRANSFER_FEE,
                     feeAmount, afterTransfer, fromAccount.getBalance(),
                     fromAccount.getCurrency(), INTERBANK_FEE_NOTE,
                     true, feeAmount, totalDebitAmount);
+        }
 
+        if (feeLog != null) {
             saveTransLogs(transferLog, feeLog);
-
         } else {
+            saveTransLogs(transferLog);
+        }
 
-            Account toAccount = findAccountOrThrow(
-                    toAccNum, "TARGET_ACCOUNT_NOT_FOUND", "目的帳戶不存在");
-
-            validateActiveAccount(toAccount, "TARGET_ACCOUNT_INACTIVE", "目的帳戶非 ACTIVE 狀態");
-            validateGeneralBalanceAccount(toAccount, "目的帳戶");
-
-            if (fromAccount.getCurrency() != toAccount.getCurrency()) {
-                throw new TransferException("CURRENCY_MISMATCH", "來源與目的帳戶幣別不一致");
+        // 2. 目的帳戶狀態驗證與入帳 (Credit)
+        try {
+            if (riskResult != null && riskResult.getDisposition() == Disposition.REJECT) {
+                throw new TransferException("RISK_REJECTED", riskResult.getReason());
             }
 
-            BigDecimal toBalanceBefore = toAccount.getBalance();
-            fromAccount.setBalance(fromBalanceBefore.subtract(amount));
-            toAccount.setBalance(toBalanceBefore.add(amount));
-            saveAccounts(fromAccount, toAccount);
+            if (!interbank) {
+                Account toAccount = findAccountOrThrow(
+                        toAccNum, "TARGET_ACCOUNT_NOT_FOUND", "目的帳戶不存在");
 
-            TransLog fromLog = buildTransLog(
-                    referenceId, fromAccNum, toAccNum, TransferBank.JVB,
-                    EntryType.DEBIT, TransactionType.TRANSFER,
-                    amount, fromBalanceBefore, fromAccount.getBalance(),
-                    fromAccount.getCurrency(), request.getNote(),
-                    false, BigDecimal.ZERO, amount);
+                if (toAccount.getAccountType() == AccountType.SUB_ACCOUNT) {
+                    if (!toAccount.getCustomerId().equals(fromAccount.getCustomerId())) {
+                        throw new TransferException("SUB_ACCOUNT_RESTRICTED", "只能轉入自己名下的子帳戶");
+                    }
+                }
 
-            TransLog toLog = buildTransLog(
-                    referenceId, toAccNum, fromAccNum, TransferBank.JVB,
-                    EntryType.CREDIT, TransactionType.TRANSFER,
-                    amount, toBalanceBefore, toAccount.getBalance(),
-                    toAccount.getCurrency(), request.getNote(),
-                    false, BigDecimal.ZERO, amount);
+                validateActiveAccount(toAccount, "TARGET_ACCOUNT_INACTIVE", "目的帳戶非正常狀態");
+                validateGeneralBalanceAccount(toAccount, "目的帳戶");
 
-            saveTransLogs(fromLog, toLog);
-            toAccountBalance = toAccount.getBalance();
+                if (fromAccount.getCurrency() != toAccount.getCurrency()) {
+                    throw new TransferException("CURRENCY_MISMATCH", "來源與目的帳戶幣別不一致");
+                }
+
+                BigDecimal toBalanceBefore = toAccount.getBalance();
+                toAccount.setBalance(toBalanceBefore.add(amount));
+                saveAccounts(toAccount);
+
+                TransLog toLog = buildTransLog(
+                        referenceId, toAccNum, fromAccNum, TransferBank.JVB,
+                        EntryType.CREDIT, TransactionType.TRANSFER,
+                        amount, toBalanceBefore, toAccount.getBalance(),
+                        toAccount.getCurrency(), request.getNote(),
+                        false, BigDecimal.ZERO, amount);
+
+                saveTransLogs(toLog);
+                toAccountBalance = toAccount.getBalance();
+            }
+        } catch (TransferException e) {
+            log.warn("Transfer failed at target validation: {}", e.getMessage());
+            // 進行沖正
+            ReversalRequest reversalRequest = new ReversalRequest();
+            reversalRequest.setOriginalReferenceId(referenceId);
+            reversalRequest.setReason("目的帳戶異常或風控拒絕，自動沖正");
+            reversal(reversalRequest);
+
+            // 確保紀錄被保存，拋出特製的 Exception，讓 @Transactional 不要 rollback
+            throw new TargetAccountFailedException(e.getErrorCode(), e.getMessage());
         }
 
         log.info("轉帳執行完成: refId={}, from={}, toBank={}, to={}, amount={}, fee={}",
@@ -305,7 +336,7 @@ public class TransferService {
         return response;
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = TargetAccountFailedException.class)
     public void executePendingTransfer(String referenceId) {
 
         PendingTransfer pending = pendingTransferRepository
@@ -327,11 +358,17 @@ public class TransferService {
         request.setAmount(pending.getAmount());
         request.setNote(pending.getNote());
 
-        // 執行轉帳
-        executeTransfer(request, referenceId);
+        try {
+            // 執行轉帳
+            executeTransfer(request, referenceId, null);
+            // 成功後才更新狀態
+            pending.setStatus("EXECUTED");
+        } catch (TargetAccountFailedException e) {
+            log.warn("Pending transfer failed at target validation: {}", e.getMessage());
+            pending.setStatus("FAILED");
+            pending.setHoldReason(e.getMessage());
+        }
 
-        // 成功後才更新狀態
-        pending.setStatus("EXECUTED");
         pending.setProcessedAt(LocalDateTime.now());
         pendingTransferRepository.save(pending);
 
@@ -375,6 +412,10 @@ public class TransferService {
         validateExchangeAccountOwner(toAccount, customerId);
         validateExchangeAccountStatus(fromAccount, "轉出帳戶");
         validateExchangeAccountStatus(toAccount, "轉入帳戶");
+
+        if (fromAccount.getAccountType() == AccountType.SUB_ACCOUNT || toAccount.getAccountType() == AccountType.SUB_ACCOUNT) {
+            throw new TransferException("SUB_ACCOUNT_RESTRICTED", "子帳戶無法進行換匯");
+        }
 
         if (fromAccount.getCurrency() == toAccount.getCurrency()) {
             throw new TransferException("SAME_CURRENCY", "換匯需選擇不同幣別帳戶");
@@ -470,7 +511,7 @@ public class TransferService {
 
     private void validateExchangeAccountStatus(Account account, String label) {
         if (account.getStatus() != AccountStatus.ACTIVE) {
-            throw new TransferException("ACCOUNT_INACTIVE", label + "非 ACTIVE 狀態");
+            throw new TransferException("ACCOUNT_INACTIVE", label + "非正常狀態");
         }
         validateGeneralBalanceAccount(account, label);
     }
@@ -618,7 +659,7 @@ public class TransferService {
                 accountNumber,
                 "ACCOUNT_NOT_FOUND",
                 "帳戶不存在: " + accountNumber);
-        validateActiveAccount(account, "ACCOUNT_INACTIVE", "帳戶非 ACTIVE 狀態");
+        validateActiveAccount(account, "ACCOUNT_INACTIVE", "帳戶非正常狀態");
         validateGeneralBalanceAccount(account, "帳戶");
 
         BigDecimal balanceBefore = account.getBalance();

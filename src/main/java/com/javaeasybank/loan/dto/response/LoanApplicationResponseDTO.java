@@ -31,6 +31,12 @@ public class LoanApplicationResponseDTO {
     // 會員 Email，供行員聯繫紀錄視窗顯示
     private String email;
 
+    // 會員電話，供管理端聯繫紀錄顯示
+    private String customerPhone;
+
+    // 會員信箱，供管理端聯繫紀錄顯示
+    private String customerEmail;
+
     // 貸款種類，例如 "PERSONAL"（信貸）、"HOUSE"（房貸）
     private String applyType;
 

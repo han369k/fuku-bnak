@@ -1,9 +1,9 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { message, Modal } from 'ant-design-vue'
-import { getCards, createCard, updateCard, deleteCard, blockCard, unblockCard } from '@/api/card'
+import { getCards, updateCard, deleteCard, blockCard, unblockCard } from '@/api/card'
 import { PlusOutlined, SearchOutlined, SyncOutlined } from '@ant-design/icons-vue'
-import api from '@/api/axios'
+import { BASE_URL } from '@/api/axios'
 
 const cards = ref([])
 const loading = ref(false)
@@ -24,6 +24,17 @@ const cardStatusLabelMap = {
 }
 
 const getCardStatusLabel = (statusValue) => cardStatusLabelMap[statusValue] || statusValue
+const getImageUrl = (path) => {
+  if (!path) return ''
+  if (path.startsWith('http') || path.startsWith('blob:') || path.startsWith('data:')) return path
+
+  const base = BASE_URL || ''
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+
+  if (!base) return normalizedPath
+
+  return `${base.replace(/\/+$/, '')}${normalizedPath}`
+}
 const pagination = ref({
   current: 1,
   pageSize: 10,
@@ -50,9 +61,8 @@ const fetchData = async () => {
     })
     cards.value = response.data.data.content
     pagination.value.total = response.data.data.totalElements
-    console.log(response.data.data.content)
   } catch (error) {
-    console.log(error)
+    message.error(error.response?.data?.message || '讀取卡片資料失敗')
   } finally {
     loading.value = false
   }
@@ -70,21 +80,7 @@ const handleCreate = () => {
   form.value.creditLimit = 0
   modalVisible.value = true
 }
-//刪除資料
-const handleDelete = async (record) => {
-  Modal.confirm({
-    title: '確定刪除嗎?',
-    onOk: async () => {
-      try {
-        await deleteCard(record.cardId)
-        await fetchData()
-        message.success('刪除成功')
-      } catch (error) {
-        console.log(error)
-      }
-    },
-  })
-}
+
 
 //停用卡片
 const handleBlock = async (record) => {
@@ -93,7 +89,7 @@ const handleBlock = async (record) => {
     await fetchData()
     message.success('停用成功')
   } catch (error) {
-    console.log(error)
+    message.error(error.response?.data?.message || '停用失敗')
   }
 }
 
@@ -104,7 +100,7 @@ const handleUnblock = async (record) => {
     await fetchData()
     message.success('啟用成功')
   } catch (error) {
-    console.log(error)
+    message.error(error.response?.data?.message || '啟用失敗')
   }
 }
 
@@ -112,12 +108,12 @@ const columns = [
   { title: 'ID', dataIndex: 'cardId', width: 80 },
   { title: '客戶姓名', dataIndex: 'customerName', width: 150 },
   { title: '卡號', dataIndex: 'cardNumber', width: 180 },
-  { title: '卡片名稱', key: 'cardTypeName', width: 150 },
+  { title: '卡片名稱', key: 'cardTypeName', width: 120 },
   { title: '卡片圖片', key: 'image', width: 120, align: 'center' },
   { title: '額度', dataIndex: 'creditLimit', width: 100 },
   { title: '已用額度', dataIndex: 'currentDebt', width: 100 },
   { title: '狀態', dataIndex: 'status', width: 100 },
-  { title: '編輯額度', key: 'edit', width: 80 },
+  { title: '編輯額度', key: 'edit', width: 100 },
   { title: '卡片狀態操作', key: 'statusAction', width: 120 },
 ]
 
@@ -128,7 +124,6 @@ const handleSubmit = async () => {
     modalVisible.value = false
     fetchData()
   } catch (error) {
-    console.log(error)
     message.error(error.response?.data?.message || (isEdit.value ? '更新卡片失敗' : '新增卡片失敗'))
   }
 }
@@ -227,7 +222,7 @@ onMounted(() => {
         <!-- 卡片圖片 -->
         <template v-else-if="column.key === 'image'">
           <img
-            :src="`${api.defaults.baseURL}/${record.cardType?.cardImageUrl}`"
+            :src="getImageUrl(record.cardType?.cardImageUrl)"
             style="height: 40px; border-radius: 4px"
           />
         </template>

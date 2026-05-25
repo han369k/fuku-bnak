@@ -49,7 +49,7 @@ public class PassbookPdfService {
 
         try {
             byte[] plainPdf = renderHtmlToPdf(buildHtml(account, profile));
-            return encryptPdf(plainPdf, customerId);
+            return encryptPdf(plainPdf, profile);
         } catch (Exception e) {
             throw new BusinessException("電子存摺 PDF 產生失敗");
         }
@@ -66,9 +66,12 @@ public class PassbookPdfService {
         return output.toByteArray();
     }
 
-    private byte[] encryptPdf(byte[] plainPdf, String customerId) throws Exception {
+    private byte[] encryptPdf(byte[] plainPdf, CustomerProfile profile) throws Exception {
         ByteArrayOutputStream encryptedOutput = new ByteArrayOutputStream();
-        byte[] ownerPassword = ("JAVA_BANK_PASSBOOK_" + customerId).getBytes(StandardCharsets.UTF_8);
+        
+        String idNumber = profile.getIdNumber();
+        String password = idNumber.length() >= 4 ? idNumber.substring(idNumber.length() - 4) : idNumber;
+        byte[] ownerPassword = password.getBytes(StandardCharsets.UTF_8);
         WriterProperties properties = new WriterProperties()
                 .setStandardEncryption(
                         new byte[0],
@@ -80,7 +83,7 @@ public class PassbookPdfService {
         try (PdfDocument pdfDocument = new PdfDocument(
                 new PdfReader(new ByteArrayInputStream(plainPdf)),
                 new PdfWriter(encryptedOutput, properties))) {
-            pdfDocument.getDocumentInfo().setTitle("JAVA_BANK 電子存摺");
+            pdfDocument.getDocumentInfo().setTitle("福庫銀行電子存摺");
         }
         return encryptedOutput.toByteArray();
     }
@@ -255,20 +258,20 @@ public class PassbookPdfService {
                 <body>
                   <div class="page">
                     <div class="brand-logo">%s</div>
-                    <div class="brand-title">JAVA_BANK</div>
+                    <div class="brand-title">福庫銀行</div>
                     <div class="brand-subtitle">E-PASSBOOK</div>
                     <div class="brand-motto">CALM · BALANCE · TRUST</div>
                     <div class="divider"></div>
                     <div class="field left-1"><span class="label">戶名</span><span class="value">%s</span></div>
                     <div class="field left-2"><span class="label">帳號</span><span class="value">%s</span></div>
-                    <div class="field left-3"><span class="label">開戶分行</span><span class="value">台北分行</span></div>
+                    <div class="field left-3"><span class="label">開戶分行</span><span class="value">總行</span></div>
                     <div class="field left-4"><span class="label">帳戶類型</span><span class="value">%s</span></div>
                     <div class="field right-1"><span class="label">幣別</span><span class="value pill">%s</span></div>
                     <div class="field right-2"><span class="label">銀行代號</span><span class="value">909</span></div>
                     <div class="field right-3"><span class="label">申請日期</span><span class="value">%s</span></div>
                     <div class="field right-4"><span class="label">狀態</span><span class="value status">%s</span></div>
                     <div class="note">本電子存摺僅供參考，實際帳戶資訊以本行系統資料為準。</div>
-                    <div class="seal">爪哇<br />銀行</div>
+                    <div class="seal">福庫<br />銀行</div>
                   </div>
                 </body>
                 </html>
@@ -320,7 +323,7 @@ public class PassbookPdfService {
         }
         try {
             String base64 = Base64.getEncoder().encodeToString(Files.readAllBytes(logoPath));
-            return "<img src=\"data:image/png;base64," + base64 + "\" alt=\"JAVA_BANK\" />";
+            return "<img src=\"data:image/png;base64," + base64 + "\" alt=\"福庫銀行\" />";
         } catch (Exception e) {
             return "<div></div>";
         }

@@ -494,7 +494,7 @@ npm run dev
 | `ApplicationStatus` | `PENDING`, `SUPPLEMENT_REQUIRED`, `APPROVED`, `REJECTED`, `CANCELLED` |
 | `TransactionType` | `TRANSFER`, `TRANSFER_FEE`, `DEPOSIT`, `WITHDRAW`, `EXCHANGE`, `INTEREST`, `LOAN_DISBURSEMENT`, `LOAN_REPAYMENT`, `CARD_PAYMENT`, `CARD_SETTLEMENT`, `CARD_REWARD`, `REVERSAL` |
 | `EntryType` | `DEBIT`, `CREDIT` |
-| `TransferBank` | 國內轉帳銀行代碼，含本行 `JVB("909","爪哇銀行")` |
+| `TransferBank` | 國內轉帳銀行代碼，含本行 `JVB("909","福庫銀行")` |
 | `RiskFlag` | `NORMAL`, `WATCH`, `PEP`, `HIGH_RISK`, `HIGH_FREQUENCY`, `PEP_HIGH_FREQUENCY` |
 
 ### 帳戶建立與狀態規則
@@ -670,7 +670,7 @@ npm run dev
 1. `TransferService.transfer` 被 `@RiskCheck(scene = RiskScene.TRANSFER)` 標註。
 2. 驗證來源/目的帳號不可空、金額需大於 0，並用 `TransferBank.fromCode` double-check 轉入銀行代碼。
 3. 本行轉帳：
-   - 目的銀行為 `JVB("909","爪哇銀行")`。
+   - 目的銀行為 `JVB("909","福庫銀行")`。
    - 不可自轉。
    - 查來源與目的帳戶，兩方都必須 `ACTIVE` 且幣別一致。
    - 同一個 transaction 內扣款與入帳，寫 `DEBIT + TRANSFER`、`CREDIT + TRANSFER` 兩筆同 `referenceId` 的 `TransLog`。

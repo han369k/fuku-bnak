@@ -2,7 +2,7 @@
   <div class="page-container">
     <a-page-header title="客戶信用評分詳情" @back="router.back()">
       <template #extra>
-        <a-tag :color="riskColor(credit?.riskLevel)" class="large-risk-badge">
+        <a-tag  class="large-risk-badge">
           {{ riskLabel(credit?.riskLevel) }}
         </a-tag>
       </template>
@@ -70,7 +70,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
-import axios from 'axios'
+import api from '@/api/axios'
 
 const route = useRoute()
 const router = useRouter()
@@ -82,9 +82,7 @@ const loading = ref(false)
 async function fetchDetail() {
   loading.value = true
   try {
-    const res = await axios.get(`${BASE_URL}/${route.params.customerId}`, {
-      withCredentials: true,
-    })
+    const res = await api.get(`${BASE_URL}/${route.params.customerId}`)
     credit.value = res.data.data
   } catch (e) {
     message.error('載入失敗：' + (e.response?.data?.message || e.message))
@@ -154,6 +152,7 @@ onMounted(fetchDetail)
 .large-risk-badge {
   font-size: 16px !important;
   padding: 4px 14px !important;
+  font-weight: 600 !important;
 }
 
 .large-alert {

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import dayjs from 'dayjs'
 import { message } from 'ant-design-vue'
 import { getBills, generateBills } from '@/api/cardBill'
@@ -25,7 +25,7 @@ const pagination = ref({
 const searchForm = ref({
   customerName: '',
   billingMonth: '',
-  billStatus: ''
+  billStatus: '',
 })
 
 const columns = [
@@ -84,7 +84,6 @@ const columns = [
     dataIndex: 'billStatus',
     key: 'billStatus',
   },
-  
 ]
 
 const fetchBills = async (page = 1) => {
@@ -102,8 +101,6 @@ const fetchBills = async (page = 1) => {
       billStatus: searchForm.value.billStatus || undefined,
     })
 
-    console.log(response)
-
     bills.value = response.content.map((item) => ({
       ...item,
       dueDate: dayjs(item.dueDate).format('YYYY-MM-DD'),
@@ -111,7 +108,9 @@ const fetchBills = async (page = 1) => {
     }))
 
     pagination.value.total = response.totalElements
-    pagination.value.current = page
+    if (pagination.value.current !== page) {
+      pagination.value.current = page
+    }
   } catch (error) {
     console.error(error)
     message.error('獲取帳單資料失敗')
@@ -126,20 +125,20 @@ const handleGenerateBills = async () => {
 
     const count = await generateBills()
     message.success(`成功產生 ${count} 筆帳單`)
-    await fetchBills()
+    await fetchBills(1)
   } catch (error) {
-    console.log(error)
-    console.log(error.response?.data?.message)
-
     message.error(error.response?.data?.message || '生成帳單失敗')
-  }finally{
+  } finally {
     generating.value = false
   }
 }
 
-const handleTableChange = (pager) => {
-  fetchBills(pager.current)
-}
+watch(
+  () => [pagination.value.current, pagination.value.pageSize],
+  () => {
+    fetchBills(pagination.value.current)
+  },
+)
 
 onMounted(() => {
   fetchBills()
@@ -159,58 +158,47 @@ onMounted(() => {
     >
       <a-typography-title :level="2" style="margin: 0"> 帳單管理 </a-typography-title>
 
-      <a-button type="primary" :loading="generating" @click="handleGenerateBills"> 產生帳單 </a-button>
+      <a-button type="primary" :loading="generating" @click="handleGenerateBills">
+        產生帳單
+      </a-button>
     </div>
     <!-- Search Form -->
     <a-form layout="inline" :model="searchForm" style="margin-bottom: 16px">
-  <a-form-item>
-    <a-input
-      v-model:value="searchForm.customerName"
-      placeholder="客戶姓名"
-      allow-clear
-    />
-  </a-form-item>
+      <a-form-item>
+        <a-input v-model:value="searchForm.customerName" placeholder="客戶姓名" allow-clear />
+      </a-form-item>
 
-  <a-form-item>
-    <a-input
-      v-model:value="searchForm.billingMonth"
-      placeholder="帳單月份"
-      allow-clear
-    />
-  </a-form-item>
+      <a-form-item>
+        <a-input v-model:value="searchForm.billingMonth" placeholder="帳單月份" allow-clear />
+      </a-form-item>
 
-  <a-form-item>
-    <a-select
-      v-model:value="searchForm.billStatus"
-      placeholder="帳單狀態"
-      allow-clear
-      style="width: 140px"
-    >
-      <a-select-option value="PAID">已繳費</a-select-option>
-      <a-select-option value="UNPAID">未繳費</a-select-option>
-      <a-select-option value="PARTIAL">部分繳款</a-select-option>
-      <a-select-option value="OVERDUE">逾期</a-select-option>
-    </a-select>
-  </a-form-item>
+      <a-form-item>
+        <a-select
+          v-model:value="searchForm.billStatus"
+          placeholder="帳單狀態"
+          allow-clear
+          style="width: 140px"
+        >
+          <a-select-option value="PAID">已繳費</a-select-option>
+          <a-select-option value="UNPAID">未繳費</a-select-option>
+          <a-select-option value="PARTIAL">部分繳款</a-select-option>
+          <a-select-option value="OVERDUE">逾期</a-select-option>
+        </a-select>
+      </a-form-item>
 
-  <a-form-item>
-    <a-button type="primary" @click="fetchBills()">
-      搜尋
-    </a-button>
-  </a-form-item>
-</a-form>
-
-
+      <a-form-item>
+        <a-button type="primary" @click="fetchBills(1)"> 搜尋 </a-button>
+      </a-form-item>
+    </a-form>
 
     <!-- Table -->
     <a-table
       :columns="columns"
       :data-source="bills"
       :loading="loading"
-      :pagination="pagination"
+      :pagination="false"
       row-key="billId"
       bordered
-      @change="handleTableChange"
     >
       <template #bodyCell="{ column, record }">
         <!-- 帳單金額 -->
@@ -266,5 +254,12 @@ onMounted(() => {
         </template>
       </template>
     </a-table>
+    <a-pagination
+      v-model:current="pagination.current"
+      v-model:pageSize="pagination.pageSize"
+      :total="pagination.total"
+      show-size-changer
+      style="margin-top: 16px; text-align: right"
+    />
   </div>
 </template>

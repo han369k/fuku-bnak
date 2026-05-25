@@ -3,11 +3,13 @@ package com.javaeasybank.creditcard.service;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,8 +27,6 @@ import com.javaeasybank.creditcard.repository.CardTxnRepository;
 import com.javaeasybank.creditcard.repository.CardTxnSpecification;
 import com.javaeasybank.creditcard.repository.CreditCardRepository;
 import com.javaeasybank.creditcard.repository.MerchantRepository;
-
-import org.springframework.data.jpa.domain.Specification;
 
 import lombok.RequiredArgsConstructor;
 
@@ -55,6 +55,10 @@ public class CardTxnService {
         // 找商家
         var merchant = merchantRepository.findById(dto.getMerchantId())
                 .orElseThrow(() -> new BusinessException("Merchant not found"));
+        //金額不可為負數
+        if (dto.getTxnAmount() == null || dto.getTxnAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessException("交易金額必須大於 0");
+        }
 
         // ===== 額度檢查 =====
         CardAccount cardAccount = card.getCardAccount();
@@ -281,17 +285,15 @@ public class CardTxnService {
 
     public Page<CardTxnResponseDto> findByCustomerId(String customerId, Pageable pageable) {
 
-    Pageable sortedPageable = PageRequest.of(
-            pageable.getPageNumber(),
-            pageable.getPageSize(),
-            Sort.by(Sort.Direction.DESC, "txnDate")
-    );
+        Pageable sortedPageable = PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                Sort.by(Sort.Direction.DESC, "txnDate"));
 
-    return cardTxnRepository.findByCard_Customer_CustomerId(
-            customerId,
-            sortedPageable
-    ).map(mapper::toDto);
-}
+        return cardTxnRepository.findByCard_Customer_CustomerId(
+                customerId,
+                sortedPageable).map(mapper::toDto);
+    }
 
     public Page<CardTxnResponseDto> getUnbilledBillsByCustomerId(String customerId, Pageable pageable) {
         return cardTxnRepository.findByCard_Customer_CustomerIdAndBillIsNull(customerId, pageable)
@@ -306,14 +308,28 @@ public class CardTxnService {
         Specification<CardTransaction> spec = CardTxnSpecification.search(keyword, txnType, startDate, endDate);
 
         Pageable sortedPageable = PageRequest.of(
-            pageable.getPageNumber(),
-            pageable.getPageSize(),
-            Sort.by(Sort.Direction.DESC, "txnDate")
-    );
-
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                Sort.by(Sort.Direction.DESC, "txnDate"));
 
         return cardTxnRepository.findAll(spec, sortedPageable)
                 .map(this::toResponseDto);
+    }
+
+    public List<CardTxnResponseDto> getBilledTransactions(
+            String customerId,
+            Integer billId,
+            Integer cardId) {
+
+        List<CardTransaction> txns = cardTxnRepository
+                .findByBill_BillIdAndCard_CardIdAndCard_CardAccount_Customer_CustomerIdOrderByTxnDateDesc(
+                        billId,
+                        cardId,
+                        customerId);
+
+        return txns.stream()
+                .map(mapper::toDto)
+                .toList();
     }
 
 }

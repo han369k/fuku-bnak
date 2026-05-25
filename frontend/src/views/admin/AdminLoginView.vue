@@ -99,17 +99,23 @@ const form = reactive({
   password: '',
 })
 
-// 快速登入帳號（直接使用完整 email）
 // CISO=資安長(Lvl4) / CFDM=中階主管(Lvl2) / CFSO=一般職員(Lvl0)
 const testAccounts = [
-  { name: '鄭文華', role: 'CISO', email: 'wenhua.cheng@javabank.com' },
-  { name: '王淑芬', role: 'CFDM', email: 'shufen.wang@javabank.com' },
-  { name: '林家豪', role: 'CFSO', email: 'chiahao.lin@javabank.com' },
+  { name: '系統管理員', role: 'CISO', email: 'wenhua.cheng@javabank.com' },
+  { name: '主管', role: 'CFDM', email: 'shufen.wang@javabank.com' },
+  { name: '職員', role: 'CFSO', email: 'chiahao.lin@javabank.com' },
 ]
 
 function fillAccount(acc) {
   form.email = acc.email
   form.password = '123456'
+}
+
+// 角色 roleCode → 顯示名稱映射表
+const roleDisplayName = {
+  CISO: '系統管理員',
+  CFDM: '主管',
+  CFSO: '職員',
 }
 
 async function handleLogin() {
@@ -119,10 +125,16 @@ async function handleLogin() {
     const res = await login({ email: form.email, password: form.password })
     const userData = res.data.data
     authStore.setUser(userData)
-    message.success(`歡迎回來，${userData.empName}！`)
+    const displayName = roleDisplayName[userData.roleCode] || userData.empName
+    message.success(`歡迎回來，${displayName}！`)
     router.push({ name: 'admin-home' })
   } catch (err) {
-    message.error(err.response?.data?.message || '登入失敗，請檢查 Email 與密碼')
+    const errMsg = err.response?.data?.message || ''
+    if (errMsg.includes('停權') || errMsg.includes('停用') || errMsg.includes('SUSPENDED')) {
+      message.error('此帳號已被停權，請洽管理員')
+    } else {
+      message.error('帳號密碼錯誤')
+    }
   } finally {
     loading.value = false
   }
@@ -130,9 +142,6 @@ async function handleLogin() {
 </script>
 
 <style scoped>
-/* =========================================
-   核心佈局與變數
-========================================= */
 .login-wrapper {
   --primary-color: #5C6B5F;
   --primary-hover: #4A574D;
@@ -171,21 +180,16 @@ async function handleLogin() {
   letter-spacing: 2px;
 }
 
-/* =========================================
-   解決痛點 1：徹底根除雙層黑框
-========================================= */
-/* 設定外層容器的樣式 */
 .custom-input {
   border-radius: 12px !important;
   border: 1px solid #d9d9d9 !important;
   padding: 6px 14px !important;
-  height: 48px !important; /* 強制加高輸入框 */
+  height: 48px !important;
   display: flex;
   align-items: center;
   background: #fff !important;
 }
 
-/* 暴力擊破：強制拔除內部所有原生 input 的邊框與背景 */
 .custom-input :deep(input),
 .custom-input :deep(.ant-input) {
   border: none !important;
@@ -195,7 +199,6 @@ async function handleLogin() {
   height: 100% !important;
 }
 
-/* Hover 與 Focus 時外框變綠色 */
 .custom-input:hover,
 .custom-input:focus-within,
 .custom-input:deep(.ant-input-affix-wrapper-focused) {
@@ -203,11 +206,8 @@ async function handleLogin() {
   box-shadow: 0 0 0 2px rgba(92, 107, 95, 0.1) !important;
 }
 
-/* =========================================
-   解決痛點 2：登入按鈕與快速登入變高變寬
-========================================= */
 .btn-submit-rounded {
-  height: 52px !important; /* 主要按鈕加高 */
+  height: 52px !important;
   background-color: var(--primary-color) !important;
   border-color: var(--primary-color) !important;
   border-radius: 26px !important;
@@ -223,22 +223,21 @@ async function handleLogin() {
 .quick-btn-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 16px; /* 增加按鈕之間的空隙 */
+  gap: 16px;
 }
 
 .quick-btn {
-  height: 48px !important; /* 強制加高快速登入按鈕！ */
-  padding: 0 16px !important; /* 左右撐開 */
+  height: 48px !important;
+  padding: 0 16px !important;
   border-radius: 12px !important;
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  border: 1px solid #e0e0e0 !important; /* 淡淡的實線邊框 */
+  border: 1px solid #e0e0e0 !important;
   background: transparent !important;
   transition: all 0.3s ease;
 }
 
-/* Hover 時變墨綠色 */
 .quick-btn:hover {
   border-color: var(--primary-color) !important;
   background-color: rgba(92, 107, 95, 0.04) !important;
@@ -252,7 +251,7 @@ async function handleLogin() {
   font-size: 12px;
   color: var(--primary-color);
   font-weight: 700;
-  min-width: 44px; /* 讓前面的英文職稱對齊 */
+  min-width: 44px;
   text-align: left;
 }
 
@@ -261,5 +260,43 @@ async function handleLogin() {
   color: #555;
   font-weight: 500;
   transition: color 0.3s ease;
+}
+
+@media (max-width: 560px) {
+  .login-wrapper {
+    align-items: flex-start;
+    padding: 24px 16px;
+  }
+
+  .login-card {
+    width: 100%;
+    max-width: 420px;
+    padding: 28px 20px;
+    border-radius: 20px;
+  }
+
+  .login-header {
+    margin-bottom: 24px;
+  }
+
+  .login-logo {
+    width: 112px;
+    height: 112px;
+    margin-bottom: 14px;
+  }
+
+  .login-subtitle {
+    font-size: 19px;
+    letter-spacing: 1px;
+  }
+
+  .quick-btn-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .quick-btn {
+    justify-content: center;
+  }
 }
 </style>

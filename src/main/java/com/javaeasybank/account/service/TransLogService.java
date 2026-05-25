@@ -105,6 +105,27 @@ public class TransLogService {
                 transLogRepository.findAllExcludingAccountTypeOrderByCreatedAtDesc(AccountType.BUSINESS, pageable));
     }
 
+    @Transactional(readOnly = true)
+    public java.util.Map<String, Object> getStatistics() {
+        java.util.Map<String, Object> stats = new java.util.HashMap<>();
+        stats.put("entryType", convertToMap(transLogRepository.countByEntryTypeGroup()));
+        stats.put("transactionType", convertToMap(transLogRepository.countByTransactionTypeGroup()));
+        stats.put("currency", convertToMap(transLogRepository.countByCurrencyGroup()));
+        stats.put("totalTransactions", transLogRepository.count());
+        stats.put("totalCredit", transLogRepository.sumTotalCredit());
+        stats.put("totalDebit", transLogRepository.sumTotalDebit());
+        stats.put("maxTransactionAmount", transLogRepository.maxTransactionAmount());
+        return stats;
+    }
+
+    private java.util.Map<String, Long> convertToMap(List<Object[]> results) {
+        return results.stream()
+                .collect(Collectors.toMap(
+                        row -> row[0] != null ? row[0].toString() : "UNKNOWN",
+                        row -> ((Number) row[1]).longValue()
+                ));
+    }
+
     private List<TransLogResponse> toAdminResponses(List<TransLog> logs) {
         Set<String> businessAccountNumbers = findBusinessAccountNumbers(logs);
         return logs.stream()

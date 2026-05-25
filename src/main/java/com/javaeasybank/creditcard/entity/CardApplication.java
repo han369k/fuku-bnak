@@ -1,6 +1,7 @@
 package com.javaeasybank.creditcard.entity;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import com.javaeasybank.creditcard.enums.CardApplicationStatus;
 import com.javaeasybank.customer.entity.CustomerProfile;
@@ -14,6 +15,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -29,13 +31,13 @@ import lombok.Setter;
 @AllArgsConstructor
 public class CardApplication {
 
-	@Id
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "application_id")
     private Integer applicationId;
 
-//    @Column(name = "customer_id")
-//    private Integer customerId;
+    // @Column(name = "customer_id")
+    // private Integer customerId;
 
     @Column(name = "apply_date")
     private LocalDateTime applyDate;
@@ -46,22 +48,23 @@ public class CardApplication {
 
     @Column(name = "remark", length = 200, columnDefinition = "NVARCHAR(200)")
     private String remark;
-    
+
     @ManyToOne
     @JoinColumn(name = "customer_id", nullable = false)
     private CustomerProfile customer;
-    
-    //預設申請是pending
+
+    @OneToMany(mappedBy = "application")
+    private List<CardApplicationDocument> documents;
+
+    // 預設申請是pending
     @PrePersist
     public void prePersist() {
-		if (applyDate == null) {
-			applyDate=LocalDateTime.now();
-		}
-		if (status == null) {
-			status=CardApplicationStatus.PENDING;
-		}
-	}
-    
-    
-    
+        if (applyDate == null) {
+            applyDate = LocalDateTime.now();
+        }
+        if (status == null) {
+            status = CardApplicationStatus.PENDING;
+        }
+    }
+
 }

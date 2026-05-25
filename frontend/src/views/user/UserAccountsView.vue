@@ -172,7 +172,8 @@ function statusLabel(s) {
 
 function formatBalance(val, currency) {
   const num = Number(val) || 0
-  if (currency === 'JPY') return num.toLocaleString('ja-JP', { minimumFractionDigits: 0 })
+  if (currency === 'TWD') return num.toLocaleString('zh-TW', { maximumFractionDigits: 0 })
+  if (currency === 'JPY') return num.toLocaleString('ja-JP', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
   return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
@@ -195,7 +196,7 @@ function goHome() {
 
 <style scoped>
 /* ======================================
-   Java Bank — 帳戶總覽 侘寂風格
+   Fuku Bank — 帳戶總覽 侘寂風格
    幣別低飽和識別色系統
    ====================================== */
 

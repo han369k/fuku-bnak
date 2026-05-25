@@ -77,3 +77,13 @@ logs/
 
 # Uploads
 /uploads/
+
+# 不須上傳之文件
+/docs/
+
+# 忽略不需要追蹤的輸出檔案與腳本
+/outputs/
+*.pptx
+/patch.sql
+/test-mappings.sh
+/test_overdue.sql

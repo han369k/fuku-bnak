@@ -790,6 +790,8 @@ public class LoanApplicationService {
             dto.setMemberName(p.getName());
             dto.setPhone(p.getPhone());
             dto.setEmail(p.getEmail());
+            dto.setCustomerPhone(p.getPhone());
+            dto.setCustomerEmail(p.getEmail());
         });
         dto.setApplyType(loan.getApplyType());
         dto.setApplyAmount(loan.getApplyAmount());

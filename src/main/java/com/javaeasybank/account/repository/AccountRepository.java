@@ -143,4 +143,22 @@ public interface AccountRepository extends JpaRepository<Account, String> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT a FROM Account a WHERE a.accountNumber IN :accountNumbers ORDER BY a.accountNumber")
     List<Account> findAllByAccountNumberInForUpdate(@Param("accountNumbers") Collection<String> accountNumbers);
+
+    // ==========================================
+    // 統計用 (Dashboard)
+    // ==========================================
+    @Query("SELECT a.status, COUNT(a) FROM Account a WHERE a.accountType != com.javaeasybank.account.enums.AccountType.BUSINESS GROUP BY a.status")
+    List<Object[]> countByStatusGroup();
+
+    @Query("SELECT a.currency, COUNT(a) FROM Account a WHERE a.accountType != com.javaeasybank.account.enums.AccountType.BUSINESS GROUP BY a.currency")
+    List<Object[]> countByCurrencyGroup();
+
+    @Query("SELECT a.accountType, COUNT(a) FROM Account a WHERE a.accountType != com.javaeasybank.account.enums.AccountType.BUSINESS GROUP BY a.accountType")
+    List<Object[]> countByAccountTypeGroup();
+
+    @Query("SELECT SUM(a.balance) FROM Account a WHERE a.accountType != com.javaeasybank.account.enums.AccountType.BUSINESS")
+    java.math.BigDecimal sumTotalBalance();
+
+    @Query("SELECT COUNT(a) FROM Account a WHERE a.accountType != com.javaeasybank.account.enums.AccountType.BUSINESS")
+    long countExcludingBusiness();
 }

@@ -16,14 +16,14 @@
                     {{ app?.applicantName || (app?.cif ? `CIF: ${app.cif}` : (app?.customerId ? `#${app.customerId}` : '')) }}
                   </span>
                 </div>
-                <div class="contact-line">
-                  <span class="contact-item">
+                <div class="contact-target">
+                  <span>
                     <i class="fa-solid fa-phone"></i>
-                    {{ app?.phone || '未提供電話' }}
+                    {{ app?.customerPhone || app?.phone || app?.applicantPhone || '未提供電話' }}
                   </span>
-                  <span class="contact-item">
+                  <span>
                     <i class="fa-solid fa-envelope"></i>
-                    {{ app?.email || '未提供 Email' }}
+                    {{ app?.customerEmail || app?.email || app?.applicantEmail || '未提供 Email' }}
                   </span>
                 </div>
               </div>
@@ -396,27 +396,24 @@ function formatDateTime(d) {
   border: 1px solid var(--accent-lt); padding: 2px 8px; border-radius: 4px;
 }
 .applicant-hint { font-size: 14px; color: var(--muted-2); }
-.contact-line {
+.contact-target {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 14px;
-  margin-top: 8px;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 7px;
+  color: var(--muted-2);
+  font-size: 13px;
 }
-.contact-item {
+.contact-target span {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: var(--muted-2);
-  font-family: 'IBM Plex Mono', monospace;
+  gap: 5px;
   min-width: 0;
-  word-break: break-all;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
-.contact-item i {
-  color: var(--accent);
-  font-size: 12px;
-  flex-shrink: 0;
-}
+.contact-target i { color: var(--accent); }
 .close-btn {
   width: 30px; height: 30px; border-radius: 8px;
   border: 1px solid var(--border); background: transparent;

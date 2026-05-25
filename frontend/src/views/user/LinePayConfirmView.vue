@@ -16,10 +16,6 @@ onMounted(async () => {
     const transactionId = route.query.transactionId
     const orderId = route.query.orderId || sessionStorage.getItem('linepay_order_id')
 
-    console.log('LINE Pay query:', route.query)
-    console.log('LINE Pay transactionId:', transactionId)
-    console.log('LINE Pay orderId:', orderId)
-
     if (!transactionId) {
       throw new Error('Missing LINE Pay transactionId. Please return from the LINE Pay payment page.')
     }
@@ -27,9 +23,7 @@ onMounted(async () => {
       throw new Error('Missing LINE Pay orderId. Please start the payment again.')
     }
 
-    const response = await confirmLinePay(transactionId, orderId)
-
-    console.log(response)
+    await confirmLinePay(transactionId, orderId)
 
     sessionStorage.removeItem('linepay_order_id')
     success.value = true

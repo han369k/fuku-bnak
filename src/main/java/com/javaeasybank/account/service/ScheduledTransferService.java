@@ -4,6 +4,7 @@ import com.javaeasybank.account.dto.request.ScheduledTransferRequest;
 import com.javaeasybank.account.dto.response.ScheduledTransferResponse;
 import com.javaeasybank.account.entity.Account;
 import com.javaeasybank.account.entity.ScheduledTransfer;
+import com.javaeasybank.account.enums.TransferBank;
 import com.javaeasybank.account.repository.AccountRepository;
 import com.javaeasybank.account.repository.ScheduledTransferRepository;
 import com.javaeasybank.common.exception.BusinessException;
@@ -34,6 +35,8 @@ public class ScheduledTransferService {
 
     @Transactional
     public ScheduledTransferResponse create(String customerId, ScheduledTransferRequest request) {
+        TransferBank toBank = TransferBank.fromCode(request.getToBankCode());
+
         // 驗證轉出帳戶屬於該客戶
         Account fromAccount = accountRepository.findById(request.getFromAccountNumber())
                 .orElseThrow(() -> new BusinessException("轉出帳戶不存在"));
@@ -42,8 +45,21 @@ public class ScheduledTransferService {
             throw new BusinessException("轉出帳戶不屬於您");
         }
 
-        if (request.getFromAccountNumber().equals(request.getToAccountNumber())) {
-            throw new BusinessException("轉出與轉入帳戶不可相同");
+        if (fromAccount.getAccountType() == com.javaeasybank.account.enums.AccountType.SUB_ACCOUNT) {
+            throw new BusinessException("子帳戶無法轉出");
+        }
+
+        if (toBank.isJavaBank()) {
+            if (request.getFromAccountNumber().equals(request.getToAccountNumber())) {
+                throw new BusinessException("轉出與轉入帳戶不可相同");
+            }
+            Account toAccount = accountRepository.findById(request.getToAccountNumber())
+                    .orElseThrow(() -> new BusinessException("轉入帳戶不存在"));
+            if (toAccount.getAccountType() == com.javaeasybank.account.enums.AccountType.SUB_ACCOUNT) {
+                if (!toAccount.getCustomerId().equals(customerId)) {
+                    throw new BusinessException("只能轉入自己名下的子帳戶");
+                }
+            }
         }
 
         LocalDate scheduledDate = LocalDate.parse(request.getScheduledDate());
@@ -54,6 +70,8 @@ public class ScheduledTransferService {
         ScheduledTransfer entity = new ScheduledTransfer();
         entity.setCustomerId(customerId);
         entity.setFromAccountNumber(request.getFromAccountNumber());
+        entity.setToBankCode(toBank.getCode());
+        entity.setToBankName(toBank.getDisplayName());
         entity.setToAccountNumber(request.getToAccountNumber());
         entity.setAmount(request.getAmount());
         entity.setScheduledDate(scheduledDate);

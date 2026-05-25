@@ -4,6 +4,10 @@ import { useRouter } from 'vue-router'
 import { submitAccountApplication, getMyAccountApplications } from '@/api/accountApplication'
 import { getMyAccounts } from '@/api/customerAccount'
 import { customerGetProfile } from '@/api/customerAuth'
+import {
+  WANG_XIAOMING_DEMO_ACCOUNT,
+  WANG_XIAOMING_DEMO_DOCUMENTS,
+} from '@/data/customerDemoAccounts'
 
 const router = useRouter()
 
@@ -481,17 +485,17 @@ async function fillMockData() {
   form.currency = form.accountType === UI_ACCOUNT_TYPE.CHECKING_FOREIGN ? 'USD' : 'TWD'
 
   // Step 2
-  form.name = '王小明'
-  form.idNumber = 'A123456789'
-  form.birthday = '1990-06-15'
-  form.gender = 'M'
-  form.email = 'test.user@example.com'
-  form.nationality = 'TW'
-  form.phone = '0912345678'
-  form.address = '台北市大安區忠孝東路四段100號5樓'
-  form.registeredAddress = '台北市中正區重慶南路一段122號3樓'
-  form.currentAddress = '台北市大安區忠孝東路四段100號5樓'
-  form.sameAddress = false
+  form.name = WANG_XIAOMING_DEMO_ACCOUNT.name
+  form.idNumber = WANG_XIAOMING_DEMO_ACCOUNT.idNumber
+  form.birthday = WANG_XIAOMING_DEMO_ACCOUNT.birthday
+  form.gender = WANG_XIAOMING_DEMO_ACCOUNT.gender
+  form.email = WANG_XIAOMING_DEMO_ACCOUNT.email
+  form.nationality = WANG_XIAOMING_DEMO_ACCOUNT.nationality
+  form.phone = WANG_XIAOMING_DEMO_ACCOUNT.phone
+  form.address = WANG_XIAOMING_DEMO_ACCOUNT.address
+  form.registeredAddress = WANG_XIAOMING_DEMO_ACCOUNT.registeredAddress
+  form.currentAddress = WANG_XIAOMING_DEMO_ACCOUNT.currentAddress
+  form.sameAddress = true
 
   // Step 3
   form.occupation = '軟體工程師'
@@ -507,17 +511,17 @@ async function fillMockData() {
 
   // Step 4 - 從 public/ 載入假證件圖片
   const [front, back, second] = await Promise.all([
-    fetchAsFile('/id-front.png', 'id-front.png'),
-    fetchAsFile('/id-back.png', 'id-back.png'),
-    fetchAsFile('/second-id.png', 'second-id.png'),
+    fetchAsFile(WANG_XIAOMING_DEMO_DOCUMENTS.idFront, 'wang-xiaoming-id-card-front.png'),
+    fetchAsFile(WANG_XIAOMING_DEMO_DOCUMENTS.idBack, 'wang-xiaoming-id-card-back.png'),
+    fetchAsFile(WANG_XIAOMING_DEMO_DOCUMENTS.secondId, 'wang-xiaoming-health-card.png'),
   ])
   form.idFront = front
   form.idBack = back
   form.secondId = second
 
-  idFrontPreview.value = '/id-front.png'
-  idBackPreview.value = '/id-back.png'
-  secondIdPreview.value = '/second-id.png'
+  idFrontPreview.value = WANG_XIAOMING_DEMO_DOCUMENTS.idFront
+  idBackPreview.value = WANG_XIAOMING_DEMO_DOCUMENTS.idBack
+  secondIdPreview.value = WANG_XIAOMING_DEMO_DOCUMENTS.secondId
 
   clearErrors()
 }
@@ -850,7 +854,7 @@ onMounted(async () => {
       <h2 class="step-title" style="text-align:center">申請已送出</h2>
       <p class="result-desc">
         您的開戶申請已成功送出，申請編號為
-        <strong>#{{ submitResult?.id }}</strong>。
+        <strong>{{ submitResult?.applicationNo }}</strong>。
         我們將於 1-3 個工作天內完成審核，屆時將通知您審核結果。
       </p>
       <div class="step-actions" style="justify-content:center">
@@ -879,7 +883,7 @@ onMounted(async () => {
           </thead>
           <tbody>
             <tr v-for="app in existingApplications" :key="app.id">
-              <td>#{{ app.id }}</td>
+              <td>{{ app.applicationNo }}</td>
               <td>{{ getAccountTypeLabel(app) }}</td>
               <td>{{ app.createdAt?.substring(0, 10) || '-' }}</td>
               <td class="application-status-cell">
@@ -912,11 +916,14 @@ onMounted(async () => {
 
 <style scoped>
 .acct-app-page {
+  width: 100%;
   max-width: 800px;
   margin: 0 auto;
   padding: var(--space-6) 0;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: var(--space-6);
+  box-sizing: border-box;
 }
 
 /* === 頁面標題 === */

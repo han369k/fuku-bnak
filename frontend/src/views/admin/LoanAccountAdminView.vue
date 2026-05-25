@@ -135,24 +135,40 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th class="sortable" @click="toggleSort('applicationId')">
+                <th class="sortable" @click="setSort('applicationId')">
                   案件編號<span class="sort-icon">{{ sortIcon('applicationId') }}</span>
                 </th>
-                <th class="sortable" @click="toggleSort('accountNumber')">
+                <th class="sortable" @click="setSort('accountNumber')">
                   貸款帳務帳號<span class="sort-icon">{{ sortIcon('accountNumber') }}</span>
                 </th>
-                <th>客戶</th>
-                <th>類型</th>
-                <th class="text-right">本金</th>
-                <th class="text-right">月繳</th>
-                <th class="text-right">年利率</th>
-                <th class="text-center">期數進度</th>
-                <th class="text-right">剩餘本金</th>
-                <th class="sortable" @click="toggleSort('nextPaymentDate')">
+                <th class="sortable" @click="setSort('memberName')">
+                  客戶<span class="sort-icon">{{ sortIcon('memberName') }}</span>
+                </th>
+                <th class="sortable" @click="setSort('applyType')">
+                  類型<span class="sort-icon">{{ sortIcon('applyType') }}</span>
+                </th>
+                <th class="sortable text-right" @click="setSort('principalAmount')">
+                  本金<span class="sort-icon">{{ sortIcon('principalAmount') }}</span>
+                </th>
+                <th class="sortable text-right" @click="setSort('monthlyPayment')">
+                  月繳<span class="sort-icon">{{ sortIcon('monthlyPayment') }}</span>
+                </th>
+                <th class="sortable text-right" @click="setSort('rate')">
+                  年利率<span class="sort-icon">{{ sortIcon('rate') }}</span>
+                </th>
+                <th class="sortable text-center" @click="setSort('paidPeriods')">
+                  期數進度<span class="sort-icon">{{ sortIcon('paidPeriods') }}</span>
+                </th>
+                <th class="sortable text-right" @click="setSort('remainingPrincipal')">
+                  剩餘本金<span class="sort-icon">{{ sortIcon('remainingPrincipal') }}</span>
+                </th>
+                <th class="sortable" @click="setSort('nextPaymentDate')">
                   下次繳款日<span class="sort-icon">{{ sortIcon('nextPaymentDate') }}</span>
                 </th>
-                <th>狀態</th>
-                <th class="sortable" @click="toggleSort('startDate')">
+                <th class="sortable" @click="setSort('accountStatus')">
+                  狀態<span class="sort-icon">{{ sortIcon('accountStatus') }}</span>
+                </th>
+                <th class="sortable" @click="setSort('startDate')">
                   撥款日<span class="sort-icon">{{ sortIcon('startDate') }}</span>
                 </th>
                 <th class="text-center">還款時間表</th>
@@ -412,24 +428,14 @@ const currentPage     = ref(1)
 const pageSize        = 15
 
 // ── 排序 ──
-const sortKey = ref('')   // 'applicationId' | 'accountNumber' | 'nextPaymentDate' | 'startDate'
-const sortDir = ref('asc')
+const sortKey = ref('startDate')
+const sortOrder = ref('desc')
 const applicationIdQuery  = ref('')
 const accountNumberQuery  = ref('')
 
-function toggleSort(key) {
-  if (sortKey.value === key) {
-    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
-  } else {
-    sortKey.value = key
-    sortDir.value = 'asc'
-  }
-  currentPage.value = 1
-}
-
 function sortIcon(key) {
   if (sortKey.value !== key) return '⇅'
-  return sortDir.value === 'asc' ? '↑' : '↓'
+  return sortOrder.value === 'asc' ? '↑' : '↓'
 }
 
 // Modal 狀態
@@ -453,23 +459,39 @@ const filteredAccounts = computed(() => {
     const q = accountNumberQuery.value.trim().toLowerCase()
     list = list.filter(a => (a.accountNumber || '').toLowerCase().includes(q))
   }
-  if (sortKey.value) {
-    const key = sortKey.value
-    const dir = sortDir.value === 'asc' ? 1 : -1
-    list = [...list].sort((a, b) => {
-      const av = a[key] ?? ''
-      const bv = b[key] ?? ''
-      return String(av).localeCompare(String(bv), 'zh-TW') * dir
-    })
-  }
   return list
 })
 
 const totalPages = computed(() => Math.max(1, Math.ceil(filteredAccounts.value.length / pageSize)))
 
+const sortedAccounts = computed(() => {
+  let list = [...filteredAccounts.value]
+  if (!sortKey.value) return list
+
+  list.sort((a, b) => {
+    let valA = a[sortKey.value]
+    let valB = b[sortKey.value]
+
+    // 將 null/undefined 放到底部
+    if (valA == null && valB != null) return 1
+    if (valA != null && valB == null) return -1
+    if (valA == null && valB == null) return 0
+
+    if (typeof valA === 'string' && typeof valB === 'string') {
+      const res = valA.localeCompare(valB)
+      return sortOrder.value === 'asc' ? res : -res
+    }
+
+    if (valA < valB) return sortOrder.value === 'asc' ? -1 : 1
+    if (valA > valB) return sortOrder.value === 'asc' ? 1 : -1
+    return 0
+  })
+  return list
+})
+
 const pagedAccounts = computed(() => {
   const start = (currentPage.value - 1) * pageSize
-  return filteredAccounts.value.slice(start, start + pageSize)
+  return sortedAccounts.value.slice(start, start + pageSize)
 })
 
 const pageList = computed(() => {
@@ -490,6 +512,16 @@ function setStatus(val) {
   currentStatus.value = val
   currentPage.value   = 1
   repayments.value    = []
+}
+
+function setSort(key) {
+  if (sortKey.value === key) {
+    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortKey.value = key
+    sortOrder.value = 'asc'
+  }
+  currentPage.value = 1
 }
 
 async function fetchAccounts() {
@@ -844,6 +876,10 @@ onMounted(fetchAccounts)
   margin-left: 4px;
 }
 .data-table th.sortable:hover .sort-icon { opacity: 1; }
+
+.sortable { cursor: pointer; user-select: none; }
+.sortable:hover { color: var(--accent); }
+.sortable span { display: inline-block; width: 14px; text-align: center; }
 
 .data-row {
   border-bottom: 1px solid var(--border);
