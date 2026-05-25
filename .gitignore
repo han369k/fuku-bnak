@@ -78,6 +78,9 @@ logs/
 # Uploads
 /uploads/
 
+# Local Docker database setup
+/docker/
+
 # 不須上傳之文件
 /docs/
 
