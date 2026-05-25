@@ -146,9 +146,10 @@ onMounted(() => {
 </script>
 
 <template>
-  <div>
+  <div class="admin-card-bills-page">
     <!-- Header -->
     <div
+      class="bill-page-header"
       style="
         display: flex;
         justify-content: space-between;
@@ -163,7 +164,7 @@ onMounted(() => {
       </a-button>
     </div>
     <!-- Search Form -->
-    <a-form layout="inline" :model="searchForm" style="margin-bottom: 16px">
+    <a-form class="bill-search-form" layout="inline" :model="searchForm" style="margin-bottom: 16px">
       <a-form-item>
         <a-input v-model:value="searchForm.customerName" placeholder="客戶姓名" allow-clear />
       </a-form-item>
@@ -197,6 +198,7 @@ onMounted(() => {
       :data-source="bills"
       :loading="loading"
       :pagination="false"
+      :scroll="{ x: 1320 }"
       row-key="billId"
       bordered
     >
@@ -255,6 +257,7 @@ onMounted(() => {
       </template>
     </a-table>
     <a-pagination
+      class="bill-pagination"
       v-model:current="pagination.current"
       v-model:pageSize="pagination.pageSize"
       :total="pagination.total"
@@ -263,3 +266,56 @@ onMounted(() => {
     />
   </div>
 </template>
+
+<style scoped>
+.admin-card-bills-page {
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+.admin-card-bills-page :deep(.ant-table-wrapper) {
+  max-width: 100%;
+}
+
+@media (max-width: 768px) {
+  .admin-card-bills-page {
+    padding: 20px 16px;
+  }
+
+  .bill-page-header {
+    align-items: flex-start !important;
+    gap: 12px;
+  }
+
+  .bill-search-form {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .bill-search-form :deep(.ant-form-item) {
+    margin-right: 0;
+    margin-bottom: 0;
+  }
+
+  .bill-search-form :deep(.ant-input),
+  .bill-search-form :deep(.ant-select),
+  .bill-search-form :deep(.ant-btn) {
+    width: 100% !important;
+  }
+
+  .admin-card-bills-page :deep(.ant-table-wrapper) {
+    overflow-x: auto;
+  }
+
+  .admin-card-bills-page :deep(.ant-table) {
+    min-width: 0;
+  }
+
+  .bill-pagination {
+    max-width: 100%;
+    overflow-x: auto;
+    text-align: left !important;
+  }
+}
+</style>

@@ -104,7 +104,12 @@ function getImageUrl(path) {
     return imagePath
   }
 
-  return `${BASE_URL}${imagePath.startsWith('/') ? '' : '/'}${imagePath}`
+  const base = BASE_URL || ''
+  const normalizedPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`
+
+  if (!base) return normalizedPath
+
+  return `${base.replace(/\/+$/, '')}${normalizedPath}`
 }
 
 function getProofImageSrc(file) {
@@ -302,6 +307,8 @@ onBeforeUnmount(() => {
                 class="card-image"
                 :src="getImageUrl(card.cardImageUrl)"
                 :alt="card.cardTypeName"
+                loading="lazy"
+                decoding="async"
               />
 
               <div v-else class="card-image-placeholder" aria-hidden="true">

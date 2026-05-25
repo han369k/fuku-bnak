@@ -337,4 +337,29 @@ async function handleSubmit() {
     padding: 20px 16px;
   }
 }
+
+/* Custom Toast */
+.jb-toast {
+  position: fixed;
+  top: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  z-index: 9999;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+}
+.toast-success { border-left: 4px solid var(--primary); }
+.toast-error { border-left: 4px solid var(--accent); }
+.toast-warning { border-left: 4px solid #C4A47C; }
+
+.toast-fade-enter-active, .toast-fade-leave-active { transition: all 0.3s var(--ease); }
+.toast-fade-enter-from, .toast-fade-leave-to { opacity: 0; transform: translate(-50%, -10px); }
 </style>

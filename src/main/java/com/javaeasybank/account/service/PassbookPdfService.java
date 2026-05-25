@@ -317,13 +317,13 @@ public class PassbookPdfService {
     }
 
     private String logoDataUri() {
-        Path logoPath = Path.of(System.getProperty("user.dir"), "frontend", "public", "logo.png");
+        Path logoPath = Path.of(System.getProperty("user.dir"), "frontend", "public", "logo.webp");
         if (!Files.exists(logoPath)) {
             return "<div></div>";
         }
         try {
             String base64 = Base64.getEncoder().encodeToString(Files.readAllBytes(logoPath));
-            return "<img src=\"data:image/png;base64," + base64 + "\" alt=\"福庫銀行\" />";
+            return "<img src=\"data:image/webp;base64," + base64 + "\" alt=\"福庫銀行\" />";
         } catch (Exception e) {
             return "<div></div>";
         }

@@ -409,7 +409,7 @@ h2 {
   color: var(--text-secondary);
   background:
     linear-gradient(180deg, rgba(255, 249, 239, 0.92), rgba(249, 244, 235, 0.78)),
-    url('/washi-texture.png');
+    url('/washi-texture.webp');
   background-size: auto, 240px 240px;
   border: 1px solid rgba(198, 188, 174, 0.92);
   border-radius: 8px;
@@ -492,7 +492,7 @@ h2 {
   overflow: hidden;
   background:
     linear-gradient(180deg, rgba(255, 249, 239, 0.86), rgba(249, 244, 235, 0.72)),
-    url('/washi-texture.png');
+    url('/washi-texture.webp');
   background-size: auto, 300px 300px;
   border: 1px solid rgba(214, 206, 195, 0.84);
   border-radius: 18px;
@@ -711,7 +711,7 @@ h2 {
   color: var(--primary-dark);
   background:
     linear-gradient(180deg, rgba(255, 249, 239, 0.94), rgba(249, 244, 235, 0.88)),
-    url('/washi-texture.png');
+    url('/washi-texture.webp');
   background-size: auto, 220px 220px;
   border: 1px solid rgba(214, 206, 195, 0.92);
   border-radius: 999px;

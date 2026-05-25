@@ -53,7 +53,7 @@ public class FileStorageService {
     }
 
     /**
-     * 儲存檔案，回傳相對路徑（如 /uploads/abc123.jpg）
+     * 儲存檔案，回傳相對路徑（如 /uploads/abc123.webp）
      *
      * @param file     上傳的檔案
      * @param subDir   子目錄（如 "id-cards"）
@@ -73,8 +73,8 @@ public class FileStorageService {
         // 只允許圖片與 PDF 格式
         String lower = ext.toLowerCase();
         if (!lower.equals(".jpg") && !lower.equals(".jpeg")
-                && !lower.equals(".png") && !lower.equals(".pdf")) {
-            throw new IllegalArgumentException("僅支援 JPG / PNG / PDF 格式");
+                && !lower.equals(".png") && !lower.equals(".webp") && !lower.equals(".pdf")) {
+            throw new IllegalArgumentException("僅支援 JPG / PNG / WEBP / PDF 格式");
         }
 
         // 檔案大小限制 10MB

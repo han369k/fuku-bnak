@@ -46,8 +46,8 @@ public class EmailService {
             helper.setText(content, true);
 
             // 加入內嵌圖片 (Content-ID) 解決 Gmail 破圖問題
-            helper.addInline("logoImage", new org.springframework.core.io.ClassPathResource("static/images/logo.png"));
-            helper.addInline("sealImage", new org.springframework.core.io.ClassPathResource("static/images/fukubank-seal.png"));
+            helper.addInline("logoImage", new org.springframework.core.io.ClassPathResource("static/images/logo.webp"));
+            helper.addInline("sealImage", new org.springframework.core.io.ClassPathResource("static/images/fukubank-seal.webp"));
 
             mailSender.send(message);
             log.info("Email sent to {}: {}", to, subject);

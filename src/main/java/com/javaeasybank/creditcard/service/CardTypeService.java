@@ -83,8 +83,8 @@ public class CardTypeService {
 		String ext = originalName.substring(originalName.lastIndexOf(".")).toLowerCase();
 
 		// 檔案驗證（建議一定要有）
-		if (!ext.equals(".jpg") && !ext.equals(".png")) {
-			throw new BusinessException("Only .jpg and .png files are allowed");
+		if (!ext.equals(".jpg") && !ext.equals(".jpeg") && !ext.equals(".png") && !ext.equals(".webp")) {
+			throw new BusinessException("Only .jpg, .jpeg, .png and .webp files are allowed");
 		}
 
 		String fileName = UUID.randomUUID() + ext;
