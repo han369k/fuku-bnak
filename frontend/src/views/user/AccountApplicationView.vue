@@ -511,9 +511,9 @@ async function fillMockData() {
 
   // Step 4 - 從 public/ 載入假證件圖片
   const [front, back, second] = await Promise.all([
-    fetchAsFile(WANG_XIAOMING_DEMO_DOCUMENTS.idFront, 'wang-xiaoming-id-card-front.png'),
-    fetchAsFile(WANG_XIAOMING_DEMO_DOCUMENTS.idBack, 'wang-xiaoming-id-card-back.png'),
-    fetchAsFile(WANG_XIAOMING_DEMO_DOCUMENTS.secondId, 'wang-xiaoming-health-card.png'),
+    fetchAsFile(WANG_XIAOMING_DEMO_DOCUMENTS.idFront, 'wang-xiaoming-id-card-front.webp'),
+    fetchAsFile(WANG_XIAOMING_DEMO_DOCUMENTS.idBack, 'wang-xiaoming-id-card-back.webp'),
+    fetchAsFile(WANG_XIAOMING_DEMO_DOCUMENTS.secondId, 'wang-xiaoming-health-card.webp'),
   ])
   form.idFront = front
   form.idBack = back
@@ -800,7 +800,7 @@ onMounted(async () => {
         <div class="upload-grid">
           <div class="upload-item">
             <label class="upload-box" :class="{ filled: idFrontPreview }">
-              <input type="file" accept="image/jpeg,image/png" class="sr-only" @change="handleFile('idFront', $event)" />
+              <input type="file" accept="image/jpeg,image/png,image/webp" class="sr-only" @change="handleFile('idFront', $event)" />
               <img v-if="idFrontPreview" :src="idFrontPreview" alt="身分證正面" />
               <div v-else class="upload-placeholder">
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
@@ -812,7 +812,7 @@ onMounted(async () => {
 
           <div class="upload-item">
             <label class="upload-box" :class="{ filled: idBackPreview }">
-              <input type="file" accept="image/jpeg,image/png" class="sr-only" @change="handleFile('idBack', $event)" />
+              <input type="file" accept="image/jpeg,image/png,image/webp" class="sr-only" @change="handleFile('idBack', $event)" />
               <img v-if="idBackPreview" :src="idBackPreview" alt="身分證反面" />
               <div v-else class="upload-placeholder">
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
@@ -824,7 +824,7 @@ onMounted(async () => {
 
           <div class="upload-item">
             <label class="upload-box" :class="{ filled: secondIdPreview }">
-              <input type="file" accept="image/jpeg,image/png" class="sr-only" @change="handleFile('secondId', $event)" />
+              <input type="file" accept="image/jpeg,image/png,image/webp" class="sr-only" @change="handleFile('secondId', $event)" />
               <img v-if="secondIdPreview" :src="secondIdPreview" alt="第二證件" />
               <div v-else class="upload-placeholder">
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>

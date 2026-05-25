@@ -88,7 +88,7 @@
                 @click="$router.push({ name: 'user-profile' })"
               >
                 <img v-if="avatarSrc" :src="avatarSrc" class="user-avatar" alt="使用者大頭照" />
-                <img v-else src="/default_photo.png" class="user-avatar" alt="預設大頭照" />
+                <img v-else src="/default_photo.webp" class="user-avatar" alt="預設大頭照" />
               </button>
               <span class="user-name">{{ customerName }}</span>
               <button class="logout-btn" @click="handleLogout">登出</button>
@@ -124,7 +124,7 @@
             <!-- 下拉面板 -->
             <transition name="dropdown">
               <div
-                v-if="openMenu === idx"
+                v-if="openMenu === idx && !isCompactNav"
                 class="mega-dropdown"
                 :style="dropdownStyle"
               >
@@ -145,6 +145,24 @@
             </transition>
           </div>
         </div>
+
+        <transition name="dropdown">
+          <div v-if="isCompactNav && openMenu !== -1" class="mobile-nav-panel">
+            <ul class="mobile-nav-list">
+              <li v-for="sub in menus[openMenu]?.children" :key="sub.label">
+                <a
+                  href="#"
+                  class="dropdown-link mobile-nav-link"
+                  :class="{ disabled: !sub.route }"
+                  @click.prevent="handleSubClick(sub)"
+                >
+                  <span class="dropdown-link-text">{{ sub.label }}</span>
+                  <span v-if="sub.desc" class="dropdown-link-desc">{{ sub.desc }}</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+        </transition>
       </nav>
     </header>
 
@@ -1080,6 +1098,10 @@ function handleLogout() {
   color: var(--primary);
 }
 
+.mobile-nav-panel {
+  display: none;
+}
+
 /* === Dropdown Transition === */
 .dropdown-enter-active {
   transition: opacity 0.18s var(--ease), transform 0.18s var(--ease);
@@ -1108,27 +1130,30 @@ function handleLogout() {
 /* === Mobile === */
 @media (max-width: 900px) {
   .mega-nav {
+    position: relative;
+    overflow: visible;
+  }
+
+  .mega-nav-inner {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    align-items: stretch;
+    flex-wrap: nowrap;
+    padding: 0 var(--space-3);
     overflow-x: auto;
-    overflow-y: hidden;
+    overflow-y: visible;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
   }
 
-  .mega-nav::-webkit-scrollbar { display: none; }
-
-  .mega-nav-inner {
-    width: max-content;
-    min-width: max-content;
-    max-width: none;
-    align-items: flex-start;
-    flex-wrap: nowrap;
-    padding: 0 var(--space-3);
+  .mega-nav-inner::-webkit-scrollbar {
+    display: none;
   }
 
   .mega-nav-item {
     flex: 0 0 auto;
     min-width: 126px;
-    padding-bottom: 8px;
     position: static;
   }
 
@@ -1140,23 +1165,48 @@ function handleLogout() {
 
   .mega-nav-icon { display: none; }
 
-  .mega-dropdown {
+  .mobile-nav-panel {
+    display: block;
     position: absolute;
     top: 100%;
     left: 0;
+    right: 0;
     width: 100%;
-    min-width: 220px;
+    max-width: 100%;
     margin: 0;
-    border-radius: 0 0 var(--radius-md) var(--radius-md);
-    box-shadow: 0 10px 24px rgba(63, 74, 66, 0.1);
+    padding: 14px var(--space-4) 16px;
+    background: rgba(255, 252, 246, 0.98);
+    border-top: 1px solid rgba(80, 72, 60, 0.1);
+    border-bottom: 1px solid rgba(80, 72, 60, 0.12);
+    box-shadow: 0 18px 36px rgba(45, 42, 36, 0.12);
+    z-index: 120;
+    box-sizing: border-box;
   }
 
-  .mega-nav-item.is-open {
-    min-width: min(280px, calc(100vw - 32px));
+  .mobile-nav-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    width: 100%;
+    max-height: min(360px, calc(100dvh - 190px));
+    overflow-y: auto;
+    list-style: none;
+    margin: 0;
+    padding: 0;
   }
 
-  .dropdown-link {
-    padding: 11px 14px;
+  .mobile-nav-link {
+    width: 100%;
+    min-width: 0;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: rgba(255, 249, 239, 0.64);
+    border: 1px solid rgba(214, 206, 195, 0.66);
+    box-sizing: border-box;
+  }
+
+  .mobile-nav-link:hover {
+    background: rgba(92, 107, 95, 0.06);
   }
 }
 

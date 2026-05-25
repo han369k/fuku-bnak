@@ -188,7 +188,7 @@ onMounted(() => {
 })
 </script>
 <template>
-  <div class="p-6">
+  <div class="p-6 admin-card-txn-page">
     <!-- Title -->
     <div class="mb-6">
       <h2 class="text-2xl font-semibold">信用卡交易管理</h2>
@@ -230,12 +230,13 @@ onMounted(() => {
       </a-button>
     </div>
     <!-- Table -->
-    <a-card>
+    <a-card class="txn-table-card">
       <a-table
         :columns="columns"
         :data-source="transactions"
         :loading="loading"
         :pagination="pagination"
+        :scroll="{ x: 1280 }"
         row-key="txnId"
         @change="handleTableChange"
       >
@@ -292,12 +293,58 @@ onMounted(() => {
     </a-card>
   </div>
 </template>
-<style>
+<style scoped>
 .action-bar {
   display: flex;
   gap: 12px;
   margin-bottom: 16px;
   align-items: center;
   flex-wrap: wrap;
+}
+
+.admin-card-txn-page {
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+.txn-table-card {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.txn-table-card :deep(.ant-card-body) {
+  overflow-x: auto;
+}
+
+.txn-table-card :deep(.ant-table) {
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .admin-card-txn-page {
+    padding: 20px 16px;
+  }
+
+  .action-bar {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .action-bar :deep(.ant-input-affix-wrapper),
+  .action-bar :deep(.ant-picker),
+  .action-bar :deep(.ant-select),
+  .action-bar :deep(.ant-btn) {
+    width: 100% !important;
+  }
+
+  .txn-table-card :deep(.ant-card-body) {
+    padding: 14px;
+  }
+
+  .txn-table-card :deep(.ant-table-wrapper) {
+    max-width: 100%;
+    overflow-x: auto;
+  }
 }
 </style>

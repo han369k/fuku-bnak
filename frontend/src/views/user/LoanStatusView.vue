@@ -278,7 +278,7 @@
                       }}
                       <input
                         type="file"
-                        accept=".jpg,.jpeg,.png,.pdf"
+                        accept=".jpg,.jpeg,.png,.webp,.pdf"
                         style="display:none"
                         @change="onFileChange"
                       />

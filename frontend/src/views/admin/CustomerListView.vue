@@ -495,7 +495,7 @@
                 選擇檔案
                 <input
                   type="file"
-                  accept="image/jpeg,image/png"
+                  accept="image/jpeg,image/png,image/webp"
                   @change="handleDocumentFile(doc.field, $event)"
                 />
               </label>

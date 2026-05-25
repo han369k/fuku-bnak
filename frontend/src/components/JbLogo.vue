@@ -7,7 +7,7 @@
     @click.prevent="clickable && $emit('navigate')"
   >
     <img
-      src="/logo.png"
+      src="/logo.webp"
       alt="福庫銀行 Logo"
       class="jb-logo-img"
       draggable="false"

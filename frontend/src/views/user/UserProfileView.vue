@@ -33,7 +33,7 @@
             <div class="avatar-section">
               <button type="button" class="avatar-wrapper" @click="triggerUpload" aria-label="更換大頭照">
                 <img v-if="avatarSrc" :src="avatarSrc" class="avatar-img" alt="使用者大頭照" />
-                <img v-else src="/default_photo.png" class="avatar-img avatar-fallback-img" alt="預設大頭照" />
+                <img v-else src="/default_photo.webp" class="avatar-img avatar-fallback-img" alt="預設大頭照" />
                 <span class="avatar-overlay" aria-hidden="true">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>

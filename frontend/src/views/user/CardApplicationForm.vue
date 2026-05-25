@@ -149,7 +149,12 @@ function getImageUrl(path) {
     return imagePath
   }
 
-  return `${BASE_URL}${imagePath.startsWith('/') ? '' : '/'}${imagePath}`
+  const base = BASE_URL || ''
+  const normalizedPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`
+
+  if (!base) return normalizedPath
+
+  return `${base.replace(/\/+$/, '')}${normalizedPath}`
 }
 
 function getProofImageSrc(file) {

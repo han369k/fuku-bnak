@@ -854,7 +854,7 @@ function isBusinessAccountLabel(value) {
   border-radius: 8px;
   background:
     linear-gradient(180deg, rgba(255, 250, 243, 0.95), rgba(248, 244, 236, 0.9)),
-    url('/washi-texture.png');
+    url('/washi-texture.webp');
   background-size: auto, 260px 260px;
   box-shadow: 0 6px 16px rgba(63, 74, 66, 0.05);
 }

@@ -33,7 +33,7 @@
         </button>
         <div class="logo-container">
           <img
-            src="/logo.png"
+            src="/logo.webp"
             alt="JavaBank"
             class="logo-img"
             @click="goAdminRoute('admin-home')"

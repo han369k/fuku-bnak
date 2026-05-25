@@ -35,7 +35,14 @@ const fetchCards = async () => {
 
 const getImageUrl = (url) => {
   if (!url) return ''
-  return url.startsWith('http') ? url : `${BASE_URL}/${url}`
+  if (url.startsWith('http') || url.startsWith('blob:') || url.startsWith('data:')) return url
+
+  const base = BASE_URL || ''
+  const path = url.startsWith('/') ? url : `/${url}`
+
+  if (!base) return path
+
+  return `${base.replace(/\/+$/, '')}${path}`
 }
 const handleActivateCard = async (cardId) => {
   try {
@@ -117,7 +124,13 @@ onMounted(() => {
         <!-- 信用卡 -->
         <div class="credit-card">
           <!-- 卡片背景 -->
-          <img class="card-bg" :src="getImageUrl(card.cardType?.cardImageUrl)" alt="" />
+          <img
+            class="card-bg"
+            :src="getImageUrl(card.cardType?.cardImageUrl)"
+            alt=""
+            loading="lazy"
+            decoding="async"
+          />
 
           <!-- 黑色遮罩 -->
           <div class="card-overlay"></div>
