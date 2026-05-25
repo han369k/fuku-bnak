@@ -623,7 +623,7 @@ onMounted(async () => {
   overflow: hidden;
   background:
     linear-gradient(180deg, rgba(255, 249, 239, 0.86), rgba(249, 244, 235, 0.72)),
-    url('/washi-texture.png');
+    url('/washi-texture.webp');
   background-size:
     auto,
     300px 300px;

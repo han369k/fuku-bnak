@@ -224,6 +224,8 @@ onMounted(() => {
           <img
             :src="getImageUrl(record.cardType?.cardImageUrl)"
             style="height: 40px; border-radius: 4px"
+            loading="lazy"
+            decoding="async"
           />
         </template>
         <!-- 信用額度 -->

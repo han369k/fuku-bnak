@@ -682,7 +682,7 @@ onMounted(() => {
   border-radius: 8px;
   background:
     linear-gradient(180deg, rgba(255, 249, 239, 0.92), rgba(249, 244, 235, 0.82)),
-    url('/washi-texture.png');
+    url('/washi-texture.webp');
   background-size: auto, 260px 260px;
   box-shadow: 0 10px 28px rgba(63, 74, 66, 0.08);
 }

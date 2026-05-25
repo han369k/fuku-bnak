@@ -124,7 +124,13 @@ onMounted(() => {
         <!-- 信用卡 -->
         <div class="credit-card">
           <!-- 卡片背景 -->
-          <img class="card-bg" :src="getImageUrl(card.cardType?.cardImageUrl)" alt="" />
+          <img
+            class="card-bg"
+            :src="getImageUrl(card.cardType?.cardImageUrl)"
+            alt=""
+            loading="lazy"
+            decoding="async"
+          />
 
           <!-- 黑色遮罩 -->
           <div class="card-overlay"></div>

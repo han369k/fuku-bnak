@@ -87,7 +87,7 @@
       <section v-else-if="selectedAccount" class="passbook-cover-container" ref="coverWrapperRef" :style="{ height: `${430 * coverScale}px` }">
         <div class="passbook-cover" aria-label="電子存摺封面" :style="{ transform: `scale(${coverScale})` }">
           <div class="brand-block">
-            <img src="/logo.png" alt="福庫銀行 Logo" class="brand-mark" />
+            <img src="/logo.webp" alt="福庫銀行 Logo" class="brand-mark" />
             <div>
               <div class="brand-title">福庫銀行</div>
               <div class="brand-subtitle">E-PASSBOOK</div>
@@ -133,7 +133,7 @@
         </div>
 
         <p class="cover-note">本電子存摺僅供參考，實際帳戶資訊以本行系統資料為準。</p>
-        <img src="/fukubank-seal.png" alt="" class="seal-mark" aria-hidden="true" />
+        <img src="/fukubank-seal.webp" alt="" class="seal-mark" aria-hidden="true" />
         </div>
       </section>
     </div>
@@ -424,7 +424,7 @@ async function copyAccount() {
   color: var(--text-primary);
   background:
     linear-gradient(180deg, rgba(255, 249, 239, 0.92), rgba(249, 244, 235, 0.78)),
-    url('/washi-texture.png');
+    url('/washi-texture.webp');
   background-size: auto, 240px 240px;
   border: 1px solid rgba(198, 188, 174, 0.92);
   border-radius: 8px;
@@ -457,7 +457,7 @@ async function copyAccount() {
   color: var(--text-secondary);
   background:
     linear-gradient(180deg, rgba(255, 249, 239, 0.9), rgba(249, 244, 235, 0.76)),
-    url('/washi-texture.png');
+    url('/washi-texture.webp');
   background-size: auto, 240px 240px;
   border: 1px solid rgba(198, 188, 174, 0.92);
   border-radius: 8px;
@@ -528,7 +528,7 @@ async function copyAccount() {
   text-align: center;
   background:
     linear-gradient(145deg, rgba(255, 249, 239, 0.78), rgba(249, 244, 235, 0.66)),
-    url('/washi-texture.png');
+    url('/washi-texture.webp');
   background-size: auto, 280px 280px;
   border: 1px solid rgba(214, 206, 195, 0.9);
   border-radius: 18px;
@@ -659,7 +659,7 @@ async function copyAccount() {
   padding: 52px 56px 44px;
   background:
     linear-gradient(120deg, rgba(255, 249, 239, 0.94), rgba(249, 244, 235, 0.86)),
-    url('/washi-texture.png');
+    url('/washi-texture.webp');
   background-size: auto, 320px 320px;
   border: 1px solid rgba(214, 206, 195, 0.92);
   border-radius: 16px;

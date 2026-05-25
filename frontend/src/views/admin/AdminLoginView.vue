@@ -2,7 +2,7 @@
   <div class="login-wrapper">
     <div class="login-card">
       <div class="login-header">
-        <img src="/logo.png" alt="JavaBank" class="login-logo" />
+        <img src="/logo.webp" alt="JavaBank" class="login-logo" />
         <p class="login-subtitle">後台管理系統</p>
       </div>
 

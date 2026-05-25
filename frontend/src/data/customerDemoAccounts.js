@@ -17,10 +17,10 @@ export const WANG_XIAOMING_DEMO_ACCOUNT = {
 }
 
 export const WANG_XIAOMING_DEMO_DOCUMENTS = {
-  idFront: '/demo-documents/wang-xiaoming-id-card-front.png',
-  idBack: '/demo-documents/wang-xiaoming-id-card-back.png',
-  secondId: '/demo-documents/wang-xiaoming-health-card.png',
-  profilePhoto: '/demo-documents/wang-xiaoming-profile-photo.png',
+  idFront: '/demo-documents/wang-xiaoming-id-card-front.webp',
+  idBack: '/demo-documents/wang-xiaoming-id-card-back.webp',
+  secondId: '/demo-documents/wang-xiaoming-health-card.webp',
+  profilePhoto: '/demo-documents/wang-xiaoming-profile-photo.webp',
 }
 
 export const CUSTOMER_DEMO_ACCOUNTS = [

@@ -217,6 +217,8 @@ onMounted(() => {
             :width="100"
             :src="getImageUrl(record.cardImageUrl)"
             :preview="true"
+            loading="lazy"
+            decoding="async"
           />
           <span v-else>無圖片</span>
         </template>

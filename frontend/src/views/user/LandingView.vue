@@ -271,7 +271,7 @@ function updateIntroMode() {
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background: url('/washi-texture.png') repeat;
+  background: url('/washi-texture.webp') repeat;
   opacity: 0.04;
 }
 

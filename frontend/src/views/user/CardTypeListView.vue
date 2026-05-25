@@ -307,6 +307,8 @@ onBeforeUnmount(() => {
                 class="card-image"
                 :src="getImageUrl(card.cardImageUrl)"
                 :alt="card.cardTypeName"
+                loading="lazy"
+                decoding="async"
               />
 
               <div v-else class="card-image-placeholder" aria-hidden="true">

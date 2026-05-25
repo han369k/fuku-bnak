@@ -88,7 +88,7 @@
                 @click="$router.push({ name: 'user-profile' })"
               >
                 <img v-if="avatarSrc" :src="avatarSrc" class="user-avatar" alt="使用者大頭照" />
-                <img v-else src="/default_photo.png" class="user-avatar" alt="預設大頭照" />
+                <img v-else src="/default_photo.webp" class="user-avatar" alt="預設大頭照" />
               </button>
               <span class="user-name">{{ customerName }}</span>
               <button class="logout-btn" @click="handleLogout">登出</button>
