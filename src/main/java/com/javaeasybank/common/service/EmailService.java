@@ -126,7 +126,8 @@ public class EmailService {
             BigDecimal totalAmount,
             BigDecimal minimumPayment,
             LocalDate dueDate,
-            Integer billId) {
+            String filename,
+            byte[] attachmentBytes) {
 
         Context context = new Context();
         context.setVariable("customerName", customerName);
@@ -134,10 +135,30 @@ public class EmailService {
         context.setVariable("totalAmount", totalAmount);
         context.setVariable("minimumPayment", minimumPayment);
         context.setVariable("dueDate", dueDate);
-        context.setVariable("billId", billId);
 
         String html = templateEngine.process("mail/card-bill-statement", context);
-        sendEmail(to, "Fuku Bank - 信用卡月結帳單通知", html);
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(fromEmail, "Fuku Bank-福庫銀行");
+            helper.setTo(to);
+            helper.setSubject("福庫銀行 Fuku-Bank - 信用卡月結帳單");
+            helper.setText(html, true);
+
+            // 加入內嵌圖片 (Content-ID) 解決 Gmail 破圖問題
+            helper.addInline("logoImage", new org.springframework.core.io.ClassPathResource("static/images/logo.webp"));
+            helper.addInline("sealImage", new org.springframework.core.io.ClassPathResource("static/images/fukubank-seal.webp"));
+
+            helper.addAttachment(
+                    filename,
+                    new ByteArrayResource(attachmentBytes)
+            );
+
+            mailSender.send(message);
+            log.info("Email sent to {}: 福庫銀行 Fuku-Bank - 信用卡月結帳單", to);
+        } catch (Exception e) {
+            log.error("Failed to send email with attachment to {}: {}", to, e.getMessage());
+        }
     }
 
     public void sendLoanDocumentRequiredNotification(
