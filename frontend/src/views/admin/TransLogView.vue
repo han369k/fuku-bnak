@@ -621,8 +621,6 @@ async function handleClear() {
   currentPage.value = 1
   await fetchData()
 }
-
-// === 匯出功能 ===
 function handleExport({ key }) {
   if (key === 'excel') exportExcel()
   else if (key === 'json') exportJson()
@@ -677,8 +675,6 @@ function exportXml() {
   saveAs(blob, '交易紀錄.xml')
   message.success('XML 匯出成功')
 }
-
-// === 沖正功能 ===
 const showReversalModal = ref(false)
 const reversalLoading = ref(false)
 const reversalResult = ref(null)
@@ -854,7 +850,7 @@ function isBusinessAccountLabel(value) {
   border-radius: 8px;
   background:
     linear-gradient(180deg, rgba(255, 250, 243, 0.95), rgba(248, 244, 236, 0.9)),
-    url('/washi-texture.png');
+    url('/washi-texture.webp');
   background-size: auto, 260px 260px;
   box-shadow: 0 6px 16px rgba(63, 74, 66, 0.05);
 }

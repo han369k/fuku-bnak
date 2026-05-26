@@ -300,8 +300,7 @@
                 <a-button
                   type="link"
                   class="action-btn-link"
-                  :href="getFileUrl(doc.fileUrl)"
-                  target="_blank"
+                  @click="openPreview(doc)"
                   v-if="doc.fileUrl"
                 >
                   查看文件
@@ -491,8 +490,7 @@
             <a-button
               type="link"
               class="action-btn-link"
-              :href="getFileUrl(doc.fileUrl)"
-              target="_blank"
+              @click="openPreview(doc)"
               v-if="doc.fileUrl"
             >
               查看文件
@@ -531,6 +529,35 @@
         </a-form-item>
       </a-form>
     </a-modal>
+
+    <!-- 檔案預覽 Modal -->
+    <a-modal
+      v-model:open="previewVisible"
+      :title="previewTitle"
+      :footer="null"
+      width="800px"
+      style="top: 50px"
+    >
+      <div style="text-align: center; max-height: 70vh; overflow-y: auto;">
+        <img
+          v-if="isImageUrl(previewUrl)"
+          :src="previewUrl"
+          style="max-width: 100%; object-fit: contain;"
+          alt="圖片預覽"
+        />
+        <iframe
+          v-else-if="isPdfUrl(previewUrl)"
+          :src="previewUrl"
+          style="width: 100%; height: 60vh; border: none;"
+        ></iframe>
+        <div v-else style="padding: 40px 0;">
+          <p>此檔案格式不支援線上預覽，請下載後查看：</p>
+          <a-button type="primary" :href="previewUrl" download target="_blank">
+            下載檔案
+          </a-button>
+        </div>
+      </div>
+    </a-modal>
   </div>
 </template>
 
@@ -553,6 +580,28 @@ const modalVisible = ref(false)
 const drawerVisible = ref(false)
 const currentTask = ref(null)
 const drawerTask = ref(null)
+
+const previewVisible = ref(false)
+const previewUrl = ref('')
+const previewTitle = ref('')
+
+const openPreview = (doc) => {
+  previewUrl.value = getFileUrl(doc.fileUrl)
+  previewTitle.value = doc.originalName || doc.documentId || '檔案預覽'
+  previewVisible.value = true
+}
+
+const isImageUrl = (url) => {
+  if (!url) return false
+  const ext = url.split('.').pop()?.toLowerCase()
+  return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext) || url.startsWith('data:image')
+}
+
+const isPdfUrl = (url) => {
+  if (!url) return false
+  const ext = url.split('.').pop()?.toLowerCase()
+  return ext === 'pdf'
+}
 
 const authStore = useAuthStore()
 const currentUser = computed(() => authStore.user)
@@ -806,8 +855,6 @@ const currentTrigger = computed(() => {
     return null
   }
 })
-
-// 2. ✨ 新增：專門用來安全解析後端 metaData 欄位的屬性
 const drawerMeta = computed(() => {
   if (!drawerTask.value?.metaData) return null
   try {
@@ -887,8 +934,7 @@ function isImage(url) {
 .page-container {
   display: flex;
   flex-direction: column;
-  gap: 16px; /* 💡 保持一致的留白 */
-}
+  gap: 16px; }
 
 /* ── 頁首：標題 + 篩選列 同一列，左右對齊 ── */
 .page-header {
@@ -900,7 +946,6 @@ function isImage(url) {
   margin-bottom: 8px;
 }
 
-/* 💡 調整：放大頁面主標題到 24px 完全同步 */
 .page-title {
   margin: 0;
   font-size: 24px;
@@ -920,8 +965,7 @@ function isImage(url) {
   background: #ffffff;
   border: 1px solid #f0f0f0;
   border-radius: 8px;
-  padding: 18px 32px; /* 💡 加寬襯墊更舒適 */
-  margin-bottom: 8px;
+  padding: 18px 32px; margin-bottom: 8px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 }
 
@@ -940,7 +984,6 @@ function isImage(url) {
   margin: 0 12px;
 }
 
-/* 💡 調整：統計卡片字級調整放大 */
 .stat-label {
   font-size: 14px;
   color: #8c8c8c;
@@ -994,7 +1037,6 @@ function isImage(url) {
   background: #fafafa;
 }
 
-/* 💡 控制頂部篩選下拉選單與按鈕的字體 */
 :deep(.ant-select) {
   font-size: 16px !important;
 }
@@ -1013,7 +1055,6 @@ function isImage(url) {
   color: #595959;
 }
 
-/* 💡 調整：表格內部與卡片內的 Tag 統一文字大小 */
 .table-badge {
   font-size: 15px !important;
   padding: 2px 8px !important;
@@ -1090,7 +1131,6 @@ function isImage(url) {
   font-size: 16px !important;
 }
 
-/* ── 💡 調整：沉穩、專業金融質感的風險藥丸樣式 ── */
 .status-tag {
   display: inline-flex;
   align-items: center;

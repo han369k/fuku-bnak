@@ -7,13 +7,15 @@ import { createCardApplication, getMyApplications } from '@/api/userCardApplicat
 import { addMyApplicationDocument } from '@/api/userCardAppDoc'
 const cardTypes = ref([])
 const loading = ref(false)
+const loadError = ref('')
+let cardTypeRequestId = 0
 
-const appliedCardTypeIds = ref([]) // 已申辦的信用卡別 ID 列表
+const appliedCardTypeIds = ref([])
 
 const showApplyModal = ref(false)
 const selectedCards = ref([])
 
-const hasCardTypes = computed(() => cardTypes.value.length > 0)
+const hasCardTypes = computed(() => Array.isArray(cardTypes.value) && cardTypes.value.length > 0)
 
 const proofFiles = ref([])
 const previewVisible = ref(false)
@@ -181,18 +183,28 @@ async function handleProofImagesChange(event) {
 }
 
 async function fetchCardTypes() {
+  const requestId = ++cardTypeRequestId
   loading.value = true
+  loadError.value = ''
 
   try {
-    cardTypes.value = await getUserCardTypes()
+    const data = await getUserCardTypes()
+
+    if (requestId !== cardTypeRequestId) return
+
+    cardTypes.value = data
   } catch (error) {
-    message.error(error.response?.data?.message || '讀取信用卡別失敗')
+    if (requestId !== cardTypeRequestId) return
+
+    loadError.value = error.response?.data?.message || error.message || '讀取信用卡別失敗'
+    message.error(loadError.value)
   } finally {
-    loading.value = false
+    if (requestId === cardTypeRequestId) {
+      loading.value = false
+    }
   }
 }
 
-//關閉申辦模態框
 function closeApplyModal() {
   revokeProofPreviewUrls()
   proofFiles.value = []
@@ -203,8 +215,13 @@ function closeApplyModal() {
 async function fetchMyApplications() {
   try {
     const data = await getMyApplications()
+    const applications = Array.isArray(data) ? data : data?.content || []
+    const ids = applications.flatMap((app) => [
+      app.cardTypeId,
+      ...(Array.isArray(app.items) ? app.items.map((item) => item.cardTypeId) : []),
+    ])
 
-    appliedCardTypeIds.value = data.content.map((app) => app.cardTypeId)
+    appliedCardTypeIds.value = [...new Set(ids.filter((id) => id !== null && id !== undefined))]
   } catch (error) {
     console.error(error)
   }
@@ -213,6 +230,18 @@ async function fetchMyApplications() {
 async function applyCardType() {
   if (selectedCards.value.length === 0) {
     message.warning('請先選擇卡片')
+    return
+  }
+
+  const duplicateCards = selectedCards.value.filter((card) =>
+    appliedCardTypeIds.value.includes(card.cardTypeId),
+  )
+
+  if (duplicateCards.length > 0) {
+    message.warning(`${duplicateCards.map((card) => card.cardTypeName).join('、')} 已申辦`)
+    selectedCards.value = selectedCards.value.filter(
+      (card) => !appliedCardTypeIds.value.includes(card.cardTypeId),
+    )
     return
   }
 
@@ -307,6 +336,8 @@ onBeforeUnmount(() => {
                 class="card-image"
                 :src="getImageUrl(card.cardImageUrl)"
                 :alt="card.cardTypeName"
+                loading="lazy"
+                decoding="async"
               />
 
               <div v-else class="card-image-placeholder" aria-hidden="true">
@@ -390,6 +421,13 @@ onBeforeUnmount(() => {
         </div>
       </div>
     </template>
+
+    <div v-else-if="loadError" class="state-panel">
+      <span>{{ loadError }}</span>
+      <button class="jb-btn jb-btn-secondary jb-btn-sm" type="button" @click="fetchCardTypes">
+        重新讀取
+      </button>
+    </div>
 
     <div v-else class="state-panel">
       <span>目前沒有可申辦的信用卡別。</span>

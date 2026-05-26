@@ -226,7 +226,7 @@
                   >
                     <span class="doc-icon" v-html="docIcon(d.originalName)"></span>
                     <div class="doc-info">
-                      <a :href="d.fileUrl" target="_blank" class="doc-name">
+                      <a href="javascript:void(0)" @click="openPreview(d)" class="doc-name">
                         {{ d.originalName || '（未命名）' }}
                       </a>
                       <span class="doc-meta">
@@ -278,7 +278,7 @@
                       }}
                       <input
                         type="file"
-                        accept=".jpg,.jpeg,.png,.pdf"
+                        accept=".jpg,.jpeg,.png,.webp,.pdf"
                         style="display:none"
                         @change="onFileChange"
                       />
@@ -345,6 +345,28 @@
       </div><!-- end outer v-else -->
 
     </div>
+
+    <!-- ── Preview Modal Overlay ── -->
+    <transition name="modal-fade">
+      <div v-if="previewVisible" class="modal-overlay" @click.self="closePreview" style="position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 24px;">
+        <div class="modal" style="background: #fff; border-radius: 16px; width: 100%; max-width: 800px; max-height: 85vh; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,0.18); overflow: hidden;">
+          <div class="modal-header" style="display: flex; align-items: center; justify-content: space-between; padding: 20px 24px 16px; border-bottom: 1px solid #eee; flex-shrink: 0;">
+            <div class="modal-title" style="font-size: 18px; font-weight: 700; color: #1a1a1a;">{{ previewTitle }}</div>
+            <button class="close-btn" @click="closePreview" style="background: none; border: none; color: #aaa; font-size: 18px; cursor: pointer; padding: 2px 6px; border-radius: 6px; transition: background 0.15s;">
+              <i class="fa-solid fa-x"></i>
+            </button>
+          </div>
+          <div class="modal-body" style="flex: 1; overflow-y: auto; padding: 20px 24px; text-align: center; background: #fafafa;">
+            <img v-if="isImageUrl(previewUrl)" :src="previewUrl" style="max-width: 100%; max-height: 70vh; object-fit: contain;" />
+            <iframe v-else-if="isPdfUrl(previewUrl)" :src="previewUrl" style="width: 100%; height: 70vh; border: none;"></iframe>
+            <div v-else style="padding: 40px 0;">
+              <p>此檔案格式不支援線上預覽，請下載後查看：</p>
+              <a :href="previewUrl" :download="previewTitle" style="padding: 8px 22px; background: #5C6B5F; color: #fff; border: none; border-radius: 9px; font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block;">下載檔案</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -355,16 +377,38 @@ import api from '@/api/axios'
 const applications = ref([])
 const loading = ref(false)
 const error = ref('')
-
-// ── 分頁 ──
 const PAGE_SIZE_OPTIONS = [5, 10, 20]
 const pageSize = ref(5)
 const currentPage = ref(1)
-
-// ── 補件面板狀態 ──
 const docPanelId = ref(null)   // 目前展開的申請 ID
 const docs = ref({})     // { [applicationId]: LoanDocumentResponseDTO[] }
 const docLoading = ref(false)
+
+const previewVisible = ref(false)
+const previewUrl = ref('')
+const previewTitle = ref('')
+
+function openPreview(doc) {
+  previewUrl.value = doc.fileUrl
+  previewTitle.value = doc.originalName || '檔案預覽'
+  previewVisible.value = true
+}
+
+function closePreview() {
+  previewVisible.value = false
+}
+
+function isImageUrl(url) {
+  if (!url) return false
+  const ext = url.split('.').pop()?.toLowerCase()
+  return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext) || url.startsWith('data:image')
+}
+
+function isPdfUrl(url) {
+  if (!url) return false
+  const ext = url.split('.').pop()?.toLowerCase()
+  return ext === 'pdf'
+}
 
 const uploadForm = ref({documentType: '', file: null})
 const uploading = ref(false)
@@ -372,8 +416,6 @@ const uploadError = ref('')
 const uploadSuccess = ref(false)
 const deletingId = ref(null)
 const submittingAppId = ref(null)
-
-// ── 貸款種類篩選 ──
 const selectedLoanType = ref('')
 const selectedStatus = ref('')
 
@@ -388,8 +430,6 @@ const STATUS_ORDER = [
   'REJECTED',
   'CANCELLED',
 ]
-
-// ── Computed: 只列出申請中有出現的貸款種類 ──
 const availableLoanTypes = computed(() => {
   const seen = new Set()
   return applications.value
@@ -404,8 +444,6 @@ const availableStatuses = computed(() => {
     .filter(s => existing.has(s))
     .map(s => ({ key: s, label: STATUS_MAP[s]?.label || s }))
 })
-
-// ── Computed: 依最近活動時間排序（新改動在上） ──
 function lastActivity(app) {
   const times = [app.updateTime, app.latestContactTime, app.documentsSubmittedAt, app.createTime]
     .filter(Boolean)
@@ -415,8 +453,6 @@ function lastActivity(app) {
 const sortedApplications = computed(() =>
   [...applications.value].sort((a, b) => lastActivity(b).localeCompare(lastActivity(a)))
 )
-
-// ── Computed: 套用類型篩選 ──
 const filteredApplications = computed(() => {
   return sortedApplications.value.filter(a => {
     const matchType = !selectedLoanType.value || a.applyType === selectedLoanType.value
@@ -448,8 +484,6 @@ function clearFilters() {
   selectedStatus.value = ''
   currentPage.value = 1
 }
-
-// ── Computed: 分頁 ──
 const totalPages = computed(() => Math.max(1, Math.ceil(filteredApplications.value.length / pageSize.value)))
 const pageStart = computed(() =>
   filteredApplications.value.length === 0 ? 0 : (currentPage.value - 1) * pageSize.value + 1
@@ -472,8 +506,6 @@ function goToPage(page) {
   if (page < 1 || page > totalPages.value) return
   currentPage.value = page
 }
-
-// ── 文件類型對照 ──
 const DOC_TYPE_MAP = {
   ID_CARD: '身分證',
   INCOME_CERT: '收入證明',
@@ -483,8 +515,6 @@ const DOC_TYPE_MAP = {
   TITLE_DEED: '所有權狀',
   OTHER: '其他',
 }
-
-// ── 貸款類型 ──
 const LOAN_TYPE_MAP = {
   PERSONAL: '個人信貸',
   CAR: '汽車貸款',
@@ -494,8 +524,6 @@ const LOAN_TYPE_MAP = {
   HOUSE: '房屋貸款',
   LAND: '土地貸款',
 }
-
-// ── 申請狀態 ──
 const STATUS_MAP = {
   PENDING_CONTACT: {label: '新申請（待聯繫）', cls: 'st-pending'},
   IN_CONTACT: {label: '聯繫中', cls: 'st-contact'},
@@ -507,8 +535,6 @@ const STATUS_MAP = {
   DISBURSED: {label: '已撥款', cls: 'st-disbursed'},
   CLOSED: {label: '已結案', cls: 'st-closed'},
 }
-
-// ── 聯繫狀態：標籤 / 圖示 / 說明文字 / 顏色 ──
 const CONTACT_MAP = {
   NOT_CONTACTED: {
     label: '尚未聯繫',
@@ -581,8 +607,6 @@ function formatTime(t) {
     hour: '2-digit', minute: '2-digit',
   })
 }
-
-// ── API ──
 async function load() {
   loading.value = true
   error.value = ''
@@ -598,8 +622,6 @@ async function load() {
     loading.value = false
   }
 }
-
-// ── 補件面板邏輯 ──
 function docCount(appId) {
   return docs.value[appId]?.length || 0
 }

@@ -17,7 +17,6 @@
 
     <!-- ── 篩選列 ── -->
     <div class="filter-bar">
-      <!-- 帳戶狀態 pills -->
       <div class="pills-group">
         <button
           v-for="s in STATUS_OPTIONS"
@@ -34,14 +33,13 @@
         </button>
       </div>
 
-      <!-- 貸款類型多選下拉 -->
       <div class="type-dropdown-wrap" @click.stop>
         <button
           class="type-dropdown-trigger"
           :class="{ open: typeDropdownOpen, active: selectedTypes.length > 0 }"
           @click="typeDropdownOpen = !typeDropdownOpen"
         >
-          <span class="trigger-icon">🏷</span>
+          <span class="trigger-icon"><i class="fa-solid fa-filter"></i></span>
           <span v-if="selectedTypes.length === 0">貸款類型</span>
           <span v-else-if="selectedTypes.length === 1">{{ LOAN_TYPE_NAME[selectedTypes[0]] }}</span>
           <span v-else>已選 {{ selectedTypes.length }} 種</span>
@@ -71,13 +69,29 @@
         </transition>
       </div>
 
-      <!-- 結果摘要 -->
+      <div class="name-search-wrap">
+        <span class="name-search-icon">⌕</span>
+        <input
+          class="name-search-input"
+          type="text"
+          placeholder="搜尋申請人姓名…"
+          v-model="nameKeyword"
+          @input="currentPage = 1"
+        />
+        <button
+          v-if="nameKeyword"
+          class="name-search-clear"
+          @click="nameKeyword = ''; currentPage = 1"
+          title="清除"
+        >×</button>
+      </div>
+
       <div class="filter-meta" v-if="!loading">
+        <span class="status-dot" :class="STATUS_OPTIONS.find(s => s.value === currentStatus)?.dot"></span>
         共 <strong>{{ filteredAccounts.length }}</strong> 筆
       </div>
     </div>
 
-    <!-- ── 主體 ── -->
     <div class="table-card" @click="typeDropdownOpen = false">
 
       <!-- 載入中 -->
@@ -88,14 +102,14 @@
 
       <!-- 錯誤 -->
       <div v-else-if="error" class="state-block state-error">
-        <span class="state-icon">⚠️</span>
+        <span class="state-icon"><i class="fa-solid fa-triangle-exclamation"></i></span>
         <div class="state-text">{{ error }}</div>
         <button class="btn btn-ghost btn-sm" @click="fetchAccounts">重新載入</button>
       </div>
 
       <!-- 空狀態 -->
       <div v-else-if="filteredAccounts.length === 0" class="state-block">
-        <span class="state-icon">📂</span>
+        <span class="state-icon"><i class="fa-solid fa-inbox"></i></span>
         <div class="state-text">目前沒有符合條件的帳戶</div>
       </div>
 
@@ -186,7 +200,7 @@
                 </td>
                 <td class="text-center">
                   <button class="schedule-btn" @click.stop="openRepaymentModal(acc)">
-                    📋 查看
+                    ⌕ 查看
                   </button>
                 </td>
               </tr>
@@ -327,10 +341,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import api from '@/api/axios'
-
-// ── 常數 ──
 const LOAN_TYPE_NAME = {
   PERSONAL: '個人信貸',
   CAR:      '汽車貸款',
@@ -360,11 +372,10 @@ const REPAYMENT_STATUS = {
   PAID:      { label: '已繳', cls: 'rs-paid'      },
   OVERDUE:   { label: '逾期', cls: 'rs-overdue'   },
 }
-
-// ── 狀態 ──
 const accounts        = ref([])
 const loading         = ref(false)
 const error           = ref('')
+const nameKeyword     = ref('')
 const currentStatus   = ref(null)
 const selectedTypes   = ref([])
 const typeDropdownOpen = ref(false)
@@ -380,8 +391,6 @@ const sortOrder       = ref('desc') // 'asc' 或 'desc'
 // Modal 狀態
 const showModal    = ref(false)
 const modalAccount = ref(null)
-
-// ── 篩選 ──
 const filteredAccounts = computed(() => {
   let list = accounts.value
   if (currentStatus.value) {
@@ -389,6 +398,10 @@ const filteredAccounts = computed(() => {
   }
   if (selectedTypes.value.length > 0) {
     list = list.filter(a => selectedTypes.value.includes(a.applyType))
+  }
+  const keyword = nameKeyword.value.trim().toLowerCase()
+  if (keyword) {
+    list = list.filter(a => String(a.memberName || '').toLowerCase().includes(keyword))
   }
   return list
 })
@@ -437,13 +450,15 @@ const pageList = computed(() => {
   pages.push(total)
   return pages
 })
-
-// ── 操作 ──
 function setStatus(val) {
   currentStatus.value = val
   currentPage.value   = 1
   repayments.value    = []
 }
+
+watch(nameKeyword, () => {
+  currentPage.value = 1
+})
 
 function setSort(key) {
   if (sortKey.value === key) {
@@ -490,8 +505,6 @@ function closeModal() {
   repayments.value   = []
   document.body.style.overflow = ''
 }
-
-// ── helpers ──
 function statusLabel(st) { return ACCOUNT_STATUS[st]?.label || st }
 function statusClass(st)  { return ACCOUNT_STATUS[st]?.cls   || '' }
 function repStatusLabel(st) { return REPAYMENT_STATUS[st]?.label || st }
@@ -571,6 +584,80 @@ onMounted(fetchAccounts)
   gap: 12px;
   flex-wrap: wrap;
   margin-bottom: 16px;
+}
+
+.name-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+}
+
+.name-search-icon {
+  position: absolute;
+  left: 9px;
+  font-size: 12px;
+  pointer-events: none;
+  opacity: 0.55;
+}
+
+.name-search-input {
+  appearance: none;
+  background: var(--surface);
+  border: 1px solid var(--border-2);
+  border-radius: 8px;
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 14px;
+  padding: 6px 28px 6px 28px;
+  outline: none;
+  width: 180px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.name-search-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+.name-search-input::placeholder {
+  color: var(--muted);
+}
+
+.name-search-clear {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--muted);
+  padding: 0;
+  line-height: 1;
+}
+
+.name-search-clear:hover {
+  color: var(--accent);
+}
+
+.filter-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--muted-2);
+  white-space: nowrap;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.filter-meta strong {
+  color: var(--ink);
 }
 
 .pills-group { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -702,9 +789,6 @@ onMounted(fetchAccounts)
 .idot-HOUSE    { background: #7B6B8E; }
 .idot-LAND     { background: #8E7B6B; }
 
-.filter-meta { font-size: 14px; color: var(--muted-2); margin-left: auto; }
-.filter-meta strong { color: var(--ink); }
-
 /* ── Table Card ── */
 .table-card {
   background: var(--surface);
@@ -720,6 +804,10 @@ onMounted(fetchAccounts)
   gap: 12px; padding: 60px 0; text-align: center;
 }
 .state-icon  { font-size: 36px; }
+.state-icon .fa-inbox {
+  font-size: 40px;
+  opacity: 0.4;
+}
 .state-text  { font-size: 15px; color: var(--muted-2); }
 .spin-lg { font-size: 28px; color: var(--muted); animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }

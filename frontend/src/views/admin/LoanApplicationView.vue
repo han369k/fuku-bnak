@@ -16,17 +16,17 @@
     </div>
 
     <div class="dashboard-grid">
-      <button class="metric-card" type="button" @click="setStatus('PENDING_CONTACT')">
+      <button class="metric-card" :class="{ active: showTodayOnly }" type="button" @click="setTodayFilter">
         <span class="metric-label">今日新增申請</span>
         <strong class="metric-value">{{ dashboardLoading ? '—' : dashboardStats.todayNew }}</strong>
         <span class="metric-hint">依申請建立時間統計</span>
       </button>
-      <button class="metric-card" type="button" @click="setStatus('PENDING_REVIEW')">
+      <button class="metric-card" :class="{ active: currentStatus === 'PENDING_REVIEW' && !showTodayOnly }" type="button" @click="setStatus('PENDING_REVIEW')">
         <span class="metric-label">待審核案件</span>
         <strong class="metric-value">{{ dashboardLoading ? '—' : dashboardStats.pendingReview }}</strong>
         <span class="metric-hint">狀態為審核中</span>
       </button>
-      <button class="metric-card metric-warning" type="button" @click="setStatus('RETURNED')">
+      <button class="metric-card metric-warning" :class="{ active: currentStatus === 'RETURNED' && !showTodayOnly }" type="button" @click="setStatus('RETURNED')">
         <span class="metric-label">需補件案件</span>
         <strong class="metric-value">{{ dashboardLoading ? '—' : dashboardStats.returned }}</strong>
         <span class="metric-hint">狀態為退回補件</span>
@@ -51,7 +51,7 @@
           v-for="s in STATUS_OPTIONS"
           :key="s.value"
           class="filter-pill"
-          :class="{ active: currentStatus === s.value }"
+          :class="{ active: currentStatus === s.value && !showTodayOnly }"
           @click="setStatus(s.value)"
         >
           <span class="pill-dot" :class="s.dot"></span>
@@ -100,7 +100,7 @@
               <input type="checkbox" :checked="selectedTypes.length === 0" @change="clearTypes"/>
               <span class="check-box"></span>
               <span class="item-name">全部類型</span>
-              <span class="item-count">{{ applications.length }}</span>
+              <span class="item-count">{{ baseApplications.length }}</span>
             </label>
 
             <div class="dropdown-divider"></div>
@@ -403,8 +403,6 @@ import LoanContactLogModal from './LoanContactLogModal.vue'
 import LoanReviewModal from './LoanReviewModal.vue'
 import LoanDocumentModal from './LoanDocumentModal.vue'
 import { useAuthStore } from '@/stores/auth'
-
-// ── 角色權限判斷 ──
 const authStore = useAuthStore()
 // 雙重判斷：permLevel 數字 或 roleCode 字串
 const APPROVER_ROLES = ['CFDM', 'CSDM', 'CRDM', 'CRO', 'COO', 'CISO', 'ISSA']
@@ -413,17 +411,11 @@ const canApprove = computed(() => {
   const code = authStore.user?.roleCode ?? ''
   return level >= 2 || APPROVER_ROLES.includes(code)
 })
-
-// ── Emits ──
 defineEmits([])
-
-// ── Constants ──
 const API_URL = '/api/admin/loan-applications'
 
 // ② 每頁筆數選項
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100]
-
-// ── Contact Modal state ──
 const contactModalOpen = ref(false)
 const contactModalApp = ref(null)
 
@@ -435,8 +427,6 @@ function openContactModal(app) {
 function onLogAdded() {
   fetchApplications()
 }
-
-// ── Review Modal state ──
 const reviewModalOpen = ref(false)
 const reviewModalApp = ref(null)
 
@@ -448,8 +438,6 @@ function openReviewModal(app) {
 function onReviewUpdated() {
   fetchApplications()
 }
-
-// ── Document Modal state ──
 const docModalOpen = ref(false)
 const docModalApp  = ref(null)
 
@@ -504,8 +492,6 @@ const SORT_LABEL = {
   applyPeriod: '期數', rate: '利率', applicationStatus: '申請狀態',
   progressTime: '更新時間', createTime: '申請時間',
 }
-
-// ── State ──
 const currentStatus = ref('PENDING_CONTACT')
 const applications = ref([])
 const allApplications = ref([])
@@ -513,6 +499,7 @@ const loanAccounts = ref([])
 const loading = ref(false)
 const dashboardLoading = ref(false)
 const error = ref('')
+const showTodayOnly = ref(false)
 
 // ① 排序
 const sortKey = ref('')
@@ -529,11 +516,19 @@ const typeDropdownOpen = ref(false)
 // ⑤ 姓名模糊搜尋
 const nameQuery = ref('')
 
-// ── Computed ──
+const baseApplications = computed(() => {
+  if (showTodayOnly.value) {
+    const todayStart = startOfToday()
+    const tomorrowStart = new Date(todayStart)
+    tomorrowStart.setDate(tomorrowStart.getDate() + 1)
+    return allApplications.value.filter(app => isBetween(app.createTime, todayStart, tomorrowStart))
+  }
+  return applications.value
+})
 
 /** ④ 類型篩選 ＋ ⑤ 姓名搜尋 → ① 排序 */
 const filteredApplications = computed(() => {
-  let list = applications.value
+  let list = baseApplications.value
 
   if (selectedTypes.value.length > 0)
     list = list.filter(a => selectedTypes.value.includes(a.applyType))
@@ -610,8 +605,6 @@ const pageNumbers = computed(() => {
   if (cur >= total - 3) return [1, '…', total - 4, total - 3, total - 2, total - 1, total]
   return [1, '…', cur - 1, cur, cur + 1, '…', total]
 })
-
-// ── Methods ──
 async function fetchApplications() {
   loading.value = true
   error.value = ''
@@ -622,7 +615,7 @@ async function fetchApplications() {
     })
     applications.value = res.data.success ? res.data.data : []
   } catch (e) {
-    error.value = e.response?.data?.message || '連線失敗，請確認後端服務是否啟動（GET /api/admin/loan-applications）'
+    error.value = e.response?.data?.message || '載入失敗，請稍後再試'
     applications.value = []
   } finally {
     loading.value = false
@@ -631,6 +624,9 @@ async function fetchApplications() {
 
 async function fetchDashboardData() {
   dashboardLoading.value = true
+  if (showTodayOnly.value) {
+    loading.value = true
+  }
   try {
     const statusRequests = STATUS_OPTIONS.map(s =>
       api.get(API_URL, {
@@ -657,13 +653,24 @@ async function fetchDashboardData() {
     loanAccounts.value = []
   } finally {
     dashboardLoading.value = false
+    if (showTodayOnly.value) {
+      loading.value = false
+    }
   }
 }
 
 function setStatus(status) {
+  showTodayOnly.value = false
   currentStatus.value = status
   currentPage.value = 1
   fetchApplications()
+}
+
+function setTodayFilter() {
+  showTodayOnly.value = true
+  currentStatus.value = ''
+  currentPage.value = 1
+  fetchDashboardData()
 }
 
 function goToPage(page) {
@@ -693,10 +700,8 @@ function clearTypes() {
 }
 
 function countByType(key) {
-  return applications.value.filter(a => a.applyType === key).length
+  return baseApplications.value.filter(a => a.applyType === key).length
 }
-
-// ── 顯示值選擇：審核中/已核准/已撥款/已結案 使用確認值，其餘用申請值 ──
 function displayAmount(app) {
   return POST_REVIEW_STATUSES.has(app.applicationStatus) && app.confirmedAmount != null
     ? app.confirmedAmount
@@ -715,8 +720,6 @@ function displayRate(app) {
 function isConfirmedValue(app) {
   return POST_REVIEW_STATUSES.has(app.applicationStatus) && app.confirmedAmount != null
 }
-
-// ── Formatters ──
 function sortLabel(key) {
   return key === 'progressTime' ? progressColumnLabel.value : (SORT_LABEL[key] || key)
 }
@@ -770,8 +773,6 @@ function isBetween(value, start, end) {
   const d = new Date(value)
   return !Number.isNaN(d.getTime()) && d >= start && d < end
 }
-
-// ── Auto-refresh（固定 30 秒）──
 let refreshTimer = null
 
 function startAutoRefresh() {
@@ -880,6 +881,19 @@ button.metric-card:hover {
   transform: translateY(-1px);
   border-color: var(--accent);
   box-shadow: 0 12px 28px rgba(63, 74, 66, 0.08);
+}
+
+button.metric-card.active {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  box-shadow: 0 12px 28px rgba(63, 74, 66, 0.08);
+  outline: 2px solid var(--accent-lt);
+}
+
+button.metric-card.metric-warning.active {
+  border-color: var(--red);
+  background: rgba(192, 57, 43, 0.08);
+  outline: 2px solid rgba(192, 57, 43, 0.15);
 }
 
 .metric-label {

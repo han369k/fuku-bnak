@@ -90,7 +90,7 @@
           <!-- 錯誤提示 -->
           <transition name="fade">
             <div v-if="submitError" class="form-error-banner">
-              ❌ {{ submitError }}
+              <i class="fa-solid fa-circle-xmark"></i> {{ submitError }}
             </div>
           </transition>
 
@@ -120,7 +120,7 @@
 
             <!-- 無符合帳戶 -->
             <div v-else-if="twdCheckingAccounts.length === 0 && !accountsError" class="acct-empty">
-              <span class="acct-empty-icon">⚠️</span>
+              <span class="acct-empty-icon"><i class="fa-solid fa-triangle-exclamation"></i></span>
               <div>
                 <div class="acct-empty-title">您名下目前沒有正常的台幣活存帳戶</div>
                 <div class="acct-empty-sub">請開立新台幣活存帳戶後再申請貸款</div>
@@ -129,7 +129,7 @@
 
             <!-- 載入錯誤 -->
             <div v-else-if="accountsError" class="acct-error">
-              <span>⚠️</span> {{ accountsError }}
+              <span><i class="fa-solid fa-triangle-exclamation"></i></span> {{ accountsError }}
             </div>
 
             <!-- 下拉選單 -->
@@ -398,7 +398,7 @@
           <!-- 送出 -->
           <transition name="fade">
             <div v-if="submitError" class="form-error-banner" style="margin-bottom:12px">
-              ❌ {{ submitError }}
+              <i class="fa-solid fa-circle-xmark"></i> {{ submitError }}
             </div>
           </transition>
 
@@ -420,7 +420,7 @@
     ══════════════════════════════════════════ -->
     <div v-else-if="step === 'done'" class="step-wrap">
       <div class="done-card">
-        <div class="done-icon">✅</div>
+        <div class="done-icon"><i class="fa-solid fa-circle-check"></i></div>
         <h2 class="done-title">申請已送出！</h2>
         <p class="done-desc">感謝您的申請，專員將於 3 個工作日內主動與您聯繫。</p>
 
@@ -465,9 +465,6 @@ import axios from 'axios'
 import { useCustomerAuthStore } from '@/stores/customerAuth'
 import { getMyAccounts } from '@/api/customerAccount'
 import { useRouter } from 'vue-router'
-
-
-// ── Constants ──
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 const router = useRouter()
 
@@ -481,17 +478,11 @@ const LOAN_TYPE_LIST = [
   { key: 'LAND',     name: '土地貸款', icon: 'fa-solid fa-earth-asia',    desc: '土地投資，靈活運用資金'      },
 ]
 const LOAN_TYPE_MAP = Object.fromEntries(LOAN_TYPE_LIST.map(t => [t.key, t.name]))
-
-// ── Showcase 輪播 ──
 const showcaseIndex = ref(0)
 let showcaseTimer = null
-
-// ── Auth Store ──
 const customerAuthStore = useCustomerAuthStore()
 const customerCif  = computed(() => customerAuthStore.customer?.cif  || '')
 const customerName = computed(() => customerAuthStore.customer?.name || '')
-
-// ── Account State ──
 const accounts        = ref([])
 const accountsLoading = ref(false)
 const accountsError   = ref('')
@@ -504,15 +495,11 @@ const twdCheckingAccounts = computed(() =>
          a.status === 'ACTIVE'
   )
 )
-
-// ── State ──
 const step        = ref('entry')
 const rateRules   = ref(null)
 const submitting  = ref(false)
 const submitError = ref('')
 const resultId    = ref('')
-
-// ── 同意書 ──
 const consentBox      = ref(null)   // template ref
 const consentScrolled = ref(false)
 const consentCheck1   = ref(false)
@@ -531,8 +518,6 @@ const errors = reactive({
   applyPeriod:         '',
   disbursementAccount: '',
 })
-
-// ── Computed ──
 const availablePeriods = computed(() => {
   if (!rateRules.value || !form.applyType) return []
   return rateRules.value.types[form.applyType]?.periods || []
@@ -562,13 +547,9 @@ const estimatedMonthly = computed(() => {
   const m = pv * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1)
   return '$ ' + Math.round(m).toLocaleString('zh-TW')
 })
-
-// ── Watch ──
 watch(() => form.applyType, () => {
   form.applyPeriod = null
 })
-
-// ── Methods ──
 async function loadRateRules() {
   try {
     const r = await axios.get(`${BASE_URL}/api/loan-applications/rate-rules`)
@@ -743,8 +724,6 @@ async function loadAccounts() {
     accountsLoading.value = false
   }
 }
-
-// ── Lifecycle ──
 onMounted(() => {
   loadRateRules()
   loadAccounts()

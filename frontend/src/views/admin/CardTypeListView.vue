@@ -13,13 +13,9 @@ import { PlusOutlined, SyncOutlined } from '@ant-design/icons-vue'
 
 const cardTypes = ref([])
 const loading = ref(true)
-// const response = await api.get('/api/admin/card-types')
-// cardTypes.value = response.data
-// loading.value = false
+let cardTypeRequestId = 0
 
-//上傳圖片
 const file = ref(null)
-// 表單資料
 const form = ref({
   cardTypeName: '',
   cashbackRate: 0,
@@ -27,12 +23,8 @@ const form = ref({
   annualFee: 0,
   cardImageUrl: '',
 })
-// 編輯id
 const editingId = ref(null)
-// modal控制
 const open = ref(false)
-//==工具函式==
-// 取得圖片路徑
 const getImageUrl = (path) => {
   if (!path) return ''
   if (path.startsWith('http') || path.startsWith('blob:') || path.startsWith('data:')) return path
@@ -44,17 +36,10 @@ const getImageUrl = (path) => {
 
   return `${base.replace(/\/+$/, '')}${normalizedPath}`
 }
-//處理圖片
 const handleFileChange = (e) => {
-  // if (file.value.size > 5 * 1024 * 1024) {
-  // message.error('圖片不能超過 5MB')
-  // return
-  // }
-
   file.value = e.target.files[0]
 }
 
-// 表格欄位定義
 const columns = [
   { title: 'ID', dataIndex: 'cardTypeId', key: 'cardTypeId', width: 80, align: 'center' },
   { title: '卡片名稱', dataIndex: 'cardTypeName', key: 'cardTypeName' },
@@ -69,20 +54,27 @@ const columns = [
   { title: '操作', key: 'action', width: 140, align: 'right', fixed: 'right' },
 ]
 
-// 取得資料
 const fetchCardTypes = async () => {
+  const requestId = ++cardTypeRequestId
   loading.value = true
+
   try {
     const data = await getCardTypes()
+
+    if (requestId !== cardTypeRequestId) return
+
     cardTypes.value = data
   } catch (error) {
+    if (requestId !== cardTypeRequestId) return
+
     message.error(error.response?.data?.message || '讀取資料失敗')
   } finally {
-    loading.value = false
+    if (requestId === cardTypeRequestId) {
+      loading.value = false
+    }
   }
 }
-// 新增卡別
-// 新增 / 更新
+
 const handleCreate = async () => {
   try {
     if (!form.value.cardTypeName) {
@@ -92,7 +84,6 @@ const handleCreate = async () => {
 
     let imageUrl = null
 
-    // 有選圖片才上傳
     if (file.value) {
       const formData = new FormData()
       formData.append('file', file.value)
@@ -102,7 +93,6 @@ const handleCreate = async () => {
     }
 
     if (editingId.value) {
-      // 更新
       await updateCardType(editingId.value, {
         cardTypeName: form.value.cardTypeName,
         cashbackRate: form.value.cashbackRate,
@@ -112,7 +102,6 @@ const handleCreate = async () => {
       })
       message.success('更新成功')
     } else {
-      // 新增
       if (!imageUrl) {
         message.error('請選擇圖片')
         return
@@ -128,7 +117,6 @@ const handleCreate = async () => {
       message.success('新增成功')
     }
 
-    // reset
     open.value = false
     editingId.value = null
     form.value = {
@@ -143,7 +131,6 @@ const handleCreate = async () => {
     message.error(error.response?.data?.message || '新增失敗')
   }
 }
-// 編輯處理
 const handleEdit = (record) => {
   editingId.value = record.cardTypeId
   form.value.cardTypeName = record.cardTypeName
@@ -155,7 +142,6 @@ const handleEdit = (record) => {
   file.value = null
 }
 
-// 刪除處理
 const handleDelete = (id) => {
   Modal.confirm({
     title: '確定要刪除此卡別嗎？',
@@ -169,7 +155,6 @@ const handleDelete = (id) => {
         message.success('刪除成功')
         fetchCardTypes()
       } catch (error) {
-        // 這裡會抓到後端 CardTypeService 丟出的 BusinessException (例如：卡別使用中)
         message.error(error.response?.data?.message || '刪除失敗')
         throw error
       }
@@ -188,7 +173,6 @@ onMounted(() => {
       <h2 class="page-title">卡別管理</h2>
     </div>
 
-    <!-- 頂部 F 橫劃：主操作 -->
     <div class="action-bar" style="justify-content: flex-end">
       <div class="global-actions">
         <a-button class="rounded-btn btn-ghost" @click="fetchCardTypes">
@@ -210,18 +194,18 @@ onMounted(() => {
       class="custom-table"
     >
       <template #bodyCell="{ column, record }">
-        <!-- 圖片顯示處理 -->
         <template v-if="column.key === 'cardImageUrl'">
           <a-image
             v-if="record.cardImageUrl"
             :width="100"
             :src="getImageUrl(record.cardImageUrl)"
             :preview="true"
+            loading="lazy"
+            decoding="async"
           />
           <span v-else>無圖片</span>
         </template>
 
-        <!-- 操作按鈕處理 -->
         <template v-else-if="column.key === 'action'">
           <div class="action-cell">
             <a-button type="link" class="action-btn edit-btn" @click="handleEdit(record)"
@@ -238,7 +222,6 @@ onMounted(() => {
         </template>
       </template>
     </a-table>
-    <!-- modal -->
     <a-modal v-model:open="open" :title="editingId ? '編輯卡別' : '新增卡別'" @ok="handleCreate">
       <a-form layout="vertical">
         <a-form-item label="卡片名稱">

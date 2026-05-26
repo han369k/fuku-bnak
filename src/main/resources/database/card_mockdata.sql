@@ -67,16 +67,16 @@ DBCC CHECKIDENT ('CARD_BILL', RESEED, 0) WITH NO_INFOMSGS;
 SET IDENTITY_INSERT CARD_TYPE ON;
 IF NOT EXISTS (SELECT 1 FROM CARD_TYPE)
 INSERT INTO CARD_TYPE (card_type_id, card_type_name, brand, annual_fee, cashback_rate, card_image_url) VALUES
-(1, N'現金回饋卡', 'VISA', 1000, 1.5, 'img/cashback1.png'),
-(2, N'旅遊卡', 'Master', 2000, 2.0, 'img/travel1.png'),
-(3, N'百貨聯名卡', 'JCB', 1500, 1.2, 'img/store1.png'),
-(4, N'加油卡', 'VISA', 800, 3.0, 'img/gas1.png'),
-(5, N'學生卡', 'Master', 0, 0.5, 'img/student1.png'),
-(6, N'商務卡', 'VISA', 5000, 2.5, 'img/business1.png'),
-(7, N'航空哩程卡', 'JCB', 3000, 2.2, 'img/airline1.png'),
-(8, N'購物卡', 'Master', 1200, 1.8, 'img/shop1.png'),
-(9, N'美食卡', 'VISA', 900, 2.0, 'img/food1.png'),
-(10, N'頂級黑卡', 'Master', 10000, 3.5, 'img/black1.png');
+(1, N'現金回饋卡', 'VISA', 1000, 1.5, 'img/cashback1.webp'),
+(2, N'旅遊卡', 'Master', 2000, 2.0, 'img/travel1.webp'),
+(3, N'百貨聯名卡', 'JCB', 1500, 1.2, 'img/store1.webp'),
+(4, N'加油卡', 'VISA', 800, 3.0, 'img/gas1.webp'),
+(5, N'學生卡', 'Master', 0, 0.5, 'img/student1.webp'),
+(6, N'商務卡', 'VISA', 5000, 2.5, 'img/business1.webp'),
+(7, N'航空哩程卡', 'JCB', 3000, 2.2, 'img/airline1.webp'),
+(8, N'購物卡', 'Master', 1200, 1.8, 'img/shop1.webp'),
+(9, N'美食卡', 'VISA', 900, 2.0, 'img/food1.webp'),
+(10, N'頂級黑卡', 'Master', 10000, 3.5, 'img/black1.webp');
 SET IDENTITY_INSERT CARD_TYPE OFF;
 
 DBCC CHECKIDENT ('CARD_TYPE', RESEED, 10) WITH NO_INFOMSGS;
