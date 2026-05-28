@@ -47,6 +47,18 @@
 
 ## 5. 後端檔案職責
 
+### 5.0 API 入口速查
+
+| 入口 | 主要用途 |
+|---|---|
+| `/api/loan-applications/**` | 客戶送出申請、查本人申請、取得利率規則 |
+| `/api/admin/loan-applications/**` | 行員查案件、聯繫、二次填單、送審、重送風控、重試撥款 |
+| `/api/loan-documents/**` | 客戶上傳、刪除、送出補件與查補件類型 |
+| `/api/admin/loan-documents/**` | 行員查客戶補件 |
+| `/api/loan-accounts/**` | 客戶查貸款帳戶與還款時間表 |
+| `/api/admin/loan-accounts/**` | 行員查貸款帳戶、還款表與手動同步已繳 |
+| `/api/loan-callbacks/**` | 風控或帳務模組回傳貸款狀態 |
+
 ### 5.1 Controller
 
 | 檔案 | 負責什麼 |
@@ -63,7 +75,7 @@
 | 檔案 | 負責什麼 |
 |---|---|
 | `LoanApplicationService.java` | 貸款申請主流程，包含建單、審核、送風控、callback、撥款補償 |
-| `LoanDocumentService.java` | 補件文件管理，包含收檔、存檔、刪檔、送出 |
+| `LoanDocumentService.java` | 補件文件管理，包含收檔、存檔、刪檔、送出與補件批次判斷 |
 | `LoanAccountService.java` | 撥款後建立貸款帳戶，提供帳戶查詢 |
 | `LoanRepaymentService.java` | 建立攤還表、查還款期數、同步已繳、結清 |
 | `LoanContractPdfService.java` | 產生貸款契約 PDF，並使用共用中文字型工具 |
@@ -78,7 +90,7 @@
 | `LoanApplication` | 貸款申請主資料 |
 | `LoanContactLog` | 行員聯繫紀錄 |
 | `LoanReviewDetail` | 行員二次填單與審核資料 |
-| `LoanDocument` | 補件文件資料 |
+| `LoanDocument` | 補件文件資料，包含批次類型、批次編號與送出時間 |
 | `LoanAccount` | 撥款後的貸款帳戶 |
 | `LoanRepayment` | 每一期還款資料 |
 
@@ -87,6 +99,8 @@
 | `dto/requests/*` | 前端、風控或其他模組送進來的請求資料 |
 | `dto/response/*` | 回傳給前端的資料 |
 | `enums/*` | 申請狀態、帳戶狀態、還款狀態、文件類型、聯繫類型 |
+
+補件文件有批次概念；同一筆申請可能先上傳初始文件，之後再依風控要求補新一輪文件，所以閱讀 `LoanDocumentService` 時要一起看 `documentBatchType`、`documentBatchNo`、`submittedAt`。
 
 ## 7. 跨模組整合
 
@@ -121,6 +135,8 @@
 5. `LoanReviewDetail.java`
 6. `LoanRiskClient.java`
 7. `LoanCallbackController.java`
+
+快速查 API 對應時，先看 `貸款模組解析.md` 的「API 路徑速查」；快速查 service 內方法用途時，看「Service 方法閱讀重點」。
 
 理解撥款與還款：
 
